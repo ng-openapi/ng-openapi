@@ -1,0 +1,15 @@
+{
+  "name": "@ng-openapi-workspace/source",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {},
+  "private": true,
+  "dependencies": {},
+  "devDependencies": {
+    "@nx/js": "21.2.3",
+    "nx": "21.2.3"
+  },
+  "workspaces": [
+    "packages/*"
+  ]
+}
