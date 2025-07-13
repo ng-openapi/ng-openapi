@@ -2,14 +2,38 @@
   "name": "@ng-openapi-workspace/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "generate-client": "npx ts-node packages/ng-openapi/src/lib/core/generator.ts packages/ng-openapi/src/lib/swagger.json"
+  },
   "private": true,
   "dependencies": {},
   "devDependencies": {
+    "@eslint/js": "^9.8.0",
+    "@nx/eslint": "21.2.3",
+    "@nx/eslint-plugin": "21.2.3",
     "@nx/js": "21.2.3",
-    "nx": "21.2.3"
+    "@nx/rollup": "21.2.3",
+    "@swc-node/register": "~1.9.1",
+    "@swc/cli": "~0.6.0",
+    "@swc/core": "~1.5.7",
+    "@swc/helpers": "~0.5.11",
+    "@types/node": "18.16.9",
+    "eslint": "^9.8.0",
+    "eslint-config-prettier": "^10.0.0",
+    "jsonc-eslint-parser": "^2.1.0",
+    "nx": "21.2.3",
+    "prettier": "^2.6.2",
+    "rollup": "^4.14.0",
+    "swc-loader": "0.1.15",
+    "tslib": "^2.3.0",
+    "typescript": "~5.8.2",
+    "typescript-eslint": "^8.29.0",
+    "verdaccio": "^6.0.5"
   },
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "nx": {
+    "includedScripts": []
+  }
 }
