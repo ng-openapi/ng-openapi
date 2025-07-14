@@ -165,76 +165,112 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Update version
+      - name: Update version and get new version
         id: version
         working-directory: packages/ng-openapi
         run: |
+          echo "Current version: $(npm version --json | jq -r '.["ng-openapi"]')"
+          
           if [[ "${{ needs.determine-release.outputs.release_type }}" == "from_tag" ]]; then
             # Extract version from tag
-            VERSION="${{ github.ref_name }}"
-            VERSION=${VERSION#v}  # Remove 'v' prefix
-            npm version $VERSION --no-git-tag-version
-            echo "new_version=$VERSION" >> $GITHUB_OUTPUT
+            TAG_VERSION="${{ github.ref_name }}"
+            CLEAN_VERSION=${TAG_VERSION#v}  # Remove 'v' prefix if present
+            echo "Setting version to: $CLEAN_VERSION"
+            npm version $CLEAN_VERSION --no-git-tag-version
+            echo "new_version=v$CLEAN_VERSION" >> $GITHUB_OUTPUT
+            echo "clean_version=$CLEAN_VERSION" >> $GITHUB_OUTPUT
           elif [[ "${{ needs.determine-release.outputs.is_prerelease }}" == "true" ]]; then
             if [[ "${{ needs.determine-release.outputs.release_type }}" == "prerelease" ]]; then
+              echo "Creating prerelease with tag: ${{ needs.determine-release.outputs.version_tag }}"
               NEW_VERSION=$(npm version prerelease --preid=${{ needs.determine-release.outputs.version_tag }} --no-git-tag-version)
             else
+              echo "Creating ${{ needs.determine-release.outputs.release_type }} prerelease"
               NEW_VERSION=$(npm version ${{ needs.determine-release.outputs.release_type }} --preid=${{ needs.determine-release.outputs.version_tag }} --no-git-tag-version)
             fi
             echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+            echo "clean_version=${NEW_VERSION#v}" >> $GITHUB_OUTPUT
           else
+            echo "Creating ${{ needs.determine-release.outputs.release_type }} release"
             NEW_VERSION=$(npm version ${{ needs.determine-release.outputs.release_type }} --no-git-tag-version)
             echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+            echo "clean_version=${NEW_VERSION#v}" >> $GITHUB_OUTPUT
           fi
+          
+          echo "Final version: $(npm version --json | jq -r '.["ng-openapi"]')"
 
       - name: Copy updated package.json to dist
         run: |
+          echo "Copying package.json to dist..."
           cp packages/ng-openapi/package.json dist/packages/ng-openapi/package.json
+          echo "Updated dist package.json version:"
+          cat dist/packages/ng-openapi/package.json | jq -r '.version'
 
       - name: Publish to NPM
         working-directory: dist/packages/ng-openapi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          echo "Publishing package..."
+          echo "Current directory: $(pwd)"
+          echo "Package version: $(cat package.json | jq -r '.version')"
+          
           if [[ "${{ needs.determine-release.outputs.is_prerelease }}" == "true" ]]; then
+            echo "Publishing as prerelease with tag: ${{ needs.determine-release.outputs.version_tag }}"
             npm publish --tag ${{ needs.determine-release.outputs.version_tag }} --access public
           else
+            echo "Publishing as stable release"
             npm publish --access public
           fi
+          
+          echo "✅ Published successfully!"
 
       - name: Create Git tag and push
         if: needs.determine-release.outputs.release_type != 'from_tag'
         run: |
           VERSION=${{ steps.version.outputs.new_version }}
+          echo "Creating git tag: $VERSION"
           git add packages/ng-openapi/package.json
           git commit -m "chore: release $VERSION"
           git tag $VERSION
           git push origin HEAD --tags
+          echo "✅ Git tag created and pushed"
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.version.outputs.new_version }}
-          release_name: Release ${{ steps.version.outputs.new_version }}
+          name: Release ${{ steps.version.outputs.new_version }}
           body: |
-            ## Changes in ${{ steps.version.outputs.new_version }}
+            ## 🚀 ng-openapi ${{ steps.version.outputs.new_version }}
             
-            ### Installation
+            ### 📦 Installation
             ```bash
-            npm install -g ng-openapi@${{ needs.determine-release.outputs.is_prerelease == 'true' && needs.determine-release.outputs.version_tag || 'latest' }}
+            # Latest stable
+            npm install -g ng-openapi
+            
+            # This specific version
+            npm install -g ng-openapi@${{ steps.version.outputs.clean_version }}
             ```
             
-            ### Usage
+            ### 🛠️ Usage
             ```bash
             ng-openapi --help
             ng-openapi -i swagger.json -o ./src/api
+            ng-openapi -c openapi.config.ts
             ```
             
-            Published to NPM: https://www.npmjs.com/package/ng-openapi
-          draft: false
+            ### 🔗 Links
+            - 📚 [NPM Package](https://www.npmjs.com/package/ng-openapi)
+            - 📖 [Documentation](https://github.com/${{ github.repository }}#readme)
+            - 🐛 [Report Issues](https://github.com/${{ github.repository }}/issues)
+            
+            ---
+            
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ steps.version.outputs.new_version }}
           prerelease: ${{ needs.determine-release.outputs.is_prerelease == 'true' }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # Job 4: Notify on success/failure
   notify:
@@ -245,13 +281,14 @@ jobs:
       - name: Notify success
         if: needs.publish.result == 'success'
         run: |
-          echo "✅ Successfully published ng-openapi to NPM!"
-          echo "Tag: ${{ needs.determine-release.outputs.version_tag }}"
-          echo "Prerelease: ${{ needs.determine-release.outputs.is_prerelease }}"
+          echo "🎉 Successfully published ng-openapi to NPM!"
+          echo "📦 Package: https://www.npmjs.com/package/ng-openapi"
+          echo "🏷️ Tag: ${{ needs.determine-release.outputs.version_tag }}"
+          echo "🔖 Prerelease: ${{ needs.determine-release.outputs.is_prerelease }}"
 
       - name: Notify failure
         if: needs.publish.result == 'failure' || needs.build-and-test.result == 'failure'
         run: |
           echo "❌ Failed to publish ng-openapi"
-          echo "Check the logs above for details"
+          echo "📋 Check the logs above for details"
           exit 1
