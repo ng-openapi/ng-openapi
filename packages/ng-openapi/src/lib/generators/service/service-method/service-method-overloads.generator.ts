@@ -1,15 +1,14 @@
 import {MethodDeclarationOverloadStructure, OptionalKind, ParameterDeclarationStructure} from "ts-morph";
-import {GENERATOR_CONFIG} from "../../../config";
-import {PathInfo} from "../../../types";
+import { GeneratorConfig, PathInfo } from "../../../types";
 import {getResponseType, getResponseTypeFromResponse} from "../service-method.generator";
 import {generateApiParameters} from "./service-method-params.generator";
 
-export function generateMethodOverloads(parameters: any[], operation: PathInfo): OptionalKind<MethodDeclarationOverloadStructure>[] {
+export function generateMethodOverloads(operation: PathInfo, config: GeneratorConfig): OptionalKind<MethodDeclarationOverloadStructure>[] {
     const observeTypes: ("body" | "response" | "events")[] = ['body', 'response', 'events'];
     const overloads: OptionalKind<MethodDeclarationOverloadStructure>[] = [];
 
     // Determine the actual response type for this operation
-    const responseType = determineResponseTypeForOperation(operation);
+    const responseType = determineResponseTypeForOperation(operation, config);
 
     observeTypes.forEach(observe => {
         const overload = generateMethodOverload(operation, observe, responseType);
@@ -20,14 +19,14 @@ export function generateMethodOverloads(parameters: any[], operation: PathInfo):
     return overloads;
 }
 
-function determineResponseTypeForOperation(operation: PathInfo): 'json' | 'blob' | 'arraybuffer' | 'text' {
+function determineResponseTypeForOperation(operation: PathInfo, config: GeneratorConfig): 'json' | 'blob' | 'arraybuffer' | 'text' {
     const successResponses = ['200', '201', '202', '204', '206'];
 
     for (const statusCode of successResponses) {
         const response = operation.responses?.[statusCode];
         if (!response) continue;
 
-        return getResponseTypeFromResponse(response, GENERATOR_CONFIG);
+        return getResponseTypeFromResponse(response, config);
     }
 
     return 'json';

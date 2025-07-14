@@ -1,19 +1,20 @@
-import {GENERATOR_CONFIG} from "../config";
-import {TypeSchema} from "../types";
+import { GeneratorConfig, TypeSchema } from "../types";
 import {pascalCase} from "./string.utils";
 
 /**
  * Convert OpenAPI/Swagger types to TypeScript types
  * @param schemaOrType - Either a schema object or a type string
+ * @param config - generator configuration
  * @param formatOrNullable - Either format string (if first param is string) or nullable boolean
  * @param isNullable - Nullable boolean (only used if first param is string)
  * @param context - Whether this is for type generation or service generation
  */
 export function getTypeScriptType(
     schemaOrType: TypeSchema | string | undefined,
+    config: GeneratorConfig,
     formatOrNullable?: string | boolean,
     isNullable?: boolean,
-    context: 'type' | 'service' = 'type'
+    context: 'type' | 'service' = 'type',
 ): string {
     // Handle the two different call signatures
     let schema: TypeSchema;
@@ -45,7 +46,7 @@ export function getTypeScriptType(
     // Handle arrays
     if (schema.type === 'array') {
         const itemType = schema.items
-            ? getTypeScriptType(schema.items, undefined, undefined, context)
+            ? getTypeScriptType(schema.items, config, undefined, undefined, context)
             : 'unknown';
         return nullable ? `(${itemType}[] | null)` : `${itemType}[]`;
     }
@@ -55,7 +56,7 @@ export function getTypeScriptType(
         case 'string':
             // Date handling
             if (schema.format === 'date' || schema.format === 'date-time') {
-                const dateType = GENERATOR_CONFIG.options.dateType === 'Date' ? 'Date' : 'string';
+                const dateType = config.options.dateType === 'Date' ? 'Date' : 'string';
                 return nullableType(dateType, nullable);
             }
 

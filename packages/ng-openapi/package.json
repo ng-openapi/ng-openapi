@@ -1,8 +1,49 @@
 {
   "name": "ng-openapi",
   "version": "0.0.1",
+  "description": "Generate Angular services and TypeScript types from OpenAPI/Swagger specifications",
+  "keywords": [
+    "angular",
+    "openapi",
+    "swagger",
+    "codegen",
+    "typescript",
+    "generator",
+    "code-generator",
+    "api",
+    "rest",
+    "http"
+  ],
+  "author": "T. Jami",
+  "license": "MIT",
+  "homepage": "https://github.com/ng-openapi/ng-openapi",
+  "bugs": {
+    "url": "https://github.com/ng-openapi/ng-openapi/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ng-openapi/ng-openapi.git"
+  },
   "main": "./index.cjs",
   "module": "./index.js",
+  "types": "./index.d.ts",
+  "bin": {
+    "ng-openapi": "./cli.cjs"
+  },
+  "files": [
+    "index.js",
+    "index.cjs",
+    "index.d.ts",
+    "cli.js",
+    "lib/**/*.js",
+    "lib/**/*.cjs",
+    "lib/**/*.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "prepublishOnly": "echo 'Please build the package before publishing'"
+  },
   "dependencies": {
     "commander": "^14.0.0",
     "ts-morph": "^26.0.0",
@@ -14,5 +55,8 @@
   "peerDependencies": {
     "@angular/core": ">=20",
     "@angular/common": ">=20"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

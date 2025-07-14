@@ -1,24 +1,26 @@
-import {MethodDeclaration, Project, Scope, SourceFile} from 'ts-morph';
-import {SwaggerParser} from '../../core';
-import * as path from 'path';
-import {GENERATOR_CONFIG, SERVICE_GENERATOR_HEADER_COMMENT} from "../../config";
-import {Parameter, PathInfo, RequestBody, SwaggerResponse, SwaggerSpec} from '../../types';
-import {kebabCase, pascalCase} from "../../utils";
-import {addServiceMethod} from "./service-method.generator";
+import { MethodDeclaration, Project, Scope, SourceFile } from "ts-morph";
+import { SwaggerParser } from "../../core";
+import * as path from "path";
+import { SERVICE_GENERATOR_HEADER_COMMENT } from "../../config";
+import { GeneratorConfig, Parameter, PathInfo, RequestBody, SwaggerResponse, SwaggerSpec } from "../../types";
+import { kebabCase, pascalCase } from "../../utils";
+import { addServiceMethod } from "./service-method.generator";
 
 export class ServiceGenerator {
     private project: Project;
     private parser: SwaggerParser;
     private spec: SwaggerSpec;
+    private config: GeneratorConfig;
 
-    constructor(swaggerPath: string, project: Project) {
+    constructor(swaggerPath: string, project: Project, config: GeneratorConfig) {
+        this.config = config;
         this.project = project;
         this.parser = new SwaggerParser(swaggerPath);
-        this.spec = JSON.parse(require('fs').readFileSync(swaggerPath, 'utf8'));
+        this.spec = JSON.parse(require("fs").readFileSync(swaggerPath, "utf8"));
     }
 
     generate(outputRoot: string): void {
-        const outputDir = path.join(outputRoot, 'services');
+        const outputDir = path.join(outputRoot, "services");
         const paths = this.extractPaths();
         const controllerGroups = this.groupPathsByController(paths);
 
@@ -32,9 +34,9 @@ export class ServiceGenerator {
         const swaggerPaths = this.spec.paths || {};
 
         Object.entries(swaggerPaths).forEach(([path, pathItem]: [string, any]) => {
-            const methods = ['get', 'post', 'put', 'patch', 'delete', 'options', 'head'];
+            const methods = ["get", "post", "put", "patch", "delete", "options", "head"];
 
-            methods.forEach(method => {
+            methods.forEach((method) => {
                 if (pathItem[method]) {
                     const operation = pathItem[method];
                     paths.push({
@@ -57,10 +59,10 @@ export class ServiceGenerator {
 
     private parseParameters(operationParams: any[], pathParams: any[]): Parameter[] {
         const allParams = [...pathParams, ...operationParams];
-        return allParams.map(param => ({
+        return allParams.map((param) => ({
             name: param.name,
             in: param.in,
-            required: param.required || param.in === 'path',
+            required: param.required || param.in === "path",
             schema: param.schema,
             type: param.type,
             format: param.format,
@@ -71,14 +73,14 @@ export class ServiceGenerator {
     private groupPathsByController(paths: PathInfo[]): Record<string, PathInfo[]> {
         const groups: Record<string, PathInfo[]> = {};
 
-        paths.forEach(path => {
-            let controllerName = 'Default';
+        paths.forEach((path) => {
+            let controllerName = "Default";
 
             if (path.tags && path.tags.length > 0) {
                 controllerName = path.tags[0];
             } else {
                 // Extract from path (e.g., "/api/users/{id}" -> "Users")
-                const pathParts = path.path.split('/').filter(p => p && !p.startsWith('{'));
+                const pathParts = path.path.split("/").filter((p) => p && !p.startsWith("{"));
                 if (pathParts.length > 1) {
                     controllerName = pascalCase(pathParts[1]);
                 }
@@ -99,7 +101,7 @@ export class ServiceGenerator {
         const fileName = `${kebabCase(controllerName)}.service.ts`;
         const filePath = path.join(outputDir, fileName);
 
-        const sourceFile = this.project.createSourceFile(filePath, '', {overwrite: true});
+        const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
 
         // Collect all used model types first
         const usedTypes = this.collectUsedTypes(operations);
@@ -113,9 +115,9 @@ export class ServiceGenerator {
     private collectUsedTypes(operations: PathInfo[]): Set<string> {
         const usedTypes = new Set<string>();
 
-        operations.forEach(operation => {
+        operations.forEach((operation) => {
             // Check parameters
-            operation.parameters?.forEach(param => {
+            operation.parameters?.forEach((param) => {
                 this.collectTypesFromSchema(param.schema || param, usedTypes);
             });
 
@@ -126,7 +128,7 @@ export class ServiceGenerator {
 
             // Check responses
             if (operation.responses) {
-                Object.values(operation.responses).forEach(response => {
+                Object.values(operation.responses).forEach((response) => {
                     this.collectTypesFromResponse(response, usedTypes);
                 });
             }
@@ -139,18 +141,18 @@ export class ServiceGenerator {
         if (!schema) return;
 
         if (schema.$ref) {
-            const refName = schema.$ref.split('/').pop();
+            const refName = schema.$ref.split("/").pop();
             if (refName) {
                 usedTypes.add(pascalCase(refName));
             }
         }
 
-        if (schema.type === 'array' && schema.items) {
+        if (schema.type === "array" && schema.items) {
             this.collectTypesFromSchema(schema.items, usedTypes);
         }
 
-        if (schema.type === 'object' && schema.properties) {
-            Object.values(schema.properties).forEach(prop => {
+        if (schema.type === "object" && schema.properties) {
+            Object.values(schema.properties).forEach((prop) => {
                 this.collectTypesFromSchema(prop, usedTypes);
             });
         }
@@ -176,7 +178,7 @@ export class ServiceGenerator {
 
     private collectTypesFromRequestBody(requestBody: RequestBody, usedTypes: Set<string>): void {
         const content = requestBody.content || {};
-        Object.values(content).forEach(mediaType => {
+        Object.values(content).forEach((mediaType) => {
             if (mediaType.schema) {
                 this.collectTypesFromSchema(mediaType.schema, usedTypes);
             }
@@ -185,7 +187,7 @@ export class ServiceGenerator {
 
     private collectTypesFromResponse(response: SwaggerResponse, usedTypes: Set<string>): void {
         const content = response.content || {};
-        Object.values(content).forEach(mediaType => {
+        Object.values(content).forEach((mediaType) => {
             if (mediaType.schema) {
                 this.collectTypesFromSchema(mediaType.schema, usedTypes);
             }
@@ -195,20 +197,20 @@ export class ServiceGenerator {
     private addImports(sourceFile: SourceFile, usedTypes: Set<string>): void {
         sourceFile.addImportDeclarations([
             {
-                namedImports: ['Injectable', "inject"],
-                moduleSpecifier: '@angular/core',
+                namedImports: ["Injectable", "inject"],
+                moduleSpecifier: "@angular/core",
             },
             {
-                namedImports: ['HttpClient', 'HttpParams', 'HttpHeaders', 'HttpContext', 'HttpResponse', 'HttpEvent'],
-                moduleSpecifier: '@angular/common/http',
+                namedImports: ["HttpClient", "HttpParams", "HttpHeaders", "HttpContext", "HttpResponse", "HttpEvent"],
+                moduleSpecifier: "@angular/common/http",
             },
             {
-                namedImports: ['Observable'],
-                moduleSpecifier: 'rxjs',
+                namedImports: ["Observable"],
+                moduleSpecifier: "rxjs",
             },
             {
-                namedImports: ['BASE_PATH'],
-                moduleSpecifier: '../tokens',
+                namedImports: ["BASE_PATH"],
+                moduleSpecifier: "../tokens",
             },
         ]);
 
@@ -216,7 +218,7 @@ export class ServiceGenerator {
         if (usedTypes.size > 0) {
             sourceFile.addImportDeclaration({
                 namedImports: Array.from(usedTypes).sort(),
-                moduleSpecifier: '../models',
+                moduleSpecifier: "../models",
             });
         }
     }
@@ -229,7 +231,7 @@ export class ServiceGenerator {
         const serviceClass = sourceFile.addClass({
             name: className,
             isExported: true,
-            decorators: [{name: 'Injectable', arguments: ['{ providedIn: "root" }']}],
+            decorators: [{ name: "Injectable", arguments: ['{ providedIn: "root" }'] }],
         });
 
         serviceClass.addProperty({
@@ -237,7 +239,7 @@ export class ServiceGenerator {
             type: "HttpClient",
             scope: Scope.Private,
             isReadonly: true,
-            initializer: "inject(HttpClient)"
+            initializer: "inject(HttpClient)",
         });
 
         serviceClass.addProperty({
@@ -245,20 +247,22 @@ export class ServiceGenerator {
             type: "string",
             scope: Scope.Private,
             isReadonly: true,
-            initializer: "inject(BASE_PATH)"
+            initializer: "inject(BASE_PATH)",
         });
 
         // Generate methods for each operation
-        operations.forEach(operation => {
+        operations.forEach((operation) => {
             addServiceMethod(serviceClass, operation);
         });
 
         if (this.hasDuplicateMethodNames(serviceClass.getMethods())) {
-            throw new Error(`Duplicate method names found in service class ${className}. Please ensure unique method names for each operation.`);
+            throw new Error(
+                `Duplicate method names found in service class ${className}. Please ensure unique method names for each operation.`
+            );
         }
     }
 
     private hasDuplicateMethodNames<T extends MethodDeclaration>(arr: T[]): boolean {
-        return new Set(arr.map(method => method.getName())).size !== arr.length;
+        return new Set(arr.map((method) => method.getName())).size !== arr.length;
     }
 }

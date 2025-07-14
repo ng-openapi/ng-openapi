@@ -1,14 +1,13 @@
-import {ClassDeclaration} from "ts-morph";
-import {GENERATOR_CONFIG} from "../../config";
-import {generateMethodBody, generateMethodOverloads, generateMethodParameters} from "./service-method";
-import {GeneratorConfig, PathInfo, RequestBody, SwaggerResponse} from "../../types";
-import {camelCase, getTypeScriptType, pascalCase} from "../../utils";
+import { ClassDeclaration } from "ts-morph";
+import { generateMethodBody, generateMethodOverloads, generateMethodParameters } from "./service-method";
+import { GeneratorConfig, PathInfo, RequestBody, SwaggerResponse } from "../../types";
+import { camelCase, getTypeScriptType, pascalCase } from "../../utils";
 
-export function addServiceMethod(serviceClass: ClassDeclaration, operation: PathInfo): void {
-    const methodName = generateMethodName(operation);
+export function addServiceMethod(serviceClass: ClassDeclaration, operation: PathInfo, config: GeneratorConfig): void {
+    const methodName = generateMethodName(operation, config);
     const parameters = generateMethodParameters(operation);
     const returnType = generateReturnType();
-    const methodBody = generateMethodBody(operation, parameters);
+    const methodBody = generateMethodBody(operation, config);
     const methodOverLoads = generateMethodOverloads(parameters, operation);
 
     serviceClass.addMethod({
@@ -20,19 +19,21 @@ export function addServiceMethod(serviceClass: ClassDeclaration, operation: Path
     });
 }
 
-export function generateMethodName(operation: PathInfo): string {
-    if (GENERATOR_CONFIG.options.customizeMethodName){
+export function generateMethodName(operation: PathInfo, config: GeneratorConfig): string {
+    if (config.options.customizeMethodName) {
         if (operation.operationId == null) {
-            throw new Error(`Operation ID is required for method name customization of operation: (${operation.method}) ${operation.path}`);
+            throw new Error(
+                `Operation ID is required for method name customization of operation: (${operation.method}) ${operation.path}`
+            );
         }
-        return GENERATOR_CONFIG.options.customizeMethodName(operation.operationId);
+        return config.options.customizeMethodName(operation.operationId);
     } else {
         return defaultNameGenerator(operation);
     }
 }
 
 export function generateReturnType(): string {
-    return 'Observable<any>';
+    return "Observable<any>";
 }
 
 export function defaultNameGenerator(operation: PathInfo): string {
@@ -41,25 +42,25 @@ export function defaultNameGenerator(operation: PathInfo): string {
     }
 
     const method = operation.method.toLowerCase();
-    const pathParts = operation.path.split('/').filter(p => p && !p.startsWith('{'));
-    const resource = pathParts[pathParts.length - 1] || 'resource';
+    const pathParts = operation.path.split("/").filter((p) => p && !p.startsWith("{"));
+    const resource = pathParts[pathParts.length - 1] || "resource";
 
     return `${method}${pascalCase(resource)}`;
 }
 
 export function getRequestBodyType(requestBody: RequestBody): string {
     const content = requestBody.content || {};
-    const jsonContent = content['application/json'];
+    const jsonContent = content["application/json"];
 
     if (jsonContent?.schema) {
         return getTypeScriptType(jsonContent.schema, jsonContent.schema.nullable);
     }
 
-    return 'any';
+    return "any";
 }
 
-export function isBlobResponse(operation: PathInfo): boolean {
-    const successResponses = ['200', '201', '202', '204'];
+export function isBlobResponse(operation: PathInfo, config: GeneratorConfig): boolean {
+    const successResponses = ["200", "201", "202", "204"];
 
     for (const statusCode of successResponses) {
         const response = operation.responses?.[statusCode];
@@ -68,8 +69,8 @@ export function isBlobResponse(operation: PathInfo): boolean {
         }
 
         for (const contentType of Object.keys(response.content)) {
-            const responseType = getResponseTypeFromContentType(contentType, GENERATOR_CONFIG);
-            if (responseType === 'blob') {
+            const responseType = getResponseTypeFromContentType(contentType, config);
+            if (responseType === "blob") {
                 return true;
             }
         }
@@ -88,18 +89,25 @@ export function getFormDataFields(operation: PathInfo): string[] {
 }
 
 export function isMultipartFormData(operation: PathInfo): boolean {
-    return !!(operation.requestBody?.content?.["multipart/form-data"]);
+    return !!operation.requestBody?.content?.["multipart/form-data"];
 }
 
-export function getResponseTypeFromResponse(response: SwaggerResponse, config?: GeneratorConfig): 'json' | 'blob' | 'arraybuffer' | 'text' {
+export function getResponseTypeFromResponse(
+    response: SwaggerResponse,
+    config?: GeneratorConfig
+): "json" | "blob" | "arraybuffer" | "text" {
     const content = response.content || {};
 
     if (Object.keys(content).length === 0) {
-        return 'json'; // default for empty content
+        return "json"; // default for empty content
     }
 
     // Collect all possible response types with their priorities
-    const responseTypes: Array<{ type: 'json' | 'blob' | 'arraybuffer' | 'text', priority: number, contentType: string }> = [];
+    const responseTypes: Array<{
+        type: "json" | "blob" | "arraybuffer" | "text";
+        priority: number;
+        contentType: string;
+    }> = [];
 
     // Check each content type and its schema
     for (const [contentType, mediaType] of Object.entries(content)) {
@@ -111,27 +119,27 @@ export function getResponseTypeFromResponse(response: SwaggerResponse, config?: 
             responseTypes.push({
                 type: mapping[contentType],
                 priority: 1, // highest priority
-                contentType
+                contentType,
             });
             continue;
         }
 
         // Check schema format for binary indication
-        if (schema?.format === 'binary' || schema?.format === 'byte') {
+        if (schema?.format === "binary" || schema?.format === "byte") {
             responseTypes.push({
-                type: 'blob',
+                type: "blob",
                 priority: 2,
-                contentType
+                contentType,
             });
             continue;
         }
 
         // Check if schema type indicates binary
-        if (schema?.type === 'string' && (schema?.format === 'binary' || schema?.format === 'byte')) {
+        if (schema?.type === "string" && (schema?.format === "binary" || schema?.format === "byte")) {
             responseTypes.push({
-                type: 'blob',
+                type: "blob",
                 priority: 2,
-                contentType
+                contentType,
             });
             continue;
         }
@@ -141,83 +149,85 @@ export function getResponseTypeFromResponse(response: SwaggerResponse, config?: 
         let priority = 3; // default priority
 
         // Prioritize JSON over other types
-        if (inferredType === 'json') {
+        if (inferredType === "json") {
             priority = 2;
         }
 
         responseTypes.push({
             type: inferredType,
             priority,
-            contentType
+            contentType,
         });
     }
 
     // Sort by priority (lower number = higher priority) and return the best match
     responseTypes.sort((a, b) => a.priority - b.priority);
-    return responseTypes[0]?.type || 'json';
+    return responseTypes[0]?.type || "json";
 }
 
-export function inferResponseTypeFromContentType(contentType: string): 'json' | 'blob' | 'arraybuffer' | 'text' {
+export function inferResponseTypeFromContentType(contentType: string): "json" | "blob" | "arraybuffer" | "text" {
     // Normalize content type (remove parameters like charset)
-    const normalizedType = contentType.split(';')[0].trim().toLowerCase();
+    const normalizedType = contentType.split(";")[0].trim().toLowerCase();
 
     // JSON types (highest priority for structured data)
-    if (normalizedType.includes('json') ||
-        normalizedType === 'application/ld+json' ||
-        normalizedType === 'application/hal+json' ||
-        normalizedType === 'application/vnd.api+json') {
-        return 'json';
+    if (
+        normalizedType.includes("json") ||
+        normalizedType === "application/ld+json" ||
+        normalizedType === "application/hal+json" ||
+        normalizedType === "application/vnd.api+json"
+    ) {
+        return "json";
     }
 
     // XML can be treated as text for parsing
-    if (normalizedType.includes('xml') ||
-        normalizedType === 'application/soap+xml' ||
-        normalizedType === 'application/atom+xml' ||
-        normalizedType === 'application/rss+xml') {
-        return 'text';
+    if (
+        normalizedType.includes("xml") ||
+        normalizedType === "application/soap+xml" ||
+        normalizedType === "application/atom+xml" ||
+        normalizedType === "application/rss+xml"
+    ) {
+        return "text";
     }
 
     // Text types (but exclude certain binary-like text types)
-    if (normalizedType.startsWith('text/')) {
+    if (normalizedType.startsWith("text/")) {
         // These text types are better handled as blobs
-        const binaryTextTypes = [
-            'text/rtf',
-            'text/cache-manifest',
-            'text/vcard',
-            'text/calendar'
-        ];
+        const binaryTextTypes = ["text/rtf", "text/cache-manifest", "text/vcard", "text/calendar"];
 
         if (binaryTextTypes.includes(normalizedType)) {
-            return 'blob';
+            return "blob";
         }
 
-        return 'text';
+        return "text";
     }
 
     // Form data should be handled as text for parsing
-    if (normalizedType === 'application/x-www-form-urlencoded' ||
-        normalizedType === 'multipart/form-data') {
-        return 'text';
+    if (normalizedType === "application/x-www-form-urlencoded" || normalizedType === "multipart/form-data") {
+        return "text";
     }
 
     // Specific text-like application types
-    if (normalizedType === 'application/javascript' ||
-        normalizedType === 'application/typescript' ||
-        normalizedType === 'application/css' ||
-        normalizedType === 'application/yaml' ||
-        normalizedType === 'application/x-yaml' ||
-        normalizedType === 'application/toml') {
-        return 'text';
+    if (
+        normalizedType === "application/javascript" ||
+        normalizedType === "application/typescript" ||
+        normalizedType === "application/css" ||
+        normalizedType === "application/yaml" ||
+        normalizedType === "application/x-yaml" ||
+        normalizedType === "application/toml"
+    ) {
+        return "text";
     }
 
     // Binary types that should use arraybuffer for better performance
-    if (normalizedType.startsWith('image/') ||
-        normalizedType.startsWith('audio/') ||
-        normalizedType.startsWith('video/') ||
-        normalizedType === 'application/pdf' ||
-        normalizedType === 'application/zip' ||
-        normalizedType.includes('octet-stream')) {
-        return 'arraybuffer';
+    if (
+        normalizedType.startsWith("image/") ||
+        normalizedType.startsWith("audio/") ||
+        normalizedType.startsWith("video/") ||
+        normalizedType === "application/pdf" ||
+        normalizedType === "application/zip" ||
+        normalizedType.includes("octet-stream")
+    ) {
+        return "arraybuffer";
     }
 
     // Everything else is likely binary and should be blob
@@ -226,7 +236,7 @@ export function inferResponseTypeFromContentType(contentType: string): 'json' | 
     // - font/* types
     // - model/* types
     // - Other multipart/* types
-    return 'blob';
+    return "blob";
 }
 
 export function getResponseType(response: SwaggerResponse, config?: GeneratorConfig): string {
@@ -234,28 +244,32 @@ export function getResponseType(response: SwaggerResponse, config?: GeneratorCon
 
     // Map response types to TypeScript types
     switch (responseType) {
-        case 'blob':
-            return 'Blob';
-        case 'arraybuffer':
-            return 'ArrayBuffer';
-        case 'text':
-            return 'string';
-        case 'json':
-            // For JSON, check if we have a schema to get specific type
+        case "blob":
+            return "Blob";
+        case "arraybuffer":
+            return "ArrayBuffer";
+        case "text":
+            return "string";
+        case "json": // For JSON, check if we have a schema to get specific type
+        {
             const content = response.content || {};
             for (const [contentType, mediaType] of Object.entries(content)) {
-                if (inferResponseTypeFromContentType(contentType) === 'json' && mediaType?.schema) {
+                if (inferResponseTypeFromContentType(contentType) === "json" && mediaType?.schema) {
                     return getTypeScriptType(mediaType.schema, mediaType.schema.nullable);
                 }
             }
-            return 'any';
+            return "any";
+        }
         default:
-            return 'any';
+            return "any";
     }
 }
 
 // Update the old function to use the new logic
-export function getResponseTypeFromContentType(contentType: string, config?: GeneratorConfig): 'json' | 'blob' | 'arraybuffer' | 'text' {
+export function getResponseTypeFromContentType(
+    contentType: string,
+    config?: GeneratorConfig
+): "json" | "blob" | "arraybuffer" | "text" {
     // This function is kept for backward compatibility but now uses the new logic
     const mapping = config?.options?.responseTypeMapping || {};
     if (mapping[contentType]) {

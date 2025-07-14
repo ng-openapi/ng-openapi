@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "generate-client": "npx ts-node packages/ng-openapi/src/lib/core/generator.ts packages/ng-openapi/src/lib/swagger.json"
+    "generate-client": "npx ts-node packages/ng-openapi/src/lib/core/generator.ts packages/ng-openapi/src/lib/swagger.json",
+    "build:ng-openapi": "nx build ng-openapi",
+    "test:cli": "node dist/packages/ng-openapi/lib/cli.js --help"
   },
   "private": true,
   "dependencies": {},
