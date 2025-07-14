@@ -1,6 +1,6 @@
 import { ModuleKind, Project, ScriptTarget } from 'ts-morph';
 import { TypeGenerator } from '../generators';
-import { DateTransformerGenerator, FileDownloadGenerator, TokenGenerator } from '../generators/utility';
+import { DateTransformerGenerator, FileDownloadGenerator, TokenGenerator, MainIndexGenerator } from '../generators/utility';
 import { ServiceGenerator, ServiceIndexGenerator } from '../generators/service';
 import { GeneratorConfig } from '../types';
 import * as fs from 'fs';
@@ -59,12 +59,16 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
             const serviceGenerator = new ServiceGenerator(config.input, project, config);
             serviceGenerator.generate(outputPath);
 
-            // Generate index file
+            // Generate services index file
             const indexGenerator = new ServiceIndexGenerator(project);
             indexGenerator.generateIndex(outputPath);
 
             console.log(`✅ Angular services generated`);
         }
+
+        // Generate main index file (always, regardless of generateServices)
+        const mainIndexGenerator = new MainIndexGenerator(project, config);
+        mainIndexGenerator.generateMainIndex(outputPath);
 
         console.log("🎉 Generation completed successfully at:", outputPath);
     } catch (error) {
