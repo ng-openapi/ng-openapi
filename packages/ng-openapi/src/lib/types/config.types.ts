@@ -1,16 +1,17 @@
-import {ModuleKind, ScriptTarget} from "ts-morph";
+import { ModuleKind, ScriptTarget } from "ts-morph";
 
 export interface GeneratorConfig {
     input: string;
     output: string;
     options: {
-        dateType: 'string' | 'Date';
-        enumStyle: 'enum' | 'union'; //TODO: add implementation
+        dateType: "string" | "Date";
+        enumStyle: "enum" | "union"; //TODO: add implementation
         generateServices?: boolean; // New option to control service generation
         generateEnumBasedOnDescription?: boolean;
         customHeaders?: Record<string, string>; // New option
-        responseTypeMapping?: { // New option
-            [contentType: string]: 'json' | 'blob' | 'arraybuffer' | 'text';
+        responseTypeMapping?: {
+            // New option
+            [contentType: string]: "json" | "blob" | "arraybuffer" | "text";
         };
         customizeMethodName?: (operationId: string) => string;
     };
@@ -19,5 +20,5 @@ export interface GeneratorConfig {
         target?: ScriptTarget;
         module?: ModuleKind;
         strict?: boolean;
-    }
+    };
 }

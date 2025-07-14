@@ -84,7 +84,7 @@ async function generateFromOptions(options: any): Promise<void> {
 program
     .name("ng-openapi")
     .description("Generate Angular services and types from Swagger/OpenAPI spec")
-    .version("1.0.0")
+    .version("0.0.1")
     .option("-c, --config <path>", "Path to configuration file")
     .option("-i, --input <path>", "Path to Swagger/OpenAPI specification file")
     .option("-o, --output <path>", "Output directory", "./src/generated")

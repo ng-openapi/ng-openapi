@@ -4,7 +4,7 @@ export function camelCase(str: string): string {
 }
 
 export function kebabCase(str: string): string {
-    return str.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+    return str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
 }
 
 export function pascalCase(str: string): string {

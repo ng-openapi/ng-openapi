@@ -4,7 +4,7 @@ export interface MethodGenerationContext {
     hasBody: boolean;
     isMultipart: boolean;
     formDataFields: string[];
-    responseType: 'json' | 'blob' | 'arraybuffer' | 'text';
+    responseType: "json" | "blob" | "arraybuffer" | "text";
 }
 
 export interface TypeSchema {

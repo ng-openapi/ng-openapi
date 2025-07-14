@@ -7,12 +7,12 @@ import {
     QueryParameter,
     Security,
     Tag,
-    XML
+    XML,
 } from "swagger-schema-official";
 
 export interface Parameter {
     name: string;
-    in: 'query' | 'path' | 'header' | 'cookie';
+    in: "query" | "path" | "header" | "cookie";
     required?: boolean;
     schema?: any;
     type?: string;
@@ -96,10 +96,10 @@ export interface SwaggerSpec {
     tags?: Tag[] | undefined;
     components?: {
         schemas?: Record<string, SwaggerDefinition>;
-    }
+    };
 }
 
 export type EnumValueObject = {
     Name: string;
-    Value: number
+    Value: number;
 };

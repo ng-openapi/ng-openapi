@@ -4,8 +4,12 @@
   "defaultBase": "master",
   "nxCloudId": "687430d7011c6a6c64494347",
   "namedInputs": {
-    "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"],
-    "default": ["sharedGlobals"]
+    "sharedGlobals": [
+      "{workspaceRoot}/.github/workflows/ci.yml"
+    ],
+    "default": [
+      "sharedGlobals"
+    ]
   },
   "release": {
     "version": {

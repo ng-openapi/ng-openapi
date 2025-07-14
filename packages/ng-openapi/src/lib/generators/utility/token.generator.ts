@@ -1,5 +1,5 @@
-import {Project, VariableDeclarationKind} from 'ts-morph';
-import * as path from 'path';
+import { Project, VariableDeclarationKind } from "ts-morph";
+import * as path from "path";
 
 export class TokenGenerator {
     private project: Project;
@@ -9,10 +9,10 @@ export class TokenGenerator {
     }
 
     generate(outputDir: string): void {
-        const tokensDir = path.join(outputDir, 'tokens');
-        const filePath = path.join(tokensDir, 'index.ts');
+        const tokensDir = path.join(outputDir, "tokens");
+        const filePath = path.join(tokensDir, "index.ts");
 
-        const sourceFile = this.project.createSourceFile(filePath, '', {overwrite: true});
+        const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
 
         /*        sourceFile.addText(`/!**
          * Generated injection tokens
@@ -22,22 +22,24 @@ export class TokenGenerator {
         `);*/
 
         sourceFile.addImportDeclaration({
-            namedImports: ['InjectionToken'],
-            moduleSpecifier: '@angular/core',
+            namedImports: ["InjectionToken"],
+            moduleSpecifier: "@angular/core",
         });
         sourceFile.addVariableStatement({
             isExported: true,
             declarationKind: VariableDeclarationKind.Const,
-            declarations: [{
-                name: "BASE_PATH",
-                initializer: `new InjectionToken<string>('BASE_PATH', {
+            declarations: [
+                {
+                    name: "BASE_PATH",
+                    initializer: `new InjectionToken<string>('BASE_PATH', {
   providedIn: 'root',
   factory: () => '/api', // Default fallback
-})`
-            }],
+})`,
+                },
+            ],
             leadingTrivia: `/**
  * Injection token for the base API path
- */\n`
+ */\n`,
         });
 
         sourceFile.saveSync();

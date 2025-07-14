@@ -1,11 +1,11 @@
-import * as fs from 'fs';
-import {SwaggerDefinition, SwaggerSpec} from '../types';
+import * as fs from "fs";
+import { SwaggerDefinition, SwaggerSpec } from "../types";
 
 export class SwaggerParser {
     private spec: SwaggerSpec;
 
     constructor(swaggerPath: string) {
-        const swaggerContent = fs.readFileSync(swaggerPath, 'utf8');
+        const swaggerContent = fs.readFileSync(swaggerPath, "utf8");
         this.spec = JSON.parse(swaggerContent);
     }
 
@@ -21,7 +21,7 @@ export class SwaggerParser {
 
     resolveReference(ref: string): SwaggerDefinition | undefined {
         // Handle $ref like "#/definitions/User" or "#/components/schemas/User"
-        const parts = ref.split('/');
+        const parts = ref.split("/");
         const definitionName = parts[parts.length - 1];
         return this.getDefinition(definitionName);
     }

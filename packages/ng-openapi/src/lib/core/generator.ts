@@ -1,5 +1,4 @@
 import { ModuleKind, Project, ScriptTarget } from "ts-morph";
-import { GENERATOR_CONFIG } from "../config";
 import { TypeGenerator } from "../generators";
 import { DateTransformerGenerator, FileDownloadGenerator, TokenGenerator } from "../generators/utility";
 import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
@@ -75,24 +74,4 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
         }
         throw error;
     }
-}
-
-/**
- * Legacy function for backward compatibility - uses default config
- */
-export function generateFromSwagger(swaggerPath: string): void {
-    const config: GeneratorConfig = {
-        ...GENERATOR_CONFIG,
-        input: swaggerPath,
-    };
-
-    generateFromConfig(config).catch((error) => {
-        process.exit(1);
-    });
-}
-
-// If running directly
-if (require.main === module) {
-    const swaggerPath = process.argv[2] || "./swagger.json";
-    generateFromSwagger(swaggerPath);
 }

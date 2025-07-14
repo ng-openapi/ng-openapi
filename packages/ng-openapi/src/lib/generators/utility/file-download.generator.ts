@@ -1,5 +1,5 @@
-import {Project} from 'ts-morph';
-import * as path from 'path';
+import { Project } from "ts-morph";
+import * as path from "path";
 
 export class FileDownloadGenerator {
     private project: Project;
@@ -9,31 +9,31 @@ export class FileDownloadGenerator {
     }
 
     generate(outputDir: string): void {
-        const utilsDir = path.join(outputDir, 'utils');
-        const filePath = path.join(utilsDir, 'file-download.ts');
+        const utilsDir = path.join(outputDir, "utils");
+        const filePath = path.join(utilsDir, "file-download.ts");
 
-        const sourceFile = this.project.createSourceFile(filePath, '', {overwrite: true});
+        const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
 
         sourceFile.addImportDeclaration({
-            namedImports: ['Observable'],
-            moduleSpecifier: 'rxjs',
+            namedImports: ["Observable"],
+            moduleSpecifier: "rxjs",
         });
 
         sourceFile.addImportDeclaration({
-            namedImports: ['tap'],
-            moduleSpecifier: 'rxjs/operators',
+            namedImports: ["tap"],
+            moduleSpecifier: "rxjs/operators",
         });
 
         // Add file download helper function
         sourceFile.addFunction({
-            name: 'downloadFile',
+            name: "downloadFile",
             isExported: true,
             parameters: [
-                {name: 'blob', type: 'Blob'},
-                {name: 'filename', type: 'string'},
-                {name: 'mimeType', type: 'string', hasQuestionToken: true}
+                { name: "blob", type: "Blob" },
+                { name: "filename", type: "string" },
+                { name: "mimeType", type: "string", hasQuestionToken: true },
             ],
-            returnType: 'void',
+            returnType: "void",
             statements: `
     // Create a temporary URL for the blob
     const url = window.URL.createObjectURL(blob);
@@ -49,19 +49,19 @@ export class FileDownloadGenerator {
     document.body.removeChild(link);
     
     // Clean up the URL
-    window.URL.revokeObjectURL(url);`
+    window.URL.revokeObjectURL(url);`,
         });
 
         // Add RxJS operator for automatic download - FIXED VERSION
         sourceFile.addFunction({
-            name: 'downloadFileOperator',
+            name: "downloadFileOperator",
             isExported: true,
-            typeParameters: [{name: 'T', constraint: 'Blob'}],
+            typeParameters: [{ name: "T", constraint: "Blob" }],
             parameters: [
-                {name: 'filename', type: 'string | ((blob: T) => string)'},
-                {name: 'mimeType', type: 'string', hasQuestionToken: true}
+                { name: "filename", type: "string | ((blob: T) => string)" },
+                { name: "mimeType", type: "string", hasQuestionToken: true },
             ],
-            returnType: '(source: Observable<T>) => Observable<T>',
+            returnType: "(source: Observable<T>) => Observable<T>",
             statements: `
     return (source: Observable<T>) => {
         return source.pipe(
@@ -70,18 +70,18 @@ export class FileDownloadGenerator {
                 downloadFile(blob, actualFilename, mimeType);
             })
         );
-    };`
+    };`,
         });
 
         // Add helper to extract filename from Content-Disposition header
         sourceFile.addFunction({
-            name: 'extractFilenameFromContentDisposition',
+            name: "extractFilenameFromContentDisposition",
             isExported: true,
             parameters: [
-                {name: 'contentDisposition', type: 'string | null'},
-                {name: 'fallbackFilename', type: 'string', initializer: '"download"'}
+                { name: "contentDisposition", type: "string | null" },
+                { name: "fallbackFilename", type: "string", initializer: '"download"' },
             ],
-            returnType: 'string',
+            returnType: "string",
             statements: `
     if (!contentDisposition) {
         return fallbackFilename;
@@ -107,7 +107,7 @@ export class FileDownloadGenerator {
         return filename;
     }
     
-    return fallbackFilename;`
+    return fallbackFilename;`,
         });
 
         sourceFile.saveSync();

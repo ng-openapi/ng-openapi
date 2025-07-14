@@ -5,10 +5,10 @@ import { camelCase, getTypeScriptType, pascalCase } from "../../utils";
 
 export function addServiceMethod(serviceClass: ClassDeclaration, operation: PathInfo, config: GeneratorConfig): void {
     const methodName = generateMethodName(operation, config);
-    const parameters = generateMethodParameters(operation);
+    const parameters = generateMethodParameters(operation, config);
     const returnType = generateReturnType();
     const methodBody = generateMethodBody(operation, config);
-    const methodOverLoads = generateMethodOverloads(parameters, operation);
+    const methodOverLoads = generateMethodOverloads(operation, config);
 
     serviceClass.addMethod({
         name: methodName,
@@ -48,12 +48,12 @@ export function defaultNameGenerator(operation: PathInfo): string {
     return `${method}${pascalCase(resource)}`;
 }
 
-export function getRequestBodyType(requestBody: RequestBody): string {
+export function getRequestBodyType(requestBody: RequestBody, config: GeneratorConfig): string {
     const content = requestBody.content || {};
     const jsonContent = content["application/json"];
 
     if (jsonContent?.schema) {
-        return getTypeScriptType(jsonContent.schema, jsonContent.schema.nullable);
+        return getTypeScriptType(jsonContent.schema, config, jsonContent.schema.nullable);
     }
 
     return "any";
@@ -250,8 +250,7 @@ export function getResponseType(response: SwaggerResponse, config?: GeneratorCon
             return "ArrayBuffer";
         case "text":
             return "string";
-        case "json": // For JSON, check if we have a schema to get specific type
-        {
+        case "json": { // For JSON, check if we have a schema to get specific type
             const content = response.content || {};
             for (const [contentType, mediaType] of Object.entries(content)) {
                 if (inferResponseTypeFromContentType(contentType) === "json" && mediaType?.schema) {

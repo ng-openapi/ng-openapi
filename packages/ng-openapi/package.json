@@ -14,7 +14,7 @@
     "rest",
     "http"
   ],
-  "author": "T. Jami",
+  "author": "Tareq Jami",
   "license": "MIT",
   "homepage": "https://github.com/ng-openapi/ng-openapi",
   "bugs": {
@@ -34,7 +34,7 @@
     "index.js",
     "index.cjs",
     "index.d.ts",
-    "cli.js",
+    "cli.cjs",
     "lib/**/*.js",
     "lib/**/*.cjs",
     "lib/**/*.d.ts",
@@ -52,7 +52,7 @@
     "typescript": "^5.8.3",
     "@angular/core": "^20.1.0",
     "@angular/common": "^20.1.0",
-    "@types/swagger-schema-official" : "^2.0.25"
+    "@types/swagger-schema-official": "^2.0.25"
   },
   "peerDependencies": {
     "@angular/core": ">=20",

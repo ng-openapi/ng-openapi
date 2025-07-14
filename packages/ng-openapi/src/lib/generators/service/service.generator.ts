@@ -252,7 +252,7 @@ export class ServiceGenerator {
 
         // Generate methods for each operation
         operations.forEach((operation) => {
-            addServiceMethod(serviceClass, operation);
+            addServiceMethod(serviceClass, operation, this.config);
         });
 
         if (this.hasDuplicateMethodNames(serviceClass.getMethods())) {

@@ -5,7 +5,9 @@
   "projectType": "library",
   "release": {
     "version": {
-      "manifestRootsToUpdate": ["dist/{projectRoot}"],
+      "manifestRootsToUpdate": [
+        "dist/{projectRoot}"
+      ],
       "currentVersionResolver": "git-tag",
       "fallbackCurrentVersionResolver": "disk"
     }
@@ -23,8 +25,9 @@
         "command": "npx tsup",
         "cwd": "packages/ng-openapi"
       },
-      "outputs": ["{workspaceRoot}/dist/packages/ng-openapi"]
+      "outputs": [
+        "{workspaceRoot}/dist/packages/ng-openapi"
+      ]
     }
-
   }
 }

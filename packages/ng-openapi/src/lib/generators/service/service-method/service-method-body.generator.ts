@@ -8,10 +8,7 @@ import {
 import { isDataTypeInterface } from "./service-method-params.generator";
 import { camelCase } from "../../../utils";
 
-export function generateMethodBody(
-    operation: PathInfo,
-    config: GeneratorConfig
-): string {
+export function generateMethodBody(operation: PathInfo, config: GeneratorConfig): string {
     const context = createGenerationContext(operation, config);
 
     const bodyParts = [
@@ -20,7 +17,7 @@ export function generateMethodBody(
         generateHeaders(context, config),
         generateMultipartFormData(operation, context),
         generateRequestOptions(context, config),
-        generateHttpRequest(operation, context),
+        generateHttpRequest(operation, context, config),
     ];
 
     return bodyParts.filter(Boolean).join("\n");
@@ -139,10 +136,7 @@ const formData = new FormData();
 ${formDataAppends}`;
 }
 
-function generateRequestOptions(
-    context: MethodGenerationContext,
-    config: GeneratorConfig
-): string {
+function generateRequestOptions(context: MethodGenerationContext, config: GeneratorConfig): string {
     const options: string[] = [];
 
     // Always include observe
@@ -181,7 +175,7 @@ const requestOptions: any = {
 };`;
 }
 
-function generateHttpRequest(operation: PathInfo, context: MethodGenerationContext): string {
+function generateHttpRequest(operation: PathInfo, context: MethodGenerationContext, config: GeneratorConfig): string {
     const httpMethod = operation.method.toLowerCase();
 
     // Determine if we need body parameter
@@ -190,7 +184,7 @@ function generateHttpRequest(operation: PathInfo, context: MethodGenerationConte
         if (context.isMultipart) {
             bodyParam = "formData";
         } else if (operation.requestBody?.content?.["application/json"]) {
-            const bodyType = getRequestBodyType(operation.requestBody);
+            const bodyType = getRequestBodyType(operation.requestBody, config);
             const isInterface = isDataTypeInterface(bodyType);
             bodyParam = isInterface ? camelCase(bodyType) : "requestBody";
         }
