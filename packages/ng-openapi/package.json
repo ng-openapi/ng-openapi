@@ -12,17 +12,27 @@
     "code-generator",
     "api",
     "rest",
-    "http"
+    "http",
+    "cli"
   ],
-  "author": "Tareq Jami",
+  "author": {
+    "name": "Tareq Jami",
+    "email": "info@jami-it.de",
+    "url": "http://tareqjami.de"
+  },
   "license": "MIT",
-  "homepage": "https://github.com/ng-openapi/ng-openapi",
+  "homepage": "https://github.com/ng-openapi/ng-openapi#readme",
   "bugs": {
     "url": "https://github.com/ng-openapi/ng-openapi/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ng-openapi/ng-openapi.git"
+    "url": "git+https://github.com/ng-openapi/ng-openapi.git",
+    "directory": "packages/ng-openapi"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/ng-openapi"
   },
   "main": "./index.cjs",
   "module": "./index.js",
@@ -39,10 +49,11 @@
     "lib/**/*.cjs",
     "lib/**/*.d.ts",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
-    "prepublishOnly": "echo 'Please build the package before publishing'",
+    "prepublishOnly": "echo 'Build the package using: npm run build:ng-openapi from workspace root'",
     "build": "tsup"
   },
   "dependencies": {
@@ -50,15 +61,26 @@
     "ts-morph": "^26.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
-    "@angular/core": "^20.1.0",
-    "@angular/common": "^20.1.0",
     "@types/swagger-schema-official": "^2.0.25"
   },
   "peerDependencies": {
     "@angular/core": ">=20",
     "@angular/common": ">=20"
   },
+  "peerDependenciesMeta": {
+    "@angular/core": {
+      "optional": false
+    },
+    "@angular/common": {
+      "optional": false
+    }
+  },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

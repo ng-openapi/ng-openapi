@@ -1,0 +1,268 @@
+name: Release and Publish
+
+on:
+  push:
+    branches:
+      - main      # Stable releases
+      - develop   # Pre-releases
+    tags:
+      - 'v*'      # Version tags
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+      prerelease_tag:
+        description: 'Pre-release tag (alpha, beta, rc)'
+        required: false
+        default: 'beta'
+        type: string
+      dry_run:
+        description: 'Dry run (build only, do not publish)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+jobs:
+  # Job 1: Determine release strategy
+  determine-release:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.decision.outputs.should_release }}
+      is_prerelease: ${{ steps.decision.outputs.is_prerelease }}
+      version_tag: ${{ steps.decision.outputs.version_tag }}
+      release_type: ${{ steps.decision.outputs.release_type }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine release strategy
+        id: decision
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Branch: ${{ github.ref_name }}"
+          
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            if [[ "${{ github.event.inputs.release_type }}" == "prerelease" ]]; then
+              echo "is_prerelease=true" >> $GITHUB_OUTPUT
+              echo "version_tag=${{ github.event.inputs.prerelease_tag }}" >> $GITHUB_OUTPUT
+            else
+              echo "is_prerelease=false" >> $GITHUB_OUTPUT
+              echo "version_tag=latest" >> $GITHUB_OUTPUT
+            fi
+            echo "release_type=${{ github.event.inputs.release_type }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "version_tag=latest" >> $GITHUB_OUTPUT
+            echo "release_type=patch" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            echo "version_tag=beta" >> $GITHUB_OUTPUT
+            echo "release_type=prerelease" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            if [[ "${{ github.ref_name }}" =~ -[a-zA-Z] ]]; then
+              echo "is_prerelease=true" >> $GITHUB_OUTPUT
+              echo "version_tag=beta" >> $GITHUB_OUTPUT
+            else
+              echo "is_prerelease=false" >> $GITHUB_OUTPUT
+              echo "version_tag=latest" >> $GITHUB_OUTPUT
+            fi
+            echo "release_type=from_tag" >> $GITHUB_OUTPUT
+          else
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "version_tag=latest" >> $GITHUB_OUTPUT
+            echo "release_type=none" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 2: Build and test
+  build-and-test:
+    runs-on: ubuntu-latest
+    needs: determine-release
+    if: needs.determine-release.outputs.should_release == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run linting
+        run: npx nx run ng-openapi:lint
+
+      - name: Run tests (if any)
+        run: |
+          if npx nx show project ng-openapi | grep -q '"test"'; then
+            npx nx run ng-openapi:test
+          else
+            echo "No tests configured, skipping..."
+          fi
+
+      - name: Build library
+        run: npx nx run ng-openapi:build
+
+      - name: Verify build output
+        run: |
+          ls -la dist/packages/ng-openapi/
+          echo "Checking package.json..."
+          cat dist/packages/ng-openapi/package.json
+          echo "Checking CLI binary..."
+          ls -la dist/packages/ng-openapi/cli.cjs
+
+      # Upload build artifacts for the publish job
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/packages/ng-openapi/
+          retention-days: 1
+
+  # Job 3: Version and publish
+  publish:
+    runs-on: ubuntu-latest
+    needs: [determine-release, build-and-test]
+    if: needs.determine-release.outputs.should_release == 'true' && github.event.inputs.dry_run != 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/packages/ng-openapi/
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update version
+        id: version
+        working-directory: packages/ng-openapi
+        run: |
+          if [[ "${{ needs.determine-release.outputs.release_type }}" == "from_tag" ]]; then
+            # Extract version from tag
+            VERSION="${{ github.ref_name }}"
+            VERSION=${VERSION#v}  # Remove 'v' prefix
+            npm version $VERSION --no-git-tag-version
+            echo "new_version=$VERSION" >> $GITHUB_OUTPUT
+          elif [[ "${{ needs.determine-release.outputs.is_prerelease }}" == "true" ]]; then
+            if [[ "${{ needs.determine-release.outputs.release_type }}" == "prerelease" ]]; then
+              NEW_VERSION=$(npm version prerelease --preid=${{ needs.determine-release.outputs.version_tag }} --no-git-tag-version)
+            else
+              NEW_VERSION=$(npm version ${{ needs.determine-release.outputs.release_type }} --preid=${{ needs.determine-release.outputs.version_tag }} --no-git-tag-version)
+            fi
+            echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          else
+            NEW_VERSION=$(npm version ${{ needs.determine-release.outputs.release_type }} --no-git-tag-version)
+            echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Copy updated package.json to dist
+        run: |
+          cp packages/ng-openapi/package.json dist/packages/ng-openapi/package.json
+
+      - name: Publish to NPM
+        working-directory: dist/packages/ng-openapi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [[ "${{ needs.determine-release.outputs.is_prerelease }}" == "true" ]]; then
+            npm publish --tag ${{ needs.determine-release.outputs.version_tag }} --access public
+          else
+            npm publish --access public
+          fi
+
+      - name: Create Git tag and push
+        if: needs.determine-release.outputs.release_type != 'from_tag'
+        run: |
+          VERSION=${{ steps.version.outputs.new_version }}
+          git add packages/ng-openapi/package.json
+          git commit -m "chore: release $VERSION"
+          git tag $VERSION
+          git push origin HEAD --tags
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.new_version }}
+          release_name: Release ${{ steps.version.outputs.new_version }}
+          body: |
+            ## Changes in ${{ steps.version.outputs.new_version }}
+            
+            ### Installation
+            ```bash
+            npm install -g ng-openapi@${{ needs.determine-release.outputs.is_prerelease == 'true' && needs.determine-release.outputs.version_tag || 'latest' }}
+            ```
+            
+            ### Usage
+            ```bash
+            ng-openapi --help
+            ng-openapi -i swagger.json -o ./src/api
+            ```
+            
+            Published to NPM: https://www.npmjs.com/package/ng-openapi
+          draft: false
+          prerelease: ${{ needs.determine-release.outputs.is_prerelease == 'true' }}
+
+  # Job 4: Notify on success/failure
+  notify:
+    runs-on: ubuntu-latest
+    needs: [determine-release, build-and-test, publish]
+    if: always() && needs.determine-release.outputs.should_release == 'true'
+    steps:
+      - name: Notify success
+        if: needs.publish.result == 'success'
+        run: |
+          echo "✅ Successfully published ng-openapi to NPM!"
+          echo "Tag: ${{ needs.determine-release.outputs.version_tag }}"
+          echo "Prerelease: ${{ needs.determine-release.outputs.is_prerelease }}"
+
+      - name: Notify failure
+        if: needs.publish.result == 'failure' || needs.build-and-test.result == 'failure'
+        run: |
+          echo "❌ Failed to publish ng-openapi"
+          echo "Check the logs above for details"
+          exit 1
