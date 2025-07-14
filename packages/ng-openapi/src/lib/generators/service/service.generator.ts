@@ -4,19 +4,21 @@ import * as path from "path";
 import { SERVICE_GENERATOR_HEADER_COMMENT } from "../../config";
 import { GeneratorConfig, Parameter, PathInfo, RequestBody, SwaggerResponse, SwaggerSpec } from "../../types";
 import { kebabCase, pascalCase } from "../../utils";
-import { addServiceMethod } from "./service-method.generator";
+import { ServiceMethodGenerator } from "./service-method.generator";
 
 export class ServiceGenerator {
     private project: Project;
     private parser: SwaggerParser;
     private spec: SwaggerSpec;
     private config: GeneratorConfig;
+    private methodGenerator: ServiceMethodGenerator;
 
     constructor(swaggerPath: string, project: Project, config: GeneratorConfig) {
         this.config = config;
         this.project = project;
         this.parser = new SwaggerParser(swaggerPath);
         this.spec = JSON.parse(require("fs").readFileSync(swaggerPath, "utf8"));
+        this.methodGenerator = new ServiceMethodGenerator(config);
     }
 
     generate(outputRoot: string): void {
@@ -252,7 +254,7 @@ export class ServiceGenerator {
 
         // Generate methods for each operation
         operations.forEach((operation) => {
-            addServiceMethod(serviceClass, operation, this.config);
+            this.methodGenerator.addServiceMethod(serviceClass, operation);
         });
 
         if (this.hasDuplicateMethodNames(serviceClass.getMethods())) {

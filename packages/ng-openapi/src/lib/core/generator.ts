@@ -1,9 +1,9 @@
-import { ModuleKind, Project, ScriptTarget } from "ts-morph";
-import { TypeGenerator } from "../generators";
-import { DateTransformerGenerator, FileDownloadGenerator, TokenGenerator } from "../generators/utility";
-import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
-import { GeneratorConfig } from "../types";
-import * as fs from "fs";
+import { ModuleKind, Project, ScriptTarget } from 'ts-morph';
+import { TypeGenerator } from '../generators';
+import { DateTransformerGenerator, FileDownloadGenerator, TokenGenerator } from '../generators/utility';
+import { ServiceGenerator, ServiceIndexGenerator } from '../generators/service';
+import { GeneratorConfig } from '../types';
+import * as fs from 'fs';
 
 /**
  * Generates Angular services and types from a configuration object
@@ -55,6 +55,7 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
             fileDownloadHelper.generate(outputPath);
             console.log(`✅ File download helper generated`);
 
+            // Generate services using the refactored ServiceGenerator
             const serviceGenerator = new ServiceGenerator(config.input, project, config);
             serviceGenerator.generate(outputPath);
 
