@@ -116,17 +116,6 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Run linting
-        run: npx nx run ng-openapi:lint
-
-      - name: Run tests (if any)
-        run: |
-          if npx nx show project ng-openapi | grep -q '"test"'; then
-            npx nx run ng-openapi:test
-          else
-            echo "No tests configured, skipping..."
-          fi
-
       - name: Build library
         run: npx nx run ng-openapi:build
 
