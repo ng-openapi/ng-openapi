@@ -42,7 +42,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "prepublishOnly": "echo 'Please build the package before publishing'"
+    "prepublishOnly": "echo 'Please build the package before publishing'",
+    "build": "tsup"
   },
   "dependencies": {
     "commander": "^14.0.0",
@@ -50,7 +51,8 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "@angular/core": "^20.1.0",
-    "@angular/common": "^20.1.0"
+    "@angular/common": "^20.1.0",
+    "@types/swagger-schema-official" : "^2.0.25"
   },
   "peerDependencies": {
     "@angular/core": ">=20",

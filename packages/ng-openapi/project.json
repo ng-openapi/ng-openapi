@@ -16,6 +16,15 @@
       "options": {
         "packageRoot": "dist/{projectRoot}"
       }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx tsup",
+        "cwd": "packages/ng-openapi"
+      },
+      "outputs": ["{workspaceRoot}/dist/packages/ng-openapi"]
     }
+
   }
 }
