@@ -6,6 +6,7 @@
 <br/>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/ng-openapi" rel="nofollow"><img src="https://img.shields.io/npm/v/ng-openapi.svg" alt="npm version"></a>
   <a href="https://opensource.org/license/mit" rel="nofollow"><img src="https://img.shields.io/github/license/ng-openapi/ng-openapi" alt="MIT License"></a>
   <a href="https://github.com/ng-openapi/ng-openapi/actions?query=branch%3Amain"><img src="https://img.shields.io/github/last-commit/ng-openapi/ng-openapi" alt="Last commit" /></a>
   <a href="https://github.com/ng-openapi/ng-openapi/actions?query=branch%3Amain"><img src="https://github.com/ng-openapi/ng-openapi/actions/workflows/release.yml/badge.svg?event=push&branch=main" alt="CI status" /></a>
