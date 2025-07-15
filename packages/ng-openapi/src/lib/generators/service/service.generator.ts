@@ -3,7 +3,7 @@ import { SwaggerParser } from "../../core";
 import * as path from "path";
 import { SERVICE_GENERATOR_HEADER_COMMENT } from "../../config";
 import { GeneratorConfig, Parameter, PathInfo, RequestBody, SwaggerResponse, SwaggerSpec } from "../../types";
-import { kebabCase, pascalCase } from "../../utils";
+import { camelCase, pascalCase } from "../../utils";
 import { ServiceMethodGenerator } from "./service-method.generator";
 
 export class ServiceGenerator {
@@ -100,7 +100,7 @@ export class ServiceGenerator {
     }
 
     private generateServiceFile(controllerName: string, operations: PathInfo[], outputDir: string): void {
-        const fileName = `${kebabCase(controllerName)}.service.ts`;
+        const fileName = `${camelCase(controllerName)}.service.ts`;
         const filePath = path.join(outputDir, fileName);
 
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
