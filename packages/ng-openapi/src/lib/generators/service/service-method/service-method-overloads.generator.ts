@@ -119,6 +119,7 @@ export class ServiceMethodOverloadsGenerator {
             type: "json" | "blob" | "arraybuffer" | "text";
             priority: number;
             contentType: string;
+            isPrimitive?: boolean;
         }> = [];
 
         // Check each content type and its schema
@@ -156,25 +157,66 @@ export class ServiceMethodOverloadsGenerator {
                 continue;
             }
 
-            // Infer from content type with appropriate priority
+            // Check if this is a primitive type in JSON format
+            const isPrimitive = this.isPrimitiveType(schema);
             const inferredType = this.inferResponseTypeFromContentType(contentType);
-            let priority = 3; // default priority
 
-            // Prioritize JSON over other types
-            if (inferredType === "json") {
+            let priority = 3; // default priority
+            let finalType = inferredType;
+
+            // Special handling for JSON content types with primitive schemas
+            if (inferredType === "json" && isPrimitive) {
+                // For primitive types, prefer text over json for efficiency
+                finalType = "text";
+                priority = 2; // Higher priority than regular JSON
+            } else if (inferredType === "json") {
+                // Regular JSON (objects, arrays) get normal priority
                 priority = 2;
             }
 
             responseTypes.push({
-                type: inferredType,
+                type: finalType,
                 priority,
                 contentType,
+                isPrimitive,
             });
         }
 
         // Sort by priority (lower number = higher priority) and return the best match
         responseTypes.sort((a, b) => a.priority - b.priority);
         return responseTypes[0]?.type || "json";
+    }
+
+    private isPrimitiveType(schema: any): boolean {
+        if (!schema) return false;
+
+        // Direct primitive types
+        const primitiveTypes = ["string", "number", "integer", "boolean"];
+        if (primitiveTypes.includes(schema.type)) {
+            return true;
+        }
+
+        // Arrays of primitives are still considered complex
+        if (schema.type === "array") {
+            return false;
+        }
+
+        // Objects are complex
+        if (schema.type === "object" || schema.properties) {
+            return false;
+        }
+
+        // References are assumed to be complex types
+        if (schema.$ref) {
+            return false;
+        }
+
+        // allOf, oneOf, anyOf are complex
+        if (schema.allOf || schema.oneOf || schema.anyOf) {
+            return false;
+        }
+
+        return false;
     }
 
     getResponseType(response: SwaggerResponse): string {
