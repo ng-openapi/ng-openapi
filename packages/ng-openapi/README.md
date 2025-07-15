@@ -1,5 +1,10 @@
-# ng-openapi Usage Guide
+# Angular OpenAPI client generator
 
+[![npm version](https://img.shields.io/npm/v/ng-openapi.svg)](https://www.npmjs.com/package/ng-openapi)
+## 💪 Made with ❤️ by Angular Devs for Angular Devs
+
+
+## Quick Start Guide
 ## Installation
 
 ```bash
@@ -84,13 +89,13 @@ ng-openapi -i ./swagger.json -o ./src/api --date-type string
 
 ### Optional Fields
 
-- `options.dateType` - How to handle date types: `'string'` or `'Date'` (default: `'Date'`)
-- `options.enumStyle` - Enum generation style: `'enum'` or `'union'` (default: `'enum'`)
-- `options.generateEnumBasedOnDescription` - Parse enum values from description field (default: `true`)
-- `options.generateServices` - Generate Angular services (default: `true`)
-- `options.customHeaders` - Headers to add to all HTTP requests
-- `options.responseTypeMapping` - Map content types to Angular HttpClient response types
-- `options.customizeMethodName` - Function to customize generated method names
+- `dateType` - How to handle date types: `'string'` or `'Date'` (default: `'Date'`)
+- `enumStyle` - Enum generation style: `'enum'` or `'union'` (default: `'enum'`)
+- `generateEnumBasedOnDescription` - Parse enum values from description field (default: `true`)
+- `generateServices` - Generate Angular services (default: `true`)
+- `customHeaders` - Headers to add to all HTTP requests
+- `responseTypeMapping` - Map content types to Angular HttpClient response types
+- `customizeMethodName` - Function to customize generated method names
 - `compilerOptions` - TypeScript compiler options for code generation
 
 ## Generated Files Structure
@@ -104,44 +109,60 @@ output/
 │   └── *.service.ts    # Angular services
 ├── tokens/
 │   └── index.ts        # Injection tokens
-└── utils/
-    ├── date-transformer.ts  # Date transformation interceptor
-    └── file-download.ts     # File download helpers
+├── utils/
+│   ├── date-transformer.ts  # Date transformation interceptor
+│   └── file-download.ts     # File download helpers
+├── providers.ts        # Provider functions for easy setup
+└── index.ts           # Main exports
 ```
 
 ## Angular Integration
 
-### 1. Configure Base Path
+### 🚀 Easy Setup (Recommended)
+
+The simplest way to integrate ng-openapi is using the provider function:
 
 ```typescript
-import { BASE_PATH } from './api/tokens';
+// In your app.config.ts
+import { ApplicationConfig } from '@angular/core';
+import { provideNgOpenapi } from './api/providers';
 
-// In your app.config.ts or module
 export const appConfig: ApplicationConfig = {
   providers: [
-    { provide: BASE_PATH, useValue: 'https://api.example.com' },
+    // One-line setup with automatic interceptor configuration
+    provideNgOpenapi({
+      basePath: 'https://api.example.com'
+    }),
     // other providers...
   ]
 };
 ```
 
-### 2. Add Date Interceptor (if using Date type)
+That's it! This automatically configures:
+- ✅ BASE_PATH token
+- ✅ Date transformation interceptor (if using Date type)
+
+
+### Advanced Provider Options
 
 ```typescript
-import { DateInterceptor } from './api/utils/date-transformer';
-import { HTTP_INTERCEPTORS } from '@angular/common/http';
+// Disable date transformation
+provideNgOpenapi({
+  basePath: 'https://api.example.com',
+  enableDateTransform: false
+});
 
-export const appConfig: ApplicationConfig = {
-  providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: DateInterceptor, multi: true },
-    // other providers...
-  ]
-};
+// Async configuration
+provideNgOpenapiAsync({
+  basePath: () => import('./config').then(c => c.apiConfig.baseUrl)
+});
 ```
 
-### 3. Use Generated Services
+## Using Generated Services
 
 ```typescript
+import { Component, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { UserService } from './api/services';
 import { User } from './api/models';
 
@@ -150,19 +171,19 @@ import { User } from './api/models';
   template: `...`
 })
 export class UsersComponent {
-  users$ = this.userService.getUsers();
-
-  constructor(private userService: UserService) {}
+  private readonly userService = inject(UserService);
+  readonly users = toSignal(this.userService.getUsers());
 }
 ```
 
 ## File Download Example
 
 ```typescript
+import { Component, inject } from '@angular/core';
 import { downloadFileOperator } from './api/utils/file-download';
 
 export class ReportComponent {
-  constructor(private reportService: ReportService) {}
+  private readonly reportService = inject(ReportService);
 
   downloadReport() {
     this.reportService.getReport('pdf', { reportId: 123 })
@@ -181,8 +202,7 @@ Add these scripts to your `package.json`:
 ```json
 {
   "scripts": {
-    "generate:api": "ng-openapi -c openapi.config.ts",
-    "generate:api:watch": "nodemon --watch swagger.json --exec npm run generate:api"
+    "generate:api": "ng-openapi -c openapi.config.ts"
   }
 }
 ```

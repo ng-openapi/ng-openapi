@@ -2,6 +2,7 @@ import { ModuleKind, Project, ScriptTarget } from 'ts-morph';
 import { TypeGenerator } from '../generators';
 import { DateTransformerGenerator, FileDownloadGenerator, TokenGenerator, MainIndexGenerator } from '../generators/utility';
 import { ServiceGenerator, ServiceIndexGenerator } from '../generators/service';
+import { ProviderGenerator } from '../generators/utility/provider.generator'; // Add this import
 import { GeneratorConfig } from '../types';
 import * as fs from 'fs';
 
@@ -65,6 +66,11 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
 
             console.log(`✅ Angular services generated`);
         }
+
+        // Generate provider functions (always generate, even if services are disabled)
+        const providerGenerator = new ProviderGenerator(project, config);
+        providerGenerator.generate(outputPath);
+        console.log(`✅ Provider functions generated`);
 
         // Generate main index file (always, regardless of generateServices)
         const mainIndexGenerator = new MainIndexGenerator(project, config);
