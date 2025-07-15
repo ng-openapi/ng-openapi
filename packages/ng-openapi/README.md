@@ -1,10 +1,19 @@
-# Angular OpenAPI client generator
+<div align="center">
+  <h1 align="center"><b>Angular OpenAPI client generator</b></h1>
+  <p align="center">💪 Made with ❤️ by Angular Devs for Angular Devs</p>
+</div>
 
-[![npm version](https://img.shields.io/npm/v/ng-openapi.svg)](https://www.npmjs.com/package/ng-openapi)
-## 💪 Made with ❤️ by Angular Devs for Angular Devs
+<br/>
+
+<p align="center">
+  <a href="https://opensource.org/license/mit" rel="nofollow"><img src="https://img.shields.io/github/license/ng-openapi/ng-openapi" alt="MIT License"></a>
+  <a href="https://github.com/ng-openapi/ng-openapi/actions?query=branch%3Amain"><img src="https://img.shields.io/github/last-commit/ng-openapi/ng-openapi" alt="Last commit" /></a>
+  <a href="https://github.com/ng-openapi/ng-openapi/actions?query=branch%3Amain"><img src="https://github.com/ng-openapi/ng-openapi/actions/workflows/release.yml/badge.svg?event=push&branch=main" alt="CI status" /></a>
+  <a href="https://github.com/ng-openapi/ng-openapi/issues" rel="nofollow"><img src="https://img.shields.io/github/issues/ng-openapi/ng-openapi" alt="Number of open issues"></a>
+</p>
+<br/>
 
 
-## Quick Start Guide
 ## Installation
 
 ```bash
