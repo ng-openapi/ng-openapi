@@ -1,0 +1,7 @@
+{
+  "name": "docs-ng-openapi",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "docs",
+  "projectType": "docs",
+  "tags": []
+}

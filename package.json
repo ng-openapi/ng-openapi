@@ -2,30 +2,30 @@
   "name": "@ng-openapi-workspace/source",
   "version": "0.0.0",
   "license": "MIT",
+  "type": "module",
   "scripts": {
     "build:ng-openapi": "nx build ng-openapi",
-
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
     "// Publishing scripts": "",
     "publish:prepare": "npm run build:ng-openapi && npm run publish:check",
     "publish:check": "cd dist/packages/ng-openapi && npm pack --dry-run",
     "publish:local": "npm run publish:prepare && cd dist/packages/ng-openapi && npm publish --registry http://localhost:4873",
     "publish:beta": "npm run publish:prepare && cd dist/packages/ng-openapi && npm publish --tag beta",
     "publish:stable": "npm run publish:prepare && cd dist/packages/ng-openapi && npm publish",
-
     "// Version management": "",
     "version:patch": "cd packages/ng-openapi && npm version patch",
     "version:minor": "cd packages/ng-openapi && npm version minor",
     "version:major": "cd packages/ng-openapi && npm version major",
     "version:beta": "cd packages/ng-openapi && npm version prerelease --preid=beta",
     "version:alpha": "cd packages/ng-openapi && npm version prerelease --preid=alpha",
-
     "// Release workflow": "",
     "release:patch": "npm run version:patch && npm run publish:stable",
     "release:minor": "npm run version:minor && npm run publish:stable",
     "release:major": "npm run version:major && npm run publish:stable",
     "release:beta": "npm run version:beta && npm run publish:beta",
     "release:alpha": "npm run version:alpha && npm run publish:beta",
-
     "// Testing and validation": "",
     "test:install": "npm pack dist/packages/ng-openapi && npm install -g ng-openapi-*.tgz",
     "test:uninstall": "npm uninstall -g ng-openapi && rm -f ng-openapi-*.tgz",
@@ -52,7 +52,8 @@
     "tsup": "^8.5.0",
     "typescript": "~5.8.2",
     "typescript-eslint": "^8.29.0",
-    "verdaccio": "^6.0.5"
+    "verdaccio": "^6.0.5",
+    "vitepress": "^1.6.3"
   },
   "workspaces": [
     "packages/*"
