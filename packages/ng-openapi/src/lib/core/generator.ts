@@ -65,12 +65,12 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
             indexGenerator.generateIndex(outputPath);
 
             console.log(`✅ Angular services generated`);
-        }
 
-        // Generate provider functions (always generate, even if services are disabled)
-        const providerGenerator = new ProviderGenerator(project, config);
-        providerGenerator.generate(outputPath);
-        console.log(`✅ Provider functions generated`);
+            // Generate provider functions (always generate, even if services are disabled)
+            const providerGenerator = new ProviderGenerator(project, config);
+            providerGenerator.generate(outputPath);
+            console.log(`✅ Provider functions generated`);
+        }
 
         // Generate main index file (always, regardless of generateServices)
         const mainIndexGenerator = new MainIndexGenerator(project, config);
