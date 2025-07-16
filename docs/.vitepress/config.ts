@@ -10,7 +10,7 @@ export default defineConfig({
         ["meta", { name: "theme-color", content: "#3c82f6" }],
         ["meta", { property: "og:type", content: "website" }],
         ["meta", { property: "og:locale", content: "en" }],
-        ["meta", { property: "og:title", content: "ng-openapi | Angular OpenAPI Generator" }],
+        ["meta", { property: "og:title", content: "ng-openapi | Angular OpenAPI Client Generator" }],
         ["meta", { property: "og:site_name", content: "ng-openapi" }],
         ["meta", { property: "og:url", content: "https://ng-openapi.github.io/" }],
     ],

@@ -1,5 +1,5 @@
 <div align="center">
-  <h1 align="center"><b>Angular OpenAPI client generator</b></h1>
+  <h1 align="center"><b>Angular OpenAPI Client Generator</b></h1>
   <p align="center">💪 Made with ❤️ by Angular Devs for Angular Devs</p>
 </div>
 
