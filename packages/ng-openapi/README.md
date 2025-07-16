@@ -3,7 +3,14 @@
   <p align="center">💪 Made with ❤️ by Angular Devs for Angular Devs</p>
 </div>
 
-<br/>
+
+<p align="center">
+  <a href="https://stackblitz.com/@Mr-Jami/collections/ng-openapi-examples">⚡Examples</a>
+  <span>&nbsp;•&nbsp;</span>
+  <a href="https://ng-openapi.netlify.app/">📝Documentation</a>
+  <span>&nbsp;•&nbsp;</span>
+  <a href="https://github.com/ng-openapi/ng-openapi/issues">🐛Issues</a>
+</p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/ng-openapi" rel="nofollow"><img src="https://img.shields.io/npm/v/ng-openapi.svg" alt="npm version"></a>
@@ -11,9 +18,9 @@
   <a href="https://github.com/ng-openapi/ng-openapi/actions?query=branch%3Amain"><img src="https://img.shields.io/github/last-commit/ng-openapi/ng-openapi" alt="Last commit" /></a>
   <a href="https://github.com/ng-openapi/ng-openapi/actions?query=branch%3Amain"><img src="https://github.com/ng-openapi/ng-openapi/actions/workflows/release.yml/badge.svg?event=push&branch=main" alt="CI status" /></a>
   <a href="https://github.com/ng-openapi/ng-openapi/issues" rel="nofollow"><img src="https://img.shields.io/github/issues/ng-openapi/ng-openapi" alt="Number of open issues"></a>
+  <a href="https://ng-openapi.netlify.app/" rel="nofollow"><img src="https://img.shields.io/netlify/cb7a0f09-de25-40bb-960c-d8bc95b34c5e" alt="Netlify"></a>
 </p>
 <br/>
-
 
 ## Installation
 
@@ -149,9 +156,9 @@ export const appConfig: ApplicationConfig = {
 ```
 
 That's it! This automatically configures:
+
 - ✅ BASE_PATH token
 - ✅ Date transformation interceptor (if using Date type)
-
 
 ### Advanced Provider Options
 
