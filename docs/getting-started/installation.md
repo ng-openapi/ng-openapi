@@ -10,7 +10,7 @@ Install ng-openapi to generate Angular services and TypeScript types from OpenAP
 
 - **Node.js**: Version 18.0.0 or higher
 - **npm**: Version 8.0.0 or higher
-- **Angular**: Version 14 or higher (peer dependency)
+- **Angular**: Version 15 or higher (peer dependency)
 
 ## Install
 
