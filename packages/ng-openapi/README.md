@@ -1,5 +1,5 @@
 <div align="center">
-  <h1 align="center"><img src="../../docs/public/ng-openapi-logo.svg" alt="Logo" style="height: 12vh; margin-bottom: 2vh;"></h1>
+  <h1 align="center"><img src="https://raw.githubusercontent.com/ng-openapi/ng-openapi/HEAD/docs/public/ng-openapi-logo.svg" alt="Logo" style="height: 12vh; margin-bottom: 2vh;"></h1>
   <h1 align="center"><b>Angular OpenAPI Client Generator</b></h1>
   <p align="center">💪 Made with ❤️ by Angular Devs for Angular Devs</p>
 </div>

@@ -6,7 +6,7 @@ export default defineConfig({
     description: "Generate Angular services and TypeScript types from OpenAPI/Swagger specifications",
 
     head: [
-        ["link", { rel: "icon", href: "/public/favicon.ico" }],
+        ["link", { rel: "icon", href: "https://raw.githubusercontent.com/ng-openapi/ng-openapi/HEAD/docs/public/favicon.ico" }],
         ["meta", { name: "theme-color", content: "#3c82f6" }],
         ["meta", { property: "og:type", content: "website" }],
         ["meta", { property: "og:locale", content: "en" }],
