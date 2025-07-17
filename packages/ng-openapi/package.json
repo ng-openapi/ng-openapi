@@ -21,7 +21,7 @@
     "url": "http://tareqjami.de"
   },
   "license": "MIT",
-  "homepage": "https://ng-openapi.netlify.app/",
+  "homepage": "https://ng-openapi.dev/",
   "bugs": {
     "url": "https://github.com/ng-openapi/ng-openapi/issues"
   },
@@ -64,8 +64,8 @@
     "@types/swagger-schema-official": "^2.0.25"
   },
   "peerDependencies": {
-    "@angular/core": ">=20",
-    "@angular/common": ">=20"
+    "@angular/core": ">=14",
+    "@angular/common": ">=14"
   },
   "peerDependenciesMeta": {
     "@angular/core": {
