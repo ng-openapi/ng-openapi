@@ -16,7 +16,7 @@ export default defineConfig({
     ],
 
     themeConfig: {
-        logo: "/public/ng-openapi-logo.svg",
+        logo: "https://raw.githubusercontent.com/ng-openapi/ng-openapi/HEAD/docs/public/ng-openapi-logo.svg",
 
         nav: [
             { text: "Home", link: "/" },
