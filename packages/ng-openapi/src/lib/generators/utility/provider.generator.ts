@@ -25,11 +25,24 @@ export class ProviderGenerator {
         // Add imports
         sourceFile.addImportDeclarations([
             {
-                namedImports: ["EnvironmentProviders", "Provider", "makeEnvironmentProviders", "Type", "Injector", "inject"],
+                namedImports: [
+                    "EnvironmentProviders",
+                    "Provider",
+                    "makeEnvironmentProviders",
+                    "Type",
+                    "Injector",
+                    "InjectionToken"
+                ],
                 moduleSpecifier: "@angular/core",
             },
             {
-                namedImports: ["HttpClient", "HttpInterceptor", "HttpHandler", "HttpRequest"],
+                namedImports: [
+                    "HttpClient",
+                    "HttpInterceptor",
+                    "HttpHandler",
+                    "HttpBackend",
+                    "HTTP_INTERCEPTORS"
+                ],
                 moduleSpecifier: "@angular/common/http",
             },
             {
@@ -72,48 +85,26 @@ export class ProviderGenerator {
             ],
         });
 
-        // Add interceptor chain helper
-        this.addInterceptorChainHelper(sourceFile);
+        // Create client-specific interceptor token
+        sourceFile.addVariableStatement({
+            isExported: true,
+            declarationKind: "const" as any,
+            declarations: [
+                {
+                    name: `${upperCaseClientName}_INTERCEPTORS`,
+                    initializer: `new InjectionToken<HttpInterceptor[]>('${upperCaseClientName}_INTERCEPTORS')`,
+                },
+            ],
+            leadingTrivia: `/**\n * Interceptor token for ${clientName} client\n */\n`,
+        });
 
-        // Add main provider function
-        this.addClientProviderFunction(sourceFile, pascalClientName, upperCaseClientName);
+        // Add simpler provider function
+        this.addSimpleProviderFunction(sourceFile, pascalClientName, upperCaseClientName);
 
         sourceFile.saveSync();
     }
 
-    private addInterceptorChainHelper(sourceFile: any): void {
-        sourceFile.addFunction({
-            name: "createHttpClientWithInterceptors",
-            docs: ["Creates an HttpClient with a custom interceptor chain"],
-            parameters: [
-                { name: "baseClient", type: "HttpClient" },
-                { name: "interceptors", type: "HttpInterceptor[]" },
-            ],
-            returnType: "HttpClient",
-            statements: `
-if (!interceptors.length) {
-    return baseClient;
-}
-
-// Create a custom handler that applies interceptors in sequence
-let handler = baseClient.handler;
-
-// Apply interceptors in reverse order (last interceptor wraps the original handler)
-for (let i = interceptors.length - 1; i >= 0; i--) {
-    const currentHandler = handler;
-    const interceptor = interceptors[i];
-    
-    handler = {
-        handle: (req: HttpRequest<any>) => interceptor.intercept(req, currentHandler)
-    };
-}
-
-// Return a new HttpClient with the custom handler
-return new (baseClient.constructor as any)(handler);`,
-        });
-    }
-
-    private addClientProviderFunction(sourceFile: any, pascalClientName: string, upperCaseClientName: string): void {
+    private addSimpleProviderFunction(sourceFile: any, pascalClientName: string, upperCaseClientName: string): void {
         const hasDateInterceptor = this.config.options.dateType === "Date";
 
         const functionBody = `
@@ -124,10 +115,10 @@ const providers: Provider[] = [
         useValue: config.basePath
     },
     
-    // HTTP client with custom interceptors
+    // Collect interceptors for this client
     {
-        provide: ${upperCaseClientName}_HTTP_CLIENT,
-        useFactory: (baseClient: HttpClient, injector: Injector) => {
+        provide: ${upperCaseClientName}_INTERCEPTORS,
+        useFactory: (injector: Injector) => {
             const interceptorInstances: HttpInterceptor[] = [];
             
             // Add custom interceptors
@@ -143,9 +134,32 @@ const providers: Provider[] = [
                 interceptorInstances.push(injector.get(DateInterceptor));
             }` : ''}
             
-            return createHttpClientWithInterceptors(baseClient, interceptorInstances);
+            return interceptorInstances;
         },
-        deps: [HttpClient, Injector]
+        deps: [Injector]
+    },
+    
+    // Create HTTP client with interceptors
+    {
+        provide: ${upperCaseClientName}_HTTP_CLIENT,
+        useFactory: (backend: HttpBackend, interceptors: HttpInterceptor[]) => {
+            if (!interceptors.length) {
+                return new HttpClient(backend);
+            }
+            
+            // Create handler chain
+            let handler = backend;
+            for (let i = interceptors.length - 1; i >= 0; i--) {
+                const interceptor = interceptors[i];
+                const currentHandler = handler;
+                handler = {
+                    handle: req => interceptor.intercept(req, currentHandler)
+                };
+            }
+            
+            return new HttpClient(handler);
+        },
+        deps: [HttpBackend, ${upperCaseClientName}_INTERCEPTORS]
     }
 ];
 
