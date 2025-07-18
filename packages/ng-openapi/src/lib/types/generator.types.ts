@@ -13,6 +13,7 @@ export interface TypeSchema {
     $ref?: string;
     items?: any;
     nullable?: boolean;
+    enum?: Array<string | number>;
 
     [key: string]: any;
 }
