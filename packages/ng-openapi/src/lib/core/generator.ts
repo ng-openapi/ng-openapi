@@ -41,7 +41,7 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
 
         if (generateServices) {
             // Generate tokens first
-            const tokenGenerator = new TokenGenerator(project);
+            const tokenGenerator = new TokenGenerator(project, config);
             tokenGenerator.generate(outputPath);
 
             // Generate date transformer if enabled

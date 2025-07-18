@@ -5,6 +5,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { generateFromConfig } from "./core";
 import { GeneratorConfig } from "./types";
+import packageJson from "../../package.json";
 
 const program = new Command();
 
@@ -40,24 +41,23 @@ async function loadConfigFile(configPath: string): Promise<GeneratorConfig> {
     }
 }
 
-async function generateFromOptions(options: any): Promise<void> {
+export async function generateFromOptions(options: any): Promise<void> {
     try {
         if (options.config) {
-            // Load configuration from file
-            const config = await loadConfigFile(options.config);
-            await generateFromConfig(config);
-        } else if (options.input) {
-            // Use command line options
-            const inputPath = path.resolve(options.input);
+            // Support multiple config files
+            const configPaths = Array.isArray(options.config) ? options.config : [options.config];
 
-            if (!fs.existsSync(inputPath)) {
-                console.error(`Error: Input file not found: ${inputPath}`);
-                process.exit(1);
+            for (const configPath of configPaths) {
+                const config = await loadConfigFile(configPath);
+                await generateFromConfig(config);
+                console.log(`✨ Generated client: ${config.clientName || "default"}`);
             }
-
+        } else if (options.input) {
+            // Single config from CLI options
             const config: GeneratorConfig = {
-                input: inputPath,
+                input: path.resolve(options.input),
                 output: options.output || "./src/generated",
+                clientName: options.clientName,
                 options: {
                     dateType: options.dateType || "Date",
                     enumStyle: "enum",
@@ -73,7 +73,7 @@ async function generateFromOptions(options: any): Promise<void> {
             process.exit(1);
         }
 
-        console.log("✨ Generation completed successfully!");
+        console.log("✨ All clients generated successfully!");
     } catch (error) {
         console.error("❌ Generation failed:", error instanceof Error ? error.message : error);
         process.exit(1);
@@ -84,7 +84,7 @@ async function generateFromOptions(options: any): Promise<void> {
 program
     .name("ng-openapi")
     .description("Generate Angular services and types from Swagger/OpenAPI spec")
-    .version("0.0.1")
+    .version(packageJson.version)
     .option("-c, --config <path>", "Path to configuration file")
     .option("-i, --input <path>", "Path to Swagger/OpenAPI specification file")
     .option("-o, --output <path>", "Output directory", "./src/generated")

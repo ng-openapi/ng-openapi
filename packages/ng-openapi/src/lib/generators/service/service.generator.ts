@@ -197,6 +197,9 @@ export class ServiceGenerator {
     }
 
     private addImports(sourceFile: SourceFile, usedTypes: Set<string>): void {
+        const clientName = this.config.clientName || 'DEFAULT';
+        const upperCaseClientName = clientName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+
         sourceFile.addImportDeclarations([
             {
                 namedImports: ["Injectable", "inject"],
@@ -211,10 +214,16 @@ export class ServiceGenerator {
                 moduleSpecifier: "rxjs",
             },
             {
-                namedImports: ["BASE_PATH"],
+                namedImports: [`${upperCaseClientName}_BASE_PATH`, `${upperCaseClientName}_HTTP_CLIENT`],
                 moduleSpecifier: "../tokens",
             },
         ]);
+
+        // Add backwards compatibility import
+        if (!this.config.clientName) {
+            sourceFile.getImportDeclaration("../tokens")
+                ?.addNamedImport("BASE_PATH");
+        }
 
         // Add specific model imports only if types are used
         if (usedTypes.size > 0) {
@@ -227,6 +236,8 @@ export class ServiceGenerator {
 
     private addServiceClass(sourceFile: SourceFile, controllerName: string, operations: PathInfo[]): void {
         const className = `${controllerName}Service`;
+        const clientName = this.config.clientName || 'DEFAULT';
+        const upperCaseClientName = clientName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
 
         sourceFile.insertText(0, SERVICE_GENERATOR_HEADER_COMMENT(controllerName));
 
@@ -241,7 +252,7 @@ export class ServiceGenerator {
             type: "HttpClient",
             scope: Scope.Private,
             isReadonly: true,
-            initializer: "inject(HttpClient)",
+            initializer: `inject(${upperCaseClientName}_HTTP_CLIENT, { optional: true }) ?? inject(HttpClient)`,
         });
 
         serviceClass.addProperty({
@@ -249,7 +260,7 @@ export class ServiceGenerator {
             type: "string",
             scope: Scope.Private,
             isReadonly: true,
-            initializer: "inject(BASE_PATH)",
+            initializer: `inject(${upperCaseClientName}_BASE_PATH)`,
         });
 
         // Generate methods for each operation
