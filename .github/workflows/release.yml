@@ -71,44 +71,54 @@ jobs:
         id: version
         working-directory: packages/ng-openapi
         run: |
-          # Determine release parameters
+          # Determine release parameters based on trigger and branch
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             RELEASE_TYPE="${{ github.event.inputs.release_type }}"
             PRERELEASE_TAG="${{ github.event.inputs.prerelease_tag }}"
-            IS_PRERELEASE="${{ github.event.inputs.release_type == 'prerelease' }}"
+          
+            # For manual triggers, check both release type AND current branch
+            if [[ "$RELEASE_TYPE" == "prerelease" ]] || [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+              IS_PRERELEASE="true"
+              NPM_TAG="${PRERELEASE_TAG:-beta}"
+            elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+              IS_PRERELEASE="false"
+              NPM_TAG="latest"
+            else
+              # Default to prerelease for other branches
+              IS_PRERELEASE="true"
+              NPM_TAG="${PRERELEASE_TAG:-beta}"
+            fi
           elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
             RELEASE_TYPE="prerelease"
             PRERELEASE_TAG="beta"
             IS_PRERELEASE="true"
+            NPM_TAG="beta"
           else
-            # main branch
+            # main branch push
             RELEASE_TYPE="patch"
             PRERELEASE_TAG=""
             IS_PRERELEASE="false"
+            NPM_TAG="latest"
           fi
           
+          echo "Branch: ${{ github.ref }}"
           echo "Release type: $RELEASE_TYPE"
           echo "Prerelease tag: $PRERELEASE_TAG"
           echo "Is prerelease: $IS_PRERELEASE"
+          echo "NPM tag: $NPM_TAG"
           
           # Update version
           if [[ "$RELEASE_TYPE" == "prerelease" ]]; then
-            if [[ "$IS_PRERELEASE" == "true" ]]; then
-              npm version prerelease --preid="$PRERELEASE_TAG" --no-git-tag-version
-            else
-              npm version "$RELEASE_TYPE" --preid="$PRERELEASE_TAG" --no-git-tag-version
-            fi
-            NPM_TAG="$PRERELEASE_TAG"
+            npm version prerelease --preid="$PRERELEASE_TAG" --no-git-tag-version
           else
             npm version "$RELEASE_TYPE" --no-git-tag-version
-            NPM_TAG="latest"
           fi
           
           # Get the new version
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "New version: $NEW_VERSION"
           
-          # Set outputs using the newer syntax
+          # Set outputs
           {
             echo "version=$NEW_VERSION"
             echo "npm_tag=$NPM_TAG"
@@ -176,6 +186,7 @@ jobs:
       - name: Summary
         run: |
           echo "## 🎉 Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: v${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **NPM Tag**: ${{ steps.version.outputs.npm_tag }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Prerelease**: ${{ steps.version.outputs.is_prerelease }}" >> $GITHUB_STEP_SUMMARY
