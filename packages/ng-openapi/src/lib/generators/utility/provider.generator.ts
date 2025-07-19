@@ -71,9 +71,9 @@ export class ProviderGenerator {
                 },
                 {
                     name: "interceptors",
-                    type: "HttpInterceptor[]",
+                    type: "(new (...args: HttpInterceptor[]) => HttpInterceptor)[]",
                     hasQuestionToken: true,
-                    docs: ["Array of HTTP interceptors to apply to this client"],
+                    docs: ["Array of HTTP interceptor classes to apply to this client"],
                 }
             ],
         });
@@ -101,11 +101,6 @@ const providers: Provider[] = [
         provide: ${basePathTokenName},
         useValue: config.basePath
     },
-    // Client-specific interceptors token
-    {
-        provide: ${interceptorsTokenName},
-        useValue: config.interceptors || []
-    },
     // Base interceptor that handles client-specific interceptors
     {
         provide: HTTP_INTERCEPTORS,
@@ -114,16 +109,36 @@ const providers: Provider[] = [
     }
 ];
 
-${hasDateInterceptor ?
-            `// Add date interceptor to client-specific interceptors if enabled
-if (config.enableDateTransform !== false) {
-    const currentInterceptors = config.interceptors || [];
+// Add client-specific interceptor instances
+if (config.interceptors && config.interceptors.length > 0) {
+    const interceptorInstances = config.interceptors.map(InterceptorClass => new InterceptorClass());
+    
+    ${hasDateInterceptor ?
+            `// Add date interceptor if enabled (default: true)
+    if (config.enableDateTransform !== false) {
+        interceptorInstances.unshift(new DateInterceptor());
+    }` :
+            `// Date transformation not available (dateType: 'string' was used in generation)`}
+    
     providers.push({
         provide: ${interceptorsTokenName},
-        useValue: [new DateInterceptor(), ...currentInterceptors]
+        useValue: interceptorInstances
+    });
+} ${hasDateInterceptor ?
+            `else if (config.enableDateTransform !== false) {
+    // Only date interceptor enabled
+    providers.push({
+        provide: ${interceptorsTokenName},
+        useValue: [new DateInterceptor()]
     });
 }` :
-            `// Date transformation not available (dateType: 'string' was used in generation)`}
+            ``} else {
+    // No interceptors
+    providers.push({
+        provide: ${interceptorsTokenName},
+        useValue: []
+    });
+}
 
 return makeEnvironmentProviders(providers);`;
 
@@ -142,7 +157,7 @@ return makeEnvironmentProviders(providers);`;
                 "  providers: [",
                 `    ${functionName}({`,
                 "      basePath: 'https://api.example.com',",
-                "      interceptors: [new LoggingInterceptor(), new AuthInterceptor()]",
+                "      interceptors: [AuthInterceptor, LoggingInterceptor] // Classes, not instances",
                 "    }),",
                 "    // other providers...",
                 "  ]",

@@ -59,7 +59,7 @@ export class TokenGenerator {
                 },
             ],
             leadingTrivia: `/**
- * Injection token for the ${this.clientName} client HTTP interceptors
+ * Injection token for the ${this.clientName} client HTTP interceptor instances
  */\n`,
         });
 

@@ -4,7 +4,7 @@ import { HttpInterceptor } from "@angular/common/http";
 export interface GeneratorConfig {
     input: string;
     output: string;
-    clientName?: string;
+    clientName?: string; // New: Unique identifier for the client
     options: {
         dateType: "string" | "Date";
         enumStyle: "enum" | "union";
@@ -24,9 +24,10 @@ export interface GeneratorConfig {
     };
 }
 
+// Multi-client configuration for providers
 export interface NgOpenapiClientConfig {
-    clientName: string;
+    clientName: string; // Unique identifier for this client
     basePath: string;
     enableDateTransform?: boolean;
-    interceptors?: HttpInterceptor[];
+    interceptors?: (new (...args: HttpInterceptor[]) => HttpInterceptor)[]; // Array of interceptor classes
 }
