@@ -53,13 +53,6 @@ export class BaseInterceptorGenerator {
             implements: ["HttpInterceptor"],
             properties: [
                 {
-                    name: "clientName",
-                    type: "string",
-                    scope: Scope.Private,
-                    isReadonly: true,
-                    initializer: `'${this.#clientName}'`,
-                },
-                {
                     name: "httpInterceptors",
                     type: "HttpInterceptor[]",
                     scope: Scope.Private,
@@ -84,9 +77,7 @@ export class BaseInterceptorGenerator {
                     returnType: "Observable<HttpEvent<any>>",
                     statements: `
     // Check if this request belongs to this client using HttpContext
-    const requestClientName = req.context.get(this.clientContextToken);
-    
-    if (requestClientName.localeCompare(this.clientName) === 0) {
+    if (!req.context.has(this.clientContextToken)) {
       // This request doesn't belong to this client, pass it through
       return next.handle(req);
     }
