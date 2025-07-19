@@ -19,13 +19,12 @@ export class BaseInterceptorGenerator {
 
         sourceFile.insertText(0, BASE_INTERCEPTOR_HEADER_COMMENT(this.#clientName));
 
-        const basePathTokenName = this.getBasePathTokenName();
         const interceptorsTokenName = this.getInterceptorsTokenName();
         const clientContextTokenName = this.getClientContextTokenName();
 
         sourceFile.addImportDeclarations([
             {
-                namedImports: ["HttpEvent", "HttpHandler", "HttpInterceptor", "HttpRequest"],
+                namedImports: ["HttpEvent", "HttpHandler", "HttpInterceptor", "HttpRequest", "HttpContextToken"],
                 moduleSpecifier: "@angular/common/http",
             },
             {
@@ -37,7 +36,7 @@ export class BaseInterceptorGenerator {
                 moduleSpecifier: "rxjs",
             },
             {
-                namedImports: [basePathTokenName, interceptorsTokenName, clientContextTokenName],
+                namedImports: [interceptorsTokenName, clientContextTokenName],
                 moduleSpecifier: "../tokens",
             },
         ]);
@@ -69,7 +68,7 @@ export class BaseInterceptorGenerator {
                 },
                 {
                     name: "clientContextToken",
-                    type: "any",
+                    type: "HttpContextToken<string>",
                     scope: Scope.Private,
                     isReadonly: true,
                     initializer: clientContextTokenName,
@@ -87,7 +86,7 @@ export class BaseInterceptorGenerator {
     // Check if this request belongs to this client using HttpContext
     const requestClientName = req.context.get(this.clientContextToken);
     
-    if (requestClientName !== this.clientName) {
+    if (requestClientName.localeCompare(this.clientName) === 0) {
       // This request doesn't belong to this client, pass it through
       return next.handle(req);
     }
@@ -108,11 +107,6 @@ export class BaseInterceptorGenerator {
         });
 
         sourceFile.saveSync();
-    }
-
-    private getBasePathTokenName(): string {
-        const clientSuffix = this.#clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
-        return `BASE_PATH_${clientSuffix}`;
     }
 
     private getInterceptorsTokenName(): string {
