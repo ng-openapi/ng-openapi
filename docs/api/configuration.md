@@ -26,6 +26,11 @@ export default config;
 
 ## Configuration Properties
 
+### [Client Name](configuration/client-name.md)
+**Type:** `string | undefined` | **Default:** `Default`
+
+Output directory for generated files.
+
 ### [Input](configuration/input.md)
 **Type:** `string` | **Required**
 

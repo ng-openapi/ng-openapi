@@ -1,4 +1,4 @@
-import { Project } from "ts-morph";
+import { Project, VariableDeclarationKind } from "ts-morph";
 import * as path from "path";
 
 export class DateTransformerGenerator {
@@ -37,7 +37,7 @@ export class DateTransformerGenerator {
         // Add ISO date regex constant
         sourceFile.addVariableStatement({
             isExported: true,
-            declarationKind: "const" as any,
+            declarationKind: VariableDeclarationKind.Const,
             declarations: [
                 {
                     name: "ISO_DATE_REGEX",

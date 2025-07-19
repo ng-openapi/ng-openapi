@@ -1,12 +1,18 @@
 import { defineConfig } from "vitepress";
-import packageJson from '../../packages/ng-openapi/package.json';
+import packageJson from "../../packages/ng-openapi/package.json";
 
 export default defineConfig({
     title: "ng-openapi",
     description: "Generate Angular services and TypeScript types from OpenAPI/Swagger specifications",
 
     head: [
-        ["link", { rel: "icon", href: "https://raw.githubusercontent.com/ng-openapi/ng-openapi/HEAD/docs/public/favicon.ico" }],
+        [
+            "link",
+            {
+                rel: "icon",
+                href: "https://raw.githubusercontent.com/ng-openapi/ng-openapi/HEAD/docs/public/favicon.ico",
+            },
+        ],
         ["meta", { name: "theme-color", content: "#3c82f6" }],
         ["meta", { property: "og:type", content: "website" }],
         ["meta", { property: "og:locale", content: "en" }],
@@ -68,6 +74,10 @@ export default defineConfig({
                             text: "Configuration",
                             link: "/api/configuration",
                             items: [
+                                {
+                                    text: "Client Name",
+                                    link: "/api/configuration/client-name",
+                                },
                                 {
                                     text: "Input",
                                     link: "/api/configuration/input",
@@ -148,7 +158,8 @@ export default defineConfig({
         },
 
         footer: {
-            message: "Released under the MIT License.<br/>This site is powered by <a href=\"https://www.netlify.com\" target=\"_blank\" rel=\"noopener noreferrer\">Netlify</a>",
+            message:
+                'Released under the MIT License.<br/>This site is powered by <a href="https://www.netlify.com" target="_blank" rel="noopener noreferrer">Netlify</a>',
             copyright: "Copyright © 2025 Tareq Jami",
         },
     },

@@ -1,6 +1,12 @@
 import { ModuleKind, Project, ScriptTarget } from 'ts-morph';
 import { TypeGenerator } from '../generators';
-import { DateTransformerGenerator, FileDownloadGenerator, TokenGenerator, MainIndexGenerator } from '../generators/utility';
+import {
+    DateTransformerGenerator,
+    FileDownloadGenerator,
+    TokenGenerator,
+    MainIndexGenerator,
+    BaseInterceptorGenerator
+} from "../generators/utility";
 import { ServiceGenerator, ServiceIndexGenerator } from '../generators/service';
 import { ProviderGenerator } from '../generators/utility/provider.generator'; // Add this import
 import { GeneratorConfig } from '../types';
@@ -41,20 +47,18 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
 
         if (generateServices) {
             // Generate tokens first
-            const tokenGenerator = new TokenGenerator(project);
+            const tokenGenerator = new TokenGenerator(project, config.clientName);
             tokenGenerator.generate(outputPath);
 
             // Generate date transformer if enabled
             if (config.options.dateType === "Date") {
                 const dateTransformer = new DateTransformerGenerator(project);
                 dateTransformer.generate(outputPath);
-                console.log(`✅ Date transformer generated`);
             }
 
             // Generate file download helper
             const fileDownloadHelper = new FileDownloadGenerator(project);
             fileDownloadHelper.generate(outputPath);
-            console.log(`✅ File download helper generated`);
 
             // Generate services using the refactored ServiceGenerator
             const serviceGenerator = new ServiceGenerator(config.input, project, config);
@@ -69,14 +73,20 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
             // Generate provider functions (always generate, even if services are disabled)
             const providerGenerator = new ProviderGenerator(project, config);
             providerGenerator.generate(outputPath);
-            console.log(`✅ Provider functions generated`);
+
+            const baseInterceptorGenerator = new BaseInterceptorGenerator(project, config.clientName);
+            baseInterceptorGenerator.generate(outputPath);
         }
 
         // Generate main index file (always, regardless of generateServices)
         const mainIndexGenerator = new MainIndexGenerator(project, config);
         mainIndexGenerator.generateMainIndex(outputPath);
 
-        console.log("🎉 Generation completed successfully at:", outputPath);
+        if (config.clientName) {
+            console.log(`🎉 ${config.clientName} Generation completed successfully at: ${outputPath}`);
+        } else {
+            console.log("🎉 Generation completed successfully at:", outputPath);
+        }
     } catch (error) {
         if (error instanceof Error) {
             console.error("❌ Error during generation:", error.message);
