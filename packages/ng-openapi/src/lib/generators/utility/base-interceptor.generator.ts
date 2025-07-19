@@ -21,6 +21,7 @@ export class BaseInterceptorGenerator {
 
         const basePathTokenName = this.getBasePathTokenName();
         const interceptorsTokenName = this.getInterceptorsTokenName();
+        const clientContextTokenName = this.getClientContextTokenName();
 
         sourceFile.addImportDeclarations([
             {
@@ -36,7 +37,7 @@ export class BaseInterceptorGenerator {
                 moduleSpecifier: "rxjs",
             },
             {
-                namedImports: [basePathTokenName, interceptorsTokenName],
+                namedImports: [basePathTokenName, interceptorsTokenName, clientContextTokenName],
                 moduleSpecifier: "../tokens",
             },
         ]);
@@ -53,11 +54,11 @@ export class BaseInterceptorGenerator {
             implements: ["HttpInterceptor"],
             properties: [
                 {
-                    name: "basePath",
+                    name: "clientName",
                     type: "string",
                     scope: Scope.Private,
                     isReadonly: true,
-                    initializer: `inject(${basePathTokenName})`,
+                    initializer: `'${this.#clientName}'`,
                 },
                 {
                     name: "httpInterceptors",
@@ -65,6 +66,13 @@ export class BaseInterceptorGenerator {
                     scope: Scope.Private,
                     isReadonly: true,
                     initializer: `inject(${interceptorsTokenName})`,
+                },
+                {
+                    name: "clientContextToken",
+                    type: "any",
+                    scope: Scope.Private,
+                    isReadonly: true,
+                    initializer: clientContextTokenName,
                 },
             ],
             methods: [
@@ -76,8 +84,11 @@ export class BaseInterceptorGenerator {
                     ],
                     returnType: "Observable<HttpEvent<any>>",
                     statements: `
-    // Only intercept requests to this client's base path
-    if (!req.url.startsWith(this.basePath)) {
+    // Check if this request belongs to this client using HttpContext
+    const requestClientName = req.context.get(this.clientContextToken);
+    
+    if (requestClientName !== this.clientName) {
+      // This request doesn't belong to this client, pass it through
       return next.handle(req);
     }
 
@@ -107,6 +118,11 @@ export class BaseInterceptorGenerator {
     private getInterceptorsTokenName(): string {
         const clientSuffix = this.#clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
         return `HTTP_INTERCEPTORS_${clientSuffix}`;
+    }
+
+    private getClientContextTokenName(): string {
+        const clientSuffix = this.#clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
+        return `CLIENT_CONTEXT_TOKEN_${clientSuffix}`;
     }
 
     private capitalizeFirst(str: string): string {

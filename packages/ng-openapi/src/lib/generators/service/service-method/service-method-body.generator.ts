@@ -16,6 +16,7 @@ export class ServiceMethodBodyGenerator {
             this.generateQueryParams(context),
             this.generateHeaders(context),
             this.generateMultipartFormData(operation, context),
+            this.generateContextHelper(), // Add this helper method
             this.generateRequestOptions(context),
             this.generateHttpRequest(operation, context),
         ];
@@ -299,10 +300,8 @@ ${formDataAppends}`;
         options.push("reportProgress: options?.reportProgress");
         options.push("withCredentials: options?.withCredentials");
 
-        // Handle context - it might be undefined
-        if (options.length > 0) {
-            options.push("context: options?.context");
-        }
+        // Create HttpContext with client identification
+        options.push("context: this.createContextWithClientId(options?.context)");
 
         const formattedOptions = options.filter((opt) => opt && !opt.includes("undefined")).join(",\n  ");
 
@@ -425,5 +424,16 @@ return this.httpClient.${httpMethod}(url, requestOptions);`;
 
         // Everything else is likely binary and should be blob
         return "blob";
+    }
+
+    private generateContextHelper(): string {
+        return `
+/**
+ * Creates HttpContext with client identification
+ */
+private createContextWithClientId(existingContext?: HttpContext): HttpContext {
+    const context = existingContext || new HttpContext();
+    return context.set(this.clientContextToken, '${this.config.clientName || 'default'}');
+}`;
     }
 }

@@ -21,13 +21,14 @@ export class TokenGenerator {
             moduleSpecifier: "@angular/core",
         });
         sourceFile.addImportDeclaration({
-            namedImports: ["HttpInterceptor"],
+            namedImports: ["HttpInterceptor", "HttpContextToken"],
             moduleSpecifier: "@angular/common/http",
         });
 
         // Generate client-specific tokens
         const basePathTokenName = this.getBasePathTokenName();
         const interceptorsTokenName = this.getInterceptorsTokenName();
+        const clientContextTokenName = this.getClientContextTokenName();
 
         sourceFile.addVariableStatement({
             isExported: true,
@@ -63,6 +64,21 @@ export class TokenGenerator {
  */\n`,
         });
 
+        // Add HttpContextToken for client identification
+        sourceFile.addVariableStatement({
+            isExported: true,
+            declarationKind: VariableDeclarationKind.Const,
+            declarations: [
+                {
+                    name: clientContextTokenName,
+                    initializer: `new HttpContextToken<string>(() => '${this.clientName}')`,
+                },
+            ],
+            leadingTrivia: `/**
+ * HttpContext token to identify requests belonging to the ${this.clientName} client
+ */\n`,
+        });
+
         // For backward compatibility, export BASE_PATH for default client
         if (this.clientName === 'default') {
             sourceFile.addVariableStatement({
@@ -78,6 +94,20 @@ export class TokenGenerator {
  * @deprecated Use ${basePathTokenName} instead
  */\n`,
             });
+
+            sourceFile.addVariableStatement({
+                isExported: true,
+                declarationKind: VariableDeclarationKind.Const,
+                declarations: [
+                    {
+                        name: "CLIENT_CONTEXT_TOKEN",
+                        initializer: clientContextTokenName,
+                    },
+                ],
+                leadingTrivia: `/**
+ * @deprecated Use ${clientContextTokenName} instead
+ */\n`,
+            });
         }
 
         sourceFile.saveSync();
@@ -91,5 +121,10 @@ export class TokenGenerator {
     private getInterceptorsTokenName(): string {
         const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
         return `HTTP_INTERCEPTORS_${clientSuffix}`;
+    }
+
+    private getClientContextTokenName(): string {
+        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+        return `CLIENT_CONTEXT_TOKEN_${clientSuffix}`;
     }
 }

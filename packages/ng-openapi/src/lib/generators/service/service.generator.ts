@@ -198,6 +198,7 @@ export class ServiceGenerator {
 
     private addImports(sourceFile: SourceFile, usedTypes: Set<string>): void {
         const basePathTokenName = this.getBasePathTokenName();
+        const clientContextTokenName = this.getClientContextTokenName();
 
         sourceFile.addImportDeclarations([
             {
@@ -213,7 +214,7 @@ export class ServiceGenerator {
                 moduleSpecifier: "rxjs",
             },
             {
-                namedImports: [basePathTokenName],
+                namedImports: [basePathTokenName, clientContextTokenName],
                 moduleSpecifier: "../tokens",
             },
         ]);
@@ -230,6 +231,7 @@ export class ServiceGenerator {
     private addServiceClass(sourceFile: SourceFile, controllerName: string, operations: PathInfo[]): void {
         const className = `${controllerName}Service`;
         const basePathTokenName = this.getBasePathTokenName();
+        const clientContextTokenName = this.getClientContextTokenName();
 
         sourceFile.insertText(0, SERVICE_GENERATOR_HEADER_COMMENT(controllerName));
 
@@ -255,6 +257,14 @@ export class ServiceGenerator {
             initializer: `inject(${basePathTokenName})`,
         });
 
+        serviceClass.addProperty({
+            name: "clientContextToken",
+            type: "any",
+            scope: Scope.Private,
+            isReadonly: true,
+            initializer: clientContextTokenName,
+        });
+
         // Generate methods for each operation
         operations.forEach((operation) => {
             this.methodGenerator.addServiceMethod(serviceClass, operation);
@@ -265,6 +275,12 @@ export class ServiceGenerator {
                 `Duplicate method names found in service class ${className}. Please ensure unique method names for each operation.`
             );
         }
+    }
+
+    private getClientContextTokenName(): string {
+        const clientName = this.config.clientName || 'default';
+        const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+        return `CLIENT_CONTEXT_TOKEN_${clientSuffix}`;
     }
 
     private getBasePathTokenName(): string {
