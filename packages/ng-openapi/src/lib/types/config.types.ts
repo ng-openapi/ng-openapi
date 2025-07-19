@@ -1,16 +1,17 @@
 import { ModuleKind, ScriptTarget } from "ts-morph";
+import { HttpInterceptor } from "@angular/common/http";
 
 export interface GeneratorConfig {
     input: string;
     output: string;
+    clientName?: string;
     options: {
         dateType: "string" | "Date";
-        enumStyle: "enum" | "union"; //TODO: add implementation
-        generateServices?: boolean; // New option to control service generation
+        enumStyle: "enum" | "union";
+        generateServices?: boolean;
         generateEnumBasedOnDescription?: boolean;
-        customHeaders?: Record<string, string>; // New option
+        customHeaders?: Record<string, string>;
         responseTypeMapping?: {
-            // New option
             [contentType: string]: "json" | "blob" | "arraybuffer" | "text";
         };
         customizeMethodName?: (operationId: string) => string;
@@ -21,4 +22,11 @@ export interface GeneratorConfig {
         module?: ModuleKind;
         strict?: boolean;
     };
+}
+
+export interface NgOpenapiClientConfig {
+    clientName: string;
+    basePath: string;
+    enableDateTransform?: boolean;
+    interceptors?: HttpInterceptor[];
 }

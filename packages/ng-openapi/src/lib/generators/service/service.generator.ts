@@ -197,6 +197,8 @@ export class ServiceGenerator {
     }
 
     private addImports(sourceFile: SourceFile, usedTypes: Set<string>): void {
+        const basePathTokenName = this.getBasePathTokenName();
+
         sourceFile.addImportDeclarations([
             {
                 namedImports: ["Injectable", "inject"],
@@ -211,12 +213,12 @@ export class ServiceGenerator {
                 moduleSpecifier: "rxjs",
             },
             {
-                namedImports: ["BASE_PATH"],
+                namedImports: [basePathTokenName],
                 moduleSpecifier: "../tokens",
             },
         ]);
 
-        // Add specific model imports only if types are used
+        // Add model imports if needed
         if (usedTypes.size > 0) {
             sourceFile.addImportDeclaration({
                 namedImports: Array.from(usedTypes).sort(),
@@ -227,6 +229,7 @@ export class ServiceGenerator {
 
     private addServiceClass(sourceFile: SourceFile, controllerName: string, operations: PathInfo[]): void {
         const className = `${controllerName}Service`;
+        const basePathTokenName = this.getBasePathTokenName();
 
         sourceFile.insertText(0, SERVICE_GENERATOR_HEADER_COMMENT(controllerName));
 
@@ -249,7 +252,7 @@ export class ServiceGenerator {
             type: "string",
             scope: Scope.Private,
             isReadonly: true,
-            initializer: "inject(BASE_PATH)",
+            initializer: `inject(${basePathTokenName})`,
         });
 
         // Generate methods for each operation
@@ -262,6 +265,12 @@ export class ServiceGenerator {
                 `Duplicate method names found in service class ${className}. Please ensure unique method names for each operation.`
             );
         }
+    }
+
+    private getBasePathTokenName(): string {
+        const clientName = this.config.clientName || 'default';
+        const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+        return `BASE_PATH_${clientSuffix}`;
     }
 
     private hasDuplicateMethodNames<T extends MethodDeclaration>(arr: T[]): boolean {

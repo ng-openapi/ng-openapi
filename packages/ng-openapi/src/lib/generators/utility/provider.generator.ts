@@ -6,18 +6,23 @@ import { PROVIDER_GENERATOR_HEADER_COMMENT } from "../../config";
 export class ProviderGenerator {
     private project: Project;
     private config: GeneratorConfig;
+    private clientName: string;
 
     constructor(project: Project, config: GeneratorConfig) {
         this.project = project;
         this.config = config;
+        this.clientName = config.clientName || 'default';
     }
 
     generate(outputDir: string): void {
         const filePath = path.join(outputDir, "providers.ts");
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
 
-        // Add header comment
         sourceFile.insertText(0, PROVIDER_GENERATOR_HEADER_COMMENT);
+
+        const basePathTokenName = this.getBasePathTokenName();
+        const interceptorsTokenName = this.getInterceptorsTokenName();
+        const baseInterceptorClassName = `${this.capitalizeFirst(this.clientName)}BaseInterceptor`;
 
         // Add imports
         sourceFile.addImportDeclarations([
@@ -26,16 +31,20 @@ export class ProviderGenerator {
                 moduleSpecifier: "@angular/core",
             },
             {
-                namedImports: ["HTTP_INTERCEPTORS"],
+                namedImports: ["HTTP_INTERCEPTORS", "HttpInterceptor"],
                 moduleSpecifier: "@angular/common/http",
             },
             {
-                namedImports: ["BASE_PATH"],
+                namedImports: [basePathTokenName, interceptorsTokenName],
                 moduleSpecifier: "./tokens",
+            },
+            {
+                namedImports: [baseInterceptorClassName],
+                moduleSpecifier: "./utils/base-interceptor",
             },
         ]);
 
-        // Add conditional import for DateInterceptor if date transformation is enabled
+        // Add conditional import for DateInterceptor
         if (this.config.options.dateType === "Date") {
             sourceFile.addImportDeclaration({
                 namedImports: ["DateInterceptor"],
@@ -45,9 +54,9 @@ export class ProviderGenerator {
 
         // Add config interface
         sourceFile.addInterface({
-            name: "NgOpenapiConfig",
+            name: `${this.capitalizeFirst(this.clientName)}Config`,
             isExported: true,
-            docs: ["Configuration options for ng-openapi providers"],
+            docs: [`Configuration options for ${this.clientName} client`],
             properties: [
                 {
                     name: "basePath",
@@ -59,38 +68,59 @@ export class ProviderGenerator {
                     type: "boolean",
                     hasQuestionToken: true,
                     docs: ["Enable automatic date transformation (default: true)"],
+                },
+                {
+                    name: "interceptors",
+                    type: "HttpInterceptor[]",
+                    hasQuestionToken: true,
+                    docs: ["Array of HTTP interceptors to apply to this client"],
                 }
             ],
         });
 
         // Add main provider function
-        this.addMainProviderFunction(sourceFile);
-
-        // Add async provider function
-        this.addAsyncProviderFunction(sourceFile);
+        this.addMainProviderFunction(sourceFile, basePathTokenName, interceptorsTokenName, baseInterceptorClassName);
 
         sourceFile.saveSync();
     }
 
-    private addMainProviderFunction(sourceFile: any): void {
+    private addMainProviderFunction(
+        sourceFile: any,
+        basePathTokenName: string,
+        interceptorsTokenName: string,
+        baseInterceptorClassName: string
+    ): void {
         const hasDateInterceptor = this.config.options.dateType === "Date";
+        const functionName = `provide${this.capitalizeFirst(this.clientName)}Client`;
+        const configTypeName = `${this.capitalizeFirst(this.clientName)}Config`;
 
         const functionBody = `
 const providers: Provider[] = [
-    // Base path token
+    // Base path token for this client
     {
-        provide: BASE_PATH,
+        provide: ${basePathTokenName},
         useValue: config.basePath
+    },
+    // Client-specific interceptors token
+    {
+        provide: ${interceptorsTokenName},
+        useValue: config.interceptors || []
+    },
+    // Base interceptor that handles client-specific interceptors
+    {
+        provide: HTTP_INTERCEPTORS,
+        useClass: ${baseInterceptorClassName},
+        multi: true
     }
 ];
 
 ${hasDateInterceptor ?
-            `// Add date interceptor if enabled (default: true)
+            `// Add date interceptor to client-specific interceptors if enabled
 if (config.enableDateTransform !== false) {
+    const currentInterceptors = config.interceptors || [];
     providers.push({
-        provide: HTTP_INTERCEPTORS,
-        useClass: DateInterceptor,
-        multi: true
+        provide: ${interceptorsTokenName},
+        useValue: [new DateInterceptor(), ...currentInterceptors]
     });
 }` :
             `// Date transformation not available (dateType: 'string' was used in generation)`}
@@ -98,20 +128,21 @@ if (config.enableDateTransform !== false) {
 return makeEnvironmentProviders(providers);`;
 
         sourceFile.addFunction({
-            name: "provideNgOpenapi",
+            name: functionName,
             isExported: true,
             docs: [
-                "Provides all necessary configuration for ng-openapi generated services",
+                `Provides configuration for ${this.clientName} client`,
                 "",
                 "@example",
                 "```typescript",
                 "// In your app.config.ts",
-                "import { provideNgOpenapi } from './api/providers';",
+                `import { ${functionName} } from './api/providers';`,
                 "",
                 "export const appConfig: ApplicationConfig = {",
                 "  providers: [",
-                "    provideNgOpenapi({",
-                "      basePath: 'https://api.example.com'",
+                `    ${functionName}({`,
+                "      basePath: 'https://api.example.com',",
+                "      interceptors: [new LoggingInterceptor(), new AuthInterceptor()]",
                 "    }),",
                 "    // other providers...",
                 "  ]",
@@ -121,78 +152,45 @@ return makeEnvironmentProviders(providers);`;
             parameters: [
                 {
                     name: "config",
-                    type: "NgOpenapiConfig"
+                    type: configTypeName
                 }
             ],
             returnType: "EnvironmentProviders",
             statements: functionBody
         });
+
+        // For backward compatibility, add generic provider if this is the default client
+        if (this.clientName === 'default') {
+            sourceFile.addFunction({
+                name: "provideNgOpenapi",
+                isExported: true,
+                docs: [
+                    "@deprecated Use provideDefaultClient instead for better clarity",
+                    "Provides configuration for the default client"
+                ],
+                parameters: [
+                    {
+                        name: "config",
+                        type: configTypeName
+                    }
+                ],
+                returnType: "EnvironmentProviders",
+                statements: `return ${functionName}(config);`
+            });
+        }
     }
 
-    private addAsyncProviderFunction(sourceFile: any): void {
-        const hasDateInterceptor = this.config.options.dateType === "Date";
+    private getBasePathTokenName(): string {
+        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+        return `BASE_PATH_${clientSuffix}`;
+    }
 
-        const functionBody = `
-const providers: Provider[] = [];
+    private getInterceptorsTokenName(): string {
+        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+        return `HTTP_INTERCEPTORS_${clientSuffix}`;
+    }
 
-// Handle async base path
-if (typeof config.basePath === 'string') {
-    providers.push({
-        provide: BASE_PATH,
-        useValue: config.basePath
-    });
-} else {
-    providers.push({
-        provide: BASE_PATH,
-        useFactory: config.basePath
-    });
-}
-
-${hasDateInterceptor ?
-            `// Add date interceptor if enabled (default: true)
-if (config.enableDateTransform !== false) {
-    providers.push({
-        provide: HTTP_INTERCEPTORS,
-        useClass: DateInterceptor,
-        multi: true
-    });
-}` :
-            `// Date transformation not available (dateType: 'string' was used in generation)`}
-
-return makeEnvironmentProviders(providers);`;
-
-        sourceFile.addFunction({
-            name: "provideNgOpenapiAsync",
-            isExported: true,
-            docs: [
-                "Alternative function for cases where you need to handle async configuration",
-                "",
-                "@example",
-                "```typescript",
-                "// In your app.config.ts",
-                "import { provideNgOpenapiAsync } from './api/providers';",
-                "",
-                "export const appConfig: ApplicationConfig = {",
-                "  providers: [",
-                "    provideNgOpenapiAsync({",
-                "      basePath: () => import('./config').then(c => c.apiConfig.baseUrl)",
-                "    }),",
-                "    // other providers...",
-                "  ]",
-                "};",
-                "```"
-            ],
-            parameters: [
-                {
-                    name: "config",
-                    type: `{
-  basePath: string | (() => Promise<string>);
-  enableDateTransform?: boolean;
-}`
-                }
-            ],
-            returnType: "EnvironmentProviders",
-            statements: functionBody
-        });
+    private capitalizeFirst(str: string): string {
+        return str.charAt(0).toUpperCase() + str.slice(1);
     }
 }
