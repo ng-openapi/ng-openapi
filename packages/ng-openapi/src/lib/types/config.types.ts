@@ -4,7 +4,7 @@ import { HttpInterceptor } from "@angular/common/http";
 export interface GeneratorConfig {
     input: string;
     output: string;
-    clientName?: string; // New: Unique identifier for the client
+    clientName?: string;
     options: {
         dateType: "string" | "Date";
         enumStyle: "enum" | "union";
