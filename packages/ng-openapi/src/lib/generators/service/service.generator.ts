@@ -265,6 +265,23 @@ export class ServiceGenerator {
             initializer: clientContextTokenName,
         });
 
+        // Add the helper method for creating context with client ID
+        serviceClass.addMethod({
+            name: "createContextWithClientId",
+            scope: Scope.Private,
+            parameters: [
+                {
+                    name: "existingContext",
+                    type: "HttpContext",
+                    hasQuestionToken: true
+                }
+            ],
+            returnType: "HttpContext",
+            statements: `
+const context = existingContext || new HttpContext();
+return context.set(this.clientContextToken, '${this.config.clientName || 'default'}');`
+        });
+
         // Generate methods for each operation
         operations.forEach((operation) => {
             this.methodGenerator.addServiceMethod(serviceClass, operation);

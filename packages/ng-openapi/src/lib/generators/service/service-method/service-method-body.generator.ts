@@ -16,7 +16,6 @@ export class ServiceMethodBodyGenerator {
             this.generateQueryParams(context),
             this.generateHeaders(context),
             this.generateMultipartFormData(operation, context),
-            this.generateContextHelper(), // Add this helper method
             this.generateRequestOptions(context),
             this.generateHttpRequest(operation, context),
         ];
@@ -300,7 +299,7 @@ ${formDataAppends}`;
         options.push("reportProgress: options?.reportProgress");
         options.push("withCredentials: options?.withCredentials");
 
-        // Create HttpContext with client identification
+        // Create HttpContext with client identification - call the helper method
         options.push("context: this.createContextWithClientId(options?.context)");
 
         const formattedOptions = options.filter((opt) => opt && !opt.includes("undefined")).join(",\n  ");
