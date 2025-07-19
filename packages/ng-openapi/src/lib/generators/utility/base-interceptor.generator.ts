@@ -77,14 +77,14 @@ export class BaseInterceptorGenerator {
                     returnType: "Observable<HttpEvent<any>>",
                     statements: `
     // Only intercept requests to this client's base path
-    if (!req.url.startsWith(this.#basePath)) {
+    if (!req.url.startsWith(this.basePath)) {
       return next.handle(req);
     }
 
     // Apply client-specific interceptors in reverse order
     let handler = next;
 
-    handler = this.#httpInterceptors.reduceRight(
+    handler = this.httpInterceptors.reduceRight(
       (next, interceptor) => ({
         handle: (request: HttpRequest<any>) => interceptor.intercept(request, next)
       }),
