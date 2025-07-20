@@ -8,6 +8,17 @@ import { GeneratorConfig } from "./types";
 
 const program = new Command();
 
+function getPackageVersion(): string {
+    try {
+        const packagePath = path.join(__dirname, "../../package.json");
+        const packageJson = JSON.parse(fs.readFileSync(packagePath, "utf-8"));
+        return packageJson.version;
+    } catch {
+        console.warn("Warning: Could not determine package version");
+        return "unknown";
+    }
+}
+
 async function loadConfigFile(configPath: string): Promise<GeneratorConfig> {
     const resolvedPath = path.resolve(configPath);
 
@@ -84,7 +95,7 @@ async function generateFromOptions(options: any): Promise<void> {
 program
     .name("ng-openapi")
     .description("Generate Angular services and types from Swagger/OpenAPI spec")
-    .version("0.0.1")
+    .version(getPackageVersion())
     .option("-c, --config <path>", "Path to configuration file")
     .option("-i, --input <path>", "Path to Swagger/OpenAPI specification file")
     .option("-o, --output <path>", "Output directory", "./src/generated")
