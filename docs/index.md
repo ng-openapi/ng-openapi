@@ -7,10 +7,23 @@
 <br/>
 
 ## Introduction
-ng-openapi, just like many other tools, is a code generator that creates Angular services and TypeScript interfaces from OpenAPI specifications.
 
-The reason ng-openapi exists is to patch the gaps in existing tools, providing a more Angular-centric approach & a few additional features that make it easier to work with the generated code.
+ng-openapi is a modern Angular-first OpenAPI client generator that creates type-safe services and interfaces from your OpenAPI specifications. Unlike generic TypeScript generators, ng-openapi is built specifically for Angular developers who want clean, maintainable code that leverages Angular's latest features.
 
+## Why Choose ng-openapi?
+
+While several OpenAPI generators exist, ng-openapi addresses the gaps that Angular developers face daily:
+
+### 🚀 **Modern Angular Support**
+Uses Angular's latest features like the `inject()` function and the new `HttpResource` API (coming soon), keeping your generated code up-to-date with current Angular best practices.
+
+### 🎯 **Smart Enum Handling**
+Instead of generating unreadable integer enums or forcing string enums, ng-openapi gives you the ability to preserve your backend enum structure, giving you the exact same enums you use in your API.
+
+### 🔧 **Customizable Function Names**
+Instead of using the `operationId` as the function name, ng-openapi allows you to customize the function names for better readability and maintainability.
+### 🌐 **Multi-Client Architecture**
+Built-in support for multiple API clients with the ability to apply different HTTP interceptors to each client independently.
 
 ## Quick Example
 
