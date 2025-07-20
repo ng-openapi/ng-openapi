@@ -56,6 +56,7 @@ export default defineConfig({
                     items: [
                         { text: "CLI Usage", link: "/guide/cli-usage" },
                         { text: "Angular Integration", link: "/guide/angular-integration" },
+                        { text: "Multiple Clients", link: "/guide/multiple-clients" },
                         { text: "File Download", link: "/guide/file-download" },
                         { text: "Date Handling", link: "/guide/date-handling" },
                         { text: "Code Generation", link: "/guide/generated-code" },
