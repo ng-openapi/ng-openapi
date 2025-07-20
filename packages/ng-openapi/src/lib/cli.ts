@@ -10,7 +10,7 @@ const program = new Command();
 
 function getPackageVersion(): string {
     try {
-        const packagePath = path.join(__dirname, "../../package.json");
+        const packagePath = path.join(__dirname, "/package.json");
         const packageJson = JSON.parse(fs.readFileSync(packagePath, "utf-8"));
         return packageJson.version;
     } catch {
