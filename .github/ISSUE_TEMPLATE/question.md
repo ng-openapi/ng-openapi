@@ -1,9 +1,10 @@
-﻿---
+---
 name: Question
 about: Ask a question or request clarification
-title: "[QUESTION] "
+title: "[QUESTION]"
 labels: question
-assignees: ''
+assignees: Mr-Jami
+
 ---
 
 **What’s your question?**

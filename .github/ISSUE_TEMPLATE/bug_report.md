@@ -1,9 +1,9 @@
 ---
 name: Bug Report
 about: Report something that isn't working
-title: "[BUG] "
+title: "[BUG]"
 labels: bug
-assignees: ''
+assignees: Mr-Jami
 
 ---
 
