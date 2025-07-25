@@ -24,33 +24,33 @@ export class MainIndexGenerator {
             moduleSpecifier: "./models",
         });
 
-        // Export all tokens
-        sourceFile.addExportDeclaration({
-            moduleSpecifier: "./tokens",
-        });
-
-        // Export provider functions (always available)
-        sourceFile.addExportDeclaration({
-            moduleSpecifier: "./providers",
-        });
-
         // Only export services if they were generated
         if (this.config.options.generateServices !== false) {
+            // Export all tokens
+            sourceFile.addExportDeclaration({
+                moduleSpecifier: "./tokens",
+            });
+
+            // Export provider functions (always available)
+            sourceFile.addExportDeclaration({
+                moduleSpecifier: "./providers",
+            });
+
             sourceFile.addExportDeclaration({
                 moduleSpecifier: "./services",
             });
-        }
 
-        // Export utilities conditionally
-        if (this.config.options.dateType === "Date") {
             sourceFile.addExportDeclaration({
-                moduleSpecifier: "./utils/date-transformer",
+                moduleSpecifier: "./utils/file-download",
             });
-        }
 
-        sourceFile.addExportDeclaration({
-            moduleSpecifier: "./utils/file-download",
-        });
+            // Export utilities conditionally
+            if (this.config.options.dateType === "Date") {
+                sourceFile.addExportDeclaration({
+                    moduleSpecifier: "./utils/date-transformer",
+                });
+            }
+        }
 
         sourceFile.saveSync();
     }

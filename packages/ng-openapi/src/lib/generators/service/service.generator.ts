@@ -197,6 +197,9 @@ export class ServiceGenerator {
     }
 
     private addImports(sourceFile: SourceFile, usedTypes: Set<string>): void {
+        const basePathTokenName = this.getBasePathTokenName();
+        const clientContextTokenName = this.getClientContextTokenName();
+
         sourceFile.addImportDeclarations([
             {
                 namedImports: ["Injectable", "inject"],
@@ -211,12 +214,12 @@ export class ServiceGenerator {
                 moduleSpecifier: "rxjs",
             },
             {
-                namedImports: ["BASE_PATH"],
+                namedImports: [basePathTokenName, clientContextTokenName],
                 moduleSpecifier: "../tokens",
             },
         ]);
 
-        // Add specific model imports only if types are used
+        // Add model imports if needed
         if (usedTypes.size > 0) {
             sourceFile.addImportDeclaration({
                 namedImports: Array.from(usedTypes).sort(),
@@ -227,6 +230,8 @@ export class ServiceGenerator {
 
     private addServiceClass(sourceFile: SourceFile, controllerName: string, operations: PathInfo[]): void {
         const className = `${controllerName}Service`;
+        const basePathTokenName = this.getBasePathTokenName();
+        const clientContextTokenName = this.getClientContextTokenName();
 
         sourceFile.insertText(0, SERVICE_GENERATOR_HEADER_COMMENT(controllerName));
 
@@ -249,7 +254,32 @@ export class ServiceGenerator {
             type: "string",
             scope: Scope.Private,
             isReadonly: true,
-            initializer: "inject(BASE_PATH)",
+            initializer: `inject(${basePathTokenName})`,
+        });
+
+        serviceClass.addProperty({
+            name: "clientContextToken",
+            type: "any",
+            scope: Scope.Private,
+            isReadonly: true,
+            initializer: clientContextTokenName,
+        });
+
+        // Add the helper method for creating context with client ID
+        serviceClass.addMethod({
+            name: "createContextWithClientId",
+            scope: Scope.Private,
+            parameters: [
+                {
+                    name: "existingContext",
+                    type: "HttpContext",
+                    hasQuestionToken: true
+                }
+            ],
+            returnType: "HttpContext",
+            statements: `
+const context = existingContext || new HttpContext();
+return context.set(this.clientContextToken, '${this.config.clientName || 'default'}');`
         });
 
         // Generate methods for each operation
@@ -262,6 +292,18 @@ export class ServiceGenerator {
                 `Duplicate method names found in service class ${className}. Please ensure unique method names for each operation.`
             );
         }
+    }
+
+    private getClientContextTokenName(): string {
+        const clientName = this.config.clientName || 'default';
+        const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+        return `CLIENT_CONTEXT_TOKEN_${clientSuffix}`;
+    }
+
+    private getBasePathTokenName(): string {
+        const clientName = this.config.clientName || 'default';
+        const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+        return `BASE_PATH_${clientSuffix}`;
     }
 
     private hasDuplicateMethodNames<T extends MethodDeclaration>(arr: T[]): boolean {

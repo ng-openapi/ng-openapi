@@ -1,6 +1,6 @@
 {
   "name": "ng-openapi",
-  "version": "0.0.10",
+  "version": "0.0.31",
   "description": "Generate Angular services and TypeScript types from OpenAPI/Swagger specifications",
   "keywords": [
     "angular",
@@ -21,7 +21,7 @@
     "url": "http://tareqjami.de"
   },
   "license": "MIT",
-  "homepage": "https://github.com/ng-openapi/ng-openapi#readme",
+  "homepage": "https://ng-openapi.dev/",
   "bugs": {
     "url": "https://github.com/ng-openapi/ng-openapi/issues"
   },
@@ -64,8 +64,8 @@
     "@types/swagger-schema-official": "^2.0.25"
   },
   "peerDependencies": {
-    "@angular/core": ">=20",
-    "@angular/common": ">=20"
+    "@angular/core": ">=15",
+    "@angular/common": ">=15"
   },
   "peerDependenciesMeta": {
     "@angular/core": {

@@ -1,0 +1,81 @@
+/* Custom styling for ng-openapi docs */
+:root {
+    --vp-c-brand: #007bff;
+    --vp-c-brand-light: #4dabf7;
+    --vp-c-brand-lighter: #74c0fc;
+    --vp-c-brand-lightest: #a5d8ff;
+    --vp-c-brand-dark: #0056b3;
+    --vp-c-brand-darker: #003d82;
+    --vp-c-brand-dimm: rgba(0, 123, 255, 0.08);
+}
+
+/* Custom hero section */
+.VPHero .VPImage {
+    max-width: 320px;
+    max-height: 320px;
+}
+
+/* Custom code blocks */
+.vp-doc div[class*="language-"] {
+    border-radius: 8px;
+    margin: 16px 0;
+}
+
+/* Custom feature cards */
+.VPFeatures {
+    padding: 24px;
+}
+
+.VPFeature {
+    border: 1px solid var(--vp-c-divider);
+    border-radius: 12px;
+    padding: 24px;
+    height: 100%;
+    background: var(--vp-c-bg-alt);
+    transition: all 0.3s ease;
+}
+
+.VPFeature:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 123, 255, 0.15);
+}
+
+/* Custom navigation */
+.VPNav {
+    backdrop-filter: blur(10px);
+}
+
+/* Custom sidebar */
+.VPSidebar {
+    background: var(--vp-c-bg-soft);
+}
+
+/* Custom footer */
+.VPFooter {
+    background: var(--vp-c-bg-alt);
+    border-top: 1px solid var(--vp-c-divider);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .VPHero .VPImage {
+        max-width: 200px;
+        max-height: 200px;
+    }
+}
+
+/* Custom tip/warning/danger boxes */
+.tip {
+    border-left: 4px solid var(--vp-c-brand);
+    background: var(--vp-c-brand-dimm);
+}
+
+.warning {
+    border-left: 4px solid #e6a23c;
+    background: rgba(230, 162, 60, 0.1);
+}
+
+.danger {
+    border-left: 4px solid #f56565;
+    background: rgba(245, 101, 101, 0.1);
+}

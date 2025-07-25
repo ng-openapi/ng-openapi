@@ -54,6 +54,12 @@ export function getTypeScriptType(
     // Handle specific types
     switch (schema.type) {
         case "string":
+            if (schema.enum) {
+                return schema.enum
+                    .map((value) => (typeof value === "string" ? `'${escapeString(value)}'` : String(value)))
+                    .join(" | ");
+            }
+
             // Date handling
             if (schema.format === "date" || schema.format === "date-time") {
                 const dateType = config.options.dateType === "Date" ? "Date" : "string";
@@ -105,4 +111,8 @@ export function getTypeScriptType(
 
 export function nullableType(type: string, isNullable?: boolean): string {
     return type + (isNullable ? " | null" : "");
+}
+
+export function escapeString(str: string): string {
+    return str.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
