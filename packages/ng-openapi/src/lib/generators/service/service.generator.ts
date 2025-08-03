@@ -47,8 +47,6 @@ export class ServiceGenerator {
         Object.entries(controllerGroups).forEach(([controllerName, operations]) => {
             this.generateServiceFile(controllerName, operations, outputDir);
         });
-
-        console.log(`Generated ${Object.keys(controllerGroups).length} service(s) from ${paths.length} path(s)`);
     }
 
     private extractPaths(): PathInfo[] {
