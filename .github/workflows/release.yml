@@ -157,10 +157,27 @@ jobs:
           
           # Update version
           if [[ "$RELEASE_TYPE" == "prerelease" ]]; then
-            if [[ "$IS_PRERELEASE" == "true" ]]; then
-              npm version prerelease --preid="$PRERELEASE_TAG" --no-git-tag-version
+            # For PR prereleases, check if a version with this preid already exists
+            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+              # Get current version and check if it already has this preid
+              CURRENT_VERSION=$(node -p "require('./package.json').version")
+              echo "Current version: $CURRENT_VERSION"
+          
+              # Check if current version already contains our prerelease tag
+              if [[ "$CURRENT_VERSION" == *"-${PRERELEASE_TAG}."* ]]; then
+                echo "Found existing prerelease version, incrementing..."
+                npm version prerelease --no-git-tag-version
+              else
+                echo "Creating new prerelease version..."
+                npm version prerelease --preid="$PRERELEASE_TAG" --no-git-tag-version
+              fi
             else
-              npm version "$RELEASE_TYPE" --preid="$PRERELEASE_TAG" --no-git-tag-version
+              # For other prerelease types (develop branch, manual)
+              if [[ "$IS_PRERELEASE" == "true" ]]; then
+                npm version prerelease --preid="$PRERELEASE_TAG" --no-git-tag-version
+              else
+                npm version "$RELEASE_TYPE" --preid="$PRERELEASE_TAG" --no-git-tag-version
+              fi
             fi
             NPM_TAG="$PRERELEASE_TAG"
           else
