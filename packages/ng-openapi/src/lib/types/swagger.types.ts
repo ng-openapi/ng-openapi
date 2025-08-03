@@ -79,6 +79,7 @@ export interface SwaggerDefinition {
 }
 
 export interface SwaggerSpec {
+    openapi: string;
     swagger: string;
     info: Info;
     externalDocs?: ExternalDocs | undefined;

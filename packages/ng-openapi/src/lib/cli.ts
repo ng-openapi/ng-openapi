@@ -41,20 +41,36 @@ async function loadConfigFile(configPath: string): Promise<GeneratorConfig> {
     }
 }
 
+function validateInputFile(inputPath: string): void {
+    if (!fs.existsSync(inputPath)) {
+        throw new Error(`Input file not found: ${inputPath}`);
+    }
+
+    const extension = path.extname(inputPath).toLowerCase();
+    const supportedExtensions = [".json", ".yaml", ".yml"];
+
+    if (!supportedExtensions.includes(extension)) {
+        throw new Error(
+            `Failed to parse ${extension || "specification"}. Supported formats are .json, .yaml, and .yml.`
+        );
+    }
+}
+
 async function generateFromOptions(options: any): Promise<void> {
     try {
         if (options.config) {
             // Load configuration from file
             const config = await loadConfigFile(options.config);
+
+            // Validate the input file from config
+            validateInputFile(path.resolve(config.input));
+
             await generateFromConfig(config);
         } else if (options.input) {
             // Use command line options
             const inputPath = path.resolve(options.input);
 
-            if (!fs.existsSync(inputPath)) {
-                console.error(`Error: Input file not found: ${inputPath}`);
-                process.exit(1);
-            }
+            validateInputFile(inputPath);
 
             const config: GeneratorConfig = {
                 input: inputPath,
@@ -84,10 +100,10 @@ async function generateFromOptions(options: any): Promise<void> {
 // Main command with options (allows: ng-openapi -c config.ts)
 program
     .name("ng-openapi")
-    .description("Generate Angular services and types from Swagger/OpenAPI spec")
+    .description("Generate Angular services and types from OpenAPI/Swagger specifications (JSON, YAML, YML)")
     .version(packageJson.version)
     .option("-c, --config <path>", "Path to configuration file")
-    .option("-i, --input <path>", "Path to Swagger/OpenAPI specification file")
+    .option("-i, --input <path>", "Path to OpenAPI/Swagger specification file (.json, .yaml, .yml)")
     .option("-o, --output <path>", "Output directory", "./src/generated")
     .option("--types-only", "Generate only TypeScript interfaces")
     .option("--date-type <type>", "Date type to use (string | Date)", "Date")
@@ -99,9 +115,9 @@ program
 program
     .command("generate")
     .alias("gen")
-    .description("Generate code from Swagger specification")
+    .description("Generate code from OpenAPI/Swagger specification")
     .option("-c, --config <path>", "Path to configuration file")
-    .option("-i, --input <path>", "Path to Swagger/OpenAPI specification file")
+    .option("-i, --input <path>", "Path to OpenAPI/Swagger specification file (.json, .yaml, .yml)")
     .option("-o, --output <path>", "Output directory", "./src/generated")
     .option("--types-only", "Generate only TypeScript interfaces")
     .option("--date-type <type>", "Date type to use (string | Date)", "Date")
@@ -115,6 +131,8 @@ program.on("--help", () => {
     console.log("Examples:");
     console.log("  $ ng-openapi -c ./openapi.config.ts");
     console.log("  $ ng-openapi -i ./swagger.json -o ./src/api");
+    console.log("  $ ng-openapi -i ./openapi.yaml -o ./src/api");
+    console.log("  $ ng-openapi -i ./api-spec.yml -o ./src/api");
     console.log("  $ ng-openapi generate -c ./openapi.config.ts");
     console.log("  $ ng-openapi generate -i ./api.yaml --types-only");
 });
