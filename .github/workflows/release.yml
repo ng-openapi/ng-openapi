@@ -36,7 +36,8 @@ on:
 permissions:
   contents: write
   packages: write
-  pull-requests: read
+  pull-requests: write
+  issues: write
 
 jobs:
   # Check if PR author is a maintainer
