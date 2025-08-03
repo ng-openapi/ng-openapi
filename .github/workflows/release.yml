@@ -5,6 +5,11 @@ on:
     branches:
       - main      # Stable releases
       - develop   # Pre-releases
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+      - develop
   workflow_dispatch:
     inputs:
       release_type:
@@ -31,11 +36,58 @@ on:
 permissions:
   contents: write
   packages: write
+  pull-requests: read
 
 jobs:
+  # Check if PR author is a maintainer
+  check-permissions:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    outputs:
+      is-maintainer: ${{ steps.check.outputs.is-maintainer }}
+    steps:
+      - name: Check if PR author is maintainer
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              // Check if the PR author has write access to the repository
+              const { data: permission } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: context.payload.pull_request.user.login
+              });
+            
+              console.log(`User: ${context.payload.pull_request.user.login}`);
+              console.log(`Permission level: ${permission.permission}`);
+            
+              // Allow admin, maintain, and write permissions
+              const isMaintainer = ['admin', 'maintain', 'write'].includes(permission.permission);
+            
+              core.setOutput('is-maintainer', isMaintainer);
+            
+              if (!isMaintainer) {
+                console.log('❌ User does not have maintainer permissions');
+              } else {
+                console.log('✅ User has maintainer permissions');
+              }
+            
+              return isMaintainer;
+            } catch (error) {
+              console.error('Error checking permissions:', error);
+              core.setOutput('is-maintainer', false);
+              return false;
+            }
+
   release:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    needs: [check-permissions]
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      github.ref == 'refs/heads/main' || 
+      github.ref == 'refs/heads/develop' || 
+      (github.event_name == 'pull_request' && needs.check-permissions.outputs.is-maintainer == 'true')
 
     steps:
       - name: Checkout
@@ -76,6 +128,15 @@ jobs:
             RELEASE_TYPE="${{ github.event.inputs.release_type }}"
             PRERELEASE_TAG="${{ github.event.inputs.prerelease_tag }}"
             IS_PRERELEASE="${{ github.event.inputs.release_type == 'prerelease' }}"
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # PR prerelease with branch name and PR number
+            BRANCH_NAME="${{ github.head_ref }}"
+            PR_NUMBER="${{ github.event.number }}"
+            # Sanitize branch name for npm tag (replace special chars with dashes)
+            SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+            RELEASE_TYPE="prerelease"
+            PRERELEASE_TAG="pr-${PR_NUMBER}-${SANITIZED_BRANCH}"
+            IS_PRERELEASE="true"
           elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
             RELEASE_TYPE="prerelease"
             PRERELEASE_TAG="beta"
@@ -131,7 +192,7 @@ jobs:
           echo "✅ Published successfully!"
 
       - name: Create Git tag and push
-        if: github.event.inputs.dry_run != 'true'
+        if: github.event.inputs.dry_run != 'true' && github.event_name != 'pull_request'
         run: |
           git add packages/ng-openapi/package.json
           git commit -m "chore: release v${{ steps.version.outputs.version }}"
@@ -140,7 +201,7 @@ jobs:
           echo "✅ Git tag created and pushed"
 
       - name: Create GitHub Release
-        if: github.event.inputs.dry_run != 'true'
+        if: github.event.inputs.dry_run != 'true' && github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.version.outputs.version }}
@@ -173,6 +234,54 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Comment on PR with release info
+        if: github.event_name == 'pull_request' && github.event.inputs.dry_run != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = `## 🚀 PR Prerelease Published
+            
+            **Version**: \`v${{ steps.version.outputs.version }}\`
+            **NPM Tag**: \`${{ steps.version.outputs.npm_tag }}\`
+            
+            ### 📦 Install this PR version:
+            \`\`\`bash
+            npm install -g ng-openapi@${{ steps.version.outputs.version }}
+            \`\`\`
+            
+            ### 🔗 Links
+            - [NPM Package](https://www.npmjs.com/package/ng-openapi/v/${{ steps.version.outputs.version }})
+            - [All versions](https://www.npmjs.com/package/ng-openapi?activeTab=versions)
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Comment on PR if not maintainer
+        if: github.event_name == 'pull_request' && needs.check-permissions.outputs.is-maintainer != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = `## ⚠️ PR Prerelease Skipped
+            
+            This PR was not published to NPM because the author does not have maintainer permissions.
+            
+            **Note**: Only repository maintainers (with write, maintain, or admin access) can trigger automatic PR releases.
+            
+            If you believe this is an error, please contact a maintainer.
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
       - name: Summary
         run: |
           echo "## 🎉 Release Summary" >> $GITHUB_STEP_SUMMARY
@@ -184,4 +293,8 @@ jobs:
             echo "- **Dry Run**: ✅ No actual publishing occurred" >> $GITHUB_STEP_SUMMARY
           else
             echo "- **Published**: ✅ Successfully published to NPM" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "- **PR Release**: ✅ This is a PR prerelease" >> $GITHUB_STEP_SUMMARY
+            echo "- **Install Command**: \`npm install -g ng-openapi@${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           fi
