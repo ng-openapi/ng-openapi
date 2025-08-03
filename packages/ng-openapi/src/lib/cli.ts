@@ -50,12 +50,9 @@ function validateInputFile(inputPath: string): void {
     const supportedExtensions = [".json", ".yaml", ".yml"];
 
     if (!supportedExtensions.includes(extension)) {
-        console.warn(
-            `Warning: File extension '${extension}' is not explicitly supported. Supported extensions: ${supportedExtensions.join(
-                ", "
-            )}`
+        throw new Error(
+            `Failed to parse ${extension || "specification"}. Supported formats are .json, .yaml, and .yml.`
         );
-        console.warn("The parser will attempt to auto-detect the format.");
     }
 }
 
