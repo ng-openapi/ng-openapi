@@ -17,18 +17,38 @@ export class ServiceGenerator {
         this.config = config;
         this.project = project;
         this.parser = new SwaggerParser(swaggerPath);
-        this.spec = JSON.parse(require("fs").readFileSync(swaggerPath, "utf8"));
+
+        this.spec = this.parser.getSpec();
+
+        // Validate the spec
+        if (!this.parser.isValidSpec()) {
+            const versionInfo = this.parser.getSpecVersion();
+            throw new Error(
+                `Invalid or unsupported specification format. ` +
+                    `Expected OpenAPI 3.x or Swagger 2.x. ` +
+                    `${versionInfo ? `Found: ${versionInfo.type} ${versionInfo.version}` : "No version info found"}`
+            );
+        }
+
         this.methodGenerator = new ServiceMethodGenerator(config);
     }
 
     generate(outputRoot: string): void {
         const outputDir = path.join(outputRoot, "services");
         const paths = this.extractPaths();
+
+        if (paths.length === 0) {
+            console.warn("No API paths found in the specification");
+            return;
+        }
+
         const controllerGroups = this.groupPathsByController(paths);
 
         Object.entries(controllerGroups).forEach(([controllerName, operations]) => {
             this.generateServiceFile(controllerName, operations, outputDir);
         });
+
+        console.log(`Generated ${Object.keys(controllerGroups).length} service(s) from ${paths.length} path(s)`);
     }
 
     private extractPaths(): PathInfo[] {
@@ -273,13 +293,13 @@ export class ServiceGenerator {
                 {
                     name: "existingContext",
                     type: "HttpContext",
-                    hasQuestionToken: true
-                }
+                    hasQuestionToken: true,
+                },
             ],
             returnType: "HttpContext",
             statements: `
 const context = existingContext || new HttpContext();
-return context.set(this.clientContextToken, '${this.config.clientName || 'default'}');`
+return context.set(this.clientContextToken, '${this.config.clientName || "default"}');`,
         });
 
         // Generate methods for each operation
@@ -295,14 +315,14 @@ return context.set(this.clientContextToken, '${this.config.clientName || 'defaul
     }
 
     private getClientContextTokenName(): string {
-        const clientName = this.config.clientName || 'default';
-        const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+        const clientName = this.config.clientName || "default";
+        const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
         return `CLIENT_CONTEXT_TOKEN_${clientSuffix}`;
     }
 
     private getBasePathTokenName(): string {
-        const clientName = this.config.clientName || 'default';
-        const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+        const clientName = this.config.clientName || "default";
+        const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
         return `BASE_PATH_${clientSuffix}`;
     }
 
