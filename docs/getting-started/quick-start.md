@@ -10,6 +10,7 @@ Generate Angular services and TypeScript types from your OpenAPI specification.
 
 You need an OpenAPI/Swagger specification file:
 - JSON file (`swagger.json`, `openapi.json`)
+- Yaml file (`swagger.yml`, `openapi.yaml`)
 
 ## Step 2: Generate API Client
 
