@@ -6,7 +6,7 @@ on:
       - main      # Stable releases
       - develop   # Pre-releases
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [ opened, synchronize, reopened ]
     branches:
       - main
       - develop
@@ -83,7 +83,7 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
-    needs: [check-permissions]
+    needs: [ check-permissions ]
     if: |
       always() && (
         github.event_name == 'workflow_dispatch' || 
@@ -122,30 +122,36 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Determine release type and update version
-        id: version
-        working-directory: packages/ng-openapi
+      - name: Determine release parameters
+        id: release-params
         run: |
-          # Determine release parameters
+          # Determine release parameters based on trigger
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             RELEASE_TYPE="${{ github.event.inputs.release_type }}"
             PRERELEASE_TAG="${{ github.event.inputs.prerelease_tag }}"
             IS_PRERELEASE="${{ github.event.inputs.release_type == 'prerelease' }}"
+          
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            # PR prerelease with branch name and PR number
+            # PR prerelease with branch name, PR number, and commit SHA for uniqueness
             BRANCH_NAME="${{ github.head_ref }}"
             PR_NUMBER="${{ github.event.number }}"
+            SHORT_SHA="${{ github.event.pull_request.head.sha }}"
+            SHORT_SHA=${SHORT_SHA:0:7}  # Use first 7 chars of SHA
+          
             # Sanitize branch name for npm tag (replace special chars with dashes)
             SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+          
             RELEASE_TYPE="prerelease"
-            PRERELEASE_TAG="pr-${PR_NUMBER}-${SANITIZED_BRANCH}"
+            PRERELEASE_TAG="pr-${PR_NUMBER}-${SANITIZED_BRANCH}-${SHORT_SHA}"
             IS_PRERELEASE="true"
+          
           elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
             RELEASE_TYPE="prerelease"
             PRERELEASE_TAG="beta"
             IS_PRERELEASE="true"
+          
           else
-            # main branch
+            # main branch - stable release
             RELEASE_TYPE="patch"
             PRERELEASE_TAG=""
             IS_PRERELEASE="false"
@@ -155,33 +161,23 @@ jobs:
           echo "Prerelease tag: $PRERELEASE_TAG"
           echo "Is prerelease: $IS_PRERELEASE"
           
-          # Update version
-          if [[ "$RELEASE_TYPE" == "prerelease" ]]; then
-            # For PR prereleases, check if a version with this preid already exists
-            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-              # Get current version and check if it already has this preid
-              CURRENT_VERSION=$(node -p "require('./package.json').version")
-              echo "Current version: $CURRENT_VERSION"
-          
-              # Check if current version already contains our prerelease tag
-              if [[ "$CURRENT_VERSION" == *"-${PRERELEASE_TAG}."* ]]; then
-                echo "Found existing prerelease version, incrementing..."
-                npm version prerelease --no-git-tag-version
-              else
-                echo "Creating new prerelease version..."
-                npm version prerelease --preid="$PRERELEASE_TAG" --no-git-tag-version
-              fi
-            else
-              # For other prerelease types (develop branch, manual)
-              if [[ "$IS_PRERELEASE" == "true" ]]; then
-                npm version prerelease --preid="$PRERELEASE_TAG" --no-git-tag-version
-              else
-                npm version "$RELEASE_TYPE" --preid="$PRERELEASE_TAG" --no-git-tag-version
-              fi
-            fi
-            NPM_TAG="$PRERELEASE_TAG"
+          # Set outputs
+          {
+            echo "release_type=$RELEASE_TYPE"
+            echo "prerelease_tag=$PRERELEASE_TAG"
+            echo "is_prerelease=$IS_PRERELEASE"
+          } >> $GITHUB_OUTPUT
+
+      - name: Update version
+        id: version
+        working-directory: packages/ng-openapi
+        run: |
+          # Update version based on release type
+          if [[ "${{ steps.release-params.outputs.is_prerelease }}" == "true" ]]; then
+            npm version prerelease --preid="${{ steps.release-params.outputs.prerelease_tag }}" --no-git-tag-version
+            NPM_TAG="${{ steps.release-params.outputs.prerelease_tag }}"
           else
-            npm version "$RELEASE_TYPE" --no-git-tag-version
+            npm version "${{ steps.release-params.outputs.release_type }}" --no-git-tag-version
             NPM_TAG="latest"
           fi
           
@@ -189,11 +185,10 @@ jobs:
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "New version: $NEW_VERSION"
           
-          # Set outputs using the newer syntax
+          # Set outputs
           {
             echo "version=$NEW_VERSION"
             echo "npm_tag=$NPM_TAG"
-            echo "is_prerelease=$IS_PRERELEASE"
           } >> $GITHUB_OUTPUT
 
       - name: Copy updated package.json to dist
@@ -249,7 +244,7 @@ jobs:
             - 📚 [NPM Package](https://www.npmjs.com/package/ng-openapi)
             - 📖 [Documentation](https://github.com/${{ github.repository }}#readme)
             - 🐛 [Report Issues](https://github.com/${{ github.repository }}/issues)
-          prerelease: ${{ steps.version.outputs.is_prerelease == 'true' }}
+          prerelease: ${{ steps.release-params.outputs.is_prerelease == 'true' }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -263,6 +258,7 @@ jobs:
             
             **Version**: \`v${{ steps.version.outputs.version }}\`
             **NPM Tag**: \`${{ steps.version.outputs.npm_tag }}\`
+            **Commit**: \`${{ github.event.pull_request.head.sha }}\`
             
             ### 📦 Install this PR version:
             \`\`\`bash
@@ -272,6 +268,8 @@ jobs:
             ### 🔗 Links
             - [NPM Package](https://www.npmjs.com/package/ng-openapi/v/${{ steps.version.outputs.version }})
             - [All versions](https://www.npmjs.com/package/ng-openapi?activeTab=versions)
+            
+            > This version is unique to commit \`${{ github.event.pull_request.head.sha }}\` and will not conflict with other releases.
             `;
             
             github.rest.issues.createComment({
@@ -307,14 +305,18 @@ jobs:
           echo "## 🎉 Release Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: v${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **NPM Tag**: ${{ steps.version.outputs.npm_tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Prerelease**: ${{ steps.version.outputs.is_prerelease }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Prerelease**: ${{ steps.release-params.outputs.is_prerelease }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release Type**: ${{ steps.release-params.outputs.release_type }}" >> $GITHUB_STEP_SUMMARY
           echo "- **NPM Package**: https://www.npmjs.com/package/ng-openapi" >> $GITHUB_STEP_SUMMARY
+          
           if [[ "${{ github.event.inputs.dry_run }}" == "true" ]]; then
             echo "- **Dry Run**: ✅ No actual publishing occurred" >> $GITHUB_STEP_SUMMARY
           else
             echo "- **Published**: ✅ Successfully published to NPM" >> $GITHUB_STEP_SUMMARY
           fi
+          
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             echo "- **PR Release**: ✅ This is a PR prerelease" >> $GITHUB_STEP_SUMMARY
+            echo "- **Commit SHA**: ${{ github.event.pull_request.head.sha }}" >> $GITHUB_STEP_SUMMARY
             echo "- **Install Command**: \`npm install -g ng-openapi@${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           fi
