@@ -88,6 +88,10 @@ export default defineConfig({
                                     link: "/api/configuration/output",
                                 },
                                 {
+                                    text: "Validate Input",
+                                    link: "/api/configuration/validate-input",
+                                },
+                                {
                                     text: "Options",
                                     link: "/api/configuration/options",
                                     items: [
