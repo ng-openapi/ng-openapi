@@ -6,7 +6,7 @@ export interface GeneratorConfig {
     input: string;
     output: string;
     clientName?: string;
-    generateClientIf?: (swaggerSpec: SwaggerSpec) => boolean;
+    validateInput?: (spec: SwaggerSpec) => boolean;
     options: {
         dateType: "string" | "Date";
         enumStyle: "enum" | "union";

@@ -7,9 +7,9 @@ export class SwaggerParser {
     private readonly spec: SwaggerSpec;
 
     private constructor(spec: SwaggerSpec, config: GeneratorConfig) {
-        const generateClient = config.generateClientIf?.(spec) ?? true;
-        if (!generateClient) {
-            throw new Error("Client generation is disabled by configuration. Check your `generateClientIf` condition.");
+        const isInputValid = config.validateInput?.(spec) ?? true;
+        if (!isInputValid) {
+            throw new Error("Swagger spec is not valid. Check your `validateInput` condition.");
         }
         this.spec = spec;
     }
