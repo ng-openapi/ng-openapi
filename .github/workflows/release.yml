@@ -227,10 +227,10 @@ jobs:
             ### 📦 Installation
             ```bash
             # Install this version
-            npm install -g ng-openapi@${{ steps.version.outputs.version }}
+            npm install ng-openapi@${{ steps.version.outputs.version }} --save-dev
             
             # Install latest stable
-            npm install -g ng-openapi
+            npm install ng-openapi --save-dev
             ```
             
             ### 🛠️ Usage
@@ -262,7 +262,7 @@ jobs:
             
             ### 📦 Install this PR version:
             \`\`\`bash
-            npm install -g ng-openapi@${{ steps.version.outputs.version }}
+            npm install ng-openapi@${{ steps.version.outputs.version }} --save-dev
             \`\`\`
             
             ### 🔗 Links
@@ -318,5 +318,5 @@ jobs:
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             echo "- **PR Release**: ✅ This is a PR prerelease" >> $GITHUB_STEP_SUMMARY
             echo "- **Commit SHA**: ${{ github.event.pull_request.head.sha }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Install Command**: \`npm install -g ng-openapi@${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Install Command**: \`npm install ng-openapi@${{ steps.version.outputs.version }} --save-dev\`" >> $GITHUB_STEP_SUMMARY
           fi
