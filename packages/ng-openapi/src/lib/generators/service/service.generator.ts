@@ -37,7 +37,7 @@ export class ServiceGenerator {
         project: Project,
         config: GeneratorConfig
     ): Promise<ServiceGenerator> {
-        const parser = await SwaggerParser.create(swaggerPathOrUrl);
+        const parser = await SwaggerParser.create(swaggerPathOrUrl, config);
         return new ServiceGenerator(parser, project, config);
     }
 

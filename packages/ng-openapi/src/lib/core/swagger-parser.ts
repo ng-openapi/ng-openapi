@@ -1,65 +1,23 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as yaml from "js-yaml";
-import { SwaggerDefinition, SwaggerSpec } from "../types";
+import { GeneratorConfig, SwaggerDefinition, SwaggerSpec } from "../types";
 
 export class SwaggerParser {
     private readonly spec: SwaggerSpec;
 
-    private constructor(spec: SwaggerSpec) {
+    private constructor(spec: SwaggerSpec, config: GeneratorConfig) {
+        const generateClient = config.generateClientIf?.(spec) ?? true;
+        if (!generateClient) {
+            throw new Error("Client generation is disabled by configuration. Check your `generateClientIf` condition.");
+        }
         this.spec = spec;
     }
 
-    static async create(swaggerPathOrUrl: string): Promise<SwaggerParser> {
+    static async create(swaggerPathOrUrl: string, config: GeneratorConfig): Promise<SwaggerParser> {
         const swaggerContent = await SwaggerParser.loadContent(swaggerPathOrUrl);
         const spec = SwaggerParser.parseSpecContent(swaggerContent, swaggerPathOrUrl);
-        return new SwaggerParser(spec);
-    }
-
-    getDefinitions(): Record<string, SwaggerDefinition> {
-        // Support both Swagger 2.0 (definitions) and OpenAPI 3.0 (components.schemas)
-        return this.spec.definitions || this.spec.components?.schemas || {};
-    }
-
-    getDefinition(name: string): SwaggerDefinition | undefined {
-        const definitions = this.getDefinitions();
-        return definitions[name];
-    }
-
-    resolveReference(ref: string): SwaggerDefinition | undefined {
-        // Handle $ref like "#/definitions/User" or "#/components/schemas/User"
-        const parts = ref.split("/");
-        const definitionName = parts[parts.length - 1];
-        return this.getDefinition(definitionName);
-    }
-
-    getAllDefinitionNames(): string[] {
-        return Object.keys(this.getDefinitions());
-    }
-
-    getSpec(): SwaggerSpec {
-        return this.spec;
-    }
-
-    getPaths(): Record<string, any> {
-        return this.spec.paths || {};
-    }
-
-    isValidSpec(): boolean {
-        return !!(
-          (this.spec.swagger && this.spec.swagger.startsWith("2.")) ||
-          (this.spec.openapi && this.spec.openapi.startsWith("3."))
-        );
-    }
-
-    getSpecVersion(): { type: "swagger" | "openapi"; version: string } | null {
-        if (this.spec.swagger) {
-            return { type: "swagger", version: this.spec.swagger };
-        }
-        if (this.spec.openapi) {
-            return { type: "openapi", version: this.spec.openapi };
-        }
-        return null;
+        return new SwaggerParser(spec, config);
     }
 
     private static async loadContent(pathOrUrl: string): Promise<string> {
@@ -184,5 +142,51 @@ export class SwaggerParser {
 
         // Default to JSON and let JSON.parse handle the error
         return 'json';
+    }
+
+    getDefinitions(): Record<string, SwaggerDefinition> {
+        // Support both Swagger 2.0 (definitions) and OpenAPI 3.0 (components.schemas)
+        return this.spec.definitions || this.spec.components?.schemas || {};
+    }
+
+    getDefinition(name: string): SwaggerDefinition | undefined {
+        const definitions = this.getDefinitions();
+        return definitions[name];
+    }
+
+    resolveReference(ref: string): SwaggerDefinition | undefined {
+        // Handle $ref like "#/definitions/User" or "#/components/schemas/User"
+        const parts = ref.split("/");
+        const definitionName = parts[parts.length - 1];
+        return this.getDefinition(definitionName);
+    }
+
+    getAllDefinitionNames(): string[] {
+        return Object.keys(this.getDefinitions());
+    }
+
+    getSpec(): SwaggerSpec {
+        return this.spec;
+    }
+
+    getPaths(): Record<string, any> {
+        return this.spec.paths || {};
+    }
+
+    isValidSpec(): boolean {
+        return !!(
+          (this.spec.swagger && this.spec.swagger.startsWith("2.")) ||
+          (this.spec.openapi && this.spec.openapi.startsWith("3."))
+        );
+    }
+
+    getSpecVersion(): { type: "swagger" | "openapi"; version: string } | null {
+        if (this.spec.swagger) {
+            return { type: "swagger", version: this.spec.swagger };
+        }
+        if (this.spec.openapi) {
+            return { type: "openapi", version: this.spec.openapi };
+        }
+        return null;
     }
 }

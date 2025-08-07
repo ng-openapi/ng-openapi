@@ -28,7 +28,7 @@ export class TypeGenerator {
     }
 
     static async create(swaggerPathOrUrl: string, outputRoot: string, config: GeneratorConfig): Promise<TypeGenerator> {
-        const parser = await SwaggerParser.create(swaggerPathOrUrl);
+        const parser = await SwaggerParser.create(swaggerPathOrUrl, config);
         return new TypeGenerator(parser, outputRoot, config);
     }
 

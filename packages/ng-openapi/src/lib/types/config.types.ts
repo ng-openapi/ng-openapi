@@ -1,10 +1,12 @@
 import { ModuleKind, ScriptTarget } from "ts-morph";
 import { HttpInterceptor } from "@angular/common/http";
+import { SwaggerSpec } from "./swagger.types";
 
 export interface GeneratorConfig {
     input: string;
     output: string;
     clientName?: string;
+    generateClientIf?: (swaggerSpec: SwaggerSpec) => boolean;
     options: {
         dateType: "string" | "Date";
         enumStyle: "enum" | "union";
