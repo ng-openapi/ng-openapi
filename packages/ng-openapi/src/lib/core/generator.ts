@@ -1,28 +1,57 @@
-import { ModuleKind, Project, ScriptTarget } from 'ts-morph';
-import { TypeGenerator } from '../generators';
+import { ModuleKind, Project, ScriptTarget } from "ts-morph";
+import { TypeGenerator } from "../generators";
 import {
+    BaseInterceptorGenerator,
     DateTransformerGenerator,
     FileDownloadGenerator,
-    TokenGenerator,
     MainIndexGenerator,
-    BaseInterceptorGenerator
+    TokenGenerator
 } from "../generators/utility";
-import { ServiceGenerator, ServiceIndexGenerator } from '../generators/service';
-import { ProviderGenerator } from '../generators/utility/provider.generator'; // Add this import
-import { GeneratorConfig } from '../types';
-import * as fs from 'fs';
+import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
+import { ProviderGenerator } from "../generators/utility/provider.generator";
+import { GeneratorConfig } from "../types";
+import * as fs from "fs";
+
+/**
+ * Determines if input is a URL
+ */
+function isUrl(input: string): boolean {
+    try {
+        new URL(input);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Validates input (file or URL)
+ */
+function validateInput(input: string): void {
+    if (isUrl(input)) {
+        // For URLs, validate the protocol
+        const url = new URL(input);
+        if (!["http:", "https:"].includes(url.protocol)) {
+            throw new Error(`Unsupported URL protocol: ${url.protocol}. Only HTTP and HTTPS are supported.`);
+        }
+    } else {
+        // For files, check existence
+        if (!fs.existsSync(input)) {
+            throw new Error(`Input file not found: ${input}`);
+        }
+    }
+}
 
 /**
  * Generates Angular services and types from a configuration object
  */
 export async function generateFromConfig(config: GeneratorConfig): Promise<void> {
-    // Validate input file exists
-    if (!fs.existsSync(config.input)) {
-        throw new Error(`Input file not found: ${config.input}`);
-    }
+    // Validate input (file or URL)
+    validateInput(config.input);
 
     const outputPath = config.output;
     const generateServices = config.options.generateServices ?? true;
+    const inputType = isUrl(config.input) ? "URL" : "file";
 
     // Ensure output directory exists
     if (!fs.existsSync(outputPath)) {
@@ -40,8 +69,10 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
             },
         });
 
-        // Use config for type generation
-        const typeGenerator = new TypeGenerator(config.input, outputPath, config);
+        console.log(`📡 Processing OpenAPI specification from ${inputType}: ${config.input}`);
+
+        // Use config for type generation - TypeGenerator now handles both files and URLs
+        const typeGenerator = await TypeGenerator.create(config.input, outputPath, config);
         typeGenerator.generate();
         console.log(`✅ TypeScript interfaces generated`);
 
@@ -61,7 +92,7 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
             fileDownloadHelper.generate(outputPath);
 
             // Generate services using the refactored ServiceGenerator
-            const serviceGenerator = new ServiceGenerator(config.input, project, config);
+            const serviceGenerator = await ServiceGenerator.create(config.input, project, config);
             serviceGenerator.generate(outputPath);
 
             // Generate services index file
@@ -82,14 +113,23 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
         const mainIndexGenerator = new MainIndexGenerator(project, config);
         mainIndexGenerator.generateMainIndex(outputPath);
 
+        const sourceInfo = `from ${inputType}: ${config.input}`;
         if (config.clientName) {
-            console.log(`🎉 ${config.clientName} Generation completed successfully at: ${outputPath}`);
+            console.log(`🎉 ${config.clientName} Generation completed successfully ${sourceInfo} -> ${outputPath}`);
         } else {
-            console.log("🎉 Generation completed successfully at:", outputPath);
+            console.log(`🎉 Generation completed successfully ${sourceInfo} -> ${outputPath}`);
         }
     } catch (error) {
         if (error instanceof Error) {
             console.error("❌ Error during generation:", error.message);
+
+            // Provide helpful hints for common URL-related errors
+            if (error.message.includes("fetch") || error.message.includes("Failed to fetch")) {
+                console.error(
+                    "💡 Tip: Make sure the URL is accessible and returns a valid OpenAPI/Swagger specification"
+                );
+                console.error("💡 Alternative: Download the specification file locally and use the file path instead");
+            }
         } else {
             console.error("❌ Unknown error during generation:", error);
         }

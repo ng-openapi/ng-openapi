@@ -13,11 +13,10 @@ export class ServiceGenerator {
     private config: GeneratorConfig;
     private methodGenerator: ServiceMethodGenerator;
 
-    constructor(swaggerPath: string, project: Project, config: GeneratorConfig) {
+    private constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
         this.config = config;
         this.project = project;
-        this.parser = new SwaggerParser(swaggerPath);
-
+        this.parser = parser;
         this.spec = this.parser.getSpec();
 
         // Validate the spec
@@ -31,6 +30,15 @@ export class ServiceGenerator {
         }
 
         this.methodGenerator = new ServiceMethodGenerator(config);
+    }
+
+    static async create(
+        swaggerPathOrUrl: string,
+        project: Project,
+        config: GeneratorConfig
+    ): Promise<ServiceGenerator> {
+        const parser = await SwaggerParser.create(swaggerPathOrUrl);
+        return new ServiceGenerator(parser, project, config);
     }
 
     generate(outputRoot: string): void {

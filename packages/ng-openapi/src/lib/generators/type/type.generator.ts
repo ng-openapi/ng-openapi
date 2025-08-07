@@ -10,7 +10,7 @@ export class TypeGenerator {
     private readonly generatedTypes = new Set<string>();
     private readonly config: GeneratorConfig;
 
-    constructor(swaggerPath: string, outputRoot: string, config: GeneratorConfig) {
+    private constructor(parser: SwaggerParser, outputRoot: string, config: GeneratorConfig) {
         this.config = config;
         const outputPath = outputRoot + "/models/index.ts";
         this.project = new Project({
@@ -23,13 +23,13 @@ export class TypeGenerator {
             },
         });
 
-        try {
-            this.parser = new SwaggerParser(swaggerPath);
-            this.sourceFile = this.project.createSourceFile(outputPath, "", { overwrite: true });
-        } catch (error) {
-            console.error("Error initializing TypeGenerator:", error);
-            throw error;
-        }
+        this.parser = parser;
+        this.sourceFile = this.project.createSourceFile(outputPath, "", { overwrite: true });
+    }
+
+    static async create(swaggerPathOrUrl: string, outputRoot: string, config: GeneratorConfig): Promise<TypeGenerator> {
+        const parser = await SwaggerParser.create(swaggerPathOrUrl);
+        return new TypeGenerator(parser, outputRoot, config);
     }
 
     generate(): void {
