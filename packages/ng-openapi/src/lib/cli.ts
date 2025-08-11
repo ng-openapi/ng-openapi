@@ -4,8 +4,8 @@ import { Command } from "commander";
 import * as path from "path";
 import * as fs from "fs";
 import { generateFromConfig } from "./core";
-import { GeneratorConfig } from "./types";
 import * as packageJson from "../../package.json";
+import { GeneratorConfig } from "@ng-openapi/shared";
 
 const program = new Command();
 

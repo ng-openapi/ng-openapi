@@ -1,5 +1,5 @@
-import { GeneratorConfig, MethodGenerationContext, PathInfo, RequestBody, SwaggerResponse } from "../../../types";
-import { camelCase, getTypeScriptType } from "../../../utils";
+import { GeneratorConfig, MethodGenerationContext, PathInfo, RequestBody, SwaggerResponse } from "@ng-openapi/shared";
+import { camelCase, getTypeScriptType } from "@ng-openapi/shared";
 
 export class ServiceMethodBodyGenerator {
     private config: GeneratorConfig;

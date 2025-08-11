@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as yaml from "js-yaml";
-import { GeneratorConfig, SwaggerDefinition, SwaggerSpec } from "../types";
+import { GeneratorConfig, SwaggerDefinition, SwaggerSpec } from "@ng-openapi/shared";
 
 export class SwaggerParser {
     private readonly spec: SwaggerSpec;

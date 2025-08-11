@@ -9,7 +9,7 @@ import {
 } from "../generators/utility";
 import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
 import { ProviderGenerator } from "../generators/utility/provider.generator";
-import { GeneratorConfig } from "../types";
+import { GeneratorConfig } from "@ng-openapi/shared";
 import * as fs from "fs";
 
 /**

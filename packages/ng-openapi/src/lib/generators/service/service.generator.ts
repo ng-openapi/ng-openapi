@@ -2,8 +2,8 @@ import { MethodDeclaration, Project, Scope, SourceFile } from "ts-morph";
 import { SwaggerParser } from "../../core";
 import * as path from "path";
 import { SERVICE_GENERATOR_HEADER_COMMENT } from "../../config";
-import { GeneratorConfig, Parameter, PathInfo, RequestBody, SwaggerResponse, SwaggerSpec } from "../../types";
-import { camelCase, pascalCase } from "../../utils";
+import { GeneratorConfig, Parameter, PathInfo, RequestBody, SwaggerResponse, SwaggerSpec } from "@ng-openapi/shared";
+import { camelCase, pascalCase } from "@ng-openapi/shared";
 import { ServiceMethodGenerator } from "./service-method.generator";
 
 export class ServiceGenerator {

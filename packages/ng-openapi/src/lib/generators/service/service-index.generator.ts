@@ -2,7 +2,7 @@ import { Project } from "ts-morph";
 import * as fs from "fs";
 import * as path from "path";
 import { SERVICE_INDEX_GENERATOR_HEADER_COMMENT } from "../../config";
-import { pascalCase } from "../../utils";
+import { pascalCase } from "@ng-openapi/shared";
 
 export class ServiceIndexGenerator {
     private project: Project;

@@ -1,6 +1,6 @@
 import { Project } from "ts-morph";
 import * as path from "path";
-import { GeneratorConfig } from "../../types";
+import { GeneratorConfig } from "@ng-openapi/shared";
 import { PROVIDER_GENERATOR_HEADER_COMMENT } from "../../config";
 
 export class ProviderGenerator {

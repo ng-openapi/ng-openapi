@@ -1,7 +1,7 @@
 import { Project } from "ts-morph";
 import * as path from "path";
 import { MAIN_INDEX_GENERATOR_HEADER_COMMENT } from "../../config";
-import { GeneratorConfig } from "../../types";
+import { GeneratorConfig } from "@ng-openapi/shared";
 
 export class MainIndexGenerator {
     private project: Project;

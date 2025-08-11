@@ -1,7 +1,7 @@
 import { MethodDeclarationOverloadStructure, OptionalKind, ParameterDeclarationStructure } from "ts-morph";
-import { GeneratorConfig, PathInfo, SwaggerResponse } from "../../../types";
+import { GeneratorConfig, PathInfo, SwaggerResponse } from "@ng-openapi/shared";
 import { ServiceMethodParamsGenerator } from "./service-method-params.generator";
-import { getTypeScriptType } from "../../../utils";
+import { getTypeScriptType } from "@ng-openapi/shared";
 
 export class ServiceMethodOverloadsGenerator {
     private config: GeneratorConfig;
