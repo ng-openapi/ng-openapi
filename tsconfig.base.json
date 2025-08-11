@@ -20,6 +20,9 @@
     "paths": {
       "ng-openapi": [
         "packages/ng-openapi/src/index.ts"
+      ],
+      "@ng-openapi/http-resource": [
+        "packages/plugins/http-resource/src/index.ts"
       ]
     }
   },

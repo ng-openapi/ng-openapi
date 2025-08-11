@@ -1,0 +1,33 @@
+{
+  "name": "http-resource",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/plugins/http-resource/src",
+  "projectType": "library",
+  "release": {
+    "version": {
+      "manifestRootsToUpdate": [
+        "dist/{projectRoot}"
+      ],
+      "currentVersionResolver": "git-tag",
+      "fallbackCurrentVersionResolver": "disk"
+    }
+  },
+  "tags": ["plugin", "http-resource"],
+  "targets": {
+    "nx-release-publish": {
+      "options": {
+        "packageRoot": "dist/{projectRoot}"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx tsup",
+        "cwd": "packages/plugins/http-resource"
+      },
+      "outputs": [
+        "{workspaceRoot}/dist/packages/plugins/http-resource"
+      ]
+    }
+  }
+}
