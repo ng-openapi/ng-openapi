@@ -1,6 +1,6 @@
 import { Project, Scope } from "ts-morph";
 import * as path from "path";
-import { BASE_INTERCEPTOR_HEADER_COMMENT } from "../../config";
+import { BASE_INTERCEPTOR_HEADER_COMMENT } from "@ng-openapi/shared";
 
 export class BaseInterceptorGenerator {
     readonly #project: Project;
