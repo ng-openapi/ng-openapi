@@ -1,17 +1,19 @@
-import { MethodDeclaration, Project, Scope, SourceFile } from "ts-morph";
-import { SwaggerParser } from "@ng-openapi/shared";
-import * as path from "path";
+import { Project, Scope, SourceFile } from "ts-morph";
 import {
     camelCase,
+    collectUsedTypes,
+    extractPaths,
     GeneratorConfig,
-    Parameter,
+    getBasePathTokenName,
+    getClientContextTokenName,
+    hasDuplicateFunctionNames,
     pascalCase,
     PathInfo,
-    RequestBody,
     SERVICE_GENERATOR_HEADER_COMMENT,
-    SwaggerResponse,
+    SwaggerParser,
     SwaggerSpec,
 } from "@ng-openapi/shared";
+import * as path from "path";
 import { ServiceMethodGenerator } from "./service-method.generator";
 
 export class ServiceGenerator {
@@ -51,7 +53,7 @@ export class ServiceGenerator {
 
     generate(outputRoot: string): void {
         const outputDir = path.join(outputRoot, "services");
-        const paths = this.extractPaths();
+        const paths = extractPaths(this.spec.paths);
 
         if (paths.length === 0) {
             console.warn("No API paths found in the specification");
@@ -63,47 +65,6 @@ export class ServiceGenerator {
         Object.entries(controllerGroups).forEach(([controllerName, operations]) => {
             this.generateServiceFile(controllerName, operations, outputDir);
         });
-    }
-
-    private extractPaths(): PathInfo[] {
-        const paths: PathInfo[] = [];
-        const swaggerPaths = this.spec.paths || {};
-
-        Object.entries(swaggerPaths).forEach(([path, pathItem]: [string, any]) => {
-            const methods = ["get", "post", "put", "patch", "delete", "options", "head"];
-
-            methods.forEach((method) => {
-                if (pathItem[method]) {
-                    const operation = pathItem[method];
-                    paths.push({
-                        path,
-                        method: method.toUpperCase(),
-                        operationId: operation.operationId,
-                        summary: operation.summary,
-                        description: operation.description,
-                        tags: operation.tags || [],
-                        parameters: this.parseParameters(operation.parameters || [], pathItem.parameters || []),
-                        requestBody: operation.requestBody,
-                        responses: operation.responses || {},
-                    });
-                }
-            });
-        });
-
-        return paths;
-    }
-
-    private parseParameters(operationParams: any[], pathParams: any[]): Parameter[] {
-        const allParams = [...pathParams, ...operationParams];
-        return allParams.map((param) => ({
-            name: param.name,
-            in: param.in,
-            required: param.required || param.in === "path",
-            schema: param.schema,
-            type: param.type,
-            format: param.format,
-            description: param.description,
-        }));
     }
 
     private groupPathsByController(paths: PathInfo[]): Record<string, PathInfo[]> {
@@ -140,7 +101,7 @@ export class ServiceGenerator {
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
 
         // Collect all used model types first
-        const usedTypes = this.collectUsedTypes(operations);
+        const usedTypes = collectUsedTypes(operations);
 
         this.addImports(sourceFile, usedTypes);
         this.addServiceClass(sourceFile, controllerName, operations);
@@ -148,91 +109,9 @@ export class ServiceGenerator {
         sourceFile.saveSync();
     }
 
-    private collectUsedTypes(operations: PathInfo[]): Set<string> {
-        const usedTypes = new Set<string>();
-
-        operations.forEach((operation) => {
-            // Check parameters
-            operation.parameters?.forEach((param) => {
-                this.collectTypesFromSchema(param.schema || param, usedTypes);
-            });
-
-            // Check request body
-            if (operation.requestBody) {
-                this.collectTypesFromRequestBody(operation.requestBody, usedTypes);
-            }
-
-            // Check responses
-            if (operation.responses) {
-                Object.values(operation.responses).forEach((response) => {
-                    this.collectTypesFromResponse(response, usedTypes);
-                });
-            }
-        });
-
-        return usedTypes;
-    }
-
-    private collectTypesFromSchema(schema: any, usedTypes: Set<string>): void {
-        if (!schema) return;
-
-        if (schema.$ref) {
-            const refName = schema.$ref.split("/").pop();
-            if (refName) {
-                usedTypes.add(pascalCase(refName));
-            }
-        }
-
-        if (schema.type === "array" && schema.items) {
-            this.collectTypesFromSchema(schema.items, usedTypes);
-        }
-
-        if (schema.type === "object" && schema.properties) {
-            Object.values(schema.properties).forEach((prop) => {
-                this.collectTypesFromSchema(prop, usedTypes);
-            });
-        }
-
-        if (schema.allOf) {
-            schema.allOf.forEach((subSchema: any) => {
-                this.collectTypesFromSchema(subSchema, usedTypes);
-            });
-        }
-
-        if (schema.oneOf) {
-            schema.oneOf.forEach((subSchema: any) => {
-                this.collectTypesFromSchema(subSchema, usedTypes);
-            });
-        }
-
-        if (schema.anyOf) {
-            schema.anyOf.forEach((subSchema: any) => {
-                this.collectTypesFromSchema(subSchema, usedTypes);
-            });
-        }
-    }
-
-    private collectTypesFromRequestBody(requestBody: RequestBody, usedTypes: Set<string>): void {
-        const content = requestBody.content || {};
-        Object.values(content).forEach((mediaType) => {
-            if (mediaType.schema) {
-                this.collectTypesFromSchema(mediaType.schema, usedTypes);
-            }
-        });
-    }
-
-    private collectTypesFromResponse(response: SwaggerResponse, usedTypes: Set<string>): void {
-        const content = response.content || {};
-        Object.values(content).forEach((mediaType) => {
-            if (mediaType.schema) {
-                this.collectTypesFromSchema(mediaType.schema, usedTypes);
-            }
-        });
-    }
-
     private addImports(sourceFile: SourceFile, usedTypes: Set<string>): void {
-        const basePathTokenName = this.getBasePathTokenName();
-        const clientContextTokenName = this.getClientContextTokenName();
+        const basePathTokenName = getBasePathTokenName(this.config.clientName);
+        const clientContextTokenName = getClientContextTokenName(this.config.clientName);
 
         sourceFile.addImportDeclarations([
             {
@@ -264,8 +143,8 @@ export class ServiceGenerator {
 
     private addServiceClass(sourceFile: SourceFile, controllerName: string, operations: PathInfo[]): void {
         const className = `${controllerName}Service`;
-        const basePathTokenName = this.getBasePathTokenName();
-        const clientContextTokenName = this.getClientContextTokenName();
+        const basePathTokenName = getBasePathTokenName();
+        const clientContextTokenName = getClientContextTokenName();
 
         sourceFile.insertText(0, SERVICE_GENERATOR_HEADER_COMMENT(controllerName));
 
@@ -321,26 +200,10 @@ return context.set(this.clientContextToken, '${this.config.clientName || "defaul
             this.methodGenerator.addServiceMethod(serviceClass, operation);
         });
 
-        if (this.hasDuplicateMethodNames(serviceClass.getMethods())) {
+        if (hasDuplicateFunctionNames(serviceClass.getMethods())) {
             throw new Error(
                 `Duplicate method names found in service class ${className}. Please ensure unique method names for each operation.`
             );
         }
-    }
-
-    private getClientContextTokenName(): string {
-        const clientName = this.config.clientName || "default";
-        const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
-        return `CLIENT_CONTEXT_TOKEN_${clientSuffix}`;
-    }
-
-    private getBasePathTokenName(): string {
-        const clientName = this.config.clientName || "default";
-        const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
-        return `BASE_PATH_${clientSuffix}`;
-    }
-
-    private hasDuplicateMethodNames<T extends MethodDeclaration>(arr: T[]): boolean {
-        return new Set(arr.map((method) => method.getName())).size !== arr.length;
     }
 }
