@@ -1,4 +1,4 @@
-import { GeneratorConfig, TypeSchema } from '@ng-openapi/shared';
+import { GeneratorConfig, TypeSchema } from "../types";
 import { pascalCase } from './string.utils';
 
 /**

@@ -17,3 +17,9 @@ export interface TypeSchema {
 
     [key: string]: any;
 }
+
+export interface GetMethodGenerationContext {
+    pathParams: Array<{ name: string; in: string }>;
+    queryParams: Array<{ name: string; in: string }>;
+    responseType: "json" | "blob" | "arraybuffer" | "text";
+}

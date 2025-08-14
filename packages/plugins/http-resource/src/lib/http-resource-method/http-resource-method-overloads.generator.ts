@@ -1,14 +1,21 @@
 import { MethodDeclarationOverloadStructure, OptionalKind, ParameterDeclarationStructure } from "ts-morph";
-import { GeneratorConfig, getResponseType, getResponseTypeFromResponse, PathInfo } from "@ng-openapi/shared";
-import { ServiceMethodParamsGenerator } from "./service-method-params.generator";
+import {
+    GeneratorConfig,
+    getResponseTypeFromResponse,
+    getTypeScriptType,
+    inferResponseTypeFromContentType,
+    PathInfo,
+    SwaggerResponse,
+} from "@ng-openapi/shared";
+import { HttpResourceMethodParamsGenerator } from "./http-resource-method-params.generator";
 
-export class ServiceMethodOverloadsGenerator {
+export class HttpResourceMethodOverloadsGenerator {
     private config: GeneratorConfig;
-    private paramsGenerator: ServiceMethodParamsGenerator;
+    private paramsGenerator: HttpResourceMethodParamsGenerator;
 
     constructor(config: GeneratorConfig) {
         this.config = config;
-        this.paramsGenerator = new ServiceMethodParamsGenerator(config);
+        this.paramsGenerator = new HttpResourceMethodParamsGenerator(config);
     }
 
     generateMethodOverloads(operation: PathInfo): OptionalKind<MethodDeclarationOverloadStructure>[] {
@@ -90,7 +97,7 @@ export class ServiceMethodOverloadsGenerator {
             return "any";
         }
 
-        return getResponseType(response, this.config);
+        return this.getResponseType(response);
     }
 
     generateOverloadReturnType(responseType: string, observe: "body" | "response" | "events"): string {
@@ -103,6 +110,32 @@ export class ServiceMethodOverloadsGenerator {
                 return `Observable<HttpEvent<${responseType}>>`;
             default:
                 throw new Error(`Unsupported observe type: ${observe}`);
+        }
+    }
+
+    getResponseType(response: SwaggerResponse): string {
+        const responseType = getResponseTypeFromResponse(response);
+
+        // Map response types to TypeScript types
+        switch (responseType) {
+            case "blob":
+                return "Blob";
+            case "arraybuffer":
+                return "ArrayBuffer";
+            case "text":
+                return "string";
+            case "json": {
+                // For JSON, check if we have a schema to get specific type
+                const content = response.content || {};
+                for (const [contentType, mediaType] of Object.entries(content)) {
+                    if (inferResponseTypeFromContentType(contentType) === "json" && mediaType?.schema) {
+                        return getTypeScriptType(mediaType.schema, this.config, mediaType.schema.nullable);
+                    }
+                }
+                return "any";
+            }
+            default:
+                return "any";
         }
     }
 
