@@ -15,7 +15,7 @@ ng-openapi is a modern Angular-first OpenAPI client generator that creates type-
 While several OpenAPI generators exist, ng-openapi addresses the gaps that Angular developers face daily:
 
 ### 🚀 **Modern Angular Support**
-Uses Angular's latest features like the `inject()` function and the new `HttpResource` API (coming soon), keeping your generated code up-to-date with current Angular best practices.
+Uses Angular's latest features like the `inject()` function and the new `HttpResource` API, keeping your generated code up-to-date with current Angular best practices.
 
 ### 🎯 **Smart Enum Handling**
 Instead of generating unreadable integer enums or forcing string enums, ng-openapi gives you the ability to preserve your backend enum structure, giving you the exact same enums you use in your API.

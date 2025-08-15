@@ -30,6 +30,13 @@ export const appConfig: ApplicationConfig = {
 
 The base URL for your API. This is prepended to all API requests.
 
+### `interceptors`
+**Type:** `HttpInterceptor[]` | **Default:** `[]`
+
+Apply client specific interceptors. This is not going to replace the global interceptors configured in your application, but will be applied to requests made by the provided client.
+
+Interceptors can be re-used across different clients.
+
 ### `enableDateTransform`
 **Type:** `boolean` | **Default:** `true`
 

@@ -1,9 +1,8 @@
 <div align="center">
   <h1 align="center"><img src="https://raw.githubusercontent.com/ng-openapi/ng-openapi/HEAD/docs/public/ng-openapi-logo.svg" alt="Logo" style="height: 12vh; margin-bottom: 2vh;" width="160"></h1>
-  <h1 align="center"><b>Angular OpenAPI Client Generator</b></h1>
-  <p align="center">💪 Made with ❤️ by Angular Devs for Angular Devs</p>
+  <h1 align="center"><b>HTTP Resource Plugin</b></h1>
+  <p align="center">🚀 Angular httpResource integration for ng-openapi</p>
 </div>
-
 
 <p align="center">
   <a href="https://stackblitz.com/@Mr-Jami/collections/ng-openapi-examples">⚡Examples</a>
@@ -14,213 +13,109 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/ng-openapi" rel="nofollow"><img src="https://img.shields.io/npm/v/ng-openapi.svg" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@ng-openapi/http-resource" rel="nofollow"><img src="https://img.shields.io/npm/v/@ng-openapi/http-resource.svg" alt="npm version"></a>
   <a href="https://opensource.org/license/mit" rel="nofollow"><img src="https://img.shields.io/github/license/ng-openapi/ng-openapi" alt="MIT License"></a>
   <a href="https://github.com/ng-openapi/ng-openapi/actions?query=branch%3Amain"><img src="https://img.shields.io/github/last-commit/ng-openapi/ng-openapi" alt="Last commit" /></a>
   <a href="https://github.com/ng-openapi/ng-openapi/actions?query=branch%3Amain"><img src="https://github.com/ng-openapi/ng-openapi/actions/workflows/release.yml/badge.svg?event=push&branch=main" alt="CI status" /></a>
-  <a href="https://github.com/ng-openapi/ng-openapi/issues" rel="nofollow"><img src="https://img.shields.io/github/issues/ng-openapi/ng-openapi" alt="Number of open issues"></a>
-  <a href="https://ng-openapi.dev/" rel="nofollow"><img src="https://img.shields.io/netlify/cb7a0f09-de25-40bb-960c-d8bc95b34c5e" alt="Netlify"></a>
 </p>
 <br/>
+
+## What is HTTP Resource Plugin?
+
+The HTTP Resource plugin generates Angular services using the new **experimental** `httpResource` API instead of traditional `HttpClient`. This provides automatic caching, state management, and reactive data loading for your OpenAPI endpoints.
+
+> ⚠️ **Experimental Feature**: `httpResource` is still experimental in Angular. Use with caution in production.
 
 ## Installation
 
 ```bash
-npm install ng-openapi --save-dev
-# or
-yarn add ng-openapi --dev
+npm install @ng-openapi/http-resource ng-openapi --save-dev
 ```
 
-## CLI Usage
+## Quick Start
 
-### Using a Configuration File (Recommended)
-
-Create a configuration file (e.g., `openapi.config.ts`):
+### 1. Configure Plugin
 
 ```typescript
+// openapi.config.ts
 import { GeneratorConfig } from 'ng-openapi';
+import { HttpResourceGenerator } from '@ng-openapi/http-resource';
 
-const config: GeneratorConfig = {
+export default {
   input: './swagger.json',
   output: './src/api',
-  options: {
-    dateType: 'Date',
-    enumStyle: 'enum',
-    generateEnumBasedOnDescription: true,
-    generateServices: true,
-    customHeaders: {
-      'X-Requested-With': 'XMLHttpRequest',
-      'Accept': 'application/json'
-    },
-    responseTypeMapping: {
-      'application/pdf': 'blob',
-      'application/zip': 'blob',
-      'text/csv': 'text'
-    },
-    customizeMethodName: (operationId) => {
-      const parts = operationId.split('_');
-      return parts[parts.length - 1] || operationId;
-    }
-  }
-};
-
-export default config;
+  clientName: 'NgOpenApi',
+  plugins: [HttpResourcePlugin],
+} as GeneratorConfig;
 ```
 
-Then run:
+### 2. Generate Resources
 
 ```bash
-# Direct command
 ng-openapi -c openapi.config.ts
-
-# Or with the generate subcommand
-ng-openapi generate -c openapi.config.ts
 ```
 
-### Using Command Line Options
-
-```bash
-# Generate both types and services
-ng-openapi -i ./swagger.json -o ./src/api
-
-# Generate only types
-ng-openapi -i ./swagger.json -o ./src/api --types-only
-
-# Specify date type
-ng-openapi -i ./swagger.json -o ./src/api --date-type string
-```
-
-### Command Line Options
-
-- `-c, --config <path>` - Path to configuration file
-- `-i, --input <path>` - Path to Swagger/OpenAPI specification file
-- `-o, --output <path>` - Output directory (default: `./src/generated`)
-- `--types-only` - Generate only TypeScript interfaces
-- `--date-type <type>` - Date type to use: `string` or `Date` (default: `Date`)
-
-## Configuration Options
-
-### Required Fields
-
-- `input` - Path to your Swagger/OpenAPI specification file
-- `output` - Output directory for generated files
-
-### Optional Fields
-
-- `dateType` - How to handle date types: `'string'` or `'Date'` (default: `'Date'`)
-- `enumStyle` - Enum generation style: `'enum'` or `'union'` (default: `'enum'`)
-- `generateEnumBasedOnDescription` - Parse enum values from description field (default: `true`)
-- `generateServices` - Generate Angular services (default: `true`)
-- `customHeaders` - Headers to add to all HTTP requests
-- `responseTypeMapping` - Map content types to Angular HttpClient response types
-- `customizeMethodName` - Function to customize generated method names
-- `compilerOptions` - TypeScript compiler options for code generation
-
-## Generated Files Structure
-
-```
-output/
-├── models/
-│   └── index.ts        # TypeScript interfaces/types
-├── services/
-│   ├── index.ts        # Service exports
-│   └── *.service.ts    # Angular services
-├── tokens/
-│   └── index.ts        # Injection tokens
-├── utils/
-│   ├── date-transformer.ts  # Date transformation interceptor
-│   └── file-download.ts     # File download helpers
-├── providers.ts        # Provider functions for easy setup
-└── index.ts           # Main exports
-```
-
-## Angular Integration
-
-### 🚀 Easy Setup (Recommended)
-
-The simplest way to integrate ng-openapi is using the provider function:
+### 3. Setup Providers
 
 ```typescript
-// In your app.config.ts
+// app.config.ts
 import { ApplicationConfig } from '@angular/core';
-import { provideNgOpenapi } from './api/providers';
+import { provideDefaultClient } from './api/providers';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    // One-line setup with automatic interceptor configuration
-    provideNgOpenapi({
+    provideNgOpenApiClient({
       basePath: 'https://api.example.com'
-    }),
-    // other providers...
+    })
   ]
 };
 ```
 
-That's it! This automatically configures:
-
-- ✅ BASE_PATH token
-- ✅ Date transformation interceptor (if using Date type)
-
-### Advanced Provider Options
-
-```typescript
-// Disable date transformation
-provideNgOpenapi({
-  basePath: 'https://api.example.com',
-  enableDateTransform: false
-});
-
-// Async configuration
-provideNgOpenapiAsync({
-  basePath: () => import('./config').then(c => c.apiConfig.baseUrl)
-});
-```
-
-## Using Generated Services
+### 4. Use Generated Resources
 
 ```typescript
 import { Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { UserService } from './api/services';
-import { User } from './api/models';
+import { UsersResource } from './api/resources';
 
 @Component({
   selector: 'app-users',
-  template: `...`
+  template: `
+    <div>
+      @if (users.isLoading()) {
+        <p>Loading...</p>
+      }
+      @if (users.error()) {
+        <p>Error: {{ users.error() }}</p>
+      }
+      @for (user of users.value(); track user.id) {
+        <div>{{ user.name }}</div>
+      }
+    </div>
+  `
 })
 export class UsersComponent {
-  private readonly userService = inject(UserService);
-  readonly users = toSignal(this.userService.getUsers());
+  private readonly usersResource = inject(UsersResource);
+  
+  // Automatic caching and reactive updates
+  readonly users = this.usersResource.getUsers();
 }
 ```
 
-## File Download Example
+## Generated Structure
 
-```typescript
-import { Component, inject } from '@angular/core';
-import { downloadFileOperator } from './api/utils/file-download';
-
-export class ReportComponent {
-  private readonly reportService = inject(ReportService);
-
-  downloadReport() {
-    this.reportService.getReport('pdf', { reportId: 123 })
-      .pipe(
-        downloadFileOperator('report.pdf')
-      )
-      .subscribe();
-  }
-}
+```
+src/api/
+├── models/           # TypeScript interfaces
+├── resources/        # HTTP Resource services
+│   ├── index.ts      # Resource exports
+│   └── *.resource.ts # Generated resources
+├── services/         # Traditional HttpClient services
+├── providers.ts      # Provider functions
+└── index.ts         # Main exports
 ```
 
-## Package.json Scripts
+## Documentation
 
-Add these scripts to your `package.json`:
-
-```json
-{
-  "scripts": {
-    "generate:api": "ng-openapi -c openapi.config.ts"
-  }
-}
-```
+- 📖 [Full Documentation](https://ng-openapi.dev/plugins/http-resource)
+- 🎯 [Angular httpResource Guide](https://angular.dev/guide/http/resource)
+- 🚀 [Live Examples](https://stackblitz.com/@Mr-Jami/collections/ng-openapi-examples)
