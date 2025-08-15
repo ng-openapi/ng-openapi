@@ -48,7 +48,7 @@ export class TypeGenerator {
                 this.generateInterface(name, definition);
             });
 
-            // Save the file
+            this.sourceFile.formatText();
             this.sourceFile.saveSync();
         } catch (error) {
             console.error("Error in generate():", error);

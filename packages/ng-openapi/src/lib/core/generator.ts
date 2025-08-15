@@ -9,7 +9,7 @@ import {
 } from "../generators/utility";
 import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
 import { ProviderGenerator } from "../generators/utility/provider.generator";
-import { GeneratorConfig } from "@ng-openapi/shared";
+import { GeneratorConfig, IPluginGeneratorClass } from "@ng-openapi/shared";
 import * as fs from "fs";
 
 /**
@@ -107,6 +107,15 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
 
             const baseInterceptorGenerator = new BaseInterceptorGenerator(project, config.clientName);
             baseInterceptorGenerator.generate(outputPath);
+        }
+
+        if (config.plugins?.length) {
+            for (const plugin of config.plugins) {
+                const PluginClass = plugin as unknown as IPluginGeneratorClass;
+                const pluginGenerator = await PluginClass.create(config.input, project, config);
+                pluginGenerator.generate(outputPath);
+            }
+            console.log(`✅ Plugins are generated`);
         }
 
         // Generate main index file (always, regardless of generateServices)

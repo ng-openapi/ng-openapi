@@ -106,6 +106,7 @@ export class ServiceGenerator {
         this.addImports(sourceFile, usedTypes);
         this.addServiceClass(sourceFile, controllerName, operations);
 
+        sourceFile.formatText();
         sourceFile.saveSync();
     }
 
@@ -119,7 +120,7 @@ export class ServiceGenerator {
                 moduleSpecifier: "@angular/core",
             },
             {
-                namedImports: ["HttpClient", "HttpParams", "HttpHeaders", "HttpContext", "HttpResponse", "HttpEvent"],
+                namedImports: ["HttpClient", "HttpParams", "HttpHeaders", "HttpContext", "HttpResponse", "HttpEvent", "HttpContextToken"],
                 moduleSpecifier: "@angular/common/http",
             },
             {
@@ -143,8 +144,8 @@ export class ServiceGenerator {
 
     private addServiceClass(sourceFile: SourceFile, controllerName: string, operations: PathInfo[]): void {
         const className = `${controllerName}Service`;
-        const basePathTokenName = getBasePathTokenName();
-        const clientContextTokenName = getClientContextTokenName();
+        const basePathTokenName = getBasePathTokenName(this.config.clientName);
+        const clientContextTokenName = getClientContextTokenName(this.config.clientName);
 
         sourceFile.insertText(0, SERVICE_GENERATOR_HEADER_COMMENT(controllerName));
 
@@ -172,7 +173,7 @@ export class ServiceGenerator {
 
         serviceClass.addProperty({
             name: "clientContextToken",
-            type: "any",
+            type: "HttpContextToken<string>",
             scope: Scope.Private,
             isReadonly: true,
             initializer: clientContextTokenName,
@@ -190,8 +191,7 @@ export class ServiceGenerator {
                 },
             ],
             returnType: "HttpContext",
-            statements: `
-const context = existingContext || new HttpContext();
+            statements: `const context = existingContext || new HttpContext();
 return context.set(this.clientContextToken, '${this.config.clientName || "default"}');`,
         });
 

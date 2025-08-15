@@ -110,6 +110,7 @@ export class TokenGenerator {
             });
         }
 
+        sourceFile.formatText();
         sourceFile.saveSync();
     }
 

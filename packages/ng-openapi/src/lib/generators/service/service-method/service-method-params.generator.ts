@@ -77,7 +77,7 @@ export class ServiceMethodParamsGenerator {
             });
         });
 
-        return params;
+        return params.sort((a, b) => Number(a.hasQuestionToken) - Number(b.hasQuestionToken));
     }
 
     addOptionsParameter(): OptionalKind<ParameterDeclarationStructure>[] {

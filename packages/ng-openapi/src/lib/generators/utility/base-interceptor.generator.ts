@@ -97,6 +97,7 @@ export class BaseInterceptorGenerator {
             ],
         });
 
+        sourceFile.formatText();
         sourceFile.saveSync();
     }
 

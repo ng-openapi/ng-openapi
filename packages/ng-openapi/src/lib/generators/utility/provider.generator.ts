@@ -81,6 +81,7 @@ export class ProviderGenerator {
         // Add main provider function
         this.addMainProviderFunction(sourceFile, basePathTokenName, interceptorsTokenName, baseInterceptorClassName);
 
+        sourceFile.formatText();
         sourceFile.saveSync();
     }
 
