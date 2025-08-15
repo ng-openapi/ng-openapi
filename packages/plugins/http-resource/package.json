@@ -63,7 +63,7 @@
   "peerDependencies": {
     "@angular/core": ">=19.2",
     "@angular/common": ">=19.2",
-    "ng-openapi": ">=0.0.41",
+    "ng-openapi": ">=0.0.40",
     "ts-morph": "*"
   },
   "peerDependenciesMeta": {
