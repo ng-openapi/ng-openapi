@@ -57,9 +57,6 @@
     "prepublishOnly": "echo 'Build the package using: npm run build:http-resource from workspace root'",
     "build": "tsup"
   },
-  "dependencies": {
-    "rxjs": "^7.0.0"
-  },
   "peerDependencies": {
     "@angular/core": ">=19.2",
     "@angular/common": ">=19.2",
