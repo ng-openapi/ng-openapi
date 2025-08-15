@@ -20,18 +20,19 @@ export class HttpResourceIndexGenerator {
         // get all service files
         const serviceFiles = fs
             .readdirSync(servicesDir)
-            .filter((file) => file.endsWith(".service.ts"))
-            .map((file) => file.replace(".service.ts", ""));
+            .filter((file) => file.endsWith(".resource.ts"))
+            .map((file) => file.replace(".resource.ts", ""));
 
         // Add exports
         serviceFiles.forEach((serviceName) => {
-            const className = pascalCase(serviceName) + "Service";
+            const className = pascalCase(serviceName) + "Resource";
             sourceFile.addExportDeclaration({
                 namedExports: [className],
-                moduleSpecifier: `./${serviceName}.service`,
+                moduleSpecifier: `./${serviceName}.resource`,
             });
         });
 
+        sourceFile.formatText();
         sourceFile.saveSync();
     }
 }

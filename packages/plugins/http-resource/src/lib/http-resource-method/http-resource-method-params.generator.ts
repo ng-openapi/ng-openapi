@@ -44,9 +44,10 @@ export class HttpResourceMethodParamsGenerator {
         const pathParams = operation.parameters?.filter((p) => p.in === "path") || [];
         pathParams.forEach((param) => {
             const paramType = getTypeScriptType(param.schema || param, this.config);
+            const signalParamType = param.required ? `Signal<${paramType}>` : `Signal<${paramType} | undefined>`;
             params.push({
                 name: param.name,
-                type: `Signal<${paramType}> | ${paramType}`,
+                type: `${signalParamType} | ${paramType}`,
                 hasQuestionToken: !param.required,
             });
         });
@@ -55,27 +56,28 @@ export class HttpResourceMethodParamsGenerator {
         const queryParams = operation.parameters?.filter((p) => p.in === "query") || [];
         queryParams.forEach((param) => {
             const paramType = getTypeScriptType(param.schema || param, this.config);
+            const signalParamType = param.required ? `Signal<${paramType}>` : `Signal<${paramType} | undefined>`;
             params.push({
                 name: param.name,
-                type: `Signal<${paramType}> | ${paramType}`,
+                type: `${signalParamType} | ${paramType}`,
                 hasQuestionToken: !param.required,
             });
         });
 
-        return params;
+        return params.sort((a, b) => Number(a.hasQuestionToken) - Number(b.hasQuestionToken));
     }
 
     addOptionsParameter(responseType: string): OptionalKind<ParameterDeclarationStructure>[] {
         const rawDataType = this.getResourceRawDataType(responseType);
         return [
             {
-                name: "requestOptions",
-                type: `Omit<HttpResourceRequest, "method" | "url" | "params" | "context">`,
+                name: "resourceOptions",
+                type: `HttpResourceOptions<${responseType}, ${rawDataType}>`,
                 hasQuestionToken: true,
             },
             {
-                name: "resourceOptions",
-                type: `HttpResourceOptions<${responseType}, ${rawDataType}>`,
+                name: "requestOptions",
+                type: `Omit<HttpResourceRequest, "method" | "url" | "params">`,
                 hasQuestionToken: true,
             },
         ];

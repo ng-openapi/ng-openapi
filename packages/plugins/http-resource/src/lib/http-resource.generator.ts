@@ -8,27 +8,30 @@ import {
     getClientContextTokenName,
     hasDuplicateFunctionNames,
     HTTP_RESOURCE_GENERATOR_HEADER_COMMENT,
+    IPluginGenerator,
     pascalCase,
     PathInfo,
-    SERVICE_GENERATOR_HEADER_COMMENT,
     SwaggerParser,
     SwaggerSpec,
 } from "@ng-openapi/shared";
 import * as path from "path";
 import { HttpResourceMethodGenerator } from "./http-resource-method.generator";
+import { HttpResourceIndexGenerator } from "./http-resource-index.generator";
 
-export class HttpResourceGenerator {
+export class HttpResourceGenerator implements IPluginGenerator {
     private project: Project;
     private parser: SwaggerParser;
     private spec: SwaggerSpec;
     private config: GeneratorConfig;
     private methodGenerator: HttpResourceMethodGenerator;
+    private indexGenerator: HttpResourceIndexGenerator;
 
-    private constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
+    constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
         this.config = config;
         this.project = project;
         this.parser = parser;
         this.spec = this.parser.getSpec();
+        this.indexGenerator = new HttpResourceIndexGenerator(project);
 
         // Validate the spec
         if (!this.parser.isValidSpec()) {
@@ -66,6 +69,8 @@ export class HttpResourceGenerator {
         Object.entries(controllerGroups).forEach(([resourceName, operations]) => {
             this.generateServiceFile(resourceName, operations, outputDir);
         });
+
+        this.indexGenerator.generateIndex(outputRoot);
     }
 
     private groupPathsByController(paths: PathInfo[]): Record<string, PathInfo[]> {
@@ -96,7 +101,7 @@ export class HttpResourceGenerator {
     }
 
     private generateServiceFile(resourceName: string, operations: PathInfo[], outputDir: string): void {
-        const fileName = `${camelCase(resourceName)}.resource.ts`;
+        const fileName = `${camelCase(resourceName).replace(/Resource/, "")}.resource.ts`;
         const filePath = path.join(outputDir, fileName);
 
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
@@ -106,7 +111,7 @@ export class HttpResourceGenerator {
 
         this.addImports(sourceFile, usedTypes);
         this.addServiceClass(sourceFile, resourceName, operations);
-
+        sourceFile.formatText();
         sourceFile.saveSync();
     }
 
@@ -116,11 +121,20 @@ export class HttpResourceGenerator {
 
         sourceFile.addImportDeclarations([
             {
-                namedImports: ["Injectable", "inject"],
+                namedImports: ["Injectable", "inject", "Signal"],
                 moduleSpecifier: "@angular/core",
             },
             {
-                namedImports: ["HttpResourceRef", "HttpContext", "httpResource"],
+                namedImports: [
+                    "HttpResourceRef",
+                    "HttpContext",
+                    "httpResource",
+                    "HttpResourceRequest",
+                    "HttpResourceOptions",
+                    "HttpParams",
+                    "HttpContextToken",
+                    "HttpHeaders",
+                ],
                 moduleSpecifier: "@angular/common/http",
             },
             {
@@ -140,8 +154,8 @@ export class HttpResourceGenerator {
 
     private addServiceClass(sourceFile: SourceFile, resourceName: string, operations: PathInfo[]): void {
         const className = `${resourceName}`;
-        const basePathTokenName = getBasePathTokenName();
-        const clientContextTokenName = getClientContextTokenName();
+        const basePathTokenName = getBasePathTokenName(this.config.clientName);
+        const clientContextTokenName = getClientContextTokenName(this.config.clientName);
 
         sourceFile.insertText(0, HTTP_RESOURCE_GENERATOR_HEADER_COMMENT(resourceName));
 
@@ -161,7 +175,7 @@ export class HttpResourceGenerator {
 
         serviceClass.addProperty({
             name: "clientContextToken",
-            type: "any",
+            type: "HttpContextToken<string>",
             scope: Scope.Private,
             isReadonly: true,
             initializer: clientContextTokenName,
@@ -179,8 +193,7 @@ export class HttpResourceGenerator {
                 },
             ],
             returnType: "HttpContext",
-            statements: `
-const context = existingContext || new HttpContext();
+            statements: `const context = existingContext || new HttpContext();
 return context.set(this.clientContextToken, '${this.config.clientName || "default"}');`,
         });
 
