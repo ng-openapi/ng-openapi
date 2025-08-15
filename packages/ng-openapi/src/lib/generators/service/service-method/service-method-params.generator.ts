@@ -1,6 +1,5 @@
 import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
-import { GeneratorConfig, PathInfo } from "../../../types";
-import { camelCase, getTypeScriptType } from "../../../utils";
+import { camelCase, GeneratorConfig, getTypeScriptType, PathInfo } from "@ng-openapi/shared";
 
 export class ServiceMethodParamsGenerator {
     private config: GeneratorConfig;
@@ -77,7 +76,7 @@ export class ServiceMethodParamsGenerator {
             });
         });
 
-        return params;
+        return params.sort((a, b) => Number(a.hasQuestionToken) - Number(b.hasQuestionToken));
     }
 
     addOptionsParameter(): OptionalKind<ParameterDeclarationStructure>[] {

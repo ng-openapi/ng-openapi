@@ -1,0 +1,21 @@
+{
+  "name": "@ng-openapi/shared",
+  "version": "0.0.1",
+  "description": "Shared types and utilities for ng-openapi",
+  "private": true,
+  "main": "./index.js",
+  "module": "./index.js",
+  "types": "./index.d.ts",
+  "scripts": {
+    "build": "tsup"
+  },
+  "peerDependencies": {
+    "@angular/common": ">=15",
+    "@angular/core": ">=15",
+    "ts-morph": "^26.0.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3"
+  }
+}

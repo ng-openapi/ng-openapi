@@ -56,6 +56,7 @@ export default defineConfig({
                     items: [
                         { text: "CLI Usage", link: "/guide/cli-usage" },
                         { text: "Angular Integration", link: "/guide/angular-integration" },
+                        { text: "Http Resource", link: "/guide/http-resource" },
                         { text: "Multiple Clients", link: "/guide/multiple-clients" },
                         { text: "File Download", link: "/guide/file-download" },
                         { text: "Date Handling", link: "/guide/date-handling" },
@@ -129,6 +130,17 @@ export default defineConfig({
                                 {
                                     text: "Compiler Options",
                                     link: "/api/configuration/compiler-options",
+                                },
+                                {
+                                    text: "Plugins",
+                                    link: "/api/configuration/plugins",
+                                    items: [
+                                        {
+                                            text: "Http Resource",
+                                            link: "/api/configuration/plugins/http-resource",
+                                        },
+                                    ],
+                                    collapsed: true,
                                 },
                             ],
                             collapsed: true,

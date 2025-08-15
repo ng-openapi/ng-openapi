@@ -110,6 +110,7 @@ export class FileDownloadGenerator {
     return fallbackFilename;`,
         });
 
+        sourceFile.formatText();
         sourceFile.saveSync();
     }
 }

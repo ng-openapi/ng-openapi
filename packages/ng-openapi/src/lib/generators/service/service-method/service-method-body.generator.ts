@@ -1,5 +1,12 @@
-import { GeneratorConfig, MethodGenerationContext, PathInfo, RequestBody, SwaggerResponse } from "../../../types";
-import { camelCase, getTypeScriptType } from "../../../utils";
+import {
+    camelCase,
+    GeneratorConfig,
+    getResponseTypeFromResponse,
+    getTypeScriptType,
+    MethodGenerationContext,
+    PathInfo,
+    RequestBody,
+} from "@ng-openapi/shared";
 
 export class ServiceMethodBodyGenerator {
     private config: GeneratorConfig;
@@ -45,118 +52,6 @@ export class ServiceMethodBodyGenerator {
 
         const properties = operation.requestBody?.content?.["multipart/form-data"]?.schema?.properties || {};
         return Object.keys(properties);
-    }
-
-    getResponseTypeFromResponse(response: SwaggerResponse): "json" | "blob" | "arraybuffer" | "text" {
-        const content = response.content || {};
-
-        if (Object.keys(content).length === 0) {
-            return "json"; // default for empty content
-        }
-
-        // Collect all possible response types with their priorities
-        const responseTypes: Array<{
-            type: "json" | "blob" | "arraybuffer" | "text";
-            priority: number;
-            contentType: string;
-            isPrimitive?: boolean;
-        }> = [];
-
-        // Check each content type and its schema
-        for (const [contentType, mediaType] of Object.entries(content)) {
-            const schema = mediaType?.schema;
-
-            // Check custom mappings first (highest priority)
-            const mapping = this.config?.options?.responseTypeMapping || {};
-            if (mapping[contentType]) {
-                responseTypes.push({
-                    type: mapping[contentType],
-                    priority: 1, // highest priority
-                    contentType,
-                });
-                continue;
-            }
-
-            // Check schema format for binary indication
-            if (schema?.format === "binary" || schema?.format === "byte") {
-                responseTypes.push({
-                    type: "blob",
-                    priority: 2,
-                    contentType,
-                });
-                continue;
-            }
-
-            // Check if schema type indicates binary
-            if (schema?.type === "string" && (schema?.format === "binary" || schema?.format === "byte")) {
-                responseTypes.push({
-                    type: "blob",
-                    priority: 2,
-                    contentType,
-                });
-                continue;
-            }
-
-            // Check if this is a primitive type in JSON format
-            const isPrimitive = this.isPrimitiveType(schema);
-            const inferredType = this.inferResponseTypeFromContentType(contentType);
-
-            let priority = 3; // default priority
-            let finalType = inferredType;
-
-            // Special handling for JSON content types with primitive schemas
-            if (inferredType === "json" && isPrimitive) {
-                // For primitive types, prefer text over json for efficiency
-                finalType = "text";
-                priority = 2; // Higher priority than regular JSON
-            } else if (inferredType === "json") {
-                // Regular JSON (objects, arrays) get normal priority
-                priority = 2;
-            }
-
-            responseTypes.push({
-                type: finalType,
-                priority,
-                contentType,
-                isPrimitive,
-            });
-        }
-
-        // Sort by priority (lower number = higher priority) and return the best match
-        responseTypes.sort((a, b) => a.priority - b.priority);
-        return responseTypes[0]?.type || "json";
-    }
-
-    private isPrimitiveType(schema: any): boolean {
-        if (!schema) return false;
-
-        // Direct primitive types
-        const primitiveTypes = ["string", "number", "integer", "boolean"];
-        if (primitiveTypes.includes(schema.type)) {
-            return true;
-        }
-
-        // Arrays of primitives are still considered complex
-        if (schema.type === "array") {
-            return false;
-        }
-
-        // Objects are complex
-        if (schema.type === "object" || schema.properties) {
-            return false;
-        }
-
-        // References are assumed to be complex types
-        if (schema.$ref) {
-            return false;
-        }
-
-        // allOf, oneOf, anyOf are complex
-        if (schema.allOf || schema.oneOf || schema.anyOf) {
-            return false;
-        }
-
-        return false;
     }
 
     private createGenerationContext(operation: PathInfo): MethodGenerationContext {
@@ -345,7 +240,7 @@ return this.httpClient.${httpMethod}(url, requestOptions);`;
             if (!response) continue;
 
             // Use the new function that checks both content type and schema
-            return this.getResponseTypeFromResponse(response);
+            return getResponseTypeFromResponse(response);
         }
 
         return "json";
@@ -354,85 +249,5 @@ return this.httpClient.${httpMethod}(url, requestOptions);`;
     private isDataTypeInterface(type: string): boolean {
         const invalidTypes = ["any", "File", "string", "number", "boolean", "object", "unknown", "[]", "Array"];
         return !invalidTypes.some((invalidType) => type.includes(invalidType));
-    }
-
-    private inferResponseTypeFromContentType(contentType: string): "json" | "blob" | "arraybuffer" | "text" {
-        // Normalize content type (remove parameters like charset)
-        const normalizedType = contentType.split(";")[0].trim().toLowerCase();
-
-        // JSON types (highest priority for structured data)
-        if (
-            normalizedType.includes("json") ||
-            normalizedType === "application/ld+json" ||
-            normalizedType === "application/hal+json" ||
-            normalizedType === "application/vnd.api+json"
-        ) {
-            return "json";
-        }
-
-        // XML can be treated as text for parsing
-        if (
-            normalizedType.includes("xml") ||
-            normalizedType === "application/soap+xml" ||
-            normalizedType === "application/atom+xml" ||
-            normalizedType === "application/rss+xml"
-        ) {
-            return "text";
-        }
-
-        // Text types (but exclude certain binary-like text types)
-        if (normalizedType.startsWith("text/")) {
-            // These text types are better handled as blobs
-            const binaryTextTypes = ["text/rtf", "text/cache-manifest", "text/vcard", "text/calendar"];
-
-            if (binaryTextTypes.includes(normalizedType)) {
-                return "blob";
-            }
-
-            return "text";
-        }
-
-        // Form data should be handled as text for parsing
-        if (normalizedType === "application/x-www-form-urlencoded" || normalizedType === "multipart/form-data") {
-            return "text";
-        }
-
-        // Specific text-like application types
-        if (
-            normalizedType === "application/javascript" ||
-            normalizedType === "application/typescript" ||
-            normalizedType === "application/css" ||
-            normalizedType === "application/yaml" ||
-            normalizedType === "application/x-yaml" ||
-            normalizedType === "application/toml"
-        ) {
-            return "text";
-        }
-
-        // Binary types that should use arraybuffer for better performance
-        if (
-            normalizedType.startsWith("image/") ||
-            normalizedType.startsWith("audio/") ||
-            normalizedType.startsWith("video/") ||
-            normalizedType === "application/pdf" ||
-            normalizedType === "application/zip" ||
-            normalizedType.includes("octet-stream")
-        ) {
-            return "arraybuffer";
-        }
-
-        // Everything else is likely binary and should be blob
-        return "blob";
-    }
-
-    private generateContextHelper(): string {
-        return `
-/**
- * Creates HttpContext with client identification
- */
-private createContextWithClientId(existingContext?: HttpContext): HttpContext {
-    const context = existingContext || new HttpContext();
-    return context.set(this.clientContextToken, '${this.config.clientName || 'default'}');
-}`;
     }
 }

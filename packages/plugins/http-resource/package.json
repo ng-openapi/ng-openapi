@@ -1,0 +1,85 @@
+{
+  "name": "@ng-openapi/http-resource",
+  "version": "0.0.1",
+  "description": "HTTP Resource plugin for ng-openapi - Angular HTTP utilities with caching and state management",
+  "keywords": [
+    "angular",
+    "ng-openapi",
+    "plugin",
+    "http",
+    "resource",
+    "cache",
+    "state-management",
+    "typescript"
+  ],
+  "author": {
+    "name": "Tareq Jami",
+    "email": "info@jami-it.de",
+    "url": "http://tareqjami.de"
+  },
+  "license": "MIT",
+  "homepage": "https://ng-openapi.dev/plugins/http-resource",
+  "bugs": {
+    "url": "https://github.com/ng-openapi/ng-openapi/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ng-openapi/ng-openapi.git",
+    "directory": "packages/plugins/http-resource"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/ng-openapi"
+  },
+  "type": "module",
+  "main": "./index.js",
+  "module": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js",
+      "require": "./index.cjs"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.cjs",
+    "index.d.ts",
+    "lib/**/*.js",
+    "lib/**/*.cjs",
+    "lib/**/*.d.ts",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "prepublishOnly": "echo 'Build the package using: npm run build:http-resource from workspace root'",
+    "build": "tsup"
+  },
+  "peerDependencies": {
+    "@angular/core": ">=19.2",
+    "@angular/common": ">=19.2",
+    "ng-openapi": ">=0.1",
+    "ts-morph": "*"
+  },
+  "peerDependenciesMeta": {
+    "@angular/core": {
+      "optional": false
+    },
+    "@angular/common": {
+      "optional": false
+    },
+    "ng-openapi": {
+      "optional": false
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

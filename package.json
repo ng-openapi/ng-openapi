@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "build:ng-openapi": "nx build ng-openapi",
+    "build:http-resource": "nx build http-resource",
+    "build": "npm run build:ng-openapi && npm run build:http-resource",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",

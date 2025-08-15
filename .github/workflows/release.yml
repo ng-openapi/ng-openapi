@@ -109,13 +109,23 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Build library
-        run: npx nx run ng-openapi:build
-
-      - name: Verify build output
+      - name: Build all packages
         run: |
+          echo "🔨 Building ng-openapi..."
+          npx nx run ng-openapi:build
+          
+          echo "🔨 Building http-resource plugin..."
+          npx nx run http-resource:build
+
+      - name: Verify build outputs
+        run: |
+          echo "📦 ng-openapi build output:"
           ls -la dist/packages/ng-openapi/
           cat dist/packages/ng-openapi/package.json
+          
+          echo "📦 http-resource build output:"
+          ls -la dist/packages/plugins/http-resource/
+          cat dist/packages/plugins/http-resource/package.json
 
       - name: Configure Git
         run: |
@@ -168,8 +178,8 @@ jobs:
             echo "is_prerelease=$IS_PRERELEASE"
           } >> $GITHUB_OUTPUT
 
-      - name: Update version
-        id: version
+      - name: Update ng-openapi version
+        id: version-ng-openapi
         working-directory: packages/ng-openapi
         run: |
           # Update version based on release type
@@ -183,7 +193,7 @@ jobs:
           
           # Get the new version
           NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "New version: $NEW_VERSION"
+          echo "ng-openapi new version: $NEW_VERSION"
           
           # Set outputs
           {
@@ -191,43 +201,85 @@ jobs:
             echo "npm_tag=$NPM_TAG"
           } >> $GITHUB_OUTPUT
 
-      - name: Copy updated package.json to dist
+      - name: Update http-resource version
+        id: version-http-resource
+        working-directory: packages/plugins/http-resource
         run: |
-          cp packages/ng-openapi/package.json dist/packages/ng-openapi/package.json
-          echo "Updated package version: $(cat dist/packages/ng-openapi/package.json | jq -r '.version')"
+          # Update version based on release type
+          if [[ "${{ steps.release-params.outputs.is_prerelease }}" == "true" ]]; then
+            npm version prerelease --preid="${{ steps.release-params.outputs.prerelease_tag }}" --no-git-tag-version
+            NPM_TAG="${{ steps.release-params.outputs.prerelease_tag }}"
+          else
+            npm version "${{ steps.release-params.outputs.release_type }}" --no-git-tag-version
+            NPM_TAG="latest"
+          fi
+          
+          # Get the new version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "http-resource new version: $NEW_VERSION"
+          
+          # Set outputs
+          {
+            echo "version=$NEW_VERSION"
+            echo "npm_tag=$NPM_TAG"
+          } >> $GITHUB_OUTPUT
 
-      - name: Publish to NPM
+      - name: Copy updated package.json files to dist
+        run: |
+          echo "📋 Copying updated package.json files..."
+          cp packages/ng-openapi/package.json dist/packages/ng-openapi/package.json
+          cp packages/plugins/http-resource/package.json dist/packages/plugins/http-resource/package.json
+          
+          echo "✅ Updated ng-openapi version: $(cat dist/packages/ng-openapi/package.json | jq -r '.version')"
+          echo "✅ Updated http-resource version: $(cat dist/packages/plugins/http-resource/package.json | jq -r '.version')"
+
+      - name: Publish ng-openapi to NPM
         if: github.event.inputs.dry_run != 'true'
         working-directory: dist/packages/ng-openapi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          echo "Publishing version ${{ steps.version.outputs.version }} with tag ${{ steps.version.outputs.npm_tag }}"
-          npm publish --tag ${{ steps.version.outputs.npm_tag }} --access public
-          echo "✅ Published successfully!"
+          echo "📦 Publishing ng-openapi version ${{ steps.version-ng-openapi.outputs.version }} with tag ${{ steps.version-ng-openapi.outputs.npm_tag }}"
+          npm publish --tag ${{ steps.version-ng-openapi.outputs.npm_tag }} --access public
+          echo "✅ ng-openapi published successfully!"
 
-      - name: Create Git tag and push
+      - name: Publish http-resource to NPM
+        if: github.event.inputs.dry_run != 'true'
+        working-directory: dist/packages/plugins/http-resource
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "📦 Publishing @ng-openapi/http-resource version ${{ steps.version-http-resource.outputs.version }} with tag ${{ steps.version-http-resource.outputs.npm_tag }}"
+          npm publish --tag ${{ steps.version-http-resource.outputs.npm_tag }} --access public
+          echo "✅ @ng-openapi/http-resource published successfully!"
+
+      - name: Create Git tags and push
         if: github.event.inputs.dry_run != 'true' && github.event_name != 'pull_request'
         run: |
-          git add packages/ng-openapi/package.json
-          git commit -m "chore: release v${{ steps.version.outputs.version }}"
-          git tag "v${{ steps.version.outputs.version }}"
+          echo "🏷️ Creating Git tags and committing changes..."
+          git add packages/ng-openapi/package.json packages/plugins/http-resource/package.json
+          git commit -m "chore: release ng-openapi@${{ steps.version-ng-openapi.outputs.version }} and @ng-openapi/http-resource@${{ steps.version-http-resource.outputs.version }}"
+          
+          # Create tags for both packages
+          git tag "ng-openapi@${{ steps.version-ng-openapi.outputs.version }}"
+          git tag "@ng-openapi/http-resource@${{ steps.version-http-resource.outputs.version }}"
+          
           git push origin HEAD --tags
-          echo "✅ Git tag created and pushed"
+          echo "✅ Git tags created and pushed"
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release for ng-openapi
         if: github.event.inputs.dry_run != 'true' && github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: Release v${{ steps.version.outputs.version }}
+          tag_name: ng-openapi@${{ steps.version-ng-openapi.outputs.version }}
+          name: ng-openapi v${{ steps.version-ng-openapi.outputs.version }}
           body: |
-            ## 🚀 ng-openapi v${{ steps.version.outputs.version }}
+            ## 🚀 ng-openapi v${{ steps.version-ng-openapi.outputs.version }}
             
             ### 📦 Installation
             ```bash
             # Install this version
-            npm install ng-openapi@${{ steps.version.outputs.version }} --save-dev
+            npm install ng-openapi@${{ steps.version-ng-openapi.outputs.version }} --save-dev
             
             # Install latest stable
             npm install ng-openapi --save-dev
@@ -242,8 +294,55 @@ jobs:
             
             ### 🔗 Links
             - 📚 [NPM Package](https://www.npmjs.com/package/ng-openapi)
-            - 📖 [Documentation](https://github.com/${{ github.repository }}#readme)
+            - 📖 [Documentation](https://ng-openapi.dev/)
             - 🐛 [Report Issues](https://github.com/${{ github.repository }}/issues)
+            
+            ### 📋 Other Packages Released
+            - **@ng-openapi/http-resource**: v${{ steps.version-http-resource.outputs.version }}
+          prerelease: ${{ steps.release-params.outputs.is_prerelease == 'true' }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release for http-resource
+        if: github.event.inputs.dry_run != 'true' && github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "@ng-openapi/http-resource@${{ steps.version-http-resource.outputs.version }}"
+          name: "@ng-openapi/http-resource v${{ steps.version-http-resource.outputs.version }}"
+          body: |
+            ## 🚀 @ng-openapi/http-resource v${{ steps.version-http-resource.outputs.version }}
+            
+            HTTP Resource plugin for ng-openapi - Angular HTTP utilities with caching and state management.
+            
+            ### 📦 Installation
+            ```bash
+            # Install this version
+            npm install @ng-openapi/http-resource@${{ steps.version-http-resource.outputs.version }}
+            
+            # Install latest stable
+            npm install @ng-openapi/http-resource
+            ```
+            
+            ### 🛠️ Usage
+            ```typescript
+            import { HttpResourceGenerator } from '@ng-openapi/http-resource';
+            
+            const config: GeneratorConfig = {
+              input: './swagger.json',
+              output: './src/api',
+              plugins: [HttpResourceGenerator],
+              options: { /* ... */ }
+            };
+            ```
+            
+            ### 🔗 Links
+            - 📚 [NPM Package](https://www.npmjs.com/package/@ng-openapi/http-resource)
+            - 📖 [Documentation](https://ng-openapi.dev/plugins/http-resource)
+            - 🐛 [Report Issues](https://github.com/${{ github.repository }}/issues)
+            
+            ### 📋 Other Packages Released
+            - **ng-openapi**: v${{ steps.version-ng-openapi.outputs.version }}
           prerelease: ${{ steps.release-params.outputs.is_prerelease == 'true' }}
           generate_release_notes: true
         env:
@@ -256,20 +355,33 @@ jobs:
           script: |
             const comment = `## 🚀 PR Prerelease Published
             
-            **Version**: \`v${{ steps.version.outputs.version }}\`
-            **NPM Tag**: \`${{ steps.version.outputs.npm_tag }}\`
-            **Commit**: \`${{ github.event.pull_request.head.sha }}\`
+            Multiple packages have been published for this PR:
             
-            ### 📦 Install this PR version:
+            ### 📦 ng-openapi
+            **Version**: \`v${{ steps.version-ng-openapi.outputs.version }}\`
+            **NPM Tag**: \`${{ steps.version-ng-openapi.outputs.npm_tag }}\`
+            
             \`\`\`bash
-            npm install ng-openapi@${{ steps.version.outputs.version }} --save-dev
+            npm install ng-openapi@${{ steps.version-ng-openapi.outputs.version }} --save-dev
             \`\`\`
             
-            ### 🔗 Links
-            - [NPM Package](https://www.npmjs.com/package/ng-openapi/v/${{ steps.version.outputs.version }})
-            - [All versions](https://www.npmjs.com/package/ng-openapi?activeTab=versions)
+            ### 📦 @ng-openapi/http-resource
+            **Version**: \`v${{ steps.version-http-resource.outputs.version }}\`
+            **NPM Tag**: \`${{ steps.version-http-resource.outputs.npm_tag }}\`
             
-            > This version is unique to commit \`${{ github.event.pull_request.head.sha }}\` and will not conflict with other releases.
+            \`\`\`bash
+            npm install @ng-openapi/http-resource@${{ steps.version-http-resource.outputs.version }}
+            \`\`\`
+            
+            **Commit**: \`${{ github.event.pull_request.head.sha }}\`
+            
+            ### 🔗 Links
+            - [ng-openapi NPM](https://www.npmjs.com/package/ng-openapi/v/${{ steps.version-ng-openapi.outputs.version }})
+            - [@ng-openapi/http-resource NPM](https://www.npmjs.com/package/@ng-openapi/http-resource/v/${{ steps.version-http-resource.outputs.version }})
+            - [All ng-openapi versions](https://www.npmjs.com/package/ng-openapi?activeTab=versions)
+            - [All http-resource versions](https://www.npmjs.com/package/@ng-openapi/http-resource?activeTab=versions)
+            
+            > These versions are unique to commit \`${{ github.event.pull_request.head.sha }}\` and will not conflict with other releases.
             `;
             
             github.rest.issues.createComment({
@@ -290,6 +402,10 @@ jobs:
             
             **Note**: Only repository maintainers (with write, maintain, or admin access) can trigger automatic PR releases.
             
+            **Packages that would have been published:**
+            - ng-openapi
+            - @ng-openapi/http-resource
+            
             If you believe this is an error, please contact a maintainer.
             `;
             
@@ -302,21 +418,34 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## 🎉 Release Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version**: v${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **NPM Tag**: ${{ steps.version.outputs.npm_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎉 Multi-Package Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 ng-openapi" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: v${{ steps.version-ng-openapi.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **NPM Tag**: ${{ steps.version-ng-openapi.outputs.npm_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **NPM Package**: https://www.npmjs.com/package/ng-openapi" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 @ng-openapi/http-resource" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: v${{ steps.version-http-resource.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **NPM Tag**: ${{ steps.version-http-resource.outputs.npm_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **NPM Package**: https://www.npmjs.com/package/@ng-openapi/http-resource" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🛠️ Release Configuration" >> $GITHUB_STEP_SUMMARY
           echo "- **Prerelease**: ${{ steps.release-params.outputs.is_prerelease }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Release Type**: ${{ steps.release-params.outputs.release_type }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **NPM Package**: https://www.npmjs.com/package/ng-openapi" >> $GITHUB_STEP_SUMMARY
           
           if [[ "${{ github.event.inputs.dry_run }}" == "true" ]]; then
             echo "- **Dry Run**: ✅ No actual publishing occurred" >> $GITHUB_STEP_SUMMARY
           else
-            echo "- **Published**: ✅ Successfully published to NPM" >> $GITHUB_STEP_SUMMARY
+            echo "- **Published**: ✅ All packages successfully published to NPM" >> $GITHUB_STEP_SUMMARY
           fi
           
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "- **PR Release**: ✅ This is a PR prerelease" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🔀 PR Release Details" >> $GITHUB_STEP_SUMMARY
+            echo "- **PR Release**: ✅ These are PR prereleases" >> $GITHUB_STEP_SUMMARY
             echo "- **Commit SHA**: ${{ github.event.pull_request.head.sha }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Install Command**: \`npm install ng-openapi@${{ steps.version.outputs.version }} --save-dev\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Install Commands**:" >> $GITHUB_STEP_SUMMARY
+            echo "  - \`npm install ng-openapi@${{ steps.version-ng-openapi.outputs.version }} --save-dev\`" >> $GITHUB_STEP_SUMMARY
+            echo "  - \`npm install @ng-openapi/http-resource@${{ steps.version-http-resource.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           fi

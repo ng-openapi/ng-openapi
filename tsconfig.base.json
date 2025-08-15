@@ -1,7 +1,6 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "rootDir": ".",
     "sourceMap": true,
     "declaration": false,
     "moduleResolution": "node",
@@ -18,6 +17,12 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@ng-openapi/http-resource": [
+        "packages/plugins/http-resource/src/index.ts"
+      ],
+      "@ng-openapi/shared": [
+        "packages/shared/src/index.ts"
+      ],
       "ng-openapi": [
         "packages/ng-openapi/src/index.ts"
       ]
