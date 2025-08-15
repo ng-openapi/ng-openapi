@@ -14,14 +14,14 @@ export default defineConfig([
             "@angular/core",
             "@angular/common",
             "ng-openapi",
-            "ts-morph",          // Add this - it's being bundled
-            "path",              // Node.js built-ins
-            "fs"                 // Node.js built-ins
+            "ts-morph", // Add this - it's being bundled
+            "path", // Node.js built-ins
+            "fs", // Node.js built-ins
         ],
         splitting: false,
         treeshake: false,
-        bundle: true,        // Add this explicitly
-        minify: false,       // Add this for debugging
+        bundle: true, // Add this explicitly
+        minify: false, // Add this for debugging
         onSuccess: async () => {
             const distDir = "../../../dist/packages/plugins/http-resource";
 

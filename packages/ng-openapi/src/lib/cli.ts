@@ -54,7 +54,7 @@ function validateInput(inputPath: string): void {
     if (isUrl(inputPath)) {
         // For URLs, we can't validate existence beforehand, but we can validate the URL format
         const url = new URL(inputPath);
-        if (!['http:', 'https:'].includes(url.protocol)) {
+        if (!["http:", "https:"].includes(url.protocol)) {
             throw new Error(`Unsupported URL protocol: ${url.protocol}. Only HTTP and HTTPS are supported.`);
         }
         return; // URL validation passed
@@ -117,7 +117,9 @@ async function generateFromOptions(options: any): Promise<void> {
 // Main command with options (allows: ng-openapi -c config.ts)
 program
     .name("ng-openapi")
-    .description("Generate Angular services and types from OpenAPI/Swagger specifications (JSON, YAML, YML) from files or URLs")
+    .description(
+        "Generate Angular services and types from OpenAPI/Swagger specifications (JSON, YAML, YML) from files or URLs"
+    )
     .version(packageJson.version)
     .option("-c, --config <path>", "Path to configuration file")
     .option("-i, --input <path>", "Path or URL to OpenAPI/Swagger specification (.json, .yaml, .yml)")

@@ -5,7 +5,7 @@ export class TokenGenerator {
     private project: Project;
     private clientName: string;
 
-    constructor(project: Project, clientName = 'default') {
+    constructor(project: Project, clientName = "default") {
         this.project = project;
         this.clientName = clientName;
     }
@@ -80,7 +80,7 @@ export class TokenGenerator {
         });
 
         // For backward compatibility, export BASE_PATH for default client
-        if (this.clientName === 'default') {
+        if (this.clientName === "default") {
             sourceFile.addVariableStatement({
                 isExported: true,
                 declarationKind: VariableDeclarationKind.Const,
@@ -115,17 +115,17 @@ export class TokenGenerator {
     }
 
     private getBasePathTokenName(): string {
-        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
         return `BASE_PATH_${clientSuffix}`;
     }
 
     private getInterceptorsTokenName(): string {
-        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
         return `HTTP_INTERCEPTORS_${clientSuffix}`;
     }
 
     private getClientContextTokenName(): string {
-        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
         return `CLIENT_CONTEXT_TOKEN_${clientSuffix}`;
     }
 }

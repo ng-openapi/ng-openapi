@@ -1,6 +1,5 @@
 import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
-import { GeneratorConfig, PathInfo } from "@ng-openapi/shared";
-import { camelCase, getTypeScriptType } from "@ng-openapi/shared";
+import { camelCase, GeneratorConfig, getTypeScriptType, PathInfo } from "@ng-openapi/shared";
 
 export class ServiceMethodParamsGenerator {
     private config: GeneratorConfig;

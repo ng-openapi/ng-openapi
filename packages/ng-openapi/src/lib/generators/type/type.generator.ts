@@ -1,7 +1,11 @@
 import { InterfaceDeclaration, ModuleKind, Project, ScriptTarget, SourceFile } from "ts-morph";
-import { SwaggerParser } from "@ng-openapi/shared";
-import { TYPE_GENERATOR_HEADER_COMMENT } from "@ng-openapi/shared";
-import { EnumValueObject, GeneratorConfig, SwaggerDefinition } from "@ng-openapi/shared";
+import {
+    EnumValueObject,
+    GeneratorConfig,
+    SwaggerDefinition,
+    SwaggerParser,
+    TYPE_GENERATOR_HEADER_COMMENT,
+} from "@ng-openapi/shared";
 
 export class TypeGenerator {
     private readonly project: Project;

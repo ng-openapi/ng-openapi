@@ -120,7 +120,15 @@ export class ServiceGenerator {
                 moduleSpecifier: "@angular/core",
             },
             {
-                namedImports: ["HttpClient", "HttpParams", "HttpHeaders", "HttpContext", "HttpResponse", "HttpEvent", "HttpContextToken"],
+                namedImports: [
+                    "HttpClient",
+                    "HttpParams",
+                    "HttpHeaders",
+                    "HttpContext",
+                    "HttpResponse",
+                    "HttpEvent",
+                    "HttpContextToken",
+                ],
                 moduleSpecifier: "@angular/common/http",
             },
             {

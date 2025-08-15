@@ -1,5 +1,5 @@
 import { GeneratorConfig, TypeSchema } from "../types";
-import { pascalCase } from './string.utils';
+import { pascalCase } from "./string.utils";
 
 /**
  * Convert OpenAPI/Swagger types to TypeScript types

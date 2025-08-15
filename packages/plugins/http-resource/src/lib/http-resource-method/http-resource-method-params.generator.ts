@@ -1,13 +1,5 @@
 import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
-import {
-    GeneratorConfig,
-    getResponseType,
-    getResponseTypeFromResponse,
-    inferResponseTypeFromContentType,
-    PathInfo,
-    SwaggerResponse,
-} from "@ng-openapi/shared";
-import { getTypeScriptType } from "@ng-openapi/shared";
+import { GeneratorConfig, getResponseType, getTypeScriptType, PathInfo } from "@ng-openapi/shared";
 
 export class HttpResourceMethodParamsGenerator {
     private config: GeneratorConfig;

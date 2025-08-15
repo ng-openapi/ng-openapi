@@ -32,4 +32,4 @@ export interface IPluginGeneratorConstructor {
  */
 export type IPluginGeneratorClass = IPluginGeneratorConstructor & {
     prototype: IPluginGenerator;
-}
+};

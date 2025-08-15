@@ -1,9 +1,12 @@
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
-    "module": "ES2022", // Changed from "commonjs"
-    "target": "ES2022",  // Add this
-    "moduleResolution": "bundler", // Add this for better ESM support
+    "module": "ES2022",
+    // Changed from "commonjs"
+    "target": "ES2022",
+    // Add this
+    "moduleResolution": "bundler",
+    // Add this for better ESM support
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "importHelpers": true,

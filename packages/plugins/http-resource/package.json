@@ -41,7 +41,8 @@
       "import": "./index.js",
       "require": "./index.cjs"
     }
-  },  "files": [
+  },
+  "files": [
     "index.js",
     "index.cjs",
     "index.d.ts",

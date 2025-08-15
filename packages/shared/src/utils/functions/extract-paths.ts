@@ -1,7 +1,10 @@
 import { Parameter, PathInfo } from "../../types";
 import { Path } from "swagger-schema-official";
 
-export function extractPaths(swaggerPaths: { [p: string]: Path } = {}, methods = ["get", "post", "put", "patch", "delete", "options", "head"]): PathInfo[] {
+export function extractPaths(
+    swaggerPaths: { [p: string]: Path } = {},
+    methods = ["get", "post", "put", "patch", "delete", "options", "head"]
+): PathInfo[] {
     const paths: PathInfo[] = [];
     Object.entries(swaggerPaths).forEach(([path, pathItem]: [string, any]) => {
         methods.forEach((method) => {

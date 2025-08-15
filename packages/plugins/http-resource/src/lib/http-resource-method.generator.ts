@@ -59,10 +59,10 @@ export class HttpResourceMethodGenerator {
     }
 
     generateMethodOverload(
-        methodParams: OptionalKind<ParameterDeclarationStructure>[],
+        methodParams: OptionalKind<ParameterDeclarationStructure>[]
     ): OptionalKind<MethodDeclarationOverloadStructure>[] {
         const _methodParams = structuredClone(methodParams);
-        const params = _methodParams.slice(0,-2).map((p) => {
+        const params = _methodParams.slice(0, -2).map((p) => {
             if (p.hasQuestionToken) {
                 p.hasQuestionToken = false;
                 p.type += " | undefined";
@@ -76,9 +76,11 @@ export class HttpResourceMethodGenerator {
             }
             return p;
         });
-        return [{
-            parameters: [...params, ...optionParams],
-            returnType: `HttpResourceRef<${this.#responseType}>`
-        }];
+        return [
+            {
+                parameters: [...params, ...optionParams],
+                returnType: `HttpResourceRef<${this.#responseType}>`,
+            },
+        ];
     }
 }

@@ -1,7 +1,6 @@
 import { Project } from "ts-morph";
 import * as path from "path";
-import { GeneratorConfig } from "@ng-openapi/shared";
-import { PROVIDER_GENERATOR_HEADER_COMMENT } from "@ng-openapi/shared";
+import { GeneratorConfig, PROVIDER_GENERATOR_HEADER_COMMENT } from "@ng-openapi/shared";
 
 export class ProviderGenerator {
     private project: Project;
@@ -11,7 +10,7 @@ export class ProviderGenerator {
     constructor(project: Project, config: GeneratorConfig) {
         this.project = project;
         this.config = config;
-        this.clientName = config.clientName || 'default';
+        this.clientName = config.clientName || "default";
     }
 
     generate(outputDir: string): void {
@@ -74,7 +73,7 @@ export class ProviderGenerator {
                     type: "(new (...args: HttpInterceptor[]) => HttpInterceptor)[]",
                     hasQuestionToken: true,
                     docs: ["Array of HTTP interceptor classes to apply to this client"],
-                }
+                },
             ],
         });
 
@@ -114,26 +113,30 @@ const providers: Provider[] = [
 if (config.interceptors && config.interceptors.length > 0) {
     const interceptorInstances = config.interceptors.map(InterceptorClass => new InterceptorClass());
     
-    ${hasDateInterceptor ?
-            `// Add date interceptor if enabled (default: true)
+    ${
+        hasDateInterceptor
+            ? `// Add date interceptor if enabled (default: true)
     if (config.enableDateTransform !== false) {
         interceptorInstances.unshift(new DateInterceptor());
-    }` :
-            `// Date transformation not available (dateType: 'string' was used in generation)`}
+    }`
+            : `// Date transformation not available (dateType: 'string' was used in generation)`
+    }
     
     providers.push({
         provide: ${interceptorsTokenName},
         useValue: interceptorInstances
     });
-} ${hasDateInterceptor ?
-            `else if (config.enableDateTransform !== false) {
+} ${
+            hasDateInterceptor
+                ? `else if (config.enableDateTransform !== false) {
     // Only date interceptor enabled
     providers.push({
         provide: ${interceptorsTokenName},
         useValue: [new DateInterceptor()]
     });
-}` :
-            ``} else {
+}`
+                : ``
+        } else {
     // No interceptors
     providers.push({
         provide: ${interceptorsTokenName},
@@ -163,46 +166,46 @@ return makeEnvironmentProviders(providers);`;
                 "    // other providers...",
                 "  ]",
                 "};",
-                "```"
+                "```",
             ],
             parameters: [
                 {
                     name: "config",
-                    type: configTypeName
-                }
+                    type: configTypeName,
+                },
             ],
             returnType: "EnvironmentProviders",
-            statements: functionBody
+            statements: functionBody,
         });
 
         // For backward compatibility, add generic provider if this is the default client
-        if (this.clientName === 'default') {
+        if (this.clientName === "default") {
             sourceFile.addFunction({
                 name: "provideNgOpenapi",
                 isExported: true,
                 docs: [
                     "@deprecated Use provideDefaultClient instead for better clarity",
-                    "Provides configuration for the default client"
+                    "Provides configuration for the default client",
                 ],
                 parameters: [
                     {
                         name: "config",
-                        type: configTypeName
-                    }
+                        type: configTypeName,
+                    },
                 ],
                 returnType: "EnvironmentProviders",
-                statements: `return ${functionName}(config);`
+                statements: `return ${functionName}(config);`,
             });
         }
     }
 
     private getBasePathTokenName(): string {
-        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
         return `BASE_PATH_${clientSuffix}`;
     }
 
     private getInterceptorsTokenName(): string {
-        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
         return `HTTP_INTERCEPTORS_${clientSuffix}`;
     }
 

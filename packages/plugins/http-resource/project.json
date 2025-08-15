@@ -12,7 +12,10 @@
       "fallbackCurrentVersionResolver": "disk"
     }
   },
-  "tags": ["plugin", "http-resource"],
+  "tags": [
+    "plugin",
+    "http-resource"
+  ],
   "targets": {
     "nx-release-publish": {
       "options": {
