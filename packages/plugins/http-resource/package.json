@@ -72,6 +72,9 @@
     },
     "ng-openapi": {
       "optional": false
+    },
+    "ts-morph": {
+      "optional": false
     }
   },
   "engines": {

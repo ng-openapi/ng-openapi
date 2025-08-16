@@ -3,7 +3,6 @@ import { copyFileSync, existsSync } from "fs";
 import { join } from "path";
 
 export default defineConfig([
-    // Main library build
     {
         entry: ["src/index.ts"],
         format: ["esm", "cjs"],
@@ -11,7 +10,18 @@ export default defineConfig([
         sourcemap: true,
         clean: true,
         outDir: "../../dist/packages/ng-openapi",
-        external: ["@angular/core", "@angular/common"],
+        external: [
+            "@angular/core",
+            "@angular/common",
+            "commander",
+            "ts-morph",
+            "ts-node",
+            "typescript",
+            "@types/swagger-schema-official",
+            "js-yaml",
+            "path",
+            "fs",
+        ],
         onSuccess: async () => {
             const distDir = "../../dist/packages/ng-openapi";
 
@@ -31,20 +41,28 @@ export default defineConfig([
             }
         },
     },
-    // CLI build
     {
         entry: { cli: "src/lib/cli.ts" },
         format: ["cjs"],
         dts: false,
         sourcemap: true,
-        clean: false,
+        clean: true,
         outDir: "../../dist/packages/ng-openapi",
         outExtension() {
             return {
                 js: ".cjs",
             };
         },
-        external: ["@angular/core", "@angular/common"],
+        external: [
+            "@angular/core",
+            "@angular/common",
+            "commander",
+            "ts-morph",
+            "ts-node",
+            "typescript",
+            "@types/swagger-schema-official",
+            "js-yaml",
+        ],
         platform: "node",
         target: "node18",
     },
