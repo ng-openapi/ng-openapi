@@ -10,7 +10,10 @@
     "resource",
     "cache",
     "state-management",
-    "typescript"
+    "typescript",
+    "signal",
+    "ng",
+    "openapi"
   ],
   "author": {
     "name": "Tareq Jami",

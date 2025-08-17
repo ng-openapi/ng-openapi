@@ -29,7 +29,7 @@ Add the plugin to your OpenAPI configuration:
 ```typescript
 // openapi.config.ts
 import { GeneratorConfig } from 'ng-openapi';
-import { HttpResourceGenerator } from '@ng-openapi/http-resource';
+import { HttpResourcePlugin } from '@ng-openapi/http-resource';
 
 export default {
   input: './swagger.json',
