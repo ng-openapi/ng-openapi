@@ -3,6 +3,7 @@
   "version": "0.1.3",
   "description": "Generate Angular services and TypeScript types from OpenAPI/Swagger specifications",
   "keywords": [
+    "ng-openapi",
     "angular",
     "openapi",
     "swagger",
@@ -13,7 +14,11 @@
     "api",
     "rest",
     "http",
-    "cli"
+    "cli",
+    "ng",
+    "ng openapi",
+    "httpResource",
+    "reactive"
   ],
   "author": {
     "name": "Tareq Jami",
