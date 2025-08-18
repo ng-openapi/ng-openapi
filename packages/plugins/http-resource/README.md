@@ -1,7 +1,7 @@
-<div align="center">
-  <h1 align="center"><img src="https://raw.githubusercontent.com/ng-openapi/ng-openapi/HEAD/docs/public/ng-openapi-logo.svg" alt="Logo" style="height: 12vh; margin-bottom: 2vh;" width="160"></h1>
-  <h1 align="center"><b>HTTP Resource Plugin</b></h1>
-  <p align="center">🚀 Angular httpResource integration for ng-openapi</p>
+<div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+  <h1><img src="https://raw.githubusercontent.com/ng-openapi/ng-openapi/HEAD/docs/public/ng-openapi-logo.svg" alt="Logo" style="height: 12vh; margin-bottom: 2vh;" width="160"></h1>
+  <h1><b>HTTP Resource Plugin</b></h1>
+  <p>🚀 Angular httpResource integration for <a href="https://www.npmjs.com/package/ng-openapi">ng-openapi</a></p>
 </div>
 
 <p align="center">
