@@ -11,34 +11,29 @@ import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
 import { ProviderGenerator } from "../generators/utility/provider.generator";
 import { GeneratorConfig, IPluginGeneratorClass } from "@ng-openapi/shared";
 import * as fs from "fs";
-
-/**
- * Determines if input is a URL
- */
-function isUrl(input: string): boolean {
-    try {
-        new URL(input);
-        return true;
-    } catch {
-        return false;
-    }
-}
+import * as path from "path";
+import { isUrl } from "@ng-openapi/shared/src/utils/functions/is-url";
 
 /**
  * Validates input (file or URL)
  */
-function validateInput(input: string): void {
-    if (isUrl(input)) {
-        // For URLs, validate the protocol
-        const url = new URL(input);
-        if (!["http:", "https:"].includes(url.protocol)) {
-            throw new Error(`Unsupported URL protocol: ${url.protocol}. Only HTTP and HTTPS are supported.`);
-        }
-    } else {
-        // For files, check existence
-        if (!fs.existsSync(input)) {
-            throw new Error(`Input file not found: ${input}`);
-        }
+export function validateInput(inputPath: string): void {
+    if (isUrl(inputPath)) {
+        return;
+    }
+
+    // For local files, check existence and extension
+    if (!fs.existsSync(inputPath)) {
+        throw new Error(`Input file not found: ${inputPath}`);
+    }
+
+    const extension = path.extname(inputPath).toLowerCase();
+    const supportedExtensions = [".json", ".yaml", ".yml"];
+
+    if (!supportedExtensions.includes(extension)) {
+        throw new Error(
+            `Failed to parse ${extension || "specification"}. Supported formats are .json, .yaml, and .yml.`
+        );
     }
 }
 

@@ -6,6 +6,7 @@ import * as fs from "fs";
 import { generateFromConfig } from "./core";
 import * as packageJson from "../../package.json";
 import { GeneratorConfig } from "@ng-openapi/shared";
+import { isUrl } from "@ng-openapi/shared/src/utils/functions/is-url";
 
 const program = new Command();
 
@@ -35,60 +36,31 @@ async function loadConfigFile(configPath: string): Promise<GeneratorConfig> {
             throw new Error('Configuration must include "input" and "output" properties');
         }
 
+        // Resolve relative paths relative to the config file directory
+        const configDir = path.dirname(resolvedPath);
+
+        // Only resolve input if it's not a URL and is a relative path
+        if (!isUrl(config.input) && !path.isAbsolute(config.input)) {
+            config.input = path.resolve(configDir, config.input);
+        }
+
+        // Only resolve output if it's a relative path
+        if (!path.isAbsolute(config.output)) {
+            config.output = path.resolve(configDir, config.output);
+        }
+
         return config;
     } catch (error) {
         throw new Error(`Failed to load configuration file: ${error instanceof Error ? error.message : error}`);
     }
 }
 
-function isUrl(input: string): boolean {
-    try {
-        new URL(input);
-        return true;
-    } catch {
-        return false;
-    }
-}
-
-function validateInput(inputPath: string): void {
-    if (isUrl(inputPath)) {
-        // For URLs, we can't validate existence beforehand, but we can validate the URL format
-        const url = new URL(inputPath);
-        if (!["http:", "https:"].includes(url.protocol)) {
-            throw new Error(`Unsupported URL protocol: ${url.protocol}. Only HTTP and HTTPS are supported.`);
-        }
-        return; // URL validation passed
-    }
-
-    // For local files, check existence and extension
-    if (!fs.existsSync(inputPath)) {
-        throw new Error(`Input file not found: ${inputPath}`);
-    }
-
-    const extension = path.extname(inputPath).toLowerCase();
-    const supportedExtensions = [".json", ".yaml", ".yml"];
-
-    if (!supportedExtensions.includes(extension)) {
-        throw new Error(
-            `Failed to parse ${extension || "specification"}. Supported formats are .json, .yaml, and .yml.`
-        );
-    }
-}
-
 async function generateFromOptions(options: any): Promise<void> {
     try {
         if (options.config) {
-            // Load configuration from file
             const config = await loadConfigFile(options.config);
-
-            // Validate the input from config (file or URL)
-            validateInput(config.input);
-
             await generateFromConfig(config);
         } else if (options.input) {
-            // Use command line options
-            validateInput(options.input);
-
             const config: GeneratorConfig = {
                 input: options.input, // Can now be a URL or file path
                 output: options.output || "./src/generated",
