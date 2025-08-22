@@ -35,9 +35,33 @@ async function loadConfigFile(configPath: string): Promise<GeneratorConfig> {
             throw new Error('Configuration must include "input" and "output" properties');
         }
 
+        // Resolve relative paths relative to the config file directory
+        const configDir = path.dirname(resolvedPath);
+
+        // Only resolve input if it's not a URL and is a relative path
+        if (!isUrl(config.input) && !path.isAbsolute(config.input)) {
+            config.input = path.resolve(configDir, config.input);
+        }
+
+        // Only resolve output if it's a relative path
+        if (!path.isAbsolute(config.output)) {
+            config.output = path.resolve(configDir, config.output);
+        }
+
         return config;
     } catch (error) {
         throw new Error(`Failed to load configuration file: ${error instanceof Error ? error.message : error}`);
+    }
+}
+
+function validateInputExtension(inputPath: string): void {
+    const extension = path.extname(inputPath).toLowerCase();
+    const supportedExtensions = [".json", ".yaml", ".yml"];
+
+    if (!supportedExtensions.includes(extension)) {
+        throw new Error(
+            `Failed to parse ${extension || "specification"}. Supported formats are .json, .yaml, and .yml.`
+        );
     }
 }
 
@@ -74,15 +98,20 @@ function validateInput(inputPath: string): void {
         );
     }
 }
-
 async function generateFromOptions(options: any): Promise<void> {
     try {
         if (options.config) {
-            // Load configuration from file
+            // Load configuration from file (paths are now resolved in loadConfigFile)
             const config = await loadConfigFile(options.config);
 
             // Validate the input from config (file or URL)
-            validateInput(config.input);
+            // Only validate local files, not URLs
+            if (!isUrl(config.input)) {
+                if (!fs.existsSync(config.input)) {
+                    throw new Error(`Input file not found: ${config.input}`);
+                }
+                validateInputExtension(config.input);
+            }
 
             await generateFromConfig(config);
         } else if (options.input) {
