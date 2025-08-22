@@ -1,7 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as yaml from "js-yaml";
-import { GeneratorConfig, SwaggerDefinition, SwaggerSpec } from "@ng-openapi/shared";
+import { GeneratorConfig, SwaggerDefinition, SwaggerSpec } from "../types";
+import { isUrl } from "../utils/functions/is-url";
 
 export class SwaggerParser {
     private readonly spec: SwaggerSpec;
@@ -21,19 +22,10 @@ export class SwaggerParser {
     }
 
     private static async loadContent(pathOrUrl: string): Promise<string> {
-        if (SwaggerParser.isUrl(pathOrUrl)) {
+        if (isUrl(pathOrUrl)) {
             return await SwaggerParser.fetchUrlContent(pathOrUrl);
         } else {
             return fs.readFileSync(pathOrUrl, "utf8");
-        }
-    }
-
-    private static isUrl(input: string): boolean {
-        try {
-            new URL(input);
-            return true;
-        } catch {
-            return false;
         }
     }
 
@@ -78,7 +70,7 @@ export class SwaggerParser {
         // Determine format from URL or file extension
         let format: "json" | "yaml" | "yml";
 
-        if (SwaggerParser.isUrl(pathOrUrl)) {
+        if (isUrl(pathOrUrl)) {
             // For URLs, try to determine format from URL path or content
             const urlPath = new URL(pathOrUrl).pathname.toLowerCase();
             if (urlPath.endsWith(".json")) {
