@@ -81,6 +81,10 @@ export class HttpResourceMethodGenerator {
                 parameters: [...params, ...optionParams],
                 returnType: `HttpResourceRef<${this.#responseType}>`,
             },
+            {
+                parameters: methodParams,
+                returnType: `HttpResourceRef<${this.#responseType} | undefined>`,
+            }
         ];
     }
 }
