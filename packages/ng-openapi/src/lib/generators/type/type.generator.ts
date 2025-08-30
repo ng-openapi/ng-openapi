@@ -10,30 +10,16 @@ import {
 export class TypeGenerator {
     private readonly project: Project;
     private readonly parser: SwaggerParser;
-    private readonly sourceFile: SourceFile;
+    private sourceFile: SourceFile;
     private readonly generatedTypes = new Set<string>();
     private readonly config: GeneratorConfig;
 
-    private constructor(parser: SwaggerParser, outputRoot: string, config: GeneratorConfig) {
+    constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig, outputRoot: string) {
         this.config = config;
-        const outputPath = outputRoot + "/models/index.ts";
-        this.project = new Project({
-            compilerOptions: {
-                declaration: true,
-                target: ScriptTarget.ES2022,
-                module: ModuleKind.Preserve,
-                strict: true,
-                ...this.config.compilerOptions,
-            },
-        });
-
+        this.project = project;
         this.parser = parser;
+        const outputPath = outputRoot + "/models/index.ts";
         this.sourceFile = this.project.createSourceFile(outputPath, "", { overwrite: true });
-    }
-
-    static async create(swaggerPathOrUrl: string, outputRoot: string, config: GeneratorConfig): Promise<TypeGenerator> {
-        const parser = await SwaggerParser.create(swaggerPathOrUrl, config);
-        return new TypeGenerator(parser, outputRoot, config);
     }
 
     async generate() {

@@ -46,15 +46,6 @@ export class HttpResourceGenerator implements IPluginGenerator {
         this.methodGenerator = new HttpResourceMethodGenerator(config);
     }
 
-    static async create(
-        swaggerPathOrUrl: string,
-        project: Project,
-        config: GeneratorConfig
-    ): Promise<HttpResourceGenerator> {
-        const parser = await SwaggerParser.create(swaggerPathOrUrl, config);
-        return new HttpResourceGenerator(parser, project, config);
-    }
-
     async generate(outputRoot: string) {
         const outputDir = path.join(outputRoot, "resources");
         const paths = extractPaths(this.spec.paths, ["get"]);

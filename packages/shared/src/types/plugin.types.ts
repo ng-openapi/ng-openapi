@@ -1,6 +1,16 @@
+import { SwaggerParser } from "../core";
 import { Project } from "ts-morph";
 import { GeneratorConfig } from "./config.types";
-import { SwaggerParser } from "../core";
+
+/**
+ * Interface for generator class (both constructor and instance)
+ */
+export interface IPluginGeneratorClass {
+    /**
+     * Constructor signature
+     */
+    new (parser: SwaggerParser, project: Project, config: GeneratorConfig): IPluginGenerator;
+}
 
 /**
  * Interface for generator instances
@@ -11,25 +21,3 @@ export interface IPluginGenerator {
      */
     generate(outputRoot: string): Promise<void>;
 }
-
-/**
- * Interface for generator constructor with static methods
- */
-export interface IPluginGeneratorConstructor {
-    /**
-     * Create a generator instance
-     */
-    create(swaggerPathOrUrl: string, project: Project, config: GeneratorConfig): Promise<IPluginGenerator>;
-
-    /**
-     * Constructor signature
-     */
-    new (parser: SwaggerParser, project: Project, config: GeneratorConfig): IPluginGenerator;
-}
-
-/**
- * Combined type that includes both static and instance methods
- */
-export type IPluginGeneratorClass = IPluginGeneratorConstructor & {
-    prototype: IPluginGenerator;
-};

@@ -7,7 +7,6 @@ import {
     getBasePathTokenName,
     getClientContextTokenName,
     hasDuplicateFunctionNames,
-    kebabCase,
     pascalCase,
     PathInfo,
     SERVICE_GENERATOR_HEADER_COMMENT,
@@ -24,7 +23,7 @@ export class ServiceGenerator {
     private config: GeneratorConfig;
     private methodGenerator: ServiceMethodGenerator;
 
-    private constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
+    constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
         this.config = config;
         this.project = project;
         this.parser = parser;
@@ -41,15 +40,6 @@ export class ServiceGenerator {
         }
 
         this.methodGenerator = new ServiceMethodGenerator(config);
-    }
-
-    static async create(
-        swaggerPathOrUrl: string,
-        project: Project,
-        config: GeneratorConfig
-    ): Promise<ServiceGenerator> {
-        const parser = await SwaggerParser.create(swaggerPathOrUrl, config);
-        return new ServiceGenerator(parser, project, config);
     }
 
     async generate(outputRoot: string) {
