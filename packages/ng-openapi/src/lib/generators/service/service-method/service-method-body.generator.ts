@@ -1,11 +1,11 @@
 import {
     camelCase,
     GeneratorConfig,
+    getRequestBodyType,
     getResponseTypeFromResponse,
-    getTypeScriptType,
+    isDataTypeInterface,
     MethodGenerationContext,
     PathInfo,
-    RequestBody,
 } from "@ng-openapi/shared";
 
 export class ServiceMethodBodyGenerator {
@@ -28,17 +28,6 @@ export class ServiceMethodBodyGenerator {
         ];
 
         return bodyParts.filter(Boolean).join("\n");
-    }
-
-    getRequestBodyType(requestBody: RequestBody): string {
-        const content = requestBody.content || {};
-        const jsonContent = content["application/json"];
-
-        if (jsonContent?.schema) {
-            return getTypeScriptType(jsonContent.schema, this.config, jsonContent.schema.nullable);
-        }
-
-        return "any";
     }
 
     isMultipartFormData(operation: PathInfo): boolean {
@@ -214,21 +203,24 @@ const requestOptions: any = {
             if (context.isMultipart) {
                 bodyParam = "formData";
             } else if (operation.requestBody?.content?.["application/json"]) {
-                const bodyType = this.getRequestBodyType(operation.requestBody);
-                const isInterface = this.isDataTypeInterface(bodyType);
+                const bodyType = getRequestBodyType(operation.requestBody, this.config);
+                const isInterface = isDataTypeInterface(bodyType);
                 bodyParam = isInterface ? camelCase(bodyType) : "requestBody";
             }
         }
 
         // Methods that require body
         const methodsWithBody = ["post", "put", "patch"];
+        const parseResponse = this.config.options.validation?.response
+            ? `.pipe(map(response => options?.parse?.(response) ?? response))`
+            : "";
 
         if (methodsWithBody.includes(httpMethod)) {
             return `
-return this.httpClient.${httpMethod}(url, ${bodyParam || "null"}, requestOptions);`;
+return this.httpClient.${httpMethod}(url, ${bodyParam || "null"}, requestOptions)${parseResponse};`;
         } else {
             return `
-return this.httpClient.${httpMethod}(url, requestOptions);`;
+return this.httpClient.${httpMethod}(url, requestOptions)${parseResponse};`;
         }
     }
 
@@ -246,8 +238,10 @@ return this.httpClient.${httpMethod}(url, requestOptions);`;
         return "json";
     }
 
-    private isDataTypeInterface(type: string): boolean {
-        const invalidTypes = ["any", "File", "string", "number", "boolean", "object", "unknown", "[]", "Array"];
-        return !invalidTypes.some((invalidType) => type.includes(invalidType));
+    private generateParseRequestBody(operation: PathInfo): string {
+        if (this.config.options.validation?.request){
+
+        }
+        return "";
     }
 }

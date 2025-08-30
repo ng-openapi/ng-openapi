@@ -132,7 +132,7 @@ export class ServiceGenerator {
                 moduleSpecifier: "@angular/common/http",
             },
             {
-                namedImports: ["Observable"],
+                namedImports: ["Observable", "map"],
                 moduleSpecifier: "rxjs",
             },
             {

@@ -1,10 +1,12 @@
 import { MethodDeclarationOverloadStructure, OptionalKind, ParameterDeclarationStructure } from "ts-morph";
 import { GeneratorConfig, getResponseType, getResponseTypeFromResponse, PathInfo } from "@ng-openapi/shared";
 import { ServiceMethodParamsGenerator } from "./service-method-params.generator";
+import { generateParseRequestTypeParams } from "@ng-openapi/shared";
 
 export class ServiceMethodOverloadsGenerator {
     private config: GeneratorConfig;
     private paramsGenerator: ServiceMethodParamsGenerator;
+    private responseDataType = "any";
 
     constructor(config: GeneratorConfig) {
         this.config = config;
@@ -32,9 +34,9 @@ export class ServiceMethodOverloadsGenerator {
         observe: "body" | "response" | "events",
         responseType: "json" | "blob" | "arraybuffer" | "text"
     ): OptionalKind<MethodDeclarationOverloadStructure> {
-        const responseDataType = this.generateOverloadResponseType(operation);
+        this.responseDataType = this.generateOverloadResponseType(operation);
         const params = this.generateOverloadParameters(operation, observe, responseType);
-        const returnType = this.generateOverloadReturnType(responseDataType, observe);
+        const returnType = this.generateOverloadReturnType(observe);
         return {
             parameters: params,
             returnType: returnType,
@@ -47,7 +49,7 @@ export class ServiceMethodOverloadsGenerator {
         responseType: "json" | "arraybuffer" | "blob" | "text"
     ): OptionalKind<ParameterDeclarationStructure>[] {
         const params = this.paramsGenerator.generateApiParameters(operation);
-        const optionsParam = this.addOverloadOptionsParameter(observe, responseType);
+        const optionsParam = this.addOverloadOptionsParameter(params, observe, responseType);
 
         // Combine all parameters
         const combined = [...params, ...optionsParam];
@@ -66,6 +68,7 @@ export class ServiceMethodOverloadsGenerator {
     }
 
     addOverloadOptionsParameter(
+        params: OptionalKind<ParameterDeclarationStructure>[],
         observe: "body" | "response" | "events",
         responseType: "json" | "arraybuffer" | "blob" | "text"
     ): OptionalKind<ParameterDeclarationStructure>[] {
@@ -77,10 +80,28 @@ export class ServiceMethodOverloadsGenerator {
             },
             {
                 name: "options",
-                type: `{ headers?: HttpHeaders; reportProgress?: boolean; responseType?: '${responseType}'; withCredentials?: boolean; context?: HttpContext; }`,
+                type: this.getHttpRequestOptionsParameter(params, responseType),
                 hasQuestionToken: true,
             },
         ];
+    }
+
+    private getHttpRequestOptionsParameter(params: OptionalKind<ParameterDeclarationStructure>[], responseType: "json" | "arraybuffer" | "blob" | "text"): string {
+        const { response, request } = this.config.options.validation ?? {};
+        const parseRequest = request ? generateParseRequestTypeParams(params) : "";
+
+        const additionalTypeParameters = [];
+        if (response) {
+            additionalTypeParameters.push(this.responseDataType);
+        }
+        if (request && parseRequest) {
+            additionalTypeParameters.push(parseRequest);
+        }
+
+        if (additionalTypeParameters.length === 0) {
+            return `RequestOptions<'${responseType}'>`;
+        }
+        return `RequestOptions<'${responseType}', ${additionalTypeParameters.join(", ")}>`;
     }
 
     generateOverloadResponseType(operation: PathInfo): string {
@@ -93,14 +114,14 @@ export class ServiceMethodOverloadsGenerator {
         return getResponseType(response, this.config);
     }
 
-    generateOverloadReturnType(responseType: string, observe: "body" | "response" | "events"): string {
+    generateOverloadReturnType(observe: "body" | "response" | "events"): string {
         switch (observe) {
             case "body":
-                return `Observable<${responseType}>`;
+                return `Observable<${this.responseDataType}>`;
             case "response":
-                return `Observable<HttpResponse<${responseType}>>`;
+                return `Observable<HttpResponse<${this.responseDataType}>>`;
             case "events":
-                return `Observable<HttpEvent<${responseType}>>`;
+                return `Observable<HttpEvent<${this.responseDataType}>>`;
             default:
                 throw new Error(`Unsupported observe type: ${observe}`);
         }
