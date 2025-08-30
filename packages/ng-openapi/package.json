@@ -1,6 +1,6 @@
 {
   "name": "ng-openapi",
-  "version": "0.1.11-beta.0",
+  "version": "0.1.11",
   "description": "Generate Angular services and TypeScript types from OpenAPI/Swagger specifications",
   "keywords": [
     "ng-openapi",
