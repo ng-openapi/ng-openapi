@@ -13,7 +13,6 @@ export interface GeneratorConfig {
         enumStyle: "enum" | "union";
         validation?: {
             response?: boolean;
-            request?: boolean;
         };
         generateServices?: boolean;
         generateEnumBasedOnDescription?: boolean;

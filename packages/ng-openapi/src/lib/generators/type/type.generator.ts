@@ -404,10 +404,8 @@ export class TypeGenerator {
                 moduleSpecifier: "@angular/common/http",
             },
         ]);
-        const { response, request } = this.config.options.validation ?? {};
-        const typeParameters = [
-            "TResponseType extends 'arraybuffer' | 'blob' | 'json' | 'text'"
-        ];
+        const { response } = this.config.options.validation ?? {};
+        const typeParameters = ["TResponseType extends 'arraybuffer' | 'blob' | 'json' | 'text'"];
         const properties = [
             {
                 name: "headers",
@@ -444,24 +442,24 @@ export class TypeGenerator {
             });
             typeParameters.push("TReturnType");
 
-            const _typeParameters = [...typeParameters, "TParamsObject = never"];
+            // const _typeParameters = [...typeParameters, "TParamsObject = never"];
             this.sourceFile.addInterface({
                 name: "RequestOptions",
                 isExported: true,
-                typeParameters: _typeParameters,
+                typeParameters: typeParameters,
                 properties: properties,
                 docs: ["Request Options for Angular HttpClient requests without request parsing"],
             });
         }
 
-        if (request) {
-            properties.push({
-                name: "parseRequest",
-                type: "(params: TParamsObject) => void",
-                hasQuestionToken: true,
-            });
-            typeParameters.push("TParamsObject");
-        }
+        // if (request) {
+        //     properties.push({
+        //         name: "parseRequest",
+        //         type: "(params: TParamsObject) => void",
+        //         hasQuestionToken: true,
+        //     });
+        //     typeParameters.push("TParamsObject");
+        // }
 
         this.sourceFile.addInterface({
             name: "RequestOptions",

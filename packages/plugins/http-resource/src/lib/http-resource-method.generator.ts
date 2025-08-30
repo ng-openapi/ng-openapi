@@ -84,7 +84,7 @@ export class HttpResourceMethodGenerator {
             {
                 parameters: methodParams,
                 returnType: `HttpResourceRef<${this.#responseType} | undefined>`,
-            }
+            },
         ];
     }
 }

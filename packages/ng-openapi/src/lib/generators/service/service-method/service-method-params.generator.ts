@@ -1,6 +1,5 @@
 import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
 import { camelCase, GeneratorConfig, getTypeScriptType, isDataTypeInterface, PathInfo } from "@ng-openapi/shared";
-import { generateParseRequestTypeParams } from "@ng-openapi/shared";
 
 export class ServiceMethodParamsGenerator {
     private config: GeneratorConfig;
@@ -80,7 +79,9 @@ export class ServiceMethodParamsGenerator {
         return params.sort((a, b) => Number(a.hasQuestionToken) - Number(b.hasQuestionToken));
     }
 
-    addOptionsParameter(params: OptionalKind<ParameterDeclarationStructure>[]): OptionalKind<ParameterDeclarationStructure>[] {
+    addOptionsParameter(
+        params: OptionalKind<ParameterDeclarationStructure>[]
+    ): OptionalKind<ParameterDeclarationStructure>[] {
         return [
             {
                 name: "observe",
@@ -96,16 +97,16 @@ export class ServiceMethodParamsGenerator {
     }
 
     private getHttpRequestOptionsParameter(params: OptionalKind<ParameterDeclarationStructure>[]): string {
-        const { response, request } = this.config.options.validation ?? {};
-        const parseRequest = request ? generateParseRequestTypeParams(params) : "";
+        const { response } = this.config.options.validation ?? {};
+        // const parseRequest = request ? generateParseRequestTypeParams(params) : "";
 
         const additionalTypeParameters = [];
         if (response) {
             additionalTypeParameters.push("any");
         }
-        if (request && parseRequest) {
-            additionalTypeParameters.push(parseRequest);
-        }
+        // if (request && parseRequest) {
+        //     additionalTypeParameters.push(parseRequest);
+        // }
 
         if (additionalTypeParameters.length === 0) {
             return `RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>`;

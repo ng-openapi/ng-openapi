@@ -1,7 +1,6 @@
 import { MethodDeclarationOverloadStructure, OptionalKind, ParameterDeclarationStructure } from "ts-morph";
 import { GeneratorConfig, getResponseType, getResponseTypeFromResponse, PathInfo } from "@ng-openapi/shared";
 import { ServiceMethodParamsGenerator } from "./service-method-params.generator";
-import { generateParseRequestTypeParams } from "@ng-openapi/shared";
 
 export class ServiceMethodOverloadsGenerator {
     private config: GeneratorConfig;
@@ -86,24 +85,6 @@ export class ServiceMethodOverloadsGenerator {
         ];
     }
 
-    private getHttpRequestOptionsParameter(params: OptionalKind<ParameterDeclarationStructure>[], responseType: "json" | "arraybuffer" | "blob" | "text"): string {
-        const { response, request } = this.config.options.validation ?? {};
-        const parseRequest = request ? generateParseRequestTypeParams(params) : "";
-
-        const additionalTypeParameters = [];
-        if (response) {
-            additionalTypeParameters.push(this.responseDataType);
-        }
-        if (request && parseRequest) {
-            additionalTypeParameters.push(parseRequest);
-        }
-
-        if (additionalTypeParameters.length === 0) {
-            return `RequestOptions<'${responseType}'>`;
-        }
-        return `RequestOptions<'${responseType}', ${additionalTypeParameters.join(", ")}>`;
-    }
-
     generateOverloadResponseType(operation: PathInfo): string {
         const response = operation.responses?.["200"] || operation.responses?.["201"] || operation.responses?.["204"];
 
@@ -125,6 +106,27 @@ export class ServiceMethodOverloadsGenerator {
             default:
                 throw new Error(`Unsupported observe type: ${observe}`);
         }
+    }
+
+    private getHttpRequestOptionsParameter(
+        params: OptionalKind<ParameterDeclarationStructure>[],
+        responseType: "json" | "arraybuffer" | "blob" | "text"
+    ): string {
+        const { response } = this.config.options.validation ?? {};
+        // const parseRequest = request ? generateParseRequestTypeParams(params) : "";
+
+        const additionalTypeParameters = [];
+        if (response) {
+            additionalTypeParameters.push(this.responseDataType);
+        }
+        // if (request && parseRequest) {
+        //     additionalTypeParameters.push(parseRequest);
+        // }
+
+        if (additionalTypeParameters.length === 0) {
+            return `RequestOptions<'${responseType}'>`;
+        }
+        return `RequestOptions<'${responseType}', ${additionalTypeParameters.join(", ")}>`;
     }
 
     private determineResponseTypeForOperation(operation: PathInfo): "json" | "blob" | "arraybuffer" | "text" {

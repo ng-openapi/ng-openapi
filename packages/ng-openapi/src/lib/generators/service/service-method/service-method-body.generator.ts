@@ -237,11 +237,4 @@ return this.httpClient.${httpMethod}(url, requestOptions)${parseResponse};`;
 
         return "json";
     }
-
-    private generateParseRequestBody(operation: PathInfo): string {
-        if (this.config.options.validation?.request){
-
-        }
-        return "";
-    }
 }
