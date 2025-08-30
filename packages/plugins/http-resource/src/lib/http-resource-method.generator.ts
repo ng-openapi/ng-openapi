@@ -36,15 +36,30 @@ export class HttpResourceMethodGenerator {
     }
 
     generateMethodName(operation: PathInfo): string {
+        if (this.config.options.customizeMethodName) {
+            if (operation.operationId == null) {
+                throw new Error(
+                    `Operation ID is required for method name customization of operation: (${operation.method}) ${operation.path}`
+                );
+            }
+            return this.config.options.customizeMethodName(operation.operationId);
+        } else {
+            return this.defaultNameGenerator(operation);
+        }
+    }
+
+    defaultNameGenerator(operation: PathInfo): string {
         if (operation.operationId) {
             return camelCase(operation.operationId);
         }
 
-        const method = operation.method.toLowerCase();
-        const pathParts = operation.path.split("/").filter((p) => p && !p.startsWith("{"));
-        const resource = pathParts[pathParts.length - 1] || "resource";
+        const method = pascalCase(operation.method.toLowerCase());
+        const pathParts = operation.path.split("/").map(str => {
+            return pascalCase(pascalCase(str).replace(/[^a-zA-Z0-9]/g, ''));
+        });
+        const resource = pathParts.join("") || "resource";
 
-        return `${method}${pascalCase(resource)}`;
+        return `${camelCase(resource)}${method}`;
     }
 
     generateReturnType(operation: PathInfo): string {

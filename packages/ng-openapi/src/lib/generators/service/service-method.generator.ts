@@ -57,10 +57,12 @@ export class ServiceMethodGenerator {
             return camelCase(operation.operationId);
         }
 
-        const method = operation.method.toLowerCase();
-        const pathParts = operation.path.split("/").filter((p) => p && !p.startsWith("{"));
-        const resource = pathParts[pathParts.length - 1] || "resource";
+        const method = pascalCase(operation.method.toLowerCase());
+        const pathParts = operation.path.split("/").map(str => {
+            return pascalCase(pascalCase(str).replace(/[^a-zA-Z0-9]/g, ''));
+        });
+        const resource = pathParts.join("") || "resource";
 
-        return `${method}${pascalCase(resource)}`;
+        return `${camelCase(resource)}${method}`;
     }
 }
