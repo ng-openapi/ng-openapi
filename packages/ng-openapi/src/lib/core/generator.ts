@@ -8,7 +8,7 @@ import {
     TokenGenerator
 } from "../generators/utility";
 import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
-import { ProviderGenerator } from "../generators/utility/provider.generator";
+import { ProviderGenerator } from "../generators/utility";
 import { GeneratorConfig, IPluginGeneratorClass } from "@ng-openapi/shared";
 import * as fs from "fs";
 import * as path from "path";
@@ -108,7 +108,7 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
             for (const plugin of config.plugins) {
                 const PluginClass = plugin as unknown as IPluginGeneratorClass;
                 const pluginGenerator = await PluginClass.create(config.input, project, config);
-                pluginGenerator.generate(outputPath);
+                await pluginGenerator.generate(outputPath);
             }
             console.log(`✅ Plugins are generated`);
         }

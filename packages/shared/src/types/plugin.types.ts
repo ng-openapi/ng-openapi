@@ -9,7 +9,7 @@ export interface IPluginGenerator {
     /**
      * Generate code files
      */
-    generate(outputRoot: string): void;
+    generate(outputRoot: string): Promise<void>;
 }
 
 /**

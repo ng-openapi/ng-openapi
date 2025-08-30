@@ -55,7 +55,7 @@ export class HttpResourceGenerator implements IPluginGenerator {
         return new HttpResourceGenerator(parser, project, config);
     }
 
-    generate(outputRoot: string): void {
+    async generate(outputRoot: string) {
         const outputDir = path.join(outputRoot, "resources");
         const paths = extractPaths(this.spec.paths, ["get"]);
 
@@ -66,9 +66,11 @@ export class HttpResourceGenerator implements IPluginGenerator {
 
         const controllerGroups = this.groupPathsByController(paths);
 
-        Object.entries(controllerGroups).forEach(([resourceName, operations]) => {
-            this.generateServiceFile(resourceName, operations, outputDir);
-        });
+        await Promise.all(
+            Object.entries(controllerGroups).map(([resourceName, operations]) => {
+                this.generateServiceFile(resourceName, operations, outputDir);
+            })
+        );
 
         this.indexGenerator.generateIndex(outputRoot);
     }
@@ -100,7 +102,7 @@ export class HttpResourceGenerator implements IPluginGenerator {
         return groups;
     }
 
-    private generateServiceFile(resourceName: string, operations: PathInfo[], outputDir: string): void {
+    private async generateServiceFile(resourceName: string, operations: PathInfo[], outputDir: string) {
         const fileName = `${camelCase(resourceName).replace(/Resource/, "")}.resource.ts`;
         const filePath = path.join(outputDir, fileName);
 
