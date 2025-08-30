@@ -443,13 +443,13 @@ export class TypeGenerator {
             typeParameters.push("TReturnType");
 
             // const _typeParameters = [...typeParameters, "TParamsObject = never"];
-            this.sourceFile.addInterface({
-                name: "RequestOptions",
-                isExported: true,
-                typeParameters: typeParameters,
-                properties: properties,
-                docs: ["Request Options for Angular HttpClient requests without request parsing"],
-            });
+            // this.sourceFile.addInterface({
+            //     name: "RequestOptions",
+            //     isExported: true,
+            //     typeParameters: _typeParameters,
+            //     properties: properties,
+            //     docs: ["Request Options for Angular HttpClient requests without request parsing"],
+            // });
         }
 
         // if (request) {
