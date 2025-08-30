@@ -1,4 +1,4 @@
-import { InterfaceDeclaration, ModuleKind, Project, ScriptTarget, SourceFile } from "ts-morph";
+import { Project, SourceFile, StatementStructures, StructureKind } from "ts-morph";
 import {
     EnumValueObject,
     GeneratorConfig,
@@ -13,6 +13,15 @@ export class TypeGenerator {
     private sourceFile: SourceFile;
     private readonly generatedTypes = new Set<string>();
     private readonly config: GeneratorConfig;
+
+    // Performance caches
+    private readonly pascalCaseCache = new Map<string, string>();
+    private readonly sanitizedNameCache = new Map<string, string>();
+    private readonly typeResolutionCache = new Map<string, string>();
+
+    // Batch collection for AST operations
+    private readonly statements: StatementStructures[] = [];
+    private readonly deferredTypes = new Map<string, SwaggerDefinition>();
 
     constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig, outputRoot: string) {
         this.config = config;
@@ -30,124 +39,116 @@ export class TypeGenerator {
                 return;
             }
 
-            // Add file header comment
-            this.sourceFile.insertText(0, TYPE_GENERATOR_HEADER_COMMENT);
+            // Phase 1: Collect all type structures in memory (no AST manipulation yet)
+            this.collectAllTypeStructures(definitions);
 
-            // Generate interfaces for each definition
-            await Promise.all(
-                Object.entries(definitions).map(([name, definition]) =>
-                    this.generateInterface(name, definition)
-                )
-            );
+            // Phase 2: Add SDK types
+            this.collectSdkTypes();
 
-            this.generateSdkTypes();
+            // Phase 3: Single batch AST update
+            this.applyBatchUpdates();
 
-            this.sourceFile.formatText();
-            this.sourceFile.saveSync();
+            // Phase 4: Format and save
+            await this.finalize();
         } catch (error) {
             console.error("Error in generate():", error);
             throw new Error(`Failed to generate types: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
 
-    private async generateInterface(name: string, definition: SwaggerDefinition) {
-        const interfaceName = this.pascalCaseForEnums(name);
-
-        // Prevent duplicate type generation
-        if (this.generatedTypes.has(interfaceName)) {
-            return;
-        }
-        this.generatedTypes.add(interfaceName);
-
-        if (definition.enum) {
-            this.generateEnum(interfaceName, definition);
-            return;
-        }
-
-        if (definition.allOf) {
-            this.generateCompositeType(interfaceName, definition);
-            return;
-        }
-
-        const interfaceDeclaration = this.sourceFile.addInterface({
-            name: interfaceName,
-            isExported: true,
-            docs: definition.description ? [definition.description] : undefined,
+    private collectAllTypeStructures(definitions: Record<string, SwaggerDefinition>): void {
+        // First pass: Register all types to avoid forward reference issues
+        Object.keys(definitions).forEach((name) => {
+            const interfaceName = this.getCachedPascalCase(name);
+            this.generatedTypes.add(interfaceName);
         });
 
-        this.addInterfaceProperties(interfaceDeclaration, definition);
+        // Second pass: Generate structures
+        Object.entries(definitions).forEach(([name, definition]) => {
+            this.collectTypeStructure(name, definition);
+        });
+
+        // Third pass: Process any deferred types
+        this.deferredTypes.forEach((definition, name) => {
+            this.collectTypeStructure(name, definition);
+        });
     }
 
-    private generateEnum(name: string, definition: SwaggerDefinition): void {
+    private collectTypeStructure(name: string, definition: SwaggerDefinition): void {
+        const interfaceName = this.getCachedPascalCase(name) ?? "";
+
+        if (definition.enum) {
+            this.collectEnumStructure(interfaceName, definition);
+        } else if (definition.allOf) {
+            this.collectCompositeTypeStructure(interfaceName, definition);
+        } else {
+            this.collectInterfaceStructure(interfaceName, definition);
+        }
+    }
+
+    private collectEnumStructure(name: string, definition: SwaggerDefinition): void {
         if (!definition.enum?.length) return;
 
-        // Check if it's a string enum or numeric enum
         const isStringEnum = definition.enum.some((value) => typeof value === "string");
 
         if (isStringEnum) {
-            // Generate union type for string enums for better type safety
+            // Use union type for string enums
             const unionType = definition.enum
                 .map((value) => (typeof value === "string" ? `'${this.escapeString(value)}'` : String(value)))
                 .join(" | ");
 
-            this.sourceFile.addTypeAlias({
+            this.statements.push({
+                kind: StructureKind.TypeAlias,
                 name,
                 type: unionType,
                 isExported: true,
                 docs: definition.description ? [definition.description] : undefined,
             });
-        } else if (definition.description && this.config.options.generateEnumBasedOnDescription) {
-            const enumDeclaration = this.sourceFile.addEnum({
-                name,
-                isExported: true,
-            });
-
-            try {
-                const enumValueObjects = JSON.parse(definition.description) as EnumValueObject[];
-                enumValueObjects.forEach((enumValueObject) => {
-                    enumDeclaration.addMember({
-                        name: enumValueObject.Name,
-                        value: enumValueObject.Value,
-                    });
-                });
-            } catch (e) {
-                console.error(`Failed to parse enum description for ${name}`);
-                definition.enum.forEach((value) => {
-                    const enumKey = this.toEnumKey(value);
-                    enumDeclaration.addMember({
-                        name: enumKey,
-                        value: value,
-                    });
-                });
-            }
         } else {
-            const enumDeclaration = this.sourceFile.addEnum({
+            // Create enum structure
+            const members = this.buildEnumMembers(definition);
+
+            this.statements.push({
+                kind: StructureKind.Enum,
                 name,
                 isExported: true,
                 docs: definition.description ? [definition.description] : undefined,
-            });
-
-            definition.enum.forEach((value) => {
-                const enumKey = this.toEnumKey(value);
-                enumDeclaration.addMember({
-                    name: enumKey,
-                    value: value,
-                });
+                members,
             });
         }
     }
 
-    private generateCompositeType(name: string, definition: SwaggerDefinition): void {
+    private buildEnumMembers(definition: SwaggerDefinition) {
+        if (definition.description && this.config.options.generateEnumBasedOnDescription) {
+            try {
+                const enumValueObjects = JSON.parse(definition.description) as EnumValueObject[];
+                return enumValueObjects.map((obj) => ({
+                    name: obj.Name,
+                    value: obj.Value,
+                }));
+            } catch {
+                // Fall through to default handling
+            }
+        }
+
+        return definition.enum?.map((value) => ({
+            name: this.toEnumKey(value),
+            value: value as string | number,
+        }));
+    }
+
+    private collectCompositeTypeStructure(name: string, definition: SwaggerDefinition): void {
         let typeExpression = "";
 
         if (definition.allOf) {
             const types = definition.allOf
-                .map((def) => this.resolveSwaggerType(def))
-                .filter((type) => type !== "any" && type !== "unknown"); // Filter out 'any' and 'unknown' types
+                .map((def) => this.resolveSwaggerTypeCached(def))
+                .filter((type) => type !== "any" && type !== "unknown");
             typeExpression = types.length > 0 ? types.join(" & ") : "Record<string, unknown>";
         }
 
-        this.sourceFile.addTypeAlias({
+        this.statements.push({
+            kind: StructureKind.TypeAlias,
             name,
             type: typeExpression,
             isExported: true,
@@ -155,53 +156,84 @@ export class TypeGenerator {
         });
     }
 
-    private addInterfaceProperties(interfaceDeclaration: InterfaceDeclaration, definition: SwaggerDefinition): void {
-        // Handle explicitly empty object: no properties and no additionalProperties
-        if (!definition.properties && definition.additionalProperties === false) {
-            interfaceDeclaration.addIndexSignature({
-                keyName: "key",
-                keyType: "string",
-                returnType: "never",
-            });
-            return;
-        }
+    private collectInterfaceStructure(name: string, definition: SwaggerDefinition): void {
+        const properties = this.buildInterfaceProperties(definition);
 
-        // Optional: Handle object with dynamic additional properties
-        if (!definition.properties && definition.additionalProperties === true) {
-            interfaceDeclaration.addIndexSignature({
-                keyName: "key",
-                keyType: "string",
-                returnType: "any",
-            });
-            return;
-        }
+        this.statements.push({
+            kind: StructureKind.Interface,
+            name,
+            isExported: true,
+            docs: definition.description ? [definition.description] : undefined,
+            properties,
+            indexSignatures: this.buildIndexSignatures(definition),
+        });
+    }
 
-        // Skip if no declared properties and no additionalProperties info
+    private buildInterfaceProperties(definition: SwaggerDefinition): any[] {
         if (!definition.properties) {
-            interfaceDeclaration.addIndexSignature({
-                keyName: "key",
-                keyType: "string",
-                returnType: "unknown",
-            });
-            return;
+            return [];
         }
 
-        Object.entries(definition.properties).forEach(([propertyName, property]) => {
+        return Object.entries(definition.properties).map(([propertyName, property]) => {
             const isRequired = definition.required?.includes(propertyName) ?? false;
             const isReadOnly = property.readOnly;
-            const propertyType = this.resolveSwaggerType(property);
+            const propertyType = this.resolveSwaggerTypeCached(property);
+            const sanitizedName = this.getCachedSanitizedName(propertyName);
 
-            // Sanitize property name for TypeScript compatibility
-            const sanitizedName = this.sanitizePropertyName(propertyName);
-
-            interfaceDeclaration.addProperty({
+            return {
                 name: sanitizedName,
                 type: propertyType,
                 isReadonly: isReadOnly,
                 hasQuestionToken: !isRequired,
                 docs: property.description ? [property.description] : undefined,
-            });
+            };
         });
+    }
+
+    private buildIndexSignatures(definition: SwaggerDefinition): any[] {
+        if (!definition.properties && definition.additionalProperties === false) {
+            return [
+                {
+                    keyName: "key",
+                    keyType: "string",
+                    returnType: "never",
+                },
+            ];
+        }
+
+        if (!definition.properties && definition.additionalProperties === true) {
+            return [
+                {
+                    keyName: "key",
+                    keyType: "string",
+                    returnType: "any",
+                },
+            ];
+        }
+
+        if (!definition.properties) {
+            return [
+                {
+                    keyName: "key",
+                    keyType: "string",
+                    returnType: "unknown",
+                },
+            ];
+        }
+
+        return [];
+    }
+
+    private resolveSwaggerTypeCached(schema: SwaggerDefinition): string {
+        const cacheKey = JSON.stringify(schema);
+
+        if (this.typeResolutionCache.has(cacheKey)) {
+            return this.typeResolutionCache.get(cacheKey) as string;
+        }
+
+        const result = this.resolveSwaggerType(schema);
+        this.typeResolutionCache.set(cacheKey, result);
+        return result;
     }
 
     private resolveSwaggerType(schema: SwaggerDefinition): string {
@@ -218,16 +250,16 @@ export class TypeGenerator {
         if (schema.allOf) {
             return (
                 schema.allOf
-                    .map((def) => this.resolveSwaggerType(def))
+                    .map((def) => this.resolveSwaggerTypeCached(def))
                     .filter((type) => type !== "any" && type !== "unknown")
-                    .join(" & ") || "Record"
+                    .join(" & ") || "Record<string, unknown>"
             );
         }
 
         if (schema.oneOf) {
             return (
                 schema.oneOf
-                    .map((def) => this.resolveSwaggerType(def))
+                    .map((def) => this.resolveSwaggerTypeCached(def))
                     .filter((type) => type !== "any" && type !== "unknown")
                     .join(" | ") || "unknown"
             );
@@ -236,7 +268,7 @@ export class TypeGenerator {
         if (schema.anyOf) {
             return (
                 schema.anyOf
-                    .map((def) => this.resolveSwaggerType(def))
+                    .map((def) => this.resolveSwaggerTypeCached(def))
                     .filter((type) => type !== "any" && type !== "unknown")
                     .join(" | ") || "unknown"
             );
@@ -255,7 +287,7 @@ export class TypeGenerator {
             if (schema.additionalProperties) {
                 const valueType =
                     typeof schema.additionalProperties === "object"
-                        ? this.resolveSwaggerType(schema.additionalProperties)
+                        ? this.resolveSwaggerTypeCached(schema.additionalProperties)
                         : "unknown";
                 return `Record<string, ${valueType}>`;
             }
@@ -263,17 +295,15 @@ export class TypeGenerator {
             return "Record<string, unknown>";
         }
 
-        // Simple scalar types
         return this.mapSwaggerTypeToTypeScript(schema.type, schema.format, schema.nullable);
     }
 
     private generateInlineObjectType(definition: SwaggerDefinition): string {
         if (!definition.properties) {
-            // Handle additionalProperties for objects without defined properties
             if (definition.additionalProperties) {
                 const additionalType =
                     typeof definition.additionalProperties === "object"
-                        ? this.resolveSwaggerType(definition.additionalProperties)
+                        ? this.resolveSwaggerTypeCached(definition.additionalProperties)
                         : "unknown";
                 return `Record<string, ${additionalType}>`;
             }
@@ -284,8 +314,8 @@ export class TypeGenerator {
             .map(([key, prop]) => {
                 const isRequired = definition.required?.includes(key) ?? false;
                 const questionMark = isRequired ? "" : "?";
-                const sanitizedKey = this.sanitizePropertyName(key);
-                return `${sanitizedKey}${questionMark}: ${this.resolveSwaggerType(prop)}`;
+                const sanitizedKey = this.getCachedSanitizedName(key);
+                return `${sanitizedKey}${questionMark}: ${this.resolveSwaggerTypeCached(prop)}`;
             })
             .join("; ");
 
@@ -293,29 +323,106 @@ export class TypeGenerator {
     }
 
     private resolveReference(ref: string): string {
-        try {
-            const refDefinition = this.parser.resolveReference(ref);
-            const refName = ref.split("/").pop();
-
-            if (!refName) {
-                console.warn(`Invalid reference format: ${ref}`);
-                return "unknown";
-            }
-
-            const typeName = this.pascalCaseForEnums(refName);
-
-            // Ensure referenced type is generated
-            if (refDefinition && !this.generatedTypes.has(typeName)) {
-                this.generateInterface(refName, refDefinition);
-            }
-
-            return typeName;
-        } catch (error) {
-            console.warn(`Failed to resolve reference ${ref}:`, error);
+        const refName = ref.split("/").pop();
+        if (!refName) {
+            console.warn(`Invalid reference format: ${ref}`);
             return "unknown";
         }
+
+        return this.getCachedPascalCase(refName);
     }
 
+    private collectSdkTypes(): void {
+        const { response } = this.config.options.validation ?? {};
+
+        const typeParameters = ["TResponseType extends 'arraybuffer' | 'blob' | 'json' | 'text'"];
+        const properties = [
+            {
+                name: "headers",
+                type: "HttpHeaders",
+                hasQuestionToken: true,
+            },
+            {
+                name: "reportProgress",
+                type: "boolean",
+                hasQuestionToken: true,
+            },
+            {
+                name: "responseType",
+                type: "TResponseType",
+                hasQuestionToken: true,
+            },
+            {
+                name: "withCredentials",
+                type: "boolean",
+                hasQuestionToken: true,
+            },
+            {
+                name: "context",
+                type: "HttpContext",
+                hasQuestionToken: true,
+            },
+        ];
+
+        if (response) {
+            properties.push({
+                name: "parse",
+                type: "(response: unknown) => TReturnType",
+                hasQuestionToken: true,
+            });
+            typeParameters.push("TReturnType");
+        }
+
+        this.statements.push({
+            kind: StructureKind.Interface,
+            name: "RequestOptions",
+            isExported: true,
+            typeParameters: typeParameters,
+            properties: properties,
+            docs: ["Request Options for Angular HttpClient requests"],
+        });
+    }
+
+    private applyBatchUpdates(): void {
+        // Add header comment
+        this.sourceFile.insertText(0, TYPE_GENERATOR_HEADER_COMMENT);
+
+        // Add imports
+        this.sourceFile.addImportDeclarations([
+            {
+                namedImports: ["HttpContext", "HttpHeaders"],
+                moduleSpecifier: "@angular/common/http",
+            },
+        ]);
+
+        // Add all statements in a single operation
+        this.sourceFile.addStatements(this.statements);
+    }
+
+    private async finalize(): Promise<void> {
+        // Format only once at the end
+        this.sourceFile.formatText();
+
+        // Use async save
+        await this.sourceFile.save();
+    }
+
+    // Cached helper methods
+    private getCachedPascalCase(str: string) {
+        if (!this.pascalCaseCache.has(str)) {
+            this.pascalCaseCache.set(str, this.pascalCaseForEnums(str));
+        }
+        return this.pascalCaseCache.get(str) as string;
+    }
+
+    private getCachedSanitizedName(name: string) {
+        if (!this.sanitizedNameCache.has(name)) {
+            this.sanitizedNameCache.set(name, this.sanitizePropertyName(name));
+        }
+        return this.sanitizedNameCache.get(name) as string;
+    }
+
+    // Original helper methods
     private mapSwaggerTypeToTypeScript(type?: string, format?: string, isNullable?: boolean): string {
         if (!type) return "unknown";
 
@@ -355,11 +462,10 @@ export class TypeGenerator {
         return str
             .replace(/[^a-zA-Z0-9]/g, "_")
             .replace(/(?:^|_)([a-z])/g, (_, char) => char.toUpperCase())
-            .replace(/^([0-9])/, "_$1"); // Handle names starting with numbers
+            .replace(/^([0-9])/, "_$1");
     }
 
     private sanitizePropertyName(name: string): string {
-        // If property name contains special characters, wrap in quotes
         if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)) {
             return `"${name}"`;
         }
@@ -376,89 +482,14 @@ export class TypeGenerator {
 
     private getArrayItemType(items: SwaggerDefinition | SwaggerDefinition[]): string {
         if (Array.isArray(items)) {
-            // Handle tuple types - items is an array of schemas
-            const types = items.map((item) => this.resolveSwaggerType(item));
+            const types = items.map((item) => this.resolveSwaggerTypeCached(item));
             return `[${types.join(", ")}]`;
         } else {
-            // Handle single item type
-            return this.resolveSwaggerType(items);
+            return this.resolveSwaggerTypeCached(items);
         }
     }
 
     private escapeString(str: string): string {
         return str.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-    }
-
-    private generateSdkTypes() {
-        this.sourceFile.addImportDeclarations([
-            {
-                namedImports: ["HttpContext", "HttpHeaders"],
-                moduleSpecifier: "@angular/common/http",
-            },
-        ]);
-        const { response } = this.config.options.validation ?? {};
-        const typeParameters = ["TResponseType extends 'arraybuffer' | 'blob' | 'json' | 'text'"];
-        const properties = [
-            {
-                name: "headers",
-                type: "HttpHeaders",
-                hasQuestionToken: true,
-            },
-            {
-                name: "reportProgress",
-                type: "boolean",
-                hasQuestionToken: true,
-            },
-            {
-                name: "responseType",
-                type: "TResponseType",
-                hasQuestionToken: true,
-            },
-            {
-                name: "withCredentials",
-                type: "boolean",
-                hasQuestionToken: true,
-            },
-            {
-                name: "context",
-                type: "HttpContext",
-                hasQuestionToken: true,
-            },
-        ];
-
-        if (response) {
-            properties.push({
-                name: "parse",
-                type: "(response: unknown) => TReturnType",
-                hasQuestionToken: true,
-            });
-            typeParameters.push("TReturnType");
-
-            // const _typeParameters = [...typeParameters, "TParamsObject = never"];
-            // this.sourceFile.addInterface({
-            //     name: "RequestOptions",
-            //     isExported: true,
-            //     typeParameters: _typeParameters,
-            //     properties: properties,
-            //     docs: ["Request Options for Angular HttpClient requests without request parsing"],
-            // });
-        }
-
-        // if (request) {
-        //     properties.push({
-        //         name: "parseRequest",
-        //         type: "(params: TParamsObject) => void",
-        //         hasQuestionToken: true,
-        //     });
-        //     typeParameters.push("TParamsObject");
-        // }
-
-        this.sourceFile.addInterface({
-            name: "RequestOptions",
-            isExported: true,
-            typeParameters: typeParameters,
-            properties: properties,
-            docs: ["Request Options for Angular HttpClient requests"],
-        });
     }
 }
