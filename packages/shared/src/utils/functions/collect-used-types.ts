@@ -3,6 +3,7 @@ import { pascalCase } from "../index";
 
 export function collectUsedTypes(operations: PathInfo[]): Set<string> {
     const usedTypes = new Set<string>();
+    usedTypes.add("RequestOptions");
 
     operations.forEach((operation) => {
         // Check parameters

@@ -1,5 +1,5 @@
 import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
-import { camelCase, GeneratorConfig, getTypeScriptType, PathInfo } from "@ng-openapi/shared";
+import { camelCase, GeneratorConfig, getTypeScriptType, isDataTypeInterface, PathInfo } from "@ng-openapi/shared";
 
 export class ServiceMethodParamsGenerator {
     private config: GeneratorConfig;
@@ -10,7 +10,7 @@ export class ServiceMethodParamsGenerator {
 
     generateMethodParameters(operation: PathInfo): OptionalKind<ParameterDeclarationStructure>[] {
         const params = this.generateApiParameters(operation);
-        const optionsParam = this.addOptionsParameter();
+        const optionsParam = this.addOptionsParameter(params);
 
         // Combine all parameters
         const combined = [...params, ...optionsParam];
@@ -58,7 +58,7 @@ export class ServiceMethodParamsGenerator {
         // body parameters
         if (operation.requestBody && operation.requestBody?.content?.["application/json"]) {
             const bodyType = this.getRequestBodyType(operation.requestBody);
-            const isInterface = this.isDataTypeInterface(bodyType);
+            const isInterface = isDataTypeInterface(bodyType);
             params.push({
                 name: isInterface ? camelCase(bodyType) : "requestBody",
                 type: bodyType,
@@ -79,7 +79,9 @@ export class ServiceMethodParamsGenerator {
         return params.sort((a, b) => Number(a.hasQuestionToken) - Number(b.hasQuestionToken));
     }
 
-    addOptionsParameter(): OptionalKind<ParameterDeclarationStructure>[] {
+    addOptionsParameter(
+        params: OptionalKind<ParameterDeclarationStructure>[]
+    ): OptionalKind<ParameterDeclarationStructure>[] {
         return [
             {
                 name: "observe",
@@ -88,15 +90,28 @@ export class ServiceMethodParamsGenerator {
             },
             {
                 name: "options",
-                type: `{ headers?: HttpHeaders; params?: HttpParams; reportProgress?: boolean; responseType?: 'arraybuffer' | 'blob' | 'json' | 'text'; withCredentials?: boolean; context?: HttpContext; }`,
+                type: this.getHttpRequestOptionsParameter(params),
                 hasQuestionToken: true,
             },
         ];
     }
 
-    isDataTypeInterface(type: string): boolean {
-        const invalidTypes = ["any", "File", "string", "number", "boolean", "object", "unknown", "[]", "Array"];
-        return !invalidTypes.some((invalidType) => type.includes(invalidType));
+    private getHttpRequestOptionsParameter(params: OptionalKind<ParameterDeclarationStructure>[]): string {
+        const { response } = this.config.options.validation ?? {};
+        // const parseRequest = request ? generateParseRequestTypeParams(params) : "";
+
+        const additionalTypeParameters = [];
+        if (response) {
+            additionalTypeParameters.push("any");
+        }
+        // if (request && parseRequest) {
+        //     additionalTypeParameters.push(parseRequest);
+        // }
+
+        if (additionalTypeParameters.length === 0) {
+            return `RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>`;
+        }
+        return `RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text', ${additionalTypeParameters.join(", ")}>`;
     }
 
     private getRequestBodyType(requestBody: any): string {

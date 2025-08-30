@@ -11,6 +11,9 @@ export interface GeneratorConfig {
     options: {
         dateType: "string" | "Date";
         enumStyle: "enum" | "union";
+        validation?: {
+            response?: boolean;
+        };
         generateServices?: boolean;
         generateEnumBasedOnDescription?: boolean;
         customHeaders?: Record<string, string>;

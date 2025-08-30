@@ -42,6 +42,7 @@ export default config;
 
 ## Optional Properties
 
+- [validation](options/validation)
 - [generateServices](options/generate-services)
 - [generateEnumBasedOnDescription](options/generate-enums-description)
 - [customHeaders](options/custom-headers)

@@ -25,6 +25,10 @@ Generate Angular services using the experimental `httpResource` API.
 
 Configure multiple API clients in a single Angular application.
 
+### [Schema Validation](./schema-validation)
+
+Validate API responses against the OpenAPI schema at runtime.
+
 ### [File Downloads](./file-download.md)
 
 Use the built-in file download utilities with generated services.

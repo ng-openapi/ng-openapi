@@ -52,6 +52,8 @@ export class TypeGenerator {
                 this.generateInterface(name, definition);
             });
 
+            this.generateSdkTypes();
+
             this.sourceFile.formatText();
             this.sourceFile.saveSync();
         } catch (error) {
@@ -393,5 +395,78 @@ export class TypeGenerator {
 
     private escapeString(str: string): string {
         return str.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    }
+
+    private generateSdkTypes() {
+        this.sourceFile.addImportDeclarations([
+            {
+                namedImports: ["HttpContext", "HttpHeaders"],
+                moduleSpecifier: "@angular/common/http",
+            },
+        ]);
+        const { response } = this.config.options.validation ?? {};
+        const typeParameters = ["TResponseType extends 'arraybuffer' | 'blob' | 'json' | 'text'"];
+        const properties = [
+            {
+                name: "headers",
+                type: "HttpHeaders",
+                hasQuestionToken: true,
+            },
+            {
+                name: "reportProgress",
+                type: "boolean",
+                hasQuestionToken: true,
+            },
+            {
+                name: "responseType",
+                type: "TResponseType",
+                hasQuestionToken: true,
+            },
+            {
+                name: "withCredentials",
+                type: "boolean",
+                hasQuestionToken: true,
+            },
+            {
+                name: "context",
+                type: "HttpContext",
+                hasQuestionToken: true,
+            },
+        ];
+
+        if (response) {
+            properties.push({
+                name: "parse",
+                type: "(response: unknown) => TReturnType",
+                hasQuestionToken: true,
+            });
+            typeParameters.push("TReturnType");
+
+            // const _typeParameters = [...typeParameters, "TParamsObject = never"];
+            // this.sourceFile.addInterface({
+            //     name: "RequestOptions",
+            //     isExported: true,
+            //     typeParameters: _typeParameters,
+            //     properties: properties,
+            //     docs: ["Request Options for Angular HttpClient requests without request parsing"],
+            // });
+        }
+
+        // if (request) {
+        //     properties.push({
+        //         name: "parseRequest",
+        //         type: "(params: TParamsObject) => void",
+        //         hasQuestionToken: true,
+        //     });
+        //     typeParameters.push("TParamsObject");
+        // }
+
+        this.sourceFile.addInterface({
+            name: "RequestOptions",
+            isExported: true,
+            typeParameters: typeParameters,
+            properties: properties,
+            docs: ["Request Options for Angular HttpClient requests"],
+        });
     }
 }

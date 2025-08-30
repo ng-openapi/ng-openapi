@@ -22,7 +22,9 @@
 
 ## What is HTTP Resource Plugin?
 
-The HTTP Resource plugin generates Angular services using the new **experimental** `httpResource` API instead of traditional `HttpClient`. This provides automatic caching, state management, and reactive data loading for your OpenAPI endpoints.
+The HTTP Resource plugin generates Angular services using the new **experimental** `httpResource` API instead of
+traditional `HttpClient`. This provides automatic caching, state management, and reactive data loading for your OpenAPI
+endpoints.
 
 > ⚠️ **Experimental Feature**: `httpResource` is still experimental in Angular. Use with caution in production.
 
