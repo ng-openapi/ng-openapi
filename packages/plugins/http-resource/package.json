@@ -31,8 +31,8 @@
     "directory": "packages/plugins/http-resource"
   },
   "funding": {
-    "type": "github",
-    "url": "https://github.com/sponsors/ng-openapi"
+    "type": "buymeacoffee",
+    "url": "https://buymeacoffee.com/ngopenapi"
   },
   "type": "module",
   "main": "./index.js",
