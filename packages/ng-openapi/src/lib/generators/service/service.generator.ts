@@ -7,6 +7,7 @@ import {
     getBasePathTokenName,
     getClientContextTokenName,
     hasDuplicateFunctionNames,
+    kebabCase,
     pascalCase,
     PathInfo,
     SERVICE_GENERATOR_HEADER_COMMENT,

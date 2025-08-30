@@ -32,6 +32,7 @@ export class HttpResourceMethodGenerator {
             returnType: returnType,
             statements: methodBody,
             overloads: overloads,
+            docs: operation.description ? [operation.description] : undefined,
         });
     }
 

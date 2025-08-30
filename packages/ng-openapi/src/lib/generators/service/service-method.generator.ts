@@ -32,6 +32,7 @@ export class ServiceMethodGenerator {
             returnType: returnType,
             statements: methodBody,
             overloads: methodOverLoads,
+            docs: operation.description ? [operation.description] : undefined,
         });
     }
 

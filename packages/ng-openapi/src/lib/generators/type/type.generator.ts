@@ -192,7 +192,11 @@ export class TypeGenerator {
 
         // Skip if no declared properties and no additionalProperties info
         if (!definition.properties) {
-            console.warn(`No properties found for interface ${interfaceDeclaration.getName()}`);
+            interfaceDeclaration.addIndexSignature({
+                keyName: "key",
+                keyType: "string",
+                returnType: "unknown",
+            });
             return;
         }
 
