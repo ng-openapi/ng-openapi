@@ -68,7 +68,7 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
 
         // Use config for type generation - TypeGenerator now handles both files and URLs
         const typeGenerator = await TypeGenerator.create(config.input, outputPath, config);
-        typeGenerator.generate();
+        await typeGenerator.generate();
         console.log(`✅ TypeScript interfaces generated`);
 
         if (generateServices) {
@@ -88,7 +88,7 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
 
             // Generate services using the refactored ServiceGenerator
             const serviceGenerator = await ServiceGenerator.create(config.input, project, config);
-            serviceGenerator.generate(outputPath);
+            await serviceGenerator.generate(outputPath);
 
             // Generate services index file
             const indexGenerator = new ServiceIndexGenerator(project);

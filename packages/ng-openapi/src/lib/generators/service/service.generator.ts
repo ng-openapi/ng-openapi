@@ -51,7 +51,7 @@ export class ServiceGenerator {
         return new ServiceGenerator(parser, project, config);
     }
 
-    generate(outputRoot: string): void {
+    async generate(outputRoot: string) {
         const outputDir = path.join(outputRoot, "services");
         const paths = extractPaths(this.spec.paths);
 
@@ -62,9 +62,11 @@ export class ServiceGenerator {
 
         const controllerGroups = this.groupPathsByController(paths);
 
-        Object.entries(controllerGroups).forEach(([controllerName, operations]) => {
-            this.generateServiceFile(controllerName, operations, outputDir);
-        });
+        await Promise.all(
+            Object.entries(controllerGroups).map(([controllerName, operations]) =>
+                this.generateServiceFile(controllerName, operations, outputDir)
+            )
+        );
     }
 
     private groupPathsByController(paths: PathInfo[]): Record<string, PathInfo[]> {
@@ -94,7 +96,7 @@ export class ServiceGenerator {
         return groups;
     }
 
-    private generateServiceFile(controllerName: string, operations: PathInfo[], outputDir: string): void {
+    private async generateServiceFile(controllerName: string, operations: PathInfo[], outputDir: string) {
         const fileName = `${camelCase(controllerName)}.service.ts`;
         const filePath = path.join(outputDir, fileName);
 

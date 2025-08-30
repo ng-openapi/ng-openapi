@@ -36,7 +36,7 @@ export class TypeGenerator {
         return new TypeGenerator(parser, outputRoot, config);
     }
 
-    generate(): void {
+    async generate() {
         try {
             const definitions = this.parser.getDefinitions();
             if (!definitions || Object.keys(definitions).length === 0) {
@@ -48,9 +48,11 @@ export class TypeGenerator {
             this.sourceFile.insertText(0, TYPE_GENERATOR_HEADER_COMMENT);
 
             // Generate interfaces for each definition
-            Object.entries(definitions).forEach(([name, definition]) => {
-                this.generateInterface(name, definition);
-            });
+            await Promise.all(
+                Object.entries(definitions).map(([name, definition]) =>
+                    this.generateInterface(name, definition)
+                )
+            );
 
             this.generateSdkTypes();
 
@@ -62,7 +64,7 @@ export class TypeGenerator {
         }
     }
 
-    private generateInterface(name: string, definition: SwaggerDefinition): void {
+    private async generateInterface(name: string, definition: SwaggerDefinition) {
         const interfaceName = this.pascalCaseForEnums(name);
 
         // Prevent duplicate type generation
