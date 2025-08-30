@@ -58,6 +58,7 @@ export default defineConfig({
                         { text: "Angular Integration", link: "/guide/angular-integration" },
                         { text: "Http Resource", link: "/guide/http-resource" },
                         { text: "Multiple Clients", link: "/guide/multiple-clients" },
+                        { text: "Schema Validation", link: "/guide/schema-validation" },
                         { text: "File Download", link: "/guide/file-download" },
                         { text: "Date Handling", link: "/guide/date-handling" },
                         { text: "Code Generation", link: "/guide/generated-code" },
@@ -103,6 +104,10 @@ export default defineConfig({
                                         {
                                             text: "Enum Style",
                                             link: "/api/configuration/options/enum-style",
+                                        },
+                                        {
+                                            text: "Validation",
+                                            link: "/api/configuration/options/validation",
                                         },
                                         {
                                             text: "Generate Enums Based on Description",
