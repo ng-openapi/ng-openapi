@@ -23,7 +23,7 @@ export class ServiceGenerator {
     private config: GeneratorConfig;
     private methodGenerator: ServiceMethodGenerator;
 
-    private constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
+    constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
         this.config = config;
         this.project = project;
         this.parser = parser;
@@ -42,16 +42,7 @@ export class ServiceGenerator {
         this.methodGenerator = new ServiceMethodGenerator(config);
     }
 
-    static async create(
-        swaggerPathOrUrl: string,
-        project: Project,
-        config: GeneratorConfig
-    ): Promise<ServiceGenerator> {
-        const parser = await SwaggerParser.create(swaggerPathOrUrl, config);
-        return new ServiceGenerator(parser, project, config);
-    }
-
-    generate(outputRoot: string): void {
+    async generate(outputRoot: string) {
         const outputDir = path.join(outputRoot, "services");
         const paths = extractPaths(this.spec.paths);
 
@@ -62,9 +53,11 @@ export class ServiceGenerator {
 
         const controllerGroups = this.groupPathsByController(paths);
 
-        Object.entries(controllerGroups).forEach(([controllerName, operations]) => {
-            this.generateServiceFile(controllerName, operations, outputDir);
-        });
+        await Promise.all(
+            Object.entries(controllerGroups).map(([controllerName, operations]) =>
+                this.generateServiceFile(controllerName, operations, outputDir)
+            )
+        );
     }
 
     private groupPathsByController(paths: PathInfo[]): Record<string, PathInfo[]> {
@@ -94,7 +87,7 @@ export class ServiceGenerator {
         return groups;
     }
 
-    private generateServiceFile(controllerName: string, operations: PathInfo[], outputDir: string): void {
+    private async generateServiceFile(controllerName: string, operations: PathInfo[], outputDir: string) {
         const fileName = `${camelCase(controllerName)}.service.ts`;
         const filePath = path.join(outputDir, fileName);
 

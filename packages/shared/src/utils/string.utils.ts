@@ -1,12 +1,18 @@
 export function camelCase(str: string): string {
-    const cleaned = str.replace(/[-_](\w)/g, (_, c) => c.toUpperCase());
-    return cleaned.charAt(0).toLowerCase() + cleaned.slice(1);
+    return str
+        .replace(/[-_\s]+(.)?/g, (_, char) => char ? char.toUpperCase() : '')
+        .replace(/^./, char => char.toLowerCase());
 }
 
 export function kebabCase(str: string): string {
-    return str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+    return str
+        .replace(/([a-z])([A-Z])/g, '$1-$2')
+        .replace(/[-_\s]+/g, '-')
+        .toLowerCase();
 }
 
 export function pascalCase(str: string): string {
-    return str.replace(/(?:^|[-_])([a-z])/g, (_, char) => char.toUpperCase());
+    return str
+        .replace(/[-_\s]+(.)?/g, (_, char) => char ? char.toUpperCase() : '')
+        .replace(/^./, char => char.toUpperCase());
 }

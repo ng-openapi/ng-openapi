@@ -10,33 +10,19 @@ import {
 export class TypeGenerator {
     private readonly project: Project;
     private readonly parser: SwaggerParser;
-    private readonly sourceFile: SourceFile;
+    private sourceFile: SourceFile;
     private readonly generatedTypes = new Set<string>();
     private readonly config: GeneratorConfig;
 
-    private constructor(parser: SwaggerParser, outputRoot: string, config: GeneratorConfig) {
+    constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig, outputRoot: string) {
         this.config = config;
-        const outputPath = outputRoot + "/models/index.ts";
-        this.project = new Project({
-            compilerOptions: {
-                declaration: true,
-                target: ScriptTarget.ES2022,
-                module: ModuleKind.Preserve,
-                strict: true,
-                ...this.config.compilerOptions,
-            },
-        });
-
+        this.project = project;
         this.parser = parser;
+        const outputPath = outputRoot + "/models/index.ts";
         this.sourceFile = this.project.createSourceFile(outputPath, "", { overwrite: true });
     }
 
-    static async create(swaggerPathOrUrl: string, outputRoot: string, config: GeneratorConfig): Promise<TypeGenerator> {
-        const parser = await SwaggerParser.create(swaggerPathOrUrl, config);
-        return new TypeGenerator(parser, outputRoot, config);
-    }
-
-    generate(): void {
+    async generate() {
         try {
             const definitions = this.parser.getDefinitions();
             if (!definitions || Object.keys(definitions).length === 0) {
@@ -48,9 +34,11 @@ export class TypeGenerator {
             this.sourceFile.insertText(0, TYPE_GENERATOR_HEADER_COMMENT);
 
             // Generate interfaces for each definition
-            Object.entries(definitions).forEach(([name, definition]) => {
-                this.generateInterface(name, definition);
-            });
+            await Promise.all(
+                Object.entries(definitions).map(([name, definition]) =>
+                    this.generateInterface(name, definition)
+                )
+            );
 
             this.generateSdkTypes();
 
@@ -62,7 +50,7 @@ export class TypeGenerator {
         }
     }
 
-    private generateInterface(name: string, definition: SwaggerDefinition): void {
+    private async generateInterface(name: string, definition: SwaggerDefinition) {
         const interfaceName = this.pascalCaseForEnums(name);
 
         // Prevent duplicate type generation
@@ -190,7 +178,11 @@ export class TypeGenerator {
 
         // Skip if no declared properties and no additionalProperties info
         if (!definition.properties) {
-            console.warn(`No properties found for interface ${interfaceDeclaration.getName()}`);
+            interfaceDeclaration.addIndexSignature({
+                keyName: "key",
+                keyType: "string",
+                returnType: "unknown",
+            });
             return;
         }
 

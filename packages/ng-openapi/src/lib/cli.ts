@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-import { Command } from "commander";
-import * as path from "path";
-import * as fs from "fs";
-import { generateFromConfig } from "./core";
-import * as packageJson from "../../package.json";
 import { GeneratorConfig } from "@ng-openapi/shared";
 import { isUrl } from "@ng-openapi/shared/src/utils/functions/is-url";
+import { Command } from "commander";
+import * as fs from "fs";
+import * as path from "path";
+import * as packageJson from "../../package.json";
+import { generateFromConfig } from "./core";
 
 const program = new Command();
 
@@ -56,6 +56,7 @@ async function loadConfigFile(configPath: string): Promise<GeneratorConfig> {
 }
 
 async function generateFromOptions(options: any): Promise<void> {
+    const timestamp = new Date().getTime();
     try {
         if (options.config) {
             const config = await loadConfigFile(options.config);
@@ -82,6 +83,9 @@ async function generateFromOptions(options: any): Promise<void> {
         console.log("✨ Generation completed successfully!");
     } catch (error) {
         console.error("❌ Generation failed:", error instanceof Error ? error.message : error);
+    } finally {
+        const duration = (new Date().getTime() - timestamp) / 1000;
+        console.log(`⏱️  Duration: ${duration.toFixed(2)} seconds`);
         process.exit(1);
     }
 }

@@ -187,8 +187,17 @@ export function inferResponseTypeFromContentType(contentType: string): "json" | 
 
 export function getResponseType(response: SwaggerResponse, config: GeneratorConfig): string {
     const responseType = getResponseTypeFromResponse(response);
+    const content = response.content || {};
 
-    // Map response types to TypeScript types
+    // For any response type, if we have schema information, use it for TypeScript typing
+    for (const [contentType, mediaType] of Object.entries(content)) {
+        if (mediaType?.schema) {
+            // Always use the schema's TypeScript type, regardless of HTTP response type
+            return getTypeScriptType(mediaType.schema, config, mediaType.schema.nullable);
+        }
+    }
+
+    // Fallback to HTTP response type mapping only if no schema is available
     switch (responseType) {
         case "blob":
             return "Blob";
@@ -196,16 +205,6 @@ export function getResponseType(response: SwaggerResponse, config: GeneratorConf
             return "ArrayBuffer";
         case "text":
             return "string";
-        case "json": {
-            // For JSON, check if we have a schema to get specific type
-            const content = response.content || {};
-            for (const [contentType, mediaType] of Object.entries(content)) {
-                if (inferResponseTypeFromContentType(contentType) === "json" && mediaType?.schema) {
-                    return getTypeScriptType(mediaType.schema, config, mediaType.schema.nullable);
-                }
-            }
-            return "any";
-        }
         default:
             return "any";
     }

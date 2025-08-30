@@ -1,4 +1,4 @@
-import { ModuleKind, Project, ScriptTarget } from "ts-morph";
+import { ModuleKind, Project, ScriptTarget, SourceFile } from "ts-morph";
 import { TypeGenerator } from "../generators";
 import {
     BaseInterceptorGenerator,
@@ -8,8 +8,8 @@ import {
     TokenGenerator
 } from "../generators/utility";
 import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
-import { ProviderGenerator } from "../generators/utility/provider.generator";
-import { GeneratorConfig, IPluginGeneratorClass } from "@ng-openapi/shared";
+import { ProviderGenerator } from "../generators/utility";
+import { GeneratorConfig, IPluginGeneratorClass, SwaggerParser } from "@ng-openapi/shared";
 import * as fs from "fs";
 import * as path from "path";
 import { isUrl } from "@ng-openapi/shared/src/utils/functions/is-url";
@@ -65,10 +65,11 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
         });
 
         console.log(`📡 Processing OpenAPI specification from ${inputType}: ${config.input}`);
+        const swaggerParser = await SwaggerParser.create(config.input, config);
 
         // Use config for type generation - TypeGenerator now handles both files and URLs
-        const typeGenerator = await TypeGenerator.create(config.input, outputPath, config);
-        typeGenerator.generate();
+        const typeGenerator = new TypeGenerator(swaggerParser, project, config, outputPath);
+        await typeGenerator.generate();
         console.log(`✅ TypeScript interfaces generated`);
 
         if (generateServices) {
@@ -87,8 +88,8 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
             fileDownloadHelper.generate(outputPath);
 
             // Generate services using the refactored ServiceGenerator
-            const serviceGenerator = await ServiceGenerator.create(config.input, project, config);
-            serviceGenerator.generate(outputPath);
+            const serviceGenerator = new ServiceGenerator(swaggerParser, project, config);
+            await serviceGenerator.generate(outputPath);
 
             // Generate services index file
             const indexGenerator = new ServiceIndexGenerator(project);
@@ -106,9 +107,9 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
 
         if (config.plugins?.length) {
             for (const plugin of config.plugins) {
-                const PluginClass = plugin as unknown as IPluginGeneratorClass;
-                const pluginGenerator = await PluginClass.create(config.input, project, config);
-                pluginGenerator.generate(outputPath);
+                const generatorClass = plugin as IPluginGeneratorClass;
+                const pluginGenerator = new generatorClass(swaggerParser, project, config);
+                await pluginGenerator.generate(outputPath);
             }
             console.log(`✅ Plugins are generated`);
         }
