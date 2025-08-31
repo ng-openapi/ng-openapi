@@ -193,4 +193,6 @@ export default defineConfig({
         },
         lineNumbers: true,
     },
+
+    cleanUrls: true,
 });

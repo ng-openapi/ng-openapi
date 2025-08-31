@@ -1,0 +1,3 @@
+# Redirect all other domains to ng-openapi.dev
+https://ng-openapi.com/* https://ng-openapi.dev/:splat 301!
+https://ng-openapi.netlify.app/* https://ng-openapi.dev/:splat 301!
