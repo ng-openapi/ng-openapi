@@ -19,6 +19,34 @@ export default defineConfig({
         ["meta", { property: "og:title", content: "ng-openapi | Angular OpenAPI Client Generator" }],
         ["meta", { property: "og:site_name", content: "ng-openapi" }],
         ["meta", { property: "og:url", content: "https://ng-openapi.github.io/" }],
+        ["link", { rel: "canonical", href: "https://ng-openapi.dev" }],
+
+        // Schema.org structured data for software
+        [
+            "script",
+            { type: "application/ld+json" },
+            JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "SoftwareApplication",
+                name: "ng-openapi",
+                applicationCategory: "DeveloperApplication",
+                operatingSystem: "Cross-platform",
+                offers: {
+                    "@type": "Offer",
+                    price: "0",
+                    priceCurrency: "USD",
+                },
+                description: "Modern Angular-first OpenAPI client generator",
+                url: "https://ng-openapi.dev",
+                author: {
+                    "@type": "Person",
+                    name: "Tareq Jami",
+                },
+                softwareVersion: packageJson.version,
+                datePublished: "2024-01-01",
+                keywords: "Angular, OpenAPI, TypeScript, Code Generator, Swagger",
+            }),
+        ],
     ],
 
     themeConfig: {
@@ -195,4 +223,15 @@ export default defineConfig({
     },
 
     cleanUrls: true,
+    sitemap: {
+        hostname: "https://ng-openapi.dev",
+        transformItems: (items) => {
+            // Prioritize important pages
+            return items.map((item) => ({
+                ...item,
+                changefreq: item.url.includes("/guide/") ? "weekly" : "monthly",
+                priority: item.url === "/" ? 1.0 : item.url.includes("/getting-started/") ? 0.9 : 0.7,
+            }));
+        },
+    },
 });

@@ -1,0 +1,9 @@
+# docs/public/robots.txt
+User-agent: *
+Allow: /
+Sitemap: https://ng-openapi.dev/sitemap.xml
+
+# Block development/staging URLs
+User-agent: *
+Disallow: /preview/
+Disallow: /*.json$
