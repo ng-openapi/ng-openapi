@@ -226,12 +226,28 @@ export default defineConfig({
     sitemap: {
         hostname: "https://ng-openapi.dev",
         transformItems: (items) => {
-            // Prioritize important pages
-            return items.map((item) => ({
-                ...item,
-                changefreq: item.url.includes("/guide/") ? "weekly" : "monthly",
-                priority: item.url === "/" ? 1.0 : item.url.includes("/getting-started/") ? 0.9 : 0.7,
-            }));
+            return items.map((item) => {
+                console.log(item.url)
+                const url = item.url;
+                // Homepage
+                if (url === "") {
+                    return { ...item, priority: 1.0, changefreq: "weekly" };
+                }
+                // Getting started
+                else if (url.includes("getting-started/")) {
+                    return { ...item, priority: 0.9, changefreq: "weekly" };
+                }
+                // Guides
+                else if (url.includes("guide/")) {
+                    return { ...item, priority: 0.8, changefreq: "weekly" };
+                }
+                // API docs
+                else if (url.includes("api/")) {
+                    return { ...item, priority: 0.7, changefreq: "monthly" };
+                }
+                // Default
+                return { ...item, priority: 0.6, changefreq: "monthly" };
+            });
         },
     },
 });
