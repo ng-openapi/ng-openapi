@@ -4,8 +4,9 @@ import {
     BaseInterceptorGenerator,
     DateTransformerGenerator,
     FileDownloadGenerator,
+    HttpParamsBuilderGenerator,
     MainIndexGenerator,
-    TokenGenerator
+    TokenGenerator,
 } from "../generators/utility";
 import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
 import { ProviderGenerator } from "../generators/utility";
@@ -86,6 +87,10 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
             // Generate file download helper
             const fileDownloadHelper = new FileDownloadGenerator(project);
             fileDownloadHelper.generate(outputPath);
+
+            // Generate HttpParamsBuilder
+            const httpParamsBuilderGenerator = new HttpParamsBuilderGenerator(project);
+            httpParamsBuilderGenerator.generate(outputPath);
 
             // Generate services using the refactored ServiceGenerator
             const serviceGenerator = new ServiceGenerator(swaggerParser, project, config);

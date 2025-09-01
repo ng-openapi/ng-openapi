@@ -132,6 +132,10 @@ export class ServiceGenerator {
                 namedImports: [basePathTokenName, clientContextTokenName],
                 moduleSpecifier: "../tokens",
             },
+            {
+                namedImports: ["HttpParamsBuilder"],
+                moduleSpecifier: "../utils",
+            },
         ]);
 
         // Add model imports if needed
