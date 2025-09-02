@@ -47,9 +47,9 @@ export class HttpResourceMethodBodyGenerator {
             .map(
                 (param) =>
                     `const ${param.name}Value = typeof ${param.name} === 'function' ? ${param.name}() : ${param.name};
-                    if (${param.name}Value !== undefined) {
-  params = params.set('${param.name}', String(${param.name}Value));
-}`
+                if (${param.name}Value != null) {
+                    params = HttpParamsBuilder.addToHttpParams(params, ${param.name}Value, '${param.name}');
+                }`
             )
             .join("\n");
 

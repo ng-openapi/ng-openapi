@@ -43,6 +43,10 @@ export class MainIndexGenerator {
                 moduleSpecifier: "./utils/file-download",
             });
 
+            sourceFile.addExportDeclaration({
+                moduleSpecifier: "./utils/http-params-builder",
+            });
+
             // Export utilities conditionally
             if (this.config.options.dateType === "Date") {
                 sourceFile.addExportDeclaration({

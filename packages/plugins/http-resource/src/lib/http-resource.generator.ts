@@ -134,6 +134,10 @@ export class HttpResourceGenerator implements IPluginGenerator {
                 namedImports: [basePathTokenName, clientContextTokenName],
                 moduleSpecifier: "../tokens",
             },
+            {
+                namedImports: ["HttpParamsBuilder"],
+                moduleSpecifier: "../index",
+            },
         ]);
 
         // Add model imports if needed

@@ -74,8 +74,8 @@ export class ServiceMethodBodyGenerator {
         const paramMappings = context.queryParams
             .map(
                 (param) =>
-                    `if (${param.name} !== undefined) {
-  params = params.set('${param.name}', String(${param.name}));
+                    `if (${param.name} != null) {
+  params = HttpParamsBuilder.addToHttpParams(params, ${param.name}, '${param.name}');
 }`
             )
             .join("\n");
