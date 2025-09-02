@@ -136,7 +136,7 @@ export class HttpResourceGenerator implements IPluginGenerator {
             },
             {
                 namedImports: ["HttpParamsBuilder"],
-                moduleSpecifier: "../utils",
+                moduleSpecifier: "../index",
             },
         ]);
 

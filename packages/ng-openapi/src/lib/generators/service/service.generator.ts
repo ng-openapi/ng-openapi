@@ -134,7 +134,7 @@ export class ServiceGenerator {
             },
             {
                 namedImports: ["HttpParamsBuilder"],
-                moduleSpecifier: "../utils",
+                moduleSpecifier: "../index",
             },
         ]);
 
