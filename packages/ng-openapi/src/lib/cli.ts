@@ -83,10 +83,11 @@ async function generateFromOptions(options: any): Promise<void> {
         console.log("✨ Generation completed successfully!");
     } catch (error) {
         console.error("❌ Generation failed:", error instanceof Error ? error.message : error);
+        process.exit(1);
     } finally {
         const duration = (new Date().getTime() - timestamp) / 1000;
         console.log(`⏱️  Duration: ${duration.toFixed(2)} seconds`);
-        process.exit(1);
+        process.exit(0);
     }
 }
 
