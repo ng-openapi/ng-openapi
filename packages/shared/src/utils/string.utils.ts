@@ -16,3 +16,10 @@ export function pascalCase(str: string): string {
         .replace(/[-_\s]+(.)?/g, (_, char) => char ? char.toUpperCase() : '')
         .replace(/^./, char => char.toUpperCase());
 }
+
+export function screamingSnakeCase(str: string): string {
+    return str
+        .replace(/([a-z])([A-Z])/g, '$1_$2')
+        .replace(/[-\s]+/g, '_')
+        .toUpperCase();
+}
