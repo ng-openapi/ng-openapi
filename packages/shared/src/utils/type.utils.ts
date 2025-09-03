@@ -104,8 +104,7 @@ export function getTypeScriptType(
             return "null";
 
         default:
-            console.warn(`Unknown swagger type: ${schema.type}`);
-            return nullableType("any", nullable);
+            return nullableType("unknown", nullable);
     }
 }
 
