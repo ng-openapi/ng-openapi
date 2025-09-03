@@ -1,6 +1,7 @@
 import {
     EnumValueObject,
     GeneratorConfig,
+    pascalCase,
     screamingSnakeCase,
     SwaggerDefinition,
     SwaggerParser,
@@ -487,8 +488,6 @@ export class TypeGenerator {
 
     // Original helper methods
     private mapSwaggerTypeToTypeScript(type?: string, format?: string, isNullable?: boolean): string {
-        if (!type) return "unknown";
-
         switch (type) {
             case "string":
                 if (format === "date" || format === "date-time") {
@@ -506,14 +505,13 @@ export class TypeGenerator {
             case "boolean":
                 return this.nullableType("boolean", isNullable);
             case "array":
-                return this.nullableType("unknown[]", isNullable);
+                return this.nullableType("any[]", isNullable);
             case "object":
                 return this.nullableType("Record<string, unknown>", isNullable);
             case "null":
                 return this.nullableType("null", isNullable);
             default:
-                console.warn(`Unknown swagger type: ${type}`);
-                return this.nullableType("unknown", isNullable);
+                return this.nullableType("any", isNullable);
         }
     }
 
@@ -538,8 +536,8 @@ export class TypeGenerator {
     private toEnumKey(value: string | number): string {
         const str = value.toString();
         const hasLeadingMinus = str.startsWith('-');
-        const snakeCased = screamingSnakeCase(str);
-        return hasLeadingMinus ? snakeCased.replace("_", "_n") : snakeCased.replace(/^([0-9])/, "_$1");
+        const pascalCased = pascalCase(str);
+        return hasLeadingMinus ? pascalCased.replace("_", "_n") : pascalCased.replace(/^([0-9])/, "_$1");
     }
 
     private getArrayItemType(items: SwaggerDefinition | SwaggerDefinition[]): string {

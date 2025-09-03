@@ -104,7 +104,7 @@ export function getTypeScriptType(
             return "null";
 
         default:
-            return nullableType("unknown", nullable);
+            return nullableType("any", nullable);
     }
 }
 
