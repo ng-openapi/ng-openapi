@@ -1,0 +1,36 @@
+{
+  "name": "zod",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/plugins/zod/src",
+  "projectType": "library",
+  "release": {
+    "version": {
+      "manifestRootsToUpdate": [
+        "dist/{projectRoot}"
+      ],
+      "currentVersionResolver": "git-tag",
+      "fallbackCurrentVersionResolver": "disk"
+    }
+  },
+  "tags": [
+    "plugin",
+    "zod"
+  ],
+  "targets": {
+    "nx-release-publish": {
+      "options": {
+        "packageRoot": "dist/{projectRoot}"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx tsup",
+        "cwd": "packages/plugins/zod"
+      },
+      "outputs": [
+        "{workspaceRoot}/dist/packages/plugins/zod"
+      ]
+    }
+  }
+}

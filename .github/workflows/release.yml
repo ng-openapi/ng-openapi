@@ -51,9 +51,11 @@ jobs:
     outputs:
       ng-openapi: ${{ steps.changes.outputs.ng-openapi }}
       http-resource: ${{ steps.changes.outputs.http-resource }}
+      zod: ${{ steps.changes.outputs.zod }}
       shared: ${{ steps.changes.outputs.shared }}
       publish-ng-openapi: ${{ steps.determine-publish.outputs.publish-ng-openapi }}
       publish-http-resource: ${{ steps.determine-publish.outputs.publish-http-resource }}
+      publish-zod: ${{ steps.determine-publish.outputs.publish-zod }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,6 +71,8 @@ jobs:
               - 'packages/ng-openapi/**'
             http-resource:
               - 'packages/plugins/http-resource/**'
+            zod:
+              - 'packages/plugins/zod/**'
             shared:
               - 'packages/shared/**'
 
@@ -80,6 +84,7 @@ jobs:
             echo "🔄 Force publish all packages requested"
             echo "publish-ng-openapi=true" >> $GITHUB_OUTPUT
             echo "publish-http-resource=true" >> $GITHUB_OUTPUT
+            echo "publish-zod=true" >> $GITHUB_OUTPUT
           else
             # Default logic based on changes
             PUBLISH_NG_OPENAPI="false"
@@ -104,13 +109,21 @@ jobs:
               PUBLISH_HTTP_RESOURCE="true"
             fi
           
+            # Changes in zod -> publish zod
+            if [[ "${{ steps.changes.outputs.zod }}" == "true" ]]; then
+              echo "📦 Changes detected in packages/plugins/zod -> publishing @ng-openapi/zod"
+              PUBLISH_ZOD="true"
+            fi
+          
             echo "publish-ng-openapi=$PUBLISH_NG_OPENAPI" >> $GITHUB_OUTPUT
             echo "publish-http-resource=$PUBLISH_HTTP_RESOURCE" >> $GITHUB_OUTPUT
+            echo "publish-zod=$PUBLISH_ZOD" >> $GITHUB_OUTPUT
           fi
           
           echo "Final publishing decisions:"
           echo "- ng-openapi: $PUBLISH_NG_OPENAPI"
           echo "- @ng-openapi/http-resource: $PUBLISH_HTTP_RESOURCE"
+          echo "- @ng-openapi/zod: $PUBLISH_ZOD"
 
   # Check if PR author is a maintainer
   check-permissions:
@@ -164,7 +177,8 @@ jobs:
         (github.event_name == 'pull_request' && needs.check-permissions.outputs.is-maintainer == 'true')
       ) && (
         needs.detect-changes.outputs.publish-ng-openapi == 'true' || 
-        needs.detect-changes.outputs.publish-http-resource == 'true'
+        needs.detect-changes.outputs.publish-http-resource == 'true' ||
+        needs.detect-changes.outputs.publish-zod == 'true'
       )
 
     steps:
@@ -196,6 +210,12 @@ jobs:
           echo "🔨 Building http-resource plugin..."
           npx nx run http-resource:build
 
+      - name: Build zod plugin
+        if: needs.detect-changes.outputs.publish-zod == 'true'
+        run: |
+          echo "🔨 Building zod plugin..."
+          npx nx run zod:build
+
       - name: Verify build outputs
         run: |
           if [[ "${{ needs.detect-changes.outputs.publish-ng-openapi }}" == "true" ]]; then
@@ -208,6 +228,12 @@ jobs:
             echo "📦 http-resource build output:"
             ls -la dist/packages/plugins/http-resource/
             cat dist/packages/plugins/http-resource/package.json
+          fi
+          
+          if [[ "${{ needs.detect-changes.outputs.publish-zod }}" == "true" ]]; then
+            echo "📦 zod build output:"
+            ls -la dist/packages/plugins/zod/
+            cat dist/packages/plugins/zod/package.json
           fi
 
       - name: Configure Git
@@ -309,6 +335,30 @@ jobs:
             echo "npm_tag=$NPM_TAG"
           } >> $GITHUB_OUTPUT
 
+      - name: Update zod version
+        id: version-zod
+        if: needs.detect-changes.outputs.publish-zod == 'true'
+        working-directory: packages/plugins/zod
+        run: |
+          # Update version based on release type
+          if [[ "${{ steps.release-params.outputs.is_prerelease }}" == "true" ]]; then
+            npm version prerelease --preid="${{ steps.release-params.outputs.prerelease_tag }}" --no-git-tag-version
+            NPM_TAG="${{ steps.release-params.outputs.prerelease_tag }}"
+          else
+            npm version "${{ steps.release-params.outputs.release_type }}" --no-git-tag-version
+            NPM_TAG="latest"
+          fi
+          
+          # Get the new version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "zod new version: $NEW_VERSION"
+          
+          # Set outputs
+          {
+            echo "version=$NEW_VERSION"
+            echo "npm_tag=$NPM_TAG"
+          } >> $GITHUB_OUTPUT
+
       - name: Copy updated package.json files to dist
         run: |
           echo "📋 Copying updated package.json files..."
@@ -321,6 +371,11 @@ jobs:
           if [[ "${{ needs.detect-changes.outputs.publish-http-resource }}" == "true" ]]; then
             cp packages/plugins/http-resource/package.json dist/packages/plugins/http-resource/package.json
             echo "✅ Updated http-resource version: $(cat dist/packages/plugins/http-resource/package.json | jq -r '.version')"
+          fi
+          
+          if [[ "${{ needs.detect-changes.outputs.publish-zod }}" == "true" ]]; then
+            cp packages/plugins/zod/package.json dist/packages/plugins/zod/package.json
+            echo "✅ Updated zod version: $(cat dist/packages/plugins/zod/package.json | jq -r '.version')"
           fi
 
       - name: Publish ng-openapi to NPM
@@ -343,6 +398,16 @@ jobs:
           npm publish --tag ${{ steps.version-http-resource.outputs.npm_tag }} --access public
           echo "✅ @ng-openapi/http-resource published successfully!"
 
+      - name: Publish zod to NPM
+        if: needs.detect-changes.outputs.publish-zod == 'true' && github.event.inputs.dry_run != 'true'
+        working-directory: dist/packages/plugins/zod
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "📦 Publishing @ng-openapi/zod version ${{ steps.version-zod.outputs.version }} with tag ${{ steps.version-zod.outputs.npm_tag }}"
+          npm publish --tag ${{ steps.version-zod.outputs.npm_tag }} --access public
+          echo "✅ @ng-openapi/zod published successfully!"
+
       - name: Create Git tags and push
         if: github.event.inputs.dry_run != 'true' && github.event_name != 'pull_request'
         run: |
@@ -357,13 +422,22 @@ jobs:
             git add packages/plugins/http-resource/package.json
           fi
           
+          if [[ "${{ needs.detect-changes.outputs.publish-zod }}" == "true" ]]; then
+            git add packages/plugins/zod/package.json
+          fi
+          
           # Build commit message based on what was published
           COMMIT_MSG="chore: release"
           if [[ "${{ needs.detect-changes.outputs.publish-ng-openapi }}" == "true" ]]; then
             COMMIT_MSG="${COMMIT_MSG} ng-openapi@${{ steps.version-ng-openapi.outputs.version }}"
           fi
+          
           if [[ "${{ needs.detect-changes.outputs.publish-http-resource }}" == "true" ]]; then
             COMMIT_MSG="${COMMIT_MSG} @ng-openapi/http-resource@${{ steps.version-http-resource.outputs.version }}"
+          fi
+          
+          if [[ "${{ needs.detect-changes.outputs.publish-zod }}" == "true" ]]; then
+            COMMIT_MSG="${COMMIT_MSG} @ng-openapi/zod@${{ steps.version-zod.outputs.version }}"
           fi
           
           git commit -m "$COMMIT_MSG"
@@ -375,6 +449,10 @@ jobs:
           
           if [[ "${{ needs.detect-changes.outputs.publish-http-resource }}" == "true" ]]; then
             git tag "@ng-openapi/http-resource@${{ steps.version-http-resource.outputs.version }}"
+          fi
+          
+          if [[ "${{ needs.detect-changes.outputs.publish-zod }}" == "true" ]]; then
+            git tag "@ng-openapi/zod@${{ steps.version-zod.outputs.version }}"
           fi
           
           git push origin HEAD --tags
@@ -412,6 +490,7 @@ jobs:
             
             ### 📋 Other Packages Released
             ${{ needs.detect-changes.outputs.publish-http-resource == 'true' && format('- **@ng-openapi/http-resource**: v{0}', steps.version-http-resource.outputs.version) || '- No other packages released in this version' }}
+            ${{ needs.detect-changes.outputs.publish-zod == 'true' && format('- **@ng-openapi/zod**: v{0}', steps.version-zod.outputs.version) || '- No other packages released in this version' }}
           prerelease: ${{ steps.release-params.outputs.is_prerelease == 'true' }}
           generate_release_notes: true
         env:
@@ -439,12 +518,12 @@ jobs:
             
             ### 🛠️ Usage
             ```typescript
-            import { HttpResourceGenerator } from '@ng-openapi/http-resource';
+            import { HttpResourcePlugin } from '@ng-openapi/http-resource';
             
             const config: GeneratorConfig = {
               input: './swagger.json',
               output: './src/api',
-              plugins: [HttpResourceGenerator],
+              plugins: [HttpResourcePlugin],
               options: { /* ... */ }
             };
             ```
@@ -456,6 +535,52 @@ jobs:
             
             ### 📋 Other Packages Released
             ${{ needs.detect-changes.outputs.publish-ng-openapi == 'true' && format('- **ng-openapi**: v{0}', steps.version-ng-openapi.outputs.version) || '- No other packages released in this version' }}
+            ${{ needs.detect-changes.outputs.publish-zod == 'true' && format('- **@ng-openapi/zod**: v{0}', steps.version-zod.outputs.version) || '- No other packages released in this version' }}
+          prerelease: ${{ steps.release-params.outputs.is_prerelease == 'true' }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release for zod
+        if: needs.detect-changes.outputs.publish-zod == 'true' && github.event.inputs.dry_run != 'true' && github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "@ng-openapi/zod@${{ steps.version-zod.outputs.version }}"
+          name: "@ng-openapi/zod v${{ steps.version-zod.outputs.version }}"
+          body: |
+            ## 🚀 @ng-openapi/zod v${{ steps.version-zod.outputs.version }}
+
+            HTTP Resource plugin for ng-openapi - Angular HTTP utilities with caching and state management.
+
+            ### 📦 Installation
+            ```bash
+            # Install this version
+            npm install @ng-openapi/zod@${{ steps.version-zod.outputs.version }}
+
+            # Install latest stable
+            npm install @ng-openapi/zod
+            ```
+
+            ### 🛠️ Usage
+            ```typescript
+            import { ZodPlugin } from '@ng-openapi/zod';
+
+            const config: GeneratorConfig = {
+              input: './swagger.json',
+              output: './src/api',
+              plugins: [ZodPlugin],
+              options: { /* ... */ }
+            };
+            ```
+
+            ### 🔗 Links
+            - 📚 [NPM Package](https://www.npmjs.com/package/@ng-openapi/zod)
+            - 📖 [Documentation](https://ng-openapi.dev/plugins/zod)
+            - 🐛 [Report Issues](https://github.com/${{ github.repository }}/issues)
+
+            ### 📋 Other Packages Released
+            ${{ needs.detect-changes.outputs.publish-ng-openapi == 'true' && format('- **ng-openapi**: v{0}', steps.version-ng-openapi.outputs.version) || '- No other packages released in this version' }}
+            ${{ needs.detect-changes.outputs.publish-http-resource == 'true' && format('- **@ng-openapi/http-resource**: v{0}', steps.version-http-resource.outputs.version) || '- No other packages released in this version' }}
           prerelease: ${{ steps.release-params.outputs.is_prerelease == 'true' }}
           generate_release_notes: true
         env:
@@ -470,6 +595,7 @@ jobs:
             
             const publishNgOpenapi = '${{ needs.detect-changes.outputs.publish-ng-openapi }}' === 'true';
             const publishHttpResource = '${{ needs.detect-changes.outputs.publish-http-resource }}' === 'true';
+            const publishZod = '${{ needs.detect-changes.outputs.publish-zod }}' === 'true';
             
             if (publishNgOpenapi) {
               comment += `### 📦 ng-openapi
@@ -495,6 +621,18 @@ jobs:
             `;
             }
             
+            if (publishZod) {
+              comment += `### 📦 @ng-openapi/zod
+            **Version**: \`v${{ steps.version-zod.outputs.version }}\`
+            **NPM Tag**: \`${{ steps.version-zod.outputs.npm_tag }}\`
+            
+            \`\`\`bash
+            npm install @ng-openapi/zod@${{ steps.version-zod.outputs.version }}
+            \`\`\`
+            
+            `;
+            }
+            
             comment += `**Commit**: \`${{ github.event.pull_request.head.sha }}\`
             
             ### 🔗 Links`;
@@ -507,9 +645,14 @@ jobs:
               comment += `\n- [@ng-openapi/http-resource NPM](https://www.npmjs.com/package/@ng-openapi/http-resource/v/${{ steps.version-http-resource.outputs.version }})`;
             }
             
+            if (publishZod) {
+              comment += `\n- [@ng-openapi/zod NPM](https://www.npmjs.com/package/@ng-openapi/zod/v/${{ steps.version-zod.outputs.version }})`;
+            }
+            
             comment += `
             - [All ng-openapi versions](https://www.npmjs.com/package/ng-openapi?activeTab=versions)
             - [All http-resource versions](https://www.npmjs.com/package/@ng-openapi/http-resource?activeTab=versions)
+            - [All zod versions](https://www.npmjs.com/package/@ng-openapi/zod?activeTab=versions)
             
             > These versions are unique to commit \`${{ github.event.pull_request.head.sha }}\` and will not conflict with other releases.
             `;
@@ -535,6 +678,7 @@ jobs:
             **Packages that would have been published:**
             ${{ needs.detect-changes.outputs.publish-ng-openapi == 'true' && '- ng-openapi' || '' }}
             ${{ needs.detect-changes.outputs.publish-http-resource == 'true' && '- @ng-openapi/http-resource' || '' }}
+            ${{ needs.detect-changes.outputs.publish-zod == 'true' && '- @ng-openapi/zod' || '' }}
             
             If you believe this is an error, please contact a maintainer.
             `;
@@ -547,7 +691,7 @@ jobs:
             });
 
       - name: Comment on PR if no changes detected
-        if: github.event_name == 'pull_request' && needs.detect-changes.outputs.publish-ng-openapi != 'true' && needs.detect-changes.outputs.publish-http-resource != 'true'
+        if: github.event_name == 'pull_request' && needs.detect-changes.outputs.publish-ng-openapi != 'true' && needs.detect-changes.outputs.publish-http-resource != 'true' && needs.detect-changes.outputs.publish-zod != 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -556,11 +700,13 @@ jobs:
             No packages were published because no relevant changes were detected in:
             - \`packages/ng-openapi/\`
             - \`packages/plugins/http-resource/\`  
+            - \`packages/plugins/zod/\`  
             - \`packages/shared/\`
             
             **Change Detection Results:**
             - ng-openapi changes: ${{ needs.detect-changes.outputs.ng-openapi }}
             - http-resource changes: ${{ needs.detect-changes.outputs.http-resource }}
+            - zod changes: ${{ needs.detect-changes.outputs.zod }}
             - shared changes: ${{ needs.detect-changes.outputs.shared }}
             
             To force publish all packages, use the "Release and Publish" workflow dispatch with "Force publish all packages" enabled.
@@ -602,6 +748,18 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
           
+          if [[ "${{ needs.detect-changes.outputs.publish-zod }}" == "true" ]]; then
+            echo "### 📦 @ng-openapi/zod ✅ Published" >> $GITHUB_STEP_SUMMARY
+            echo "- **Version**: v${{ steps.version-zod.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **NPM Tag**: ${{ steps.version-zod.outputs.npm_tag }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **NPM Package**: https://www.npmjs.com/package/@ng-openapi/zod" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### 📦 @ng-openapi/zod ⏭️ Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "- No changes detected in \`packages/plugins/zod/\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
           echo "### 🛠️ Release Configuration" >> $GITHUB_STEP_SUMMARY
           echo "- **Prerelease**: ${{ steps.release-params.outputs.is_prerelease }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Release Type**: ${{ steps.release-params.outputs.release_type }}" >> $GITHUB_STEP_SUMMARY
@@ -614,4 +772,5 @@ jobs:
           echo "### 🔍 Change Detection" >> $GITHUB_STEP_SUMMARY
           echo "- **ng-openapi changes**: ${{ needs.detect-changes.outputs.ng-openapi }}" >> $GITHUB_STEP_SUMMARY
           echo "- **http-resource changes**: ${{ needs.detect-changes.outputs.http-resource }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **zod changes**: ${{ needs.detect-changes.outputs.zod }}" >> $GITHUB_STEP_SUMMARY
           echo "- **shared changes**: ${{ needs.detect-changes.outputs.shared }}" >> $GITHUB_STEP_SUMMARY

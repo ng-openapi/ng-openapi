@@ -23,6 +23,9 @@
       "@ng-openapi/shared": [
         "packages/shared/src/index.ts"
       ],
+      "@ng-openapi/zod": [
+        "packages/plugins/zod/src/index.ts"
+      ],
       "ng-openapi": [
         "packages/ng-openapi/src/index.ts"
       ]
