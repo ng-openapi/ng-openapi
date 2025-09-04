@@ -10,7 +10,7 @@ export default defineConfig([
         sourcemap: true,
         clean: true,
         outDir: "../../../dist/packages/plugins/zod",
-        external: ["@angular/core", "@angular/common", "ng-openapi", "ts-morph"],
+        external: ["ng-openapi", "ts-morph"],
         onSuccess: async () => {
             const distDir = "../../../dist/packages/plugins/zod";
 
