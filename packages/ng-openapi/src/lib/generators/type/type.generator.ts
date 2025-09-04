@@ -537,7 +537,7 @@ export class TypeGenerator {
         const str = value.toString();
         const hasLeadingMinus = str.startsWith('-');
         const pascalCased = pascalCase(str);
-        return hasLeadingMinus ? pascalCased.replace("_", "_n") : pascalCased.replace(/^([0-9])/, "_$1");
+        return hasLeadingMinus ? pascalCased.replace(/^([0-9])/, "_n$1") : pascalCased.replace(/^([0-9])/, "_$1");
     }
 
     private getArrayItemType(items: SwaggerDefinition | SwaggerDefinition[]): string {
