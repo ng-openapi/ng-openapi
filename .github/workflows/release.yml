@@ -112,18 +112,18 @@ jobs:
             # Changes in zod -> publish zod
             if [[ "${{ steps.changes.outputs.zod }}" == "true" ]]; then
               echo "📦 Changes detected in packages/plugins/zod -> publishing @ng-openapi/zod"
-              PUBLISH_HTTP_RESOURCE="true"
+              PUBLISH_ZOD="true"
             fi
           
             echo "publish-ng-openapi=$PUBLISH_NG_OPENAPI" >> $GITHUB_OUTPUT
             echo "publish-http-resource=$PUBLISH_HTTP_RESOURCE" >> $GITHUB_OUTPUT
-            echo "publish-zod=$PUBLISH_HTTP_RESOURCE" >> $GITHUB_OUTPUT
+            echo "publish-zod=$PUBLISH_ZOD" >> $GITHUB_OUTPUT
           fi
           
           echo "Final publishing decisions:"
           echo "- ng-openapi: $PUBLISH_NG_OPENAPI"
           echo "- @ng-openapi/http-resource: $PUBLISH_HTTP_RESOURCE"
-          echo "- @ng-openapi/zod: $PUBLISH_HTTP_RESOURCE"
+          echo "- @ng-openapi/zod: $PUBLISH_ZOD"
 
   # Check if PR author is a maintainer
   check-permissions:
@@ -518,12 +518,12 @@ jobs:
             
             ### 🛠️ Usage
             ```typescript
-            import { HttpResourceGenerator } from '@ng-openapi/http-resource';
+            import { HttpResourcePlugin } from '@ng-openapi/http-resource';
             
             const config: GeneratorConfig = {
               input: './swagger.json',
               output: './src/api',
-              plugins: [HttpResourceGenerator],
+              plugins: [HttpResourcePlugin],
               options: { /* ... */ }
             };
             ```
@@ -563,12 +563,12 @@ jobs:
 
             ### 🛠️ Usage
             ```typescript
-            import { HttpResourceGenerator } from '@ng-openapi/zod';
+            import { ZodPlugin } from '@ng-openapi/zod';
 
             const config: GeneratorConfig = {
               input: './swagger.json',
               output: './src/api',
-              plugins: [HttpResourceGenerator],
+              plugins: [ZodPlugin],
               options: { /* ... */ }
             };
             ```
