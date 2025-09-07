@@ -14,7 +14,7 @@ export class ServiceMethodGenerator {
 
     constructor(config: GeneratorConfig, parser: SwaggerParser) {
         this.config = config;
-        this.bodyGenerator = new ServiceMethodBodyGenerator(config);
+        this.bodyGenerator = new ServiceMethodBodyGenerator(config, parser);
         this.overloadsGenerator = new ServiceMethodOverloadsGenerator(config, parser);
         this.paramsGenerator = new ServiceMethodParamsGenerator(config, parser);
     }
