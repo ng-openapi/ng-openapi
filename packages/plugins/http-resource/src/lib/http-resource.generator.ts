@@ -98,55 +98,19 @@ export class HttpResourceGenerator implements IPluginGenerator {
         const filePath = path.join(outputDir, fileName);
 
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
-
-        // Collect all used model types first
-        const usedTypes = collectUsedTypes(operations);
-
-        this.addImports(sourceFile, usedTypes);
+        this.addImports(sourceFile);
         this.addServiceClass(sourceFile, resourceName, operations);
-        sourceFile.formatText();
+        sourceFile.fixMissingImports().organizeImports().formatText();
         sourceFile.saveSync();
     }
 
-    private addImports(sourceFile: SourceFile, usedTypes: Set<string>): void {
-        const basePathTokenName = getBasePathTokenName(this.config.clientName);
-        const clientContextTokenName = getClientContextTokenName(this.config.clientName);
-
+    private addImports(sourceFile: SourceFile): void {
         sourceFile.addImportDeclarations([
             {
-                namedImports: ["Injectable", "inject", "Signal"],
+                namedImports: ["Injectable"],
                 moduleSpecifier: "@angular/core",
             },
-            {
-                namedImports: [
-                    "HttpResourceRef",
-                    "HttpContext",
-                    "httpResource",
-                    "HttpResourceRequest",
-                    "HttpResourceOptions",
-                    "HttpParams",
-                    "HttpContextToken",
-                    "HttpHeaders",
-                ],
-                moduleSpecifier: "@angular/common/http",
-            },
-            {
-                namedImports: [basePathTokenName, clientContextTokenName],
-                moduleSpecifier: "../tokens",
-            },
-            {
-                namedImports: ["HttpParamsBuilder"],
-                moduleSpecifier: "../index",
-            },
         ]);
-
-        // Add model imports if needed
-        if (usedTypes.size > 0) {
-            sourceFile.addImportDeclaration({
-                namedImports: Array.from(usedTypes).sort(),
-                moduleSpecifier: "../models",
-            });
-        }
     }
 
     private addServiceClass(sourceFile: SourceFile, resourceName: string, operations: PathInfo[]): void {

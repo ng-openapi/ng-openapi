@@ -24,20 +24,8 @@ export class BaseInterceptorGenerator {
 
         sourceFile.addImportDeclarations([
             {
-                namedImports: ["HttpEvent", "HttpHandler", "HttpInterceptor", "HttpRequest", "HttpContextToken"],
-                moduleSpecifier: "@angular/common/http",
-            },
-            {
-                namedImports: ["inject", "Injectable"],
+                namedImports: ["Injectable"],
                 moduleSpecifier: "@angular/core",
-            },
-            {
-                namedImports: ["Observable"],
-                moduleSpecifier: "rxjs",
-            },
-            {
-                namedImports: [interceptorsTokenName, clientContextTokenName],
-                moduleSpecifier: "../tokens",
             },
         ]);
 
@@ -97,7 +85,7 @@ export class BaseInterceptorGenerator {
             ],
         });
 
-        sourceFile.formatText();
+        sourceFile.fixMissingImports().organizeImports().formatText();
         sourceFile.saveSync();
     }
 

@@ -1,7 +1,6 @@
 import { Project, Scope, SourceFile } from "ts-morph";
 import {
     camelCase,
-    collectUsedTypes,
     extractPaths,
     GeneratorConfig,
     getBasePathTokenName,
@@ -39,7 +38,7 @@ export class ServiceGenerator {
             );
         }
 
-        this.methodGenerator = new ServiceMethodGenerator(config);
+        this.methodGenerator = new ServiceMethodGenerator(config, parser);
     }
 
     async generate(outputRoot: string) {
@@ -93,58 +92,21 @@ export class ServiceGenerator {
 
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
 
-        // Collect all used model types first
-        const usedTypes = collectUsedTypes(operations);
 
-        this.addImports(sourceFile, usedTypes);
+        this.addImports(sourceFile);
         this.addServiceClass(sourceFile, controllerName, operations);
 
-        sourceFile.formatText();
+        sourceFile.fixMissingImports().organizeImports().fixUnusedIdentifiers().formatText();
         sourceFile.saveSync();
     }
 
-    private addImports(sourceFile: SourceFile, usedTypes: Set<string>): void {
-        const basePathTokenName = getBasePathTokenName(this.config.clientName);
-        const clientContextTokenName = getClientContextTokenName(this.config.clientName);
-
+    private addImports(sourceFile: SourceFile): void {
         sourceFile.addImportDeclarations([
             {
-                namedImports: ["Injectable", "inject"],
+                namedImports: ["Injectable"],
                 moduleSpecifier: "@angular/core",
             },
-            {
-                namedImports: [
-                    "HttpClient",
-                    "HttpParams",
-                    "HttpHeaders",
-                    "HttpContext",
-                    "HttpResponse",
-                    "HttpEvent",
-                    "HttpContextToken",
-                ],
-                moduleSpecifier: "@angular/common/http",
-            },
-            {
-                namedImports: ["Observable", "map"],
-                moduleSpecifier: "rxjs",
-            },
-            {
-                namedImports: [basePathTokenName, clientContextTokenName],
-                moduleSpecifier: "../tokens",
-            },
-            {
-                namedImports: ["HttpParamsBuilder"],
-                moduleSpecifier: "../index",
-            },
         ]);
-
-        // Add model imports if needed
-        if (usedTypes.size > 0) {
-            sourceFile.addImportDeclaration({
-                namedImports: Array.from(usedTypes).sort(),
-                moduleSpecifier: "../models",
-            });
-        }
     }
 
     private addServiceClass(sourceFile: SourceFile, controllerName: string, operations: PathInfo[]): void {

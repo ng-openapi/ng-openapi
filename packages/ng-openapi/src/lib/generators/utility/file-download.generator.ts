@@ -14,16 +14,6 @@ export class FileDownloadGenerator {
 
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
 
-        sourceFile.addImportDeclaration({
-            namedImports: ["Observable"],
-            moduleSpecifier: "rxjs",
-        });
-
-        sourceFile.addImportDeclaration({
-            namedImports: ["tap"],
-            moduleSpecifier: "rxjs/operators",
-        });
-
         // Add file download helper function
         sourceFile.addFunction({
             name: "downloadFile",
@@ -110,7 +100,7 @@ export class FileDownloadGenerator {
     return fallbackFilename;`,
         });
 
-        sourceFile.formatText();
+        sourceFile.fixMissingImports().organizeImports().formatText();
         sourceFile.saveSync();
     }
 }

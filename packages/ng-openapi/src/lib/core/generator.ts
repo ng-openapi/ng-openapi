@@ -1,19 +1,19 @@
-import { ModuleKind, Project, ScriptTarget, SourceFile } from "ts-morph";
-import { TypeGenerator } from "../generators";
+import { ModuleKind, Project, ScriptTarget } from 'ts-morph';
+import { TypeGenerator } from '../generators';
 import {
     BaseInterceptorGenerator,
     DateTransformerGenerator,
     FileDownloadGenerator,
     HttpParamsBuilderGenerator,
     MainIndexGenerator,
-    TokenGenerator,
-} from "../generators/utility";
-import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
-import { ProviderGenerator } from "../generators/utility";
-import { GeneratorConfig, IPluginGeneratorClass, SwaggerParser } from "@ng-openapi/shared";
-import * as fs from "fs";
-import * as path from "path";
-import { isUrl } from "@ng-openapi/shared/src/utils/functions/is-url";
+    ProviderGenerator,
+    TokenGenerator
+} from '../generators/utility';
+import { ServiceGenerator, ServiceIndexGenerator } from '../generators/service';
+import { GeneratorConfig, IPluginGeneratorClass, SwaggerParser } from '@ng-openapi/shared';
+import * as fs from 'fs';
+import * as path from 'path';
+import { isUrl } from '@ng-openapi/shared/src/utils/functions/is-url';
 
 /**
  * Validates input (file or URL)
@@ -92,6 +92,13 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
             const httpParamsBuilderGenerator = new HttpParamsBuilderGenerator(project);
             httpParamsBuilderGenerator.generate(outputPath);
 
+            // Generate provider functions (always generate, even if services are disabled)
+            const providerGenerator = new ProviderGenerator(project, config);
+            providerGenerator.generate(outputPath);
+
+            const baseInterceptorGenerator = new BaseInterceptorGenerator(project, config.clientName);
+            baseInterceptorGenerator.generate(outputPath);
+
             // Generate services using the refactored ServiceGenerator
             const serviceGenerator = new ServiceGenerator(swaggerParser, project, config);
             await serviceGenerator.generate(outputPath);
@@ -101,13 +108,6 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
             indexGenerator.generateIndex(outputPath);
 
             console.log(`✅ Angular services generated`);
-
-            // Generate provider functions (always generate, even if services are disabled)
-            const providerGenerator = new ProviderGenerator(project, config);
-            providerGenerator.generate(outputPath);
-
-            const baseInterceptorGenerator = new BaseInterceptorGenerator(project, config.clientName);
-            baseInterceptorGenerator.generate(outputPath);
         }
 
         if (config.plugins?.length) {
