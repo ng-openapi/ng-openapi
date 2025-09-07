@@ -1,7 +1,6 @@
 import { Project, Scope, SourceFile } from "ts-morph";
 import {
     camelCase,
-    collectUsedTypes,
     extractPaths,
     GeneratorConfig,
     getBasePathTokenName,
