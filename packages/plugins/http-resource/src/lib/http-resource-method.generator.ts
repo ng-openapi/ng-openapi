@@ -55,8 +55,8 @@ export class HttpResourceMethodGenerator {
         }
 
         const method = pascalCase(operation.method.toLowerCase());
-        const pathParts = operation.path.split("/").map(str => {
-            return pascalCase(pascalCase(str).replace(/[^a-zA-Z0-9]/g, ''));
+        const pathParts = operation.path.split("/").map((str) => {
+            return pascalCase(pascalCase(str).replace(/[^a-zA-Z0-9]/g, ""));
         });
         const resource = pathParts.join("") || "resource";
 

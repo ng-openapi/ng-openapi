@@ -1,5 +1,11 @@
 import { MethodDeclarationOverloadStructure, OptionalKind, ParameterDeclarationStructure } from "ts-morph";
-import { GeneratorConfig, getResponseType, getResponseTypeFromResponse, PathInfo } from "@ng-openapi/shared";
+import {
+    GeneratorConfig,
+    getResponseType,
+    getResponseTypeFromResponse,
+    PathInfo,
+    SwaggerParser,
+} from "@ng-openapi/shared";
 import { ServiceMethodParamsGenerator } from "./service-method-params.generator";
 
 export class ServiceMethodOverloadsGenerator {
@@ -7,9 +13,9 @@ export class ServiceMethodOverloadsGenerator {
     private paramsGenerator: ServiceMethodParamsGenerator;
     private responseDataType = "any";
 
-    constructor(config: GeneratorConfig) {
+    constructor(config: GeneratorConfig, parser: SwaggerParser) {
         this.config = config;
-        this.paramsGenerator = new ServiceMethodParamsGenerator(config);
+        this.paramsGenerator = new ServiceMethodParamsGenerator(config, parser);
     }
 
     generateMethodOverloads(operation: PathInfo): OptionalKind<MethodDeclarationOverloadStructure>[] {

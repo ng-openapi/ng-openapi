@@ -2,7 +2,6 @@ import {
     EnumValueObject,
     GeneratorConfig,
     pascalCase,
-    screamingSnakeCase,
     SwaggerDefinition,
     SwaggerParser,
     TYPE_GENERATOR_HEADER_COMMENT,
@@ -153,7 +152,12 @@ export class TypeGenerator {
         const unionType = definition.enum
             .map((value) => {
                 const key = this.toEnumKey(value);
-                const val = typeof value === "string" ? `'${this.escapeString(value)}'` : isNaN(value) ? `'${value}'` : `${value}`;
+                const val =
+                    typeof value === "string"
+                        ? `'${this.escapeString(value)}'`
+                        : isNaN(value)
+                        ? `'${value}'`
+                        : `${value}`;
                 objectProperties.push(`${key}: ${val} as ${name}`);
                 return val;
             })
@@ -535,7 +539,7 @@ export class TypeGenerator {
 
     private toEnumKey(value: string | number): string {
         const str = value.toString();
-        const hasLeadingMinus = str.startsWith('-');
+        const hasLeadingMinus = str.startsWith("-");
         const pascalCased = pascalCase(str);
         return hasLeadingMinus ? pascalCased.replace(/^([0-9])/, "_n$1") : pascalCased.replace(/^([0-9])/, "_$1");
     }
