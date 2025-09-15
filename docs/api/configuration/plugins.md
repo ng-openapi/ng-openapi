@@ -20,6 +20,9 @@ export default {
 } as GeneratorConfig;
 ```
 
+## Available Plugins
+- [HttpResourcePlugin](./plugins/http-resource.md)
+- [ZodPlugin](./plugins/zod.md) (Beta)
+
 ## Notes
-- Currently, there is only one plugin available: [HttpResourcePlugin](./plugins/http-resource.md)
 - This might become a public API in the future, allowing third-party plugins to be added
