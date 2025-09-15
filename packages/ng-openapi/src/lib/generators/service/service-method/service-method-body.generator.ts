@@ -6,13 +6,16 @@ import {
     isDataTypeInterface,
     MethodGenerationContext,
     PathInfo,
+    SwaggerParser,
 } from "@ng-openapi/shared";
 
 export class ServiceMethodBodyGenerator {
     private config: GeneratorConfig;
+    private parser: SwaggerParser;
 
-    constructor(config: GeneratorConfig) {
+    constructor(config: GeneratorConfig, parser: SwaggerParser) {
         this.config = config;
+        this.parser = parser;
     }
 
     generateMethodBody(operation: PathInfo): string {
@@ -39,7 +42,14 @@ export class ServiceMethodBodyGenerator {
             return [];
         }
 
-        const properties = operation.requestBody?.content?.["multipart/form-data"]?.schema?.properties || {};
+        const schema = operation.requestBody?.content?.["multipart/form-data"].schema;
+        let resolvedSchema = schema;
+
+        if (schema?.$ref) {
+            resolvedSchema = this.parser.resolveReference(schema.$ref);
+        }
+
+        const properties = resolvedSchema?.properties || {};
         return Object.keys(properties);
     }
 
@@ -138,17 +148,41 @@ if (!headers.has('Content-Type')) {
             return "";
         }
 
+        const schema = operation.requestBody?.content?.["multipart/form-data"].schema;
+        let resolvedSchema = schema;
+
+        if (schema?.$ref) {
+            resolvedSchema = this.parser.resolveReference(schema.$ref);
+        }
+
+        const properties = resolvedSchema?.properties || {};
+
         const formDataAppends = context.formDataFields
             .map((field) => {
-                const fieldSchema =
-                    operation.requestBody?.content?.["multipart/form-data"]?.schema?.properties?.[field];
+                const fieldSchema = properties[field];
                 const isFile = fieldSchema?.type === "string" && fieldSchema?.format === "binary";
+                const isArray = fieldSchema?.type === "array";
 
-                const valueExpression = isFile ? field : `String(${field})`;
+                if (isArray) {
+                    const itemSchema = Array.isArray(fieldSchema.items) ? fieldSchema.items[0] : fieldSchema.items;
+                    const isFileArray = itemSchema?.type === "string" && itemSchema?.format === "binary";
 
-                return `if (${field} !== undefined) {
-  formData.append('${field}', ${valueExpression});
-}`;
+                    const valueExpression = isFileArray ? "item" : "String(item)";
+
+                    return `if (${field} !== undefined && Array.isArray(${field})) {
+                  ${field}.forEach((item) => {
+                    if (item !== undefined && item !== null) {
+                      formData.append('${field}', ${valueExpression});
+                    }
+                  });
+                }`;
+                } else {
+                    const valueExpression = isFile ? field : `String(${field})`;
+
+                    return `if (${field} !== undefined) {
+                  formData.append('${field}', ${valueExpression});
+                }`;
+                }
             })
             .join("\n");
 

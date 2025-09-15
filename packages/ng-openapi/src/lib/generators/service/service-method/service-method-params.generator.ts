@@ -1,11 +1,20 @@
 import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
-import { camelCase, GeneratorConfig, getTypeScriptType, isDataTypeInterface, PathInfo } from "@ng-openapi/shared";
+import {
+    camelCase,
+    GeneratorConfig,
+    getTypeScriptType,
+    isDataTypeInterface,
+    PathInfo,
+    SwaggerParser,
+} from "@ng-openapi/shared";
 
 export class ServiceMethodParamsGenerator {
     private config: GeneratorConfig;
+    private parser: SwaggerParser;
 
-    constructor(config: GeneratorConfig) {
+    constructor(config: GeneratorConfig, parser: SwaggerParser) {
         this.config = config;
+        this.parser = parser;
     }
 
     generateMethodParameters(operation: PathInfo): OptionalKind<ParameterDeclarationStructure>[] {
@@ -43,16 +52,21 @@ export class ServiceMethodParamsGenerator {
 
         // form parameters
         if (operation.requestBody && operation.requestBody?.content?.["multipart/form-data"]) {
+            const schema = operation.requestBody.content["multipart/form-data"].schema;
+            let resolvedSchema = schema;
+
+            if (schema?.$ref) {
+                resolvedSchema = this.parser.resolveReference(schema.$ref);
+            }
+
             // For multipart/form-data, add individual parameters for each field
-            Object.entries(operation.requestBody?.content?.["multipart/form-data"].schema?.properties ?? {}).forEach(
-                ([key, value]: [string, any]) => {
-                    params.push({
-                        name: key,
-                        type: getTypeScriptType(value, this.config, value.nullable),
-                        hasQuestionToken: !value.required,
-                    });
-                }
-            );
+            Object.entries(resolvedSchema?.properties ?? {}).forEach(([key, value]: [string, any]) => {
+                params.push({
+                    name: key,
+                    type: getTypeScriptType(value, this.config, value.nullable),
+                    hasQuestionToken: !resolvedSchema?.required?.includes(key),
+                });
+            });
         }
 
         // body parameters

@@ -98,7 +98,7 @@ export function getTypeScriptType(
 
         case "object":
             // Use more specific type for type generation
-            return nullableType(context === "type" ? "Record<string, unknown>" : "any", nullable);
+            return nullableType(context === "type" ? "Record<string, any>" : "any", nullable);
 
         case "null":
             return "null";

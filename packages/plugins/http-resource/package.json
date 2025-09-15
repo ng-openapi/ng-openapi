@@ -1,6 +1,6 @@
 {
   "name": "@ng-openapi/http-resource",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "description": "HTTP Resource plugin for ng-openapi - Angular HTTP utilities with caching and state management",
   "keywords": [
     "angular",

@@ -4,7 +4,7 @@ import {
     ServiceMethodOverloadsGenerator,
     ServiceMethodParamsGenerator,
 } from "./service-method";
-import { camelCase, GeneratorConfig, pascalCase, PathInfo } from "@ng-openapi/shared";
+import { camelCase, GeneratorConfig, pascalCase, PathInfo, SwaggerParser } from "@ng-openapi/shared";
 
 export class ServiceMethodGenerator {
     private config: GeneratorConfig;
@@ -12,11 +12,11 @@ export class ServiceMethodGenerator {
     private overloadsGenerator: ServiceMethodOverloadsGenerator;
     private paramsGenerator: ServiceMethodParamsGenerator;
 
-    constructor(config: GeneratorConfig) {
+    constructor(config: GeneratorConfig, parser: SwaggerParser) {
         this.config = config;
-        this.bodyGenerator = new ServiceMethodBodyGenerator(config);
-        this.overloadsGenerator = new ServiceMethodOverloadsGenerator(config);
-        this.paramsGenerator = new ServiceMethodParamsGenerator(config);
+        this.bodyGenerator = new ServiceMethodBodyGenerator(config, parser);
+        this.overloadsGenerator = new ServiceMethodOverloadsGenerator(config, parser);
+        this.paramsGenerator = new ServiceMethodParamsGenerator(config, parser);
     }
 
     addServiceMethod(serviceClass: ClassDeclaration, operation: PathInfo): void {
@@ -59,8 +59,8 @@ export class ServiceMethodGenerator {
         }
 
         const method = pascalCase(operation.method.toLowerCase());
-        const pathParts = operation.path.split("/").map(str => {
-            return pascalCase(pascalCase(str).replace(/[^a-zA-Z0-9]/g, ''));
+        const pathParts = operation.path.split("/").map((str) => {
+            return pascalCase(pascalCase(str).replace(/[^a-zA-Z0-9]/g, ""));
         });
         const resource = pathParts.join("") || "resource";
 
