@@ -105,13 +105,17 @@ export class ZodGenerator implements IPluginGenerator {
         // Add imports
         this.addImports(sourceFile, operations);
 
+        const _statements: string[] = [];
         // Generate validators for each operation
         for (const operation of operations) {
-            await this.generateOperationValidators(sourceFile, operation);
+            const statements = await this.generateOperationValidators(sourceFile, operation);
+            _statements.push(...statements);
         }
 
-        sourceFile.fixMissingImports().organizeImports().fixUnusedIdentifiers().formatText();
-        sourceFile.saveSync();
+        if (_statements.length > 0) {
+            sourceFile.fixMissingImports().organizeImports().fixUnusedIdentifiers().formatText();
+            sourceFile.saveSync();
+        }
     }
 
     private addImports(sourceFile: SourceFile, operations: PathInfo[]): void {
@@ -124,12 +128,13 @@ export class ZodGenerator implements IPluginGenerator {
 
     private async generateOperationValidators(sourceFile: SourceFile, operation: PathInfo) {
         const operationName = this.getOperationName(operation);
+        const statements: string[] = [];
 
         // Generate parameter validators
         if (this.shouldGenerate("param") || this.shouldGenerate("query") || this.shouldGenerate("header")) {
             const params = await this.generateParameterValidators(operation, operationName);
             if (params.length > 0) {
-                sourceFile.addStatements(params);
+                statements.push(...params);
             }
         }
 
@@ -137,7 +142,7 @@ export class ZodGenerator implements IPluginGenerator {
         if (this.shouldGenerate("body") && operation.requestBody) {
             const bodyValidators = await this.schemaGenerator.generateBodyValidator(operation, operationName);
             if (bodyValidators.length > 0) {
-                sourceFile.addStatements(bodyValidators);
+                statements.push(...bodyValidators);
             }
         }
 
@@ -145,9 +150,12 @@ export class ZodGenerator implements IPluginGenerator {
         if (this.shouldGenerate("response")) {
             const responseValidators = await this.schemaGenerator.generateResponseValidators(operation, operationName);
             if (responseValidators.length > 0) {
-                sourceFile.addStatements(responseValidators);
+                statements.push(...responseValidators);
             }
         }
+
+        sourceFile.addStatements(statements);
+        return statements;
     }
 
     private async generateParameterValidators(operation: PathInfo, operationName: string): Promise<string[]> {

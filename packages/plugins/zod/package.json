@@ -60,7 +60,7 @@
   "peerDependencies": {
     "ng-openapi": ">=0.2",
     "ts-morph": "*",
-    "zod": ">=3"
+    "zod": ">=4"
   },
   "peerDependenciesMeta": {
     "ng-openapi": {
