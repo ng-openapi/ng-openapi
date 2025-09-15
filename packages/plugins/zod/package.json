@@ -1,24 +1,16 @@
 {
-  "name": "ng-openapi",
-  "version": "0.2.0",
-  "description": "Generate Angular services and TypeScript types from OpenAPI/Swagger specifications",
+  "name": "@ng-openapi/zod",
+  "version": "0.0.1",
+  "description": "Zod validation plugin for ng-openapi - Generate Zod schemas from OpenAPI specifications",
   "keywords": [
-    "ng-openapi",
     "angular",
-    "openapi",
-    "swagger",
-    "codegen",
+    "ng-openapi",
+    "plugin",
+    "zod",
+    "validation",
+    "schema",
     "typescript",
-    "generator",
-    "code-generator",
-    "api",
-    "rest",
-    "http",
-    "cli",
-    "ng",
-    "ng openapi",
-    "httpResource",
-    "reactive"
+    "openapi"
   ],
   "author": {
     "name": "Tareq Jami",
@@ -26,30 +18,34 @@
     "url": "http://tareqjami.de"
   },
   "license": "MIT",
-  "homepage": "https://ng-openapi.dev/",
+  "homepage": "https://ng-openapi.dev/guide/zod",
   "bugs": {
     "url": "https://github.com/ng-openapi/ng-openapi/issues"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ng-openapi/ng-openapi.git",
-    "directory": "packages/ng-openapi"
+    "directory": "packages/plugins/zod"
   },
   "funding": {
     "type": "buymeacoffee",
     "url": "https://buymeacoffee.com/ngopenapi"
   },
-  "main": "./index.cjs",
+  "type": "module",
+  "main": "./index.js",
   "module": "./index.js",
   "types": "./index.d.ts",
-  "bin": {
-    "ng-openapi": "./cli.cjs"
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js",
+      "require": "./index.cjs"
+    }
   },
   "files": [
     "index.js",
     "index.cjs",
     "index.d.ts",
-    "cli.cjs",
     "lib/**/*.js",
     "lib/**/*.cjs",
     "lib/**/*.d.ts",
@@ -58,26 +54,22 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "prepublishOnly": "echo 'Build the package using: npm run build:ng-openapi from workspace root'",
+    "prepublishOnly": "echo 'Build the package using: npm run build:zod from workspace root'",
     "build": "tsup"
   },
-  "dependencies": {
-    "commander": "^14.0.0",
-    "ts-morph": "^26.0.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3",
-    "@types/swagger-schema-official": "^2.0.25",
-    "js-yaml": "^4.1.0"
-  },
   "peerDependencies": {
-    "@angular/core": ">=15",
-    "@angular/common": ">=15"
+    "ng-openapi": ">=0.2",
+    "ts-morph": "*",
+    "zod": ">=4"
   },
   "peerDependenciesMeta": {
-    "@angular/core": {
+    "ng-openapi": {
       "optional": false
     },
-    "@angular/common": {
+    "ts-morph": {
+      "optional": false
+    },
+    "zod": {
       "optional": false
     }
   },

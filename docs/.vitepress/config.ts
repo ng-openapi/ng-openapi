@@ -172,6 +172,10 @@ export default defineConfig({
                                             text: "Http Resource",
                                             link: "/api/configuration/plugins/http-resource",
                                         },
+                                        {
+                                            text: "Zod",
+                                            link: "/api/configuration/plugins/zod",
+                                        },
                                     ],
                                     collapsed: true,
                                 },
@@ -227,7 +231,7 @@ export default defineConfig({
         hostname: "https://ng-openapi.dev",
         transformItems: (items) => {
             return items.map((item) => {
-                console.log(item.url)
+                console.log(item.url);
                 const url = item.url;
                 // Homepage
                 if (url === "") {
