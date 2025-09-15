@@ -2,7 +2,6 @@ import { Project, SourceFile } from "ts-morph";
 import * as path from "path";
 import {
     camelCase,
-    collectUsedTypes,
     extractPaths,
     GeneratorConfig,
     IPluginGenerator,
@@ -111,7 +110,7 @@ export class ZodGenerator implements IPluginGenerator {
             await this.generateOperationValidators(sourceFile, operation);
         }
 
-        sourceFile.formatText();
+        sourceFile.fixMissingImports().organizeImports().fixUnusedIdentifiers().formatText();
         sourceFile.saveSync();
     }
 
@@ -121,17 +120,6 @@ export class ZodGenerator implements IPluginGenerator {
             namedImports: ["z"],
             moduleSpecifier: "zod",
         });
-
-        // Collect used types
-        const usedTypes = collectUsedTypes(operations);
-
-        // Add model imports if needed
-        if (usedTypes.size > 0) {
-            sourceFile.addImportDeclaration({
-                namedImports: Array.from(usedTypes).sort(),
-                moduleSpecifier: "../models",
-            });
-        }
     }
 
     private async generateOperationValidators(sourceFile: SourceFile, operation: PathInfo) {
