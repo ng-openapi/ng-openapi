@@ -1,5 +1,6 @@
 import {
     camelCase,
+    CONTENT_TYPES,
     GeneratorConfig,
     Parameter,
     pascalCase,
@@ -59,7 +60,7 @@ export class ZodSchemaGenerator {
         }
 
         const requestBody = this.resolveRequestBody(operation.requestBody);
-        const content = requestBody.content?.["application/json"] || requestBody.content?.["multipart/form-data"];
+        const content = requestBody.content?.[CONTENT_TYPES.JSON] || requestBody.content?.["multipart/form-data"];
 
         if (!content?.schema) {
             return statements;
@@ -117,7 +118,7 @@ export class ZodSchemaGenerator {
             if (!response) continue;
 
             const resolvedResponse = this.resolveResponse(response);
-            const content = resolvedResponse.content?.["application/json"];
+            const content = resolvedResponse.content?.[CONTENT_TYPES.JSON];
 
             if (!content?.schema) continue;
 

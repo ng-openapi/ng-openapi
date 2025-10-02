@@ -153,7 +153,7 @@ export function inferResponseTypeFromContentType(contentType: string): "json" | 
     }
 
     // Form data should be handled as text for parsing
-    if (normalizedType === "application/x-www-form-urlencoded" || normalizedType === "multipart/form-data") {
+    if (normalizedType === "CONTENT_TYPES.FORM_URLENCODED" || normalizedType === "multipart/form-data") {
         return "text";
     }
 

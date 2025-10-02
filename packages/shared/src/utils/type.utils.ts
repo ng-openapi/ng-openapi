@@ -104,6 +104,10 @@ export function getTypeScriptType(
             return "null";
 
         default:
+            if (Array.isArray(schema.type)) {
+                const types = schema.type.map((t) => getTypeScriptType(t, config, undefined, undefined, context));
+                return nullableType(types.join(" | "), nullable);
+            }
             return nullableType("any", nullable);
     }
 }

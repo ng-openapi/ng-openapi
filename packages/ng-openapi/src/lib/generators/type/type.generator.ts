@@ -515,6 +515,10 @@ export class TypeGenerator {
             case "null":
                 return this.nullableType("null", isNullable);
             default:
+                if (Array.isArray(type)) {
+                    const types = type.map((t) => this.mapSwaggerTypeToTypeScript(t, undefined, isNullable));
+                    return this.nullableType(types.join(" | "), isNullable);
+                }
                 return this.nullableType("any", isNullable);
         }
     }
