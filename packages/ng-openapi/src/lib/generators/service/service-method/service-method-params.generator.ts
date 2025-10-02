@@ -1,10 +1,12 @@
 import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
 import {
     camelCase,
+    CONTENT_TYPES,
     GeneratorConfig,
     getTypeScriptType,
     isDataTypeInterface,
     PathInfo,
+    SwaggerDefinition,
     SwaggerParser,
 } from "@ng-openapi/shared";
 
@@ -50,34 +52,35 @@ export class ServiceMethodParamsGenerator {
             });
         });
 
-        // form parameters
-        if (operation.requestBody && operation.requestBody?.content?.["multipart/form-data"]) {
-            const schema = operation.requestBody.content["multipart/form-data"].schema;
-            let resolvedSchema = schema;
+        const requestBody = operation.requestBody;
 
-            if (schema?.$ref) {
-                resolvedSchema = this.parser.resolveReference(schema.$ref);
+        if (requestBody) {
+            const formDataContent = requestBody.content?.[CONTENT_TYPES.MULTIPART];
+            const urlEncodedContent = requestBody.content?.[CONTENT_TYPES.FORM_URLENCODED];
+            const jsonContent = requestBody.content?.[CONTENT_TYPES.JSON];
+
+            // form parameters
+            if (formDataContent) {
+                const formParams = this.convertObjectToSingleParams(formDataContent.schema);
+                params.push(...formParams);
             }
 
-            // For multipart/form-data, add individual parameters for each field
-            Object.entries(resolvedSchema?.properties ?? {}).forEach(([key, value]: [string, any]) => {
-                params.push({
-                    name: key,
-                    type: getTypeScriptType(value, this.config, value.nullable),
-                    hasQuestionToken: !resolvedSchema?.required?.includes(key),
-                });
-            });
-        }
+            // x-www-form-urlencoded parameters
+            if (!jsonContent && urlEncodedContent) {
+                const formParams = this.convertObjectToSingleParams(urlEncodedContent.schema);
+                params.push(...formParams);
+            }
 
-        // body parameters
-        if (operation.requestBody && operation.requestBody?.content?.["application/json"]) {
-            const bodyType = this.getRequestBodyType(operation.requestBody);
-            const isInterface = isDataTypeInterface(bodyType);
-            params.push({
-                name: isInterface ? camelCase(bodyType) : "requestBody",
-                type: bodyType,
-                hasQuestionToken: !operation.requestBody.required,
-            });
+            // body parameters
+            if (jsonContent && !formDataContent) {
+                const bodyType = this.getRequestBodyType(requestBody);
+                const isInterface = isDataTypeInterface(bodyType);
+                params.push({
+                    name: isInterface ? camelCase(bodyType) : "requestBody",
+                    type: bodyType,
+                    hasQuestionToken: !requestBody.required,
+                });
+            }
         }
 
         // Query parameters
@@ -130,12 +133,32 @@ export class ServiceMethodParamsGenerator {
 
     private getRequestBodyType(requestBody: any): string {
         const content = requestBody.content || {};
-        const jsonContent = content["application/json"];
+        const jsonContent = content[CONTENT_TYPES.JSON];
 
         if (jsonContent?.schema) {
             return getTypeScriptType(jsonContent.schema, this.config, jsonContent.schema.nullable);
         }
 
         return "any";
+    }
+
+    private convertObjectToSingleParams(schema?: SwaggerDefinition): OptionalKind<ParameterDeclarationStructure>[] {
+        const params: OptionalKind<ParameterDeclarationStructure>[] = [];
+        let resolvedSchema = schema;
+
+        if (schema?.$ref) {
+            resolvedSchema = this.parser.resolveReference(schema.$ref);
+        }
+
+        // For multipart/form-data, add individual parameters for each field
+        Object.entries(resolvedSchema?.properties ?? {}).forEach(([key, value]: [string, any]) => {
+            params.push({
+                name: key,
+                type: getTypeScriptType(value, this.config, value.nullable),
+                hasQuestionToken: !resolvedSchema?.required?.includes(key),
+            });
+        });
+
+        return params;
     }
 }

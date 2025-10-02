@@ -1,5 +1,6 @@
 import {
     camelCase,
+    CONTENT_TYPES,
     GeneratorConfig,
     getRequestBodyType,
     getResponseTypeFromResponse,
@@ -26,6 +27,7 @@ export class ServiceMethodBodyGenerator {
             this.generateQueryParams(context),
             this.generateHeaders(context),
             this.generateMultipartFormData(operation, context),
+            this.generateUrlEncodedFormData(operation, context),
             this.generateRequestOptions(context),
             this.generateHttpRequest(operation, context),
         ];
@@ -34,7 +36,14 @@ export class ServiceMethodBodyGenerator {
     }
 
     isMultipartFormData(operation: PathInfo): boolean {
-        return !!operation.requestBody?.content?.["multipart/form-data"];
+        return !!operation.requestBody?.content?.[CONTENT_TYPES.MULTIPART];
+    }
+
+    isUrlEncodedFormData(operation: PathInfo): boolean {
+        return (
+            !!operation.requestBody?.content?.[CONTENT_TYPES.FORM_URLENCODED] &&
+            !operation.requestBody?.content?.[CONTENT_TYPES.JSON]
+        );
     }
 
     getFormDataFields(operation: PathInfo): string[] {
@@ -42,7 +51,7 @@ export class ServiceMethodBodyGenerator {
             return [];
         }
 
-        const schema = operation.requestBody?.content?.["multipart/form-data"].schema;
+        const schema = operation.requestBody?.content?.[CONTENT_TYPES.MULTIPART].schema;
         let resolvedSchema = schema;
 
         if (schema?.$ref) {
@@ -53,13 +62,33 @@ export class ServiceMethodBodyGenerator {
         return Object.keys(properties);
     }
 
-    private createGenerationContext(operation: PathInfo): MethodGenerationContext {
+    getUrlEncodedFields(operation: PathInfo): string[] {
+        if (!this.isUrlEncodedFormData(operation)) {
+            return [];
+        }
+
+        const schema = operation.requestBody?.content?.[CONTENT_TYPES.FORM_URLENCODED].schema;
+        let resolvedSchema = schema;
+
+        if (schema?.$ref) {
+            resolvedSchema = this.parser.resolveReference(schema.$ref);
+        }
+
+        const properties = resolvedSchema?.properties || {};
+        return Object.keys(properties);
+    }
+
+    private createGenerationContext(
+        operation: PathInfo
+    ): MethodGenerationContext & { isUrlEncoded: boolean; urlEncodedFields: string[] } {
         return {
             pathParams: operation.parameters?.filter((p) => p.in === "path") || [],
             queryParams: operation.parameters?.filter((p) => p.in === "query") || [],
             hasBody: !!operation.requestBody,
             isMultipart: this.isMultipartFormData(operation),
+            isUrlEncoded: this.isUrlEncodedFormData(operation),
             formDataFields: this.getFormDataFields(operation),
+            urlEncodedFields: this.getUrlEncodedFields(operation),
             responseType: this.determineResponseType(operation),
         };
     }
@@ -98,12 +127,11 @@ ${paramMappings}`;
     private generateHeaders(context: MethodGenerationContext): string {
         const hasCustomHeaders = this.config.options.customHeaders;
 
-        // Always generate headers if we have custom headers or if it's multipart
-        if (!hasCustomHeaders && !context.isMultipart) {
+        // Generate headers if we have custom headers, multipart, or url-encoded
+        if (!hasCustomHeaders && !context.isMultipart && !context.isUrlEncoded) {
             return "";
         }
 
-        // Use the approach that handles both HttpHeaders and plain objects
         let headerCode = `
 let headers: HttpHeaders;
 if (options?.headers instanceof HttpHeaders) {
@@ -113,7 +141,6 @@ if (options?.headers instanceof HttpHeaders) {
 }`;
 
         if (hasCustomHeaders) {
-            // Add default headers
             headerCode += `
 // Add default headers if not already present
 ${Object.entries(this.config.options.customHeaders || {})
@@ -126,13 +153,17 @@ ${Object.entries(this.config.options.customHeaders || {})
     .join("\n")}`;
         }
 
-        // For multipart, ensure Content-Type is not set (browser sets it with boundary)
         if (context.isMultipart) {
             headerCode += `
 // Remove Content-Type for multipart (browser will set it with boundary)
 headers = headers.delete('Content-Type');`;
-        } else if (!context.isMultipart) {
-            // For non-multipart requests, set JSON content type if not already set
+        } else if (context.isUrlEncoded) {
+            headerCode += `
+// Set Content-Type for URL-encoded form data
+if (!headers.has('Content-Type')) {
+  headers = headers.set('Content-Type', 'application/x-www-form-urlencoded');
+}`;
+        } else {
             headerCode += `
 // Set Content-Type for JSON requests if not already set
 if (!headers.has('Content-Type')) {
@@ -148,7 +179,7 @@ if (!headers.has('Content-Type')) {
             return "";
         }
 
-        const schema = operation.requestBody?.content?.["multipart/form-data"].schema;
+        const schema = operation.requestBody?.content?.[CONTENT_TYPES.MULTIPART].schema;
         let resolvedSchema = schema;
 
         if (schema?.$ref) {
@@ -191,33 +222,66 @@ const formData = new FormData();
 ${formDataAppends}`;
     }
 
+    private generateUrlEncodedFormData(operation: PathInfo, context: MethodGenerationContext): string {
+        if (!context.isUrlEncoded || context.urlEncodedFields.length === 0) {
+            return "";
+        }
+
+        const schema = operation.requestBody?.content?.[CONTENT_TYPES.FORM_URLENCODED].schema;
+        let resolvedSchema = schema;
+
+        if (schema?.$ref) {
+            resolvedSchema = this.parser.resolveReference(schema.$ref);
+        }
+
+        const properties = resolvedSchema?.properties || {};
+
+        const formBodyAppends = context.urlEncodedFields
+            .map((field) => {
+                const fieldSchema = properties[field];
+                const isArray = fieldSchema?.type === "array";
+
+                if (isArray) {
+                    return `if (${field} !== undefined && Array.isArray(${field})) {
+                  ${field}.forEach((item) => {
+                    if (item !== undefined && item !== null) {
+                      formBody.append('${field}', String(item));
+                    }
+                  });
+                }`;
+                } else {
+                    return `if (${field} !== undefined && ${field} !== null) {
+                  formBody.append('${field}', String(${field}));
+                }`;
+                }
+            })
+            .join("\n");
+
+        return `
+const formBody = new URLSearchParams();
+${formBodyAppends}`;
+    }
+
     private generateRequestOptions(context: MethodGenerationContext): string {
         const options: string[] = [];
 
-        // Always include observe
         options.push("observe: observe as any");
 
-        // Add headers if we generated them
-        const hasHeaders = this.config.options.customHeaders || context.isMultipart;
+        const hasHeaders = this.config.options.customHeaders || context.isMultipart || context.isUrlEncoded;
         if (hasHeaders) {
             options.push("headers");
         }
 
-        // Add params if we have query parameters
         if (context.queryParams.length > 0) {
             options.push("params");
         }
 
-        // Add response type if not JSON
         if (context.responseType !== "json") {
             options.push(`responseType: '${context.responseType}' as '${context.responseType}'`);
         }
 
-        // Add other options from the parameter
         options.push("reportProgress: options?.reportProgress");
         options.push("withCredentials: options?.withCredentials");
-
-        // Create HttpContext with client identification - call the helper method
         options.push("context: this.createContextWithClientId(options?.context)");
 
         const formattedOptions = options.filter((opt) => opt && !opt.includes("undefined")).join(",\n  ");
@@ -231,19 +295,19 @@ const requestOptions: any = {
     private generateHttpRequest(operation: PathInfo, context: MethodGenerationContext): string {
         const httpMethod = operation.method.toLowerCase();
 
-        // Determine if we need body parameter
         let bodyParam = "";
         if (context.hasBody) {
             if (context.isMultipart) {
                 bodyParam = "formData";
-            } else if (operation.requestBody?.content?.["application/json"]) {
+            } else if (context.isUrlEncoded) {
+                bodyParam = "formBody.toString()";
+            } else if (operation.requestBody?.content?.[CONTENT_TYPES.JSON]) {
                 const bodyType = getRequestBodyType(operation.requestBody, this.config);
                 const isInterface = isDataTypeInterface(bodyType);
                 bodyParam = isInterface ? camelCase(bodyType) : "requestBody";
             }
         }
 
-        // Methods that require body
         const methodsWithBody = ["post", "put", "patch"];
         const parseResponse = this.config.options.validation?.response
             ? `.pipe(map(response => options?.parse?.(response) ?? response))`
@@ -259,13 +323,12 @@ return this.httpClient.${httpMethod}(url, requestOptions)${parseResponse};`;
     }
 
     private determineResponseType(operation: PathInfo): "json" | "blob" | "arraybuffer" | "text" {
-        const successResponses = ["200", "201", "202", "204", "206"]; // Added 206 for partial content
+        const successResponses = ["200", "201", "202", "204", "206"];
 
         for (const statusCode of successResponses) {
             const response = operation.responses?.[statusCode];
             if (!response) continue;
 
-            // Use the new function that checks both content type and schema
             return getResponseTypeFromResponse(response);
         }
 
