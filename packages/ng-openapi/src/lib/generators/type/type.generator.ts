@@ -328,7 +328,7 @@ export class TypeGenerator {
             return (
                 schema.oneOf
                     .map((def) => this.resolveSwaggerTypeCached(def))
-                    .filter((type) => type !== "any" && type !== "unknown")
+                    .filter((type, index, array) => type !== "any" && type !== "unknown" && array.indexOf(type) === index)
                     .join(" | ") || "unknown"
             );
         }
