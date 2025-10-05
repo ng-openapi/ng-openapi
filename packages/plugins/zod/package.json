@@ -1,6 +1,6 @@
 {
   "name": "@ng-openapi/zod",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Zod validation plugin for ng-openapi - Generate Zod schemas from OpenAPI specifications",
   "keywords": [
     "angular",
