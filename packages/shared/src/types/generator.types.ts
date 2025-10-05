@@ -3,7 +3,9 @@ export interface MethodGenerationContext {
     queryParams: Array<{ name: string; in: string }>;
     hasBody: boolean;
     isMultipart: boolean;
+    isUrlEncoded: boolean;
     formDataFields: string[];
+    urlEncodedFields: string[];
     responseType: "json" | "blob" | "arraybuffer" | "text";
 }
 
