@@ -1,6 +1,11 @@
 import { Project } from "ts-morph";
 import * as path from "path";
-import { GeneratorConfig, PROVIDER_GENERATOR_HEADER_COMMENT } from "@ng-openapi/shared";
+import {
+    GeneratorConfig,
+    getBasePathTokenName,
+    getInterceptorsTokenName,
+    PROVIDER_GENERATOR_HEADER_COMMENT,
+} from "@ng-openapi/shared";
 
 export class ProviderGenerator {
     private project: Project;
@@ -19,8 +24,8 @@ export class ProviderGenerator {
 
         sourceFile.insertText(0, PROVIDER_GENERATOR_HEADER_COMMENT);
 
-        const basePathTokenName = this.getBasePathTokenName();
-        const interceptorsTokenName = this.getInterceptorsTokenName();
+        const basePathTokenName = getBasePathTokenName(this.clientName);
+        const interceptorsTokenName = getInterceptorsTokenName(this.clientName);
         const baseInterceptorClassName = `${this.capitalizeFirst(this.clientName)}BaseInterceptor`;
 
         // Add imports
@@ -197,16 +202,6 @@ return makeEnvironmentProviders(providers);`;
                 statements: `return ${functionName}(config);`,
             });
         }
-    }
-
-    private getBasePathTokenName(): string {
-        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
-        return `BASE_PATH_${clientSuffix}`;
-    }
-
-    private getInterceptorsTokenName(): string {
-        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
-        return `HTTP_INTERCEPTORS_${clientSuffix}`;
     }
 
     private capitalizeFirst(str: string): string {

@@ -16,14 +16,16 @@ export class TokenGenerator {
 
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
 
-        sourceFile.addImportDeclaration({
-            namedImports: ["InjectionToken"],
-            moduleSpecifier: "@angular/core",
-        });
-        sourceFile.addImportDeclaration({
-            namedImports: ["HttpInterceptor", "HttpContextToken"],
-            moduleSpecifier: "@angular/common/http",
-        });
+        sourceFile.addImportDeclarations([
+            {
+                namedImports: ["InjectionToken"],
+                moduleSpecifier: "@angular/core",
+            },
+            {
+                namedImports: ["HttpInterceptor", "HttpContextToken"],
+                moduleSpecifier: "@angular/common/http",
+            },
+        ]);
 
         // Generate client-specific tokens
         const basePathTokenName = this.getBasePathTokenName();

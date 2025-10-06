@@ -1,6 +1,10 @@
 import { Project, Scope } from "ts-morph";
 import * as path from "path";
-import { BASE_INTERCEPTOR_HEADER_COMMENT } from "@ng-openapi/shared";
+import {
+    BASE_INTERCEPTOR_HEADER_COMMENT,
+    getClientContextTokenName,
+    getInterceptorsTokenName,
+} from "@ng-openapi/shared";
 
 export class BaseInterceptorGenerator {
     readonly #project: Project;
@@ -19,13 +23,25 @@ export class BaseInterceptorGenerator {
 
         sourceFile.insertText(0, BASE_INTERCEPTOR_HEADER_COMMENT(this.#clientName));
 
-        const interceptorsTokenName = this.getInterceptorsTokenName();
-        const clientContextTokenName = this.getClientContextTokenName();
+        const interceptorsTokenName = getInterceptorsTokenName(this.#clientName);
+        const clientContextTokenName = getClientContextTokenName(this.#clientName);
 
         sourceFile.addImportDeclarations([
             {
-                namedImports: ["Injectable"],
+                namedImports: ["HttpContextToken", "HttpEvent", "HttpHandler", "HttpInterceptor", "HttpRequest"],
+                moduleSpecifier: "@angular/common/http",
+            },
+            {
+                namedImports: ["inject", "Injectable"],
                 moduleSpecifier: "@angular/core",
+            },
+            {
+                namedImports: ["Observable"],
+                moduleSpecifier: "rxjs",
+            },
+            {
+                namedImports: [clientContextTokenName, interceptorsTokenName],
+                moduleSpecifier: "../tokens",
             },
         ]);
 
@@ -85,18 +101,8 @@ export class BaseInterceptorGenerator {
             ],
         });
 
-        sourceFile.fixMissingImports().organizeImports().formatText();
+        sourceFile.formatText();
         sourceFile.saveSync();
-    }
-
-    private getInterceptorsTokenName(): string {
-        const clientSuffix = this.#clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
-        return `HTTP_INTERCEPTORS_${clientSuffix}`;
-    }
-
-    private getClientContextTokenName(): string {
-        const clientSuffix = this.#clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
-        return `CLIENT_CONTEXT_TOKEN_${clientSuffix}`;
     }
 
     private capitalizeFirst(str: string): string {
