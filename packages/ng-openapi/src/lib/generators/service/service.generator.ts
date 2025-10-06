@@ -94,7 +94,7 @@ export class ServiceGenerator {
 
         this.addServiceClass(sourceFile, controllerName, operations);
 
-        sourceFile.fixMissingImports().organizeImports().fixUnusedIdentifiers().formatText(); //TODO: add models
+        sourceFile.fixMissingImports().formatText(); //TODO: add models
         sourceFile.saveSync();
     }
 

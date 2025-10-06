@@ -98,7 +98,7 @@ export class HttpResourceGenerator implements IPluginGenerator {
 
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
         this.addServiceClass(sourceFile, resourceName, operations);
-        sourceFile.fixMissingImports().organizeImports().formatText(); //TODO: add models
+        sourceFile.fixMissingImports().formatText(); //TODO: add models
         sourceFile.saveSync();
     }
 
