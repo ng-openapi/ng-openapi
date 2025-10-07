@@ -113,7 +113,7 @@ export class ZodGenerator implements IPluginGenerator {
         }
 
         if (_statements.length > 0) {
-            sourceFile.fixMissingImports().organizeImports().fixUnusedIdentifiers().formatText();
+            sourceFile.formatText();
             sourceFile.saveSync();
         }
     }

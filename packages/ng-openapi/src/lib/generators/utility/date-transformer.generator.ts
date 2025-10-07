@@ -14,6 +14,21 @@ export class DateTransformerGenerator {
 
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
 
+        sourceFile.addImportDeclarations([
+            {
+                namedImports: ["HttpEvent", "HttpHandler", "HttpInterceptor", "HttpRequest", "HttpResponse"],
+                moduleSpecifier: "@angular/common/http",
+            },
+            {
+                namedImports: ["Injectable"],
+                moduleSpecifier: "@angular/core",
+            },
+            {
+                namedImports: ["Observable", "map"],
+                moduleSpecifier: "rxjs",
+            },
+        ]);
+
         // Add ISO date regex constant
         sourceFile.addVariableStatement({
             isExported: true,
@@ -93,7 +108,7 @@ export class DateTransformerGenerator {
             ],
         });
 
-        sourceFile.fixMissingImports().organizeImports().formatText();
+        sourceFile.formatText();
         sourceFile.saveSync();
     }
 }

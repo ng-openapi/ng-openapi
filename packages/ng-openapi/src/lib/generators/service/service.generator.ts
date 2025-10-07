@@ -92,21 +92,10 @@ export class ServiceGenerator {
 
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
 
-
-        this.addImports(sourceFile);
         this.addServiceClass(sourceFile, controllerName, operations);
 
-        sourceFile.fixMissingImports().organizeImports().fixUnusedIdentifiers().formatText();
+        sourceFile.fixMissingImports().formatText(); //TODO: add models
         sourceFile.saveSync();
-    }
-
-    private addImports(sourceFile: SourceFile): void {
-        sourceFile.addImportDeclarations([
-            {
-                namedImports: ["Injectable"],
-                moduleSpecifier: "@angular/core",
-            },
-        ]);
     }
 
     private addServiceClass(sourceFile: SourceFile, controllerName: string, operations: PathInfo[]): void {
@@ -115,6 +104,37 @@ export class ServiceGenerator {
         const clientContextTokenName = getClientContextTokenName(this.config.clientName);
 
         sourceFile.insertText(0, SERVICE_GENERATOR_HEADER_COMMENT(controllerName));
+
+        sourceFile.addImportDeclarations([
+            {
+                namedImports: [
+                    "HttpClient",
+                    "HttpContext",
+                    "HttpContextToken",
+                    "HttpEvent",
+                    "HttpHeaders",
+                    "HttpParams",
+                    "HttpResponse",
+                ],
+                moduleSpecifier: "@angular/common/http",
+            },
+            {
+                namedImports: ["inject", "Injectable"],
+                moduleSpecifier: "@angular/core",
+            },
+            {
+                namedImports: ["Observable"],
+                moduleSpecifier: "rxjs",
+            },
+            {
+                namedImports: [basePathTokenName, clientContextTokenName],
+                moduleSpecifier: "../tokens",
+            },
+            {
+                namedImports: ["HttpParamsBuilder"],
+                moduleSpecifier: "../utils/http-params-builder",
+            }
+        ]);
 
         const serviceClass = sourceFile.addClass({
             name: className,

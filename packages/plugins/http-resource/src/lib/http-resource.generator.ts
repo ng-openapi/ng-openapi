@@ -97,19 +97,9 @@ export class HttpResourceGenerator implements IPluginGenerator {
         const filePath = path.join(outputDir, fileName);
 
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
-        this.addImports(sourceFile);
         this.addServiceClass(sourceFile, resourceName, operations);
-        sourceFile.fixMissingImports().organizeImports().formatText();
+        sourceFile.fixMissingImports().formatText(); //TODO: add models
         sourceFile.saveSync();
-    }
-
-    private addImports(sourceFile: SourceFile): void {
-        sourceFile.addImportDeclarations([
-            {
-                namedImports: ["Injectable"],
-                moduleSpecifier: "@angular/core",
-            },
-        ]);
     }
 
     private addServiceClass(sourceFile: SourceFile, resourceName: string, operations: PathInfo[]): void {
@@ -118,6 +108,34 @@ export class HttpResourceGenerator implements IPluginGenerator {
         const clientContextTokenName = getClientContextTokenName(this.config.clientName);
 
         sourceFile.insertText(0, HTTP_RESOURCE_GENERATOR_HEADER_COMMENT(resourceName));
+
+        sourceFile.addImportDeclarations([
+            {
+                namedImports: [
+                    "HttpContext",
+                    "HttpContextToken",
+                    "HttpHeaders",
+                    "HttpParams",
+                    "httpResource",
+                    "HttpResourceOptions",
+                    "HttpResourceRef",
+                    "HttpResourceRequest",
+                ],
+                moduleSpecifier: "@angular/common/http",
+            },
+            {
+                namedImports: ["inject", "Injectable", "Signal"],
+                moduleSpecifier: "@angular/core",
+            },
+            {
+                namedImports: [basePathTokenName, clientContextTokenName],
+                moduleSpecifier: "../tokens",
+            },
+            {
+                namedImports: ["HttpParamsBuilder"],
+                moduleSpecifier: "../utils/http-params-builder",
+            },
+        ]);
 
         const serviceClass = sourceFile.addClass({
             name: className,
