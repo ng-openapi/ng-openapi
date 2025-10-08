@@ -1,7 +1,10 @@
-import { GeneratorConfig, SwaggerParser, extractPaths, pascalCase, camelCase, PathInfo } from "@ng-openapi/shared";
 import * as path from "path";
 import * as fs from "fs";
+
 import { Project } from "ts-morph";
+
+import { GeneratorConfig, SwaggerParser, extractPaths, pascalCase, camelCase, PathInfo } from "@ng-openapi/shared";
+
 import { FormProperty, Resource } from "./admin.types";
 import { plural, titleCase } from "./admin.helpers";
 
@@ -56,10 +59,7 @@ export class AdminGenerator {
             if (!listOp || !createOp) { console.log(`[ADMIN] Skipping tag "${tag}": Missing required List (GET) or Create (POST) on a collection path.`); continue; }
             const readOp = tagPaths.find(p => p.method === 'GET' && isItemPath(p));
 
-            // ===== FIX STARTS HERE: Correctly identify update operation =====
-            // Removed the `|| createOp` fallback. An update operation must be explicit.
             const updateOp = tagPaths.find(p => (p.method === 'PUT' || p.method === 'PATCH') && isItemPath(p));
-            // ===== FIX ENDS HERE =====
 
             const deleteOp = tagPaths.find(p => p.method === 'DELETE' && isItemPath(p));
             const schemaObject = createOp.requestBody?.content?.['application/json']?.schema;
@@ -182,28 +182,25 @@ export class ${resource.className}ListComponent {
         const cssFile = this.project.createSourceFile(path.join(formDir, `${compName}.css`), "", { overwrite: true });
         const tsFile = this.project.createSourceFile(path.join(formDir, `${compName}.ts`), "", { overwrite: true });
 
-        // ===== FIX STARTS HERE: Correctly generate form field HTML =====
         const fields = resource.formProperties.map(p => {
             const label = titleCase(p.name);
             switch (p.inputType) {
                 case 'checkbox':
                     return `<mat-checkbox formControlName="${p.name}">${label}</mat-checkbox>`;
                 default:
-                    const requiredError = p.required ? `<mat-error>This field is required.</mat-error>` : '';
+                    { const requiredError = p.required ? `<mat-error>This field is required.</mat-error>` : '';
                     return `<mat-form-field appearance="outline">
   <mat-label>${label}</mat-label>
   <input matInput formControlName="${p.name}" type="${p.inputType}">
   ${requiredError}
-</mat-form-field>`;
+</mat-form-field>`; }
             }
         }).join('\n');
 
-        // Use the template file instead of a hardcoded string
         htmlFile.insertText(0, renderTemplate(this.getTemplate('form.component.html.template'), {
             titleName: resource.titleName,
             formFieldsTemplate: fields
         }));
-        // ===== FIX ENDS HERE =====
 
         cssFile.insertText(0, `:host { display: block; padding: 2rem; } .form-container { display: flex; flex-direction: column; gap: 0.5rem; max-width: 500px; } .action-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; } mat-checkbox { margin: 0.5rem 0; }`);
 
@@ -229,7 +226,6 @@ export class ${resource.className}ListComponent {
                 action$.subscribe(() => this.router.navigate(['admin/${resource.pluralName}']));
               }`;
 
-        // ===== FIX STARTS HERE: Proper imports for TS file =====
         tsFile.addStatements(`/* eslint-disable */
 import { Component, inject, input, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -257,7 +253,6 @@ export class ${resource.className}FormComponent {
   ${submitLogic}
   onCancel(): void { this.router.navigate(['admin/${resource.pluralName}']); }
 }`);
-        // ===== FIX ENDS HERE =====
 
         tsFile.formatText();
         htmlFile.saveSync(); cssFile.saveSync(); tsFile.saveSync();

@@ -1,9 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { GeneratorConfig, SwaggerParser } from "@ng-openapi/shared";
-import { Project } from "ts-morph";
-import { AdminGenerator } from "../src/lib/generators/admin/admin.generator";
 import * as fs from 'fs';
 import * as path from 'path';
+
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+import { Project } from "ts-morph";
+
+import { GeneratorConfig, SwaggerParser } from "@ng-openapi/shared";
+
+import { AdminGenerator } from "../src/lib/generators/admin/admin.generator";
 
 // --- MOCKS ---
 const originalFs = require('fs');

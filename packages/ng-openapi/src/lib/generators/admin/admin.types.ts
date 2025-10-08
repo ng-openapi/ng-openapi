@@ -4,7 +4,7 @@
 export interface FormProperty {
     name: string;
     type: 'string' | 'number' | 'boolean' | 'enum';
-    inputType: 'text' | 'number' | 'checkbox' | 'datetime-local';
+    inputType: 'text' | 'number' | 'checkbox' | 'date' | 'datetime-local';
     required: boolean;
     validators: string[];
     enumValues?: (string | number)[];
