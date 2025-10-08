@@ -48,7 +48,7 @@ export function getTypeScriptType(
         const itemType = schema.items
             ? getTypeScriptType(schema.items, config, undefined, undefined, context)
             : "unknown";
-        return nullable ? `(${itemType}[] | null)` : `${itemType}[]`;
+        return nullable ? `(Array<${itemType}> | null)` : `Array<${itemType}>`;
     }
 
     // Handle specific types

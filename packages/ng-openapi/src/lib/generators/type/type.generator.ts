@@ -344,7 +344,7 @@ export class TypeGenerator {
 
         if (schema.type === "array") {
             const itemType = schema.items ? this.getArrayItemType(schema.items) : "unknown";
-            return `${itemType}[]`;
+            return `Array<${itemType}>`;
         }
 
         if (schema.type === "object") {
