@@ -6,9 +6,7 @@ import { FormProperty, Resource } from "./admin.types";
 import { plural, titleCase } from "./admin.helpers";
 
 function renderTemplate(template: string, context: Record<string, any>): string {
-    return template.replace(/\{\{(\w+)\}\}/g, (placeholder, key) => {
-        return context[key] !== undefined ? String(context[key]) : placeholder;
-    });
+    return template.replace(/\{\{(\w+)\}\}/g, (placeholder, key) => context[key] !== undefined ? String(context[key]) : placeholder);
 }
 
 export class AdminGenerator {
@@ -17,9 +15,7 @@ export class AdminGenerator {
     private readonly config: GeneratorConfig;
 
     constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
-        this.config = config;
-        this.project = project;
-        this.parser = parser;
+        this.config = config; this.project = project; this.parser = parser;
     }
 
     private getTemplate(templateName: string): string {
@@ -34,8 +30,7 @@ export class AdminGenerator {
         console.log('[ADMIN] Starting admin component generation...');
         const resources = this.collectResources();
         if (resources.length === 0) {
-            console.warn("[ADMIN] No viable resources found. A resource needs at least a List (GET) and Create (POST) endpoint on a collection path, identified by a common tag.");
-            return;
+            console.warn("[ADMIN] No viable resources found. A resource needs at least a List (GET) and Create (POST) endpoint on a collection path, identified by a common tag."); return;
         }
         for (const resource of resources) {
             console.log(`[ADMIN] Generating UI for resource: "${resource.name}"...`);
@@ -50,10 +45,8 @@ export class AdminGenerator {
         const paths = extractPaths(this.parser.getSpec().paths);
         console.log(`[ADMIN] Analyzing ${paths.length} API paths by grouping them by tag...`);
         const tagGroups = new Map<string, PathInfo[]>();
-        for (const path of paths) {
-            const tag = path.tags?.[0];
-            if (tag && !tag.includes('_')) { if (!tagGroups.has(tag)) tagGroups.set(tag, []); tagGroups.get(tag)!.push(path); }
-        }
+        paths.forEach(p => { const t = p.tags?.[0]; if (t && !t.includes('_')) { if (!tagGroups.has(t)) tagGroups.set(t, []); tagGroups.get(t)!.push(p); } });
+
         const resources: Resource[] = [];
         for (const [tag, tagPaths] of tagGroups.entries()) {
             const isCollectionPath = (p: PathInfo) => !/\{[^}]+\}$/.test(p.path);
@@ -62,7 +55,12 @@ export class AdminGenerator {
             const createOp = tagPaths.find(p => p.method === 'POST' && isCollectionPath(p));
             if (!listOp || !createOp) { console.log(`[ADMIN] Skipping tag "${tag}": Missing required List (GET) or Create (POST) on a collection path.`); continue; }
             const readOp = tagPaths.find(p => p.method === 'GET' && isItemPath(p));
-            const updateOp = tagPaths.find(p => p.method === 'PUT' && isItemPath(p)) || createOp;
+
+            // ===== FIX STARTS HERE: Correctly identify update operation =====
+            // Removed the `|| createOp` fallback. An update operation must be explicit.
+            const updateOp = tagPaths.find(p => (p.method === 'PUT' || p.method === 'PATCH') && isItemPath(p));
+            // ===== FIX ENDS HERE =====
+
             const deleteOp = tagPaths.find(p => p.method === 'DELETE' && isItemPath(p));
             const schemaObject = createOp.requestBody?.content?.['application/json']?.schema;
             if (!schemaObject) continue;
@@ -73,8 +71,16 @@ export class AdminGenerator {
             } else { continue; }
             if (!finalSchema || !modelName) continue;
             const getIdParamName = (op: PathInfo | undefined) => op?.parameters?.find(p => p.in === 'path')?.name || 'id';
+
+            const singularTag = tag.endsWith('s') && !tag.endsWith('ss') ? tag.slice(0, -1) : tag;
+
             const resource: Resource = {
-                name: tag, className: pascalCase(tag), pluralName: plural(tag), titleName: titleCase(tag), serviceName: pascalCase(tag) + 'Service', modelName: pascalCase(modelName),
+                name: singularTag.toLowerCase(),
+                className: pascalCase(singularTag),
+                pluralName: plural(singularTag).toLowerCase(),
+                titleName: titleCase(singularTag),
+                serviceName: pascalCase(tag) + 'Service',
+                modelName: pascalCase(modelName),
                 operations: {
                     list: { methodName: this.getMethodName(listOp) },
                     create: { methodName: this.getMethodName(createOp) },
@@ -82,7 +88,8 @@ export class AdminGenerator {
                     update: updateOp && readOp ? { methodName: this.getMethodName(updateOp), idParamName: getIdParamName(readOp) } : undefined,
                     delete: deleteOp ? { methodName: this.getMethodName(deleteOp), idParamName: getIdParamName(deleteOp) } : undefined,
                 },
-                formProperties: this.processSchemaToFormProperties(finalSchema), listColumns: Object.keys(finalSchema.properties || {}),
+                formProperties: this.processSchemaToFormProperties(finalSchema),
+                listColumns: Object.keys(finalSchema.properties || {}),
             };
             resources.push(resource);
         }
@@ -91,7 +98,7 @@ export class AdminGenerator {
     }
 
     private getMethodName(operation: any): string {
-        if (operation.operationId) { return camelCase(operation.operationId); }
+        if (operation.operationId) return camelCase(operation.operationId);
         return `${camelCase(operation.path.replace(/[\/{}]/g, ''))}${pascalCase(operation.method)}`;
     }
 
@@ -100,8 +107,40 @@ export class AdminGenerator {
         if (!schema || !schema.properties) return properties;
         for (const propName in schema.properties) {
             const prop = schema.properties[propName];
-            const formProp: FormProperty = { name: propName, type: 'string', inputType: 'text', required: schema.required?.includes(propName) ?? false, validators: [], enumValues: prop.enum };
-            if (formProp.required) formProp.validators.push('Validators.required');
+
+            let type: FormProperty['type'] = 'string';
+            let inputType: FormProperty['inputType'] = 'text';
+
+            switch (prop.type) {
+                case 'boolean':
+                    type = 'boolean';
+                    inputType = 'checkbox';
+                    break;
+                case 'number':
+                case 'integer':
+                    type = 'number';
+                    inputType = 'number';
+                    break;
+                case 'string':
+                    if (prop.format === 'date-time') {
+                        inputType = 'datetime-local';
+                    } else if (prop.format === 'date') {
+                        inputType = 'date';
+                    }
+                    type = 'string';
+                    break;
+            }
+
+            const isRequired = schema.required?.includes(propName) ?? false;
+            const formProp: FormProperty = {
+                name: propName,
+                type: type,
+                inputType: inputType,
+                required: isRequired,
+                validators: isRequired ? ['Validators.required'] : [],
+                enumValues: prop.enum
+            };
+
             properties.push(formProp);
         }
         return properties;
@@ -120,20 +159,19 @@ export class AdminGenerator {
         const deleteBtn = resource.operations.delete ? `<button mat-icon-button color="warn" (click)="delete(element.${idKey})" matTooltip="Delete ${resource.titleName}"><mat-icon>delete</mat-icon></button>` : '';
         const columnsTemplate = resource.listColumns.map(col => `<ng-container matColumnDef="${col}"><th mat-header-cell *matHeaderCellDef>${titleCase(col)}</th><td mat-cell *matCellDef="let element">{{element.${col}}}</td></ng-container>`).join('\n');
         htmlFile.insertText(0, renderTemplate(this.getTemplate('list.component.html.template'), { ...resource, pluralTitleName: plural(resource.titleName), columnsTemplate, createButtonTemplate: createBtn, editButtonTemplate: editBtn, deleteButtonTemplate: deleteBtn }));
-
         cssFile.insertText(0, `:host { display: block; padding: 2rem; } .header-actions { display: flex; justify-content: flex-end; margin-bottom: 1rem; } .mat-elevation-z8 { width: 100%; } .actions-cell { width: 120px; text-align: right; }`);
-
         tsFile.addStatements(`/* eslint-disable */
 import { Component, inject, signal, WritableSignal } from '@angular/core'; import { CommonModule } from '@angular/common'; import { RouterModule } from '@angular/router'; import { MatTableModule } from '@angular/material/table'; import { MatIconModule } from '@angular/material/icon'; import { MatButtonModule } from '@angular/material/button'; import { MatTooltipModule } from '@angular/material/tooltip'; import { ${resource.serviceName} } from '../../../services'; import { ${resource.modelName} } from '../../../models';
 @Component({ selector: 'app-${resource.pluralName}-list', standalone: true, imports: [CommonModule, RouterModule, MatTableModule, MatIconModule, MatButtonModule, MatTooltipModule], templateUrl: './${compName}.html', styleUrls: ['./${compName}.css'] })
 export class ${resource.className}ListComponent {
   private readonly svc = inject(${resource.serviceName}); readonly data: WritableSignal<${resource.modelName}[]> = signal([]); readonly displayedColumns: string[] = ['${resource.listColumns.join("', '")}', 'actions'];
   constructor() { this.loadData(); }
-  loadData() { this.svc.${resource.operations.list.methodName}().subscribe((d: any) => this.data.set(d.${resource.pluralName} || d.profiles || d.repos || d)); }
+  loadData() { this.svc.${resource.operations.list!.methodName}().subscribe((d: any) => this.data.set(d.${resource.pluralName} || d.profiles || d.repos || d)); }
   ${resource.operations.delete ? `delete(id: number | string): void { if (confirm('Are you sure?')) { this.svc.${resource.operations.delete.methodName}({ ${resource.operations.delete.idParamName}: id } as any).subscribe(() => this.loadData()); } }` : ''}
 }`);
 
-        htmlFile.saveSync(); cssFile.saveSync(); tsFile.formatText(); tsFile.saveSync();
+        tsFile.formatText();
+        htmlFile.saveSync(); cssFile.saveSync(); tsFile.saveSync();
     }
 
     private generateModernFormComponent(resource: Resource, dir: string) {
@@ -144,11 +182,33 @@ export class ${resource.className}ListComponent {
         const cssFile = this.project.createSourceFile(path.join(formDir, `${compName}.css`), "", { overwrite: true });
         const tsFile = this.project.createSourceFile(path.join(formDir, `${compName}.ts`), "", { overwrite: true });
 
-        const fields = resource.formProperties.map(p => `<mat-form-field appearance="outline"><mat-label>${titleCase(p.name)}</mat-label><input matInput formControlName="${p.name}">${p.required ? `<mat-error>Required.</mat-error>` : ''}</mat-form-field>`).join('\n');
-        htmlFile.insertText(0, `<form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container"><h3>{{ isEditMode() ? 'Edit' : 'Create' }} ${resource.titleName}</h3>${fields}<div class="action-buttons"><button mat-stroked-button type="button" (click)="onCancel()">Cancel</button><button mat-flat-button color="primary" type="submit" [disabled]="form.invalid">Save</button></div></form>`);
-        cssFile.insertText(0, `:host { display: block; padding: 2rem; } .form-container { display: flex; flex-direction: column; gap: 0.5rem; max-width: 500px; } .action-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }`);
+        // ===== FIX STARTS HERE: Correctly generate form field HTML =====
+        const fields = resource.formProperties.map(p => {
+            const label = titleCase(p.name);
+            switch (p.inputType) {
+                case 'checkbox':
+                    return `<mat-checkbox formControlName="${p.name}">${label}</mat-checkbox>`;
+                default:
+                    const requiredError = p.required ? `<mat-error>This field is required.</mat-error>` : '';
+                    return `<mat-form-field appearance="outline">
+  <mat-label>${label}</mat-label>
+  <input matInput formControlName="${p.name}" type="${p.inputType}">
+  ${requiredError}
+</mat-form-field>`;
+            }
+        }).join('\n');
 
-        const formGroupFields = resource.formProperties.map(p => `'${p.name}': [null as any, [${p.validators.join(', ')}]]`).join(',\n');
+        // Use the template file instead of a hardcoded string
+        htmlFile.insertText(0, renderTemplate(this.getTemplate('form.component.html.template'), {
+            titleName: resource.titleName,
+            formFieldsTemplate: fields
+        }));
+        // ===== FIX ENDS HERE =====
+
+        cssFile.insertText(0, `:host { display: block; padding: 2rem; } .form-container { display: flex; flex-direction: column; gap: 0.5rem; max-width: 500px; } .action-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; } mat-checkbox { margin: 0.5rem 0; }`);
+
+        const componentImports = `CommonModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatCheckboxModule`;
+        const formGroupFields = resource.formProperties.map(p => `'${p.name}': [${p.type === 'boolean' ? false : 'null'} as any, [${p.validators.join(', ')}]]`).join(',\n');
         const canEdit = resource.operations.read && resource.operations.update;
         const editModeLogic = canEdit ? `
               readonly id = input<string | number>(); readonly isEditMode = computed(() => !!this.id());
@@ -169,17 +229,38 @@ export class ${resource.className}ListComponent {
                 action$.subscribe(() => this.router.navigate(['admin/${resource.pluralName}']));
               }`;
 
+        // ===== FIX STARTS HERE: Proper imports for TS file =====
         tsFile.addStatements(`/* eslint-disable */
-import { Component, inject, input, computed, effect } from '@angular/core'; import { CommonModule } from '@angular/common'; import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms'; import { Router } from '@angular/router'; import { MatFormFieldModule } from '@angular/material/form-field'; import { MatInputModule } from '@angular/material/input'; import { MatButtonModule } from '@angular/material/button'; import { ${resource.serviceName} } from '../../../services';
-@Component({ selector: 'app-${resource.name}-form', standalone: true, imports: [ CommonModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule ], templateUrl: './${compName}.html', styleUrls: ['./${compName}.css'] })
+import { Component, inject, input, computed, effect } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { ${resource.serviceName} } from '../../../services';
+
+@Component({
+  selector: 'app-${resource.name}-form',
+  standalone: true,
+  imports: [ ${componentImports} ],
+  templateUrl: './${compName}.html',
+  styleUrls: ['./${compName}.css']
+})
 export class ${resource.className}FormComponent {
-  private readonly fb = inject(FormBuilder); private readonly router = inject(Router); private readonly svc = inject(${resource.serviceName});
+  private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
+  private readonly svc = inject(${resource.serviceName});
   readonly form = this.fb.group({ ${formGroupFields} });
   ${editModeLogic}
   ${submitLogic}
   onCancel(): void { this.router.navigate(['admin/${resource.pluralName}']); }
 }`);
-        htmlFile.saveSync(); cssFile.saveSync(); tsFile.formatText(); tsFile.saveSync();
+        // ===== FIX ENDS HERE =====
+
+        tsFile.formatText();
+        htmlFile.saveSync(); cssFile.saveSync(); tsFile.saveSync();
     }
 
     private generateModernRoutes(resource: Resource, dir: string) {
@@ -200,6 +281,7 @@ export class ${resource.className}FormComponent {
         sourceFile.addStatements(`/* eslint-disable */
 import { Routes } from '@angular/router';
 export const ${routesName}: Routes = [ ${routeEntries.join(',\n')} ];`);
+
         sourceFile.formatText();
         sourceFile.saveSync();
     }
