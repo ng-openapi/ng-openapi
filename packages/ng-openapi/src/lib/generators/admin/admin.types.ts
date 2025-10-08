@@ -8,6 +8,7 @@ export interface FormProperty {
     required: boolean;
     validators: string[];
     description?: string;
+    defaultValue?: any; // <-- ADDED
     // For enum, select, radio, button-toggle
     enumValues?: (string | number)[];
     // For slider

@@ -105,23 +105,16 @@ export class AdminGenerator {
             const isRequired = schema.required?.includes(propName) ?? false;
 
             const formProp: FormProperty = {
-                name: propName,
-                type: 'string',
-                inputType: 'text',
-                required: isRequired,
+                name: propName, type: 'string', inputType: 'text', required: isRequired,
                 validators: isRequired ? ['Validators.required'] : [],
-                description: prop.description,
-                minLength: prop.minLength,
-                maxLength: prop.maxLength,
-                pattern: prop.pattern,
-                enumValues: prop.enum,
-                min: prop.minimum,
-                max: prop.maximum,
+                description: prop.description, defaultValue: prop.default, minLength: prop.minLength,
+                maxLength: prop.maxLength, pattern: prop.pattern, enumValues: prop.enum,
+                min: prop.minimum, max: prop.maximum,
             };
 
             if (prop.minLength) formProp.validators.push(`Validators.minLength(${prop.minLength})`);
             if (prop.maxLength) formProp.validators.push(`Validators.maxLength(${prop.maxLength})`);
-            if (prop.pattern) formProp.validators.push(`Validators.pattern(/${prop.pattern.replace(/\\/g, '\\\\')}/)`);
+            if (prop.pattern) formProp.validators.push(`Validators.pattern(/${prop.pattern}/)`);
 
             if (prop.enum) {
                 formProp.type = 'enum';
@@ -132,8 +125,7 @@ export class AdminGenerator {
                         formProp.type = 'boolean';
                         formProp.inputType = (this.config.options.admin as any)?.booleanType === 'slide-toggle' ? 'slide-toggle' : 'checkbox';
                         break;
-                    case 'number':
-                    case 'integer':
+                    case 'number': case 'integer':
                         formProp.type = 'number';
                         formProp.inputType = (formProp.min !== undefined && formProp.max !== undefined) ? 'slider' : 'number';
                         break;
@@ -158,6 +150,20 @@ export class AdminGenerator {
             properties.push(formProp);
         }
         return properties;
+    }
+
+    private getInitialValue(p: FormProperty): string { // Private helper method
+        if (p.defaultValue !== undefined) {
+            return JSON.stringify(p.defaultValue);
+        }
+        switch (p.type) {
+            case 'boolean': return 'false';
+            case 'number': return '0';
+            case 'array': return '[]';
+            case 'string':
+            case 'enum':
+            default: return JSON.stringify(''); // FIX: Use JSON.stringify for consistent quotes
+        }
     }
 
     private generateModernListComponent(resource: Resource, dir: string) {
@@ -197,8 +203,11 @@ export class ${resource.className}ListComponent {
         const cssFile = this.project.createSourceFile(path.join(formDir, `${compName}.css`), "", { overwrite: true });
         const tsFile = this.project.createSourceFile(path.join(formDir, `${compName}.ts`), "", { overwrite: true });
 
-        const requiredModules = new Set(['CommonModule', 'ReactiveFormsModule', 'MatFormFieldModule', 'MatInputModule', 'MatButtonModule', 'MatIconModule']);
+        const coreModules = new Set(['CommonModule', 'ReactiveFormsModule']);
+        const materialModules = new Set<string>();
         const componentProviders = new Set<string>();
+        let hasChipList = false;
+        let hasDatepicker = false;
 
         const fields = resource.formProperties.map(p => {
             const label = titleCase(p.name);
@@ -211,57 +220,35 @@ export class ${resource.className}ListComponent {
             ].filter(Boolean).join('\n');
 
             switch (p.inputType) {
-                case 'checkbox': requiredModules.add('MatCheckboxModule'); return `<mat-checkbox formControlName="${p.name}">${label}</mat-checkbox>`;
-                case 'slide-toggle': requiredModules.add('MatSlideToggleModule'); return `<mat-slide-toggle formControlName="${p.name}">${label}</mat-slide-toggle>`;
-                case 'radio-group':
-                    requiredModules.add('MatRadioModule');
-                    const radioButtons = p.enumValues?.map(val => `<mat-radio-button value="${val}">${val}</mat-radio-button>`).join('\n');
-                    return `<div class="group-container"><label class="mat-body-strong">${label}</label><mat-radio-group formControlName="${p.name}">${radioButtons}</mat-radio-group>${hint}</div>`;
-                case 'select':
-                    requiredModules.add('MatSelectModule');
-                    const options = p.enumValues?.map(val => `  <mat-option value="${val}">${val}</mat-option>`).join('\n');
-                    return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><mat-select formControlName="${p.name}">${options}</mat-select>${hint}${errors}</mat-form-field>`;
-                case 'slider':
-                    requiredModules.add('MatSliderModule');
-                    return `<div class="group-container"><label class="mat-body-strong">${label}</label><mat-slider min="${p.min}" max="${p.max}" discrete="true" showTickMarks="true"><input matSliderThumb formControlName="${p.name}"></mat-slider>${hint}</div>`;
-                case 'chip-list':
-                    requiredModules.add('MatChipsModule');
-                    // ===== FIX: Add mat-chip-listbox wrapper =====
-                    return `<mat-form-field appearance="outline">
-  <mat-label>${label}</mat-label>
-  <mat-chip-grid #chipGrid${pascalCase(p.name)}>
-    <mat-chip-listbox aria-label="Tag selection">
-    @for(item of ${p.name}(); track item){<mat-chip-row (removed)="remove${pascalCase(p.name)}(item)">{{item}}<button matChipRemove><mat-icon>cancel</mat-icon></button></mat-chip-row>}
-    </mat-chip-listbox>
-  </mat-chip-grid>
-  <input placeholder="New tag..." [matChipInputFor]="chipGrid${pascalCase(p.name)}" (matChipInputTokenEnd)="add${pascalCase(p.name)}($event)"/>
-  ${hint}
-</mat-form-field>`;
-                case 'button-toggle-group':
-                    requiredModules.add('MatButtonToggleModule');
-                    const toggles = p.enumValues?.map(val => `<mat-button-toggle value="${val}">${val}</mat-button-toggle>`).join('\n');
-                    return `<div class="group-container"><label class="mat-body-strong">${label}</label><mat-button-toggle-group formControlName="${p.name}" multiple>${toggles}</mat-button-toggle-group>${hint}</div>`;
-                case 'datepicker':
-                    requiredModules.add('MatDatepickerModule'); componentProviders.add('provideNativeDateAdapter()');
-                    const pickerId = `picker${pascalCase(p.name)}`;
-                    return `<mat-form-field><mat-label>${label}</mat-label><input matInput [matDatepicker]="${pickerId}" formControlName="${p.name}"><mat-hint>MM/DD/YYYY</mat-hint><mat-datepicker-toggle matIconSuffix [for]="${pickerId}"></mat-datepicker-toggle><mat-datepicker #${pickerId}></mat-datepicker>${errors}</mat-form-field>`;
-                case 'textarea': return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><textarea matInput formControlName="${p.name}"></textarea>${hint}${errors}</mat-form-field>`;
-                default: return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><input matInput formControlName="${p.name}" type="${p.inputType}">${hint}${errors}</mat-form-field>`;
+                case 'checkbox': materialModules.add('MatCheckboxModule'); return `<mat-checkbox formControlName="${p.name}">${label}</mat-checkbox>`;
+                case 'slide-toggle': materialModules.add('MatSlideToggleModule'); return `<mat-slide-toggle formControlName="${p.name}">${label}</mat-slide-toggle>`;
+                case 'radio-group': materialModules.add('MatRadioModule'); const radioButtons = p.enumValues?.map(val => `<mat-radio-button value="${val}">${val}</mat-radio-button>`).join('\n'); return `<div class="group-container"><label class="mat-body-strong">${label}</label><mat-radio-group formControlName="${p.name}">${radioButtons}</mat-radio-group>${hint}</div>`;
+                case 'select': materialModules.add('MatSelectModule'); materialModules.add('MatFormFieldModule'); const options = p.enumValues?.map(val => `  <mat-option value="${val}">${val}</mat-option>`).join('\n'); return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><mat-select formControlName="${p.name}">${options}</mat-select>${hint}${errors}</mat-form-field>`;
+                case 'slider': materialModules.add('MatSliderModule'); return `<div class="group-container"><label class="mat-body-strong">${label}</label><mat-slider min="${p.min}" max="${p.max}" discrete="true" showTickMarks="true"><input matSliderThumb formControlName="${p.name}"></mat-slider>${hint}</div>`;
+                case 'chip-list': materialModules.add('MatChipsModule'); materialModules.add('MatFormFieldModule'); materialModules.add('MatIconModule'); materialModules.add('MatInputModule'); hasChipList = true; return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><mat-chip-grid #chipGrid${pascalCase(p.name)}><mat-chip-listbox aria-label="Tag selection">@for(item of ${p.name}(); track item){<mat-chip-row (removed)="remove${pascalCase(p.name)}(item)">{{item}}<button matChipRemove><mat-icon>cancel</mat-icon></button></mat-chip-row>}</mat-chip-listbox></mat-chip-grid><input placeholder="New tag..." [matChipInputFor]="chipGrid${pascalCase(p.name)}" (matChipInputTokenEnd)="add${pascalCase(p.name)}($event)"/>${hint}</mat-form-field>`;
+                case 'button-toggle-group': materialModules.add('MatButtonToggleModule'); const toggles = p.enumValues?.map(val => `<mat-button-toggle value="${val}">${val}</mat-button-toggle>`).join('\n'); return `<div class="group-container"><label class="mat-body-strong">${label}</label><mat-button-toggle-group formControlName="${p.name}" multiple>${toggles}</mat-button-toggle-group>${hint}</div>`;
+                case 'datepicker': materialModules.add('MatDatepickerModule'); materialModules.add('MatFormFieldModule'); materialModules.add('MatInputModule'); componentProviders.add('provideNativeDateAdapter()'); hasDatepicker = true; const pickerId = `picker${pascalCase(p.name)}`; return `<mat-form-field><mat-label>${label}</mat-label><input matInput [matDatepicker]="${pickerId}" formControlName="${p.name}"><mat-hint>MM/DD/YYYY</mat-hint><mat-datepicker-toggle matIconSuffix [for]="${pickerId}"></mat-datepicker-toggle><mat-datepicker #${pickerId}></mat-datepicker>${errors}</mat-form-field>`;
+                case 'textarea': materialModules.add('MatFormFieldModule'); materialModules.add('MatInputModule'); return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><textarea matInput formControlName="${p.name}"></textarea>${hint}${errors}</mat-form-field>`;
+                default: materialModules.add('MatFormFieldModule'); materialModules.add('MatInputModule'); return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><input matInput formControlName="${p.name}" type="${p.inputType}">${hint}${errors}</mat-form-field>`;
             }
         }).join('\n');
+
+        materialModules.add('MatButtonModule'); materialModules.add('MatIconModule');
 
         htmlFile.insertText(0, renderTemplate(this.getTemplate('form.component.html.template'), { titleName: resource.titleName, formFieldsTemplate: fields }));
         cssFile.insertText(0, `:host { display: block; padding: 2rem; } .form-container { display: flex; flex-direction: column; gap: 0.5rem; max-width: 500px; } .action-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; } mat-checkbox, mat-slide-toggle { margin: 0.5rem 0; } .group-container { display: flex; flex-direction: column; margin: 0.5rem 0; } .group-container label { margin-bottom: 0.5rem; } mat-radio-group { display: flex; gap: 1rem; }`);
 
-        const formGroupFields = resource.formProperties.map(p => `'${p.name}': [${p.type === 'boolean' ? false : (p.type === 'array' ? '[]' : 'null')} as any, [${p.validators.join(', ')}]]`).join(',\n');
+        const formGroupFields = resource.formProperties.map(p => `'${p.name}': [${this.getInitialValue(p)}, [${p.validators.join(', ')}]]`).join(',\n');
+
         const canEdit = resource.operations.read && resource.operations.update;
-        const chipListMethods = resource.formProperties.filter(p => p.inputType === 'chip-list').map(p => `
+        const chipListMethods = hasChipList ? resource.formProperties.filter(p => p.inputType === 'chip-list').map(p => `
 readonly ${p.name} = (this.form.get('${p.name}')! as any).valueChanges.pipe(startWith(this.form.get('${p.name}')!.value || []));
 add${pascalCase(p.name)}(event: MatChipInputEvent): void { const value = (event.value || '').trim(); if (value) { const current = this.form.get('${p.name}')!.value as string[]; this.form.get('${p.name}')!.setValue([...new Set([...current, value])]); } event.chipInput!.clear(); }
-remove${pascalCase(p.name)}(item: string): void { const current = this.form.get('${p.name}')!.value as string[]; this.form.get('${p.name}')!.setValue(current.filter(i => i !== item)); }`).join('\n');
+remove${pascalCase(p.name)}(item: string): void { const current = this.form.get('${p.name}')!.value as string[]; this.form.get('${p.name}')!.setValue(current.filter(i => i !== item)); }`).join('\n') : '';
 
         const editModeLogic = canEdit ? `
-              readonly id = input<string | number>(); readonly isEditMode = computed(() => !!this.id());
+              readonly id = input<string | number>();
+              readonly isEditMode = computed(() => !!this.id());
               constructor() {
                 effect(() => {
                   const currentId = this.id();
@@ -279,25 +266,39 @@ remove${pascalCase(p.name)}(item: string): void { const current = this.form.get(
                 action$.subscribe(() => this.router.navigate(['admin/${resource.pluralName}']));
               }`;
 
-        const materialImports = { MatFormFieldModule: "@angular/material/form-field", MatInputModule: "@angular/material/input", MatButtonModule: "@angular/material/button", MatIconModule: "@angular/material/icon", MatCheckboxModule: "@angular/material/checkbox", MatSlideToggleModule: "@angular/material/slide-toggle", MatSelectModule: "@angular/material/select", MatRadioModule: "@angular/material/radio", MatSliderModule: "@angular/material/slider", MatChipsModule: "@angular/material/chips", MatButtonToggleModule: "@angular/material/button-toggle", MatDatepickerModule: "@angular/material/datepicker" };
-        const tsImports = Array.from(requiredModules).map(mod => `import { ${mod} } from '${materialImports[mod as keyof typeof materialImports]}';`).join('\n');
+        const materialImportsMap = { MatFormFieldModule: "@angular/material/form-field", MatInputModule: "@angular/material/input", MatButtonModule: "@angular/material/button", MatIconModule: "@angular/material/icon", MatCheckboxModule: "@angular/material/checkbox", MatSlideToggleModule: "@angular/material/slide-toggle", MatSelectModule: "@angular/material/select", MatRadioModule: "@angular/material/radio", MatSliderModule: "@angular/material/slider", MatChipsModule: "@angular/material/chips", MatButtonToggleModule: "@angular/material/button-toggle", MatDatepickerModule: "@angular/material/datepicker" };
+        const materialImports = Array.from(materialModules).map(mod => `import { ${mod} } from '${materialImportsMap[mod as keyof typeof materialImportsMap]}';`).join('\n');
+
+        const specialImports: string[] = [];
+        if (hasChipList) {
+            specialImports.push(`import { startWith } from 'rxjs';`);
+            specialImports.push(`import { MatChipInputEvent } from '@angular/material/chips';`);
+        }
+        if (hasDatepicker) {
+            specialImports.push(`import { provideNativeDateAdapter } from '@angular/material/core';`);
+        }
+
         const providerDecor = componentProviders.size > 0 ? `\n  providers: [${Array.from(componentProviders).join(', ')}],` : '';
 
+        const angularCoreImports = new Set(['Component', 'inject', 'computed']);
+        if (canEdit) {
+            angularCoreImports.add('input');
+            angularCoreImports.add('effect');
+        }
+
         tsFile.addStatements(`/* eslint-disable */
-import { Component, inject, input, computed, effect } from '@angular/core';
+import { ${Array.from(angularCoreImports).join(', ')} } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { startWith } from 'rxjs';
-import { MatChipInputEvent } from '@angular/material/chips';
-import { provideNativeDateAdapter } from '@angular/material/core';
-${tsImports}
+${specialImports.join('\n')}
+${materialImports}
 import { ${resource.serviceName} } from '../../../services';
 
 @Component({
   selector: 'app-${resource.name}-form',
   standalone: true,
-  imports: [ ${Array.from(requiredModules).join(', ')} ],${providerDecor}
+  imports: [ ${[...coreModules, ...materialModules].join(', ')} ],${providerDecor}
   templateUrl: './${compName}.html',
   styleUrls: ['./${compName}.css']
 })
@@ -321,7 +322,6 @@ export class ${resource.className}FormComponent {
         const filePath = path.join(dir, `${resource.pluralName}.routes.ts`);
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
         const routesName = `${resource.pluralName.toUpperCase()}_ROUTES`;
-
         const routeEntries = [];
         routeEntries.push(`{ path: '', title: '${plural(resource.titleName)}', loadComponent: () => import('./${resource.pluralName}-list/${resource.pluralName}-list.component').then(m => m.${resource.className}ListComponent) }`);
         if(resource.operations.create) {
@@ -331,11 +331,9 @@ export class ${resource.className}FormComponent {
             const idParam = resource.operations.read.idParamName;
             routeEntries.push(`{ path: ':${idParam}/edit', title: 'Edit ${resource.titleName}', loadComponent: () => import('./${resource.name}-form/${resource.name}-form.component').then(m => m.${resource.className}FormComponent) }`);
         }
-
         sourceFile.addStatements(`/* eslint-disable */
 import { Routes } from '@angular/router';
 export const ${routesName}: Routes = [ ${routeEntries.join(',\n')} ];`);
-
         sourceFile.formatText();
         sourceFile.saveSync();
     }

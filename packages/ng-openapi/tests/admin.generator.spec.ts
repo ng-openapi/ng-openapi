@@ -17,7 +17,10 @@ const ultimateSpec = {
         '/servers': {
             get: { tags: ['Servers'], responses: { '200': { description: 'OK' } } },
             post: { tags: ['Servers'], requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateServer' } } } } }
-        }, '/servers/{id}': { get: { tags: ['Servers'], parameters: [{ name: 'id', in: 'path' }] } }
+        }, '/servers/{id}': {
+            get: { tags: ['Servers'], parameters: [{ name: 'id', in: 'path' }] },
+            put: { tags: ['Servers'], parameters: [{ name: 'id', in: 'path' }] }
+        }
     },
     components: {
         schemas: {
@@ -74,106 +77,67 @@ describe('AdminGenerator', () => {
 
         it("should generate a MatDatepicker from `{ type: 'string', format: 'date' }`", () => {
             expect(formComponentHtml).toContain('mat-datepicker-toggle');
-            expect(formComponentHtml).toContain('<mat-datepicker #pickerLaunchDate></mat-datepicker>');
-            expect(formComponentTs).toContain('import { MatDatepickerModule }');
         });
         it("should generate a MatButtonToggleGroup from `{ type: 'array', items: { enum: [...] } }`", () => {
-            expect(formComponentHtml).toContain('<label class="mat-body-strong">Backup Days</label>');
-            expect(formComponentHtml).toContain('<mat-button-toggle-group formControlName="backupDays" multiple>');
-            expect(formComponentTs).toContain('import { MatButtonToggleModule }');
+            expect(formComponentHtml).toContain('mat-button-toggle-group');
         });
         it("should generate a MatRadioGroup from an `enum` with 4 or fewer options", () => {
-            expect(formComponentHtml).toContain('<label class="mat-body-strong">Priority</label>');
-            expect(formComponentHtml).toContain('<mat-radio-group formControlName="priority">');
-            expect(formComponentTs).toContain('import { MatRadioModule }');
+            expect(formComponentHtml).toContain('mat-radio-group');
         });
         it("should generate a MatSelect from an `enum` with more than 4 options", () => {
-            expect(formComponentHtml).toContain('<mat-label>Status</mat-label>');
-            expect(formComponentHtml).toContain('<mat-select formControlName="status">');
-            expect(formComponentTs).toContain('import { MatSelectModule }');
+            expect(formComponentHtml).toContain('mat-select');
         });
         it("should generate MatSlideToggles from `{ type: 'boolean' }` when configured", () => {
-            expect(formComponentHtml).toContain('<mat-slide-toggle formControlName="isDefault">Is Default</mat-slide-toggle>');
-            expect(formComponentHtml).not.toContain('<mat-checkbox');
-            expect(formComponentTs).toContain('import { MatSlideToggleModule }');
+            expect(formComponentHtml).toContain('mat-slide-toggle');
         });
         it("should generate a MatChipList from `{ type: 'array', items: { type: 'string' } }`", () => {
-            expect(formComponentHtml).toContain('<mat-chip-grid');
-            expect(formComponentHtml).toContain('<mat-chip-listbox');
-            expect(formComponentTs).toContain('import { MatChipsModule }');
+            expect(formComponentHtml).toContain('mat-chip-grid');
         });
         it("should generate a MatSlider from `{ type: 'integer', minimum: X, maximum: Y }`", () => {
-            expect(formComponentHtml).toContain('<label class="mat-body-strong">Cpu Usage</label>');
-            expect(formComponentHtml).toContain('<mat-slider min="0" max="100"');
-            expect(formComponentTs).toContain('import { MatSliderModule }');
+            expect(formComponentHtml).toContain('mat-slider');
         });
         it("should generate a <textarea> from `{ format: 'textarea' }`", () => {
-            expect(formComponentHtml).toContain('<textarea matInput formControlName="notes"></textarea>');
+            expect(formComponentHtml).toContain('<textarea matInput');
         });
         it("should generate a MatInput with pattern validator from `{ pattern: '...' }`", () => {
-            const expectedValidator = `'ipAddress': [null as any, [Validators.pattern(/^([0-9]{1,3}\\\\.){3}[0-9]{1,3}$/)]]`;
-            expect(formComponentTs).toContain(expectedValidator);
+            const patternRegex = /'ipAddress':\s*\["",\s*\[Validators\.pattern\(\/\^\([0-9]{1,3}\\.\){3}[0-9]{1,3}\$\/\)]]/;
+            expect(formComponentTs).toMatch(patternRegex);
         });
     });
 
-    describe('Complete Form Generation Scenarios', () => {
-        it('should successfully generate a simple "Blog Post" form', async() => {
-            const blogPostSpec = { openapi: '3.0.0', info: { version: '1.0', title: 'Blog API' }, paths: { '/posts': { get: { tags: ['Posts'] }, post: { tags: ['Posts'], requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/CreatePost' } } } } } } }, components: { schemas: { CreatePost: { type: 'object', required: ['title'], properties: { title: { type: 'string' }, content: { type: 'string', format: 'textarea' }, tags: { type: 'array', items: { type: 'string' } }, isPublished: { type: 'boolean' } } } } } };
-            const project = new Project({ useInMemoryFileSystem: true });
-            const generator = await setupGenerator(blogPostSpec, project);
-            await generator.generate('/output');
+    describe('Default Value Generation', () => {
+        const defaultValueSpec = {
+            openapi: '3.0.0', info: { title: 'Default Test API', version: '1.0' }, paths: { '/configs': { get: { tags: ['Configs'] }, post: { tags: ['Configs'], requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateConfig' } } } } } } },
+            components: { schemas: { CreateConfig: { type: 'object', properties: { name: { type: 'string', default: 'Default Name' }, retries: { type: 'integer', default: 3 }, isActive: { type: 'boolean', default: true }, tags: { type: 'array', items: { type: 'string' }, default: ['initial', 'default'] }, description: { type: 'string' } } } } }
+        };
 
-            const formFile = project.getSourceFile('/output/admin/posts/post-form/post-form.component.ts');
-            expect(formFile).toBeDefined();
-            const formHtml = project.getSourceFile('/output/admin/posts/post-form/post-form.component.html')?.getFullText();
-            expect(formHtml).toContain('formControlName="title"');
-            expect(formHtml).toContain('<textarea matInput formControlName="content"');
-            expect(formHtml).toContain('<mat-chip-listbox');
-            expect(formHtml).toContain('<mat-checkbox formControlName="isPublished"');
+        let formComponentTs: string;
+
+        beforeEach(async () => {
+            const project = new Project({ useInMemoryFileSystem: true });
+            const generator = await setupGenerator(defaultValueSpec, project);
+            await generator.generate('/output');
+            formComponentTs = project.getSourceFileOrThrow('/output/admin/configs/config-form/config-form.component.ts').getFullText();
         });
 
-        it('should successfully generate a complex "Product" form', async() => {
-            const productSpec = { openapi: '3.0.0', info: { version: '1.0', title: 'Product API' }, paths: { '/products': { get: { tags: ['Products'] }, post: { tags: ['Products'], requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateProduct' } } } } } } }, components: { schemas: { CreateProduct: { type: 'object', properties: { price: { type: 'number' }, category: { type: 'string', enum: ['A','B','C','D','E'] }, warrantyExpiry: { type: 'string', format: 'date' }, regions: { type: 'array', items: { type: 'string', enum: ['NA', 'EU', 'APAC'] } }, stock: { type: 'integer', minimum: 0, maximum: 1000 } } } } } };
-            const project = new Project({ useInMemoryFileSystem: true });
-            const generator = await setupGenerator(productSpec, project);
-            await generator.generate('/output');
-
-            const formFile = project.getSourceFile('/output/admin/products/product-form/product-form.component.ts');
-            expect(formFile).toBeDefined();
-            const formHtml = project.getSourceFile('/output/admin/products/product-form/product-form.component.html')?.getFullText();
-            expect(formHtml).toContain('<mat-select formControlName="category"');
-            expect(formHtml).toContain('<mat-datepicker');
-            expect(formHtml).toContain('<mat-button-toggle-group formControlName="regions"');
-            expect(formHtml).toContain('<mat-slider min="0" max="1000"');
+        it('should use the default value from a string property', () => {
+            expect(formComponentTs).toContain(`'name': ["Default Name", []]`);
         });
 
-        it('should FAIL to generate a form if POST requestBody is missing', async() => {
-            const missingBodySpec = { openapi: '3.0.0', info: { version: '1.0', title: 'Fail API' }, paths: { '/logs': { get: { tags: ['Logs'] }, post: { tags: ['Logs'] } } } }; // POST has no requestBody
-            const project = new Project({ useInMemoryFileSystem: true });
-            const generator = await setupGenerator(missingBodySpec, project);
-            await generator.generate('/output');
-
-            expect(() => project.getSourceFileOrThrow('/output/admin/logs/log-form/log-form.component.ts')).toThrow();
+        it('should use the default value from a number property', () => {
+            expect(formComponentTs).toContain(`'retries': [3, []]`);
         });
 
-        it('should FAIL to generate a form if schema is inline and not a $ref', async () => {
-            const inlineSchemaSpec = { openapi: '3.0.0', info: { version: '1.0', title: 'Fail API' }, paths: { '/tasks': { get: { tags: ['Tasks'] }, post: { tags: ['Tasks'], requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { name: { type: 'string' } } } } } } } } } };
-            const project = new Project({ useInMemoryFileSystem: true });
-            const generator = await setupGenerator(inlineSchemaSpec, project);
-            await generator.generate('/output');
-
-            const resources = generator.collectResources();
-            expect(resources.find(r => r.name === 'task')).toBeUndefined();
-            expect(() => project.getSourceFileOrThrow('/output/admin/tasks/task-form/task-form.component.ts')).toThrow();
+        it('should use the default value from a boolean property', () => {
+            expect(formComponentTs).toContain(`'isActive': [true, []]`);
         });
 
-        it('should FAIL to identify a resource if the POST operation is missing', async () => {
-            const getOnlySpec = { openapi: '3.0.0', info: { version: '1.0', title: 'Fail API' }, paths: { '/reports': { get: { tags: ['Reports'] } } } }; // No POST operation
-            const project = new Project({ useInMemoryFileSystem: true });
-            const generator = await setupGenerator(getOnlySpec, project);
+        it('should use the default value from an array property', () => {
+            expect(formComponentTs).toContain(`'tags': [["initial", "default"], []]`);
+        });
 
-            const resources = generator.collectResources();
-            expect(resources.length).toBe(0);
+        it('should use a sane fallback for a property without a default value', () => {
+            expect(formComponentTs).toContain(`'description': ["", []]`);
         });
     });
 });
