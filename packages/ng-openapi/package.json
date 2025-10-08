@@ -3,22 +3,9 @@
   "version": "0.2.5",
   "description": "Generate Angular services and TypeScript types from OpenAPI/Swagger specifications",
   "keywords": [
-    "ng-openapi",
-    "angular",
-    "openapi",
-    "swagger",
-    "codegen",
-    "typescript",
-    "generator",
-    "code-generator",
-    "api",
-    "rest",
-    "http",
-    "cli",
-    "ng",
-    "ng openapi",
-    "httpResource",
-    "reactive"
+    "ng-openapi", "angular", "openapi", "swagger", "codegen", "typescript",
+    "generator", "code-generator", "api", "rest", "http", "cli", "ng",
+    "ng openapi", "httpResource", "reactive"
   ],
   "author": {
     "name": "Tareq Jami",
@@ -27,32 +14,23 @@
   },
   "license": "MIT",
   "homepage": "https://ng-openapi.dev/",
-  "bugs": {
-    "url": "https://github.com/ng-openapi/ng-openapi/issues"
-  },
+  "bugs": { "url": "https://github.com/ng-openapi/ng-openapi/issues" },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ng-openapi/ng-openapi.git",
     "directory": "packages/ng-openapi"
   },
-  "funding": {
-    "type": "buymeacoffee",
-    "url": "https://buymeacoffee.com/ngopenapi"
-  },
+  "funding": { "type": "buymeacoffee", "url": "https://buymeacoffee.com/ngopenapi" },
   "main": "./index.cjs",
   "module": "./index.js",
   "types": "./index.d.ts",
-  "bin": {
-    "ng-openapi": "./cli.cjs"
-  },
+  "bin": { "ng-openapi": "./cli.cjs" },
   "files": [
     "index.js",
     "index.cjs",
     "index.d.ts",
     "cli.cjs",
-    "lib/**/*.js",
-    "lib/**/*.cjs",
-    "lib/**/*.d.ts",
+    "templates/",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
@@ -80,19 +58,9 @@
     "@angular/common": ">=15"
   },
   "peerDependenciesMeta": {
-    "@angular/core": {
-      "optional": false
-    },
-    "@angular/common": {
-      "optional": false
-    }
+    "@angular/core": { "optional": false },
+    "@angular/common": { "optional": false }
   },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  }
+  "engines": { "node": ">=18.0.0", "npm": ">=8.0.0" },
+  "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org/" }
 }

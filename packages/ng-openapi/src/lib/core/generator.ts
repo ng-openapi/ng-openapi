@@ -1,5 +1,5 @@
 import { ModuleKind, Project, ScriptTarget } from 'ts-morph';
-import { AdminGenerator, TypeGenerator } from '../generators'; // <--- ADD AdminGenerator IMPORT
+import { AdminGenerator, TypeGenerator } from '../generators';
 import {
     BaseInterceptorGenerator,
     DateTransformerGenerator,
@@ -15,7 +15,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { isUrl } from '@ng-openapi/shared/src/utils/functions/is-url';
 
-// ... (keep validateInput function as is)
 export function validateInput(inputPath: string): void {
     if (isUrl(inputPath)) {
         return;
@@ -26,17 +25,11 @@ export function validateInput(inputPath: string): void {
     const extension = path.extname(inputPath).toLowerCase();
     const supportedExtensions = [".json", ".yaml", ".yml"];
     if (!supportedExtensions.includes(extension)) {
-        throw new Error(
-            `Failed to parse ${extension || "specification"}. Supported formats are .json, .yaml, and .yml.`
-        );
+        throw new Error(`Failed to parse ${extension || "specification"}. Supported formats are .json, .yaml, and .yml.`);
     }
 }
 
-/**
- * Generates Angular services and types from a configuration object
- */
 export async function generateFromConfig(config: GeneratorConfig): Promise<void> {
-    // Validate input (file or URL)
     validateInput(config.input);
 
     const outputPath = config.output;
@@ -94,14 +87,13 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
 
             console.log(`✅ Angular services generated`);
 
-            // ##### START OF ADDED CODE #####
-            // Generate admin components if enabled
-            if ((config.options as any).admin) {
+            // ##### THIS IS THE CRUCIAL MISSING BLOCK #####
+            if (config.options.admin) {
                 const adminGenerator = new AdminGenerator(swaggerParser, project, config);
                 await adminGenerator.generate(outputPath);
                 console.log(`✅ Angular admin components generated`);
             }
-            // ##### END OF ADDED CODE #####
+            // ##### END OF CRUCIAL MISSING BLOCK #####
         }
 
         if (config.plugins?.length) {
@@ -116,25 +108,9 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
         const mainIndexGenerator = new MainIndexGenerator(project, config);
         mainIndexGenerator.generateMainIndex(outputPath);
 
-        // ... (keep the rest of the function as is)
-        const sourceInfo = `from ${inputType}: ${config.input}`;
-        if (config.clientName) {
-            console.log(`🎉 ${config.clientName} Generation completed successfully ${sourceInfo} -> ${outputPath}`);
-        } else {
-            console.log(`🎉 Generation completed successfully ${sourceInfo} -> ${outputPath}`);
-        }
+        console.log(`🎉 Generation completed successfully -> ${outputPath}`);
     } catch (error) {
-        if (error instanceof Error) {
-            console.error("❌ Error during generation:", error.message);
-            if (error.message.includes("fetch") || error.message.includes("Failed to fetch")) {
-                console.error(
-                    "💡 Tip: Make sure the URL is accessible and returns a valid OpenAPI/Swagger specification"
-                );
-                console.error("💡 Alternative: Download the specification file locally and use the file path instead");
-            }
-        } else {
-            console.error("❌ Unknown error during generation:", error);
-        }
+        console.error("❌ Error during generation:", error instanceof Error ? error.message : error);
         throw error;
     }
 }

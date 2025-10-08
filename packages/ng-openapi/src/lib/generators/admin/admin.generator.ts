@@ -1,14 +1,10 @@
-import { GeneratorConfig, SwaggerParser, extractPaths, pascalCase, camelCase } from "@ng-openapi/shared";
+import { GeneratorConfig, SwaggerParser, extractPaths, pascalCase, camelCase, PathInfo } from "@ng-openapi/shared";
 import * as path from "path";
 import * as fs from "fs";
 import { Project } from "ts-morph";
 import { FormProperty, Resource } from "./admin.types";
 import { plural, titleCase } from "./admin.helpers";
 
-/**
- * A simple template rendering function.
- * Replaces {{key}} with the corresponding value from the context object.
- */
 function renderTemplate(template: string, context: Record<string, any>): string {
     return template.replace(/\{\{(\w+)\}\}/g, (placeholder, key) => {
         return context[key] !== undefined ? String(context[key]) : placeholder;
@@ -26,84 +22,71 @@ export class AdminGenerator {
         this.parser = parser;
     }
 
+    private getTemplate(templateName: string): string {
+        const testPath = path.join(__dirname, 'templates', templateName);
+        if (fs.existsSync(testPath)) { return fs.readFileSync(testPath, 'utf8'); }
+        const prodPath = path.join(__dirname, '..', 'templates', templateName);
+        if (fs.existsSync(prodPath)) { return fs.readFileSync(prodPath, 'utf8'); }
+        throw new Error(`CRITICAL: Template file "${templateName}" not found.`);
+    }
+
     async generate(outputRoot: string): Promise<void> {
+        console.log('[ADMIN] Starting admin component generation...');
         const resources = this.collectResources();
         if (resources.length === 0) {
-            console.warn("No RESTful resources found to generate admin components.");
+            console.warn("[ADMIN] No viable resources found. A resource needs at least a List (GET) and Create (POST) endpoint on a collection path, identified by a common tag.");
             return;
         }
-
         for (const resource of resources) {
+            console.log(`[ADMIN] Generating UI for resource: "${resource.name}"...`);
             const adminDir = path.join(outputRoot, 'admin', resource.pluralName);
-            this.generateListComponent(resource, adminDir);
-            this.generateFormComponent(resource, adminDir);
-            this.generateRoutingModule(resource, adminDir);
-            this.generateModule(resource, adminDir);
+            this.generateModernListComponent(resource, adminDir);
+            this.generateModernFormComponent(resource, adminDir);
+            this.generateModernRoutes(resource, adminDir);
         }
     }
 
     public collectResources(): Resource[] {
         const paths = extractPaths(this.parser.getSpec().paths);
-        const pathGroups = new Map<string, { collection?: string, item?: string }>();
-        for (const pathInfo of paths) {
-            const currentPath = pathInfo.path;
-            const itemMatch = currentPath.match(/^(\/[^/]+)\/{[^}]+}$/); // Matches /resource/{id}
-            if (itemMatch) {
-                const basePath = itemMatch[1];
-                const group = pathGroups.get(basePath) || {};
-                group.item = currentPath;
-                pathGroups.set(basePath, group);
-            } else {
-                const collectionMatch = currentPath.match(/^(\/[^/]+)\/?$/); // Matches /resource
-                if (collectionMatch) {
-                    const basePath = collectionMatch[1];
-                    const group = pathGroups.get(basePath) || {};
-                    group.collection = currentPath;
-                    pathGroups.set(basePath, group);
-                }
-            }
+        console.log(`[ADMIN] Analyzing ${paths.length} API paths by grouping them by tag...`);
+        const tagGroups = new Map<string, PathInfo[]>();
+        for (const path of paths) {
+            const tag = path.tags?.[0];
+            if (tag && !tag.includes('_')) { if (!tagGroups.has(tag)) tagGroups.set(tag, []); tagGroups.get(tag)!.push(path); }
         }
-
         const resources: Resource[] = [];
-        for (const [basePath, group] of pathGroups.entries()) {
-            if (!group.collection) continue;
-            const pluralName = basePath.substring(1);
-            const resourceName = pluralName.endsWith('ies') ? pluralName.slice(0, -3) + 'y' : (pluralName.endsWith('s') ? pluralName.slice(0, -1) : pluralName);
-            const listOp = paths.find(p => p.path === group.collection && p.method === 'GET');
-            const createOp = paths.find(p => p.path === group.collection && p.method === 'POST');
-            if (!listOp || !createOp) continue;
+        for (const [tag, tagPaths] of tagGroups.entries()) {
+            const isCollectionPath = (p: PathInfo) => !/\{[^}]+\}$/.test(p.path);
+            const isItemPath = (p: PathInfo) => /\{[^}]+\}$/.test(p.path);
+            const listOp = tagPaths.find(p => p.method === 'GET' && isCollectionPath(p));
+            const createOp = tagPaths.find(p => p.method === 'POST' && isCollectionPath(p));
+            if (!listOp || !createOp) { console.log(`[ADMIN] Skipping tag "${tag}": Missing required List (GET) or Create (POST) on a collection path.`); continue; }
+            const readOp = tagPaths.find(p => p.method === 'GET' && isItemPath(p));
+            const updateOp = tagPaths.find(p => p.method === 'PUT' && isItemPath(p)) || createOp;
+            const deleteOp = tagPaths.find(p => p.method === 'DELETE' && isItemPath(p));
             const schemaObject = createOp.requestBody?.content?.['application/json']?.schema;
             if (!schemaObject) continue;
-            let finalSchema: any;
-            let modelName: string | undefined;
+            let finalSchema: any, modelName: string | undefined;
             if (schemaObject.$ref) {
-                modelName = schemaObject.$ref.split('/').pop();
+                modelName = schemaObject.$ref.split('/').pop()?.replace(/^Create/, '');
                 finalSchema = this.parser.resolveReference(schemaObject.$ref);
             } else { continue; }
-            if (!finalSchema || !modelName || finalSchema.type !== 'object') continue;
-            const readOp = paths.find(p => p.path === group.item && p.method === 'GET');
-            const updateOp = paths.find(p => p.path === group.item && p.method === 'PUT');
-            const deleteOp = paths.find(p => p.path === group.item && p.method === 'DELETE');
-            if (!readOp || !updateOp) continue;
+            if (!finalSchema || !modelName) continue;
+            const getIdParamName = (op: PathInfo | undefined) => op?.parameters?.find(p => p.in === 'path')?.name || 'id';
             const resource: Resource = {
-                name: resourceName,
-                className: pascalCase(resourceName),
-                pluralName: pluralName,
-                titleName: titleCase(resourceName),
-                serviceName: pascalCase(createOp.tags?.[0] || pluralName) + 'Service',
-                modelName: pascalCase(modelName),
+                name: tag, className: pascalCase(tag), pluralName: plural(tag), titleName: titleCase(tag), serviceName: pascalCase(tag) + 'Service', modelName: pascalCase(modelName),
                 operations: {
                     list: { methodName: this.getMethodName(listOp) },
                     create: { methodName: this.getMethodName(createOp) },
-                    read: { methodName: this.getMethodName(readOp), idParamName: readOp.parameters?.find(p => p.in === 'path')?.name },
-                    update: { methodName: this.getMethodName(updateOp), idParamName: updateOp.parameters?.find(p => p.in === 'path')?.name },
-                    delete: deleteOp ? { methodName: this.getMethodName(deleteOp), idParamName: deleteOp.parameters?.find(p => p.in === 'path')?.name } : undefined,
+                    read: readOp ? { methodName: this.getMethodName(readOp), idParamName: getIdParamName(readOp) } : undefined,
+                    update: updateOp && readOp ? { methodName: this.getMethodName(updateOp), idParamName: getIdParamName(readOp) } : undefined,
+                    delete: deleteOp ? { methodName: this.getMethodName(deleteOp), idParamName: getIdParamName(deleteOp) } : undefined,
                 },
-                formProperties: this.processSchemaToFormProperties(finalSchema),
-                listColumns: Object.keys(finalSchema.properties || {}).filter(p => !(finalSchema.properties?.[p])?.readOnly),
+                formProperties: this.processSchemaToFormProperties(finalSchema), listColumns: Object.keys(finalSchema.properties || {}),
             };
             resources.push(resource);
         }
+        console.log(`[ADMIN] Identified ${resources.length} viable resources: ${resources.map(r => r.name).join(', ') || 'None'}.`);
         return resources;
     }
 
@@ -114,194 +97,110 @@ export class AdminGenerator {
 
     private processSchemaToFormProperties(schema: any): FormProperty[] {
         const properties: FormProperty[] = [];
-        if (!schema.properties) return properties;
+        if (!schema || !schema.properties) return properties;
         for (const propName in schema.properties) {
             const prop = schema.properties[propName];
-            if (prop.readOnly) continue;
-            const formProp: FormProperty = {
-                name: propName,
-                type: 'string',
-                inputType: 'text',
-                required: schema.required?.includes(propName) ?? false,
-                validators: [],
-                enumValues: prop.enum
-            };
+            const formProp: FormProperty = { name: propName, type: 'string', inputType: 'text', required: schema.required?.includes(propName) ?? false, validators: [], enumValues: prop.enum };
             if (formProp.required) formProp.validators.push('Validators.required');
-            if (prop.minLength) formProp.validators.push(`Validators.minLength(${prop.minLength})`);
-            if (prop.maxLength) formProp.validators.push(`Validators.maxLength(${prop.maxLength})`);
-            if (prop.pattern) formProp.validators.push(`Validators.pattern(/${prop.pattern}/)`);
-            if (prop.minimum) formProp.validators.push(`Validators.min(${prop.minimum})`);
-            if (prop.maximum) formProp.validators.push(`Validators.max(${prop.maximum})`);
-            if (prop.enum) { formProp.type = 'enum'; }
-            else if (prop.type === 'boolean') { formProp.type = 'boolean'; formProp.inputType = 'checkbox'; }
-            else if (prop.type === 'integer' || prop.type === 'number') { formProp.type = 'number'; formProp.inputType = 'number'; }
-            else if (prop.type === 'string' && prop.format === 'date-time') { formProp.inputType = 'datetime-local'; }
             properties.push(formProp);
         }
         return properties;
     }
 
-    private generateListComponent(resource: Resource, dir: string) {
+    private generateModernListComponent(resource: Resource, dir: string) {
         const listDir = path.join(dir, `${resource.pluralName}-list`);
-        const componentFileName = `${resource.pluralName}-list.component`;
-        const templatePath = path.join(__dirname, 'templates', 'list.component.html.template');
-        const columnsTemplate = resource.listColumns.map(col => `
-      <!-- ${titleCase(col)} Column -->
-      <ng-container matColumnDef="${col}">
-        <th mat-header-cell *matHeaderCellDef>${titleCase(col)}</th>
-        <td mat-cell *matCellDef="let element">{{element.${col}}}</td>
-      </ng-container>`).join('');
-        const deleteButtonTemplate = resource.operations.delete ? `<button mat-icon-button color="warn" (click)="delete(element.id)" matTooltip="Delete ${resource.titleName}"><mat-icon>delete</mat-icon></button>` : '';
-        const templateContent = fs.readFileSync(templatePath, 'utf8');
-        const htmlContent = renderTemplate(templateContent, { ...resource, pluralTitleName: plural(resource.titleName), columnsTemplate, deleteButtonTemplate });
-        this.project.createSourceFile(path.join(listDir, `${componentFileName}.html`), htmlContent, { overwrite: true });
-        const cssContent = `.container { padding: 2rem; } .header-actions { display: flex; justify-content: flex-end; margin-bottom: 1rem; } .full-width-table { width: 100%; } .no-data-message { padding: 2rem; text-align: center; color: grey; } .actions-cell { width: 120px; text-align: right; }`;
-        this.project.createSourceFile(path.join(listDir, `${componentFileName}.css`), cssContent, { overwrite: true });
-        const tsFilePath = path.join(listDir, `${componentFileName}.ts`);
-        const sourceFile = this.project.createSourceFile(tsFilePath, undefined, { overwrite: true });
-        sourceFile.addImportDeclarations([
-            { moduleSpecifier: '@angular/core', namedImports: ['Component', 'OnInit'] },
-            { moduleSpecifier: 'rxjs', namedImports: ['Observable'] },
-            { moduleSpecifier: `../../../models`, namedImports: [resource.modelName] },
-            { moduleSpecifier: `../../../services`, namedImports: [resource.serviceName] },
-        ]);
-        const componentClass = sourceFile.addClass({ name: `${resource.className}ListComponent`, isExported: true });
-        componentClass.addImplements('OnInit');
-        componentClass.addDecorator({ name: 'Component', arguments: [`{ selector: 'app-${resource.pluralName}-list', templateUrl: './${componentFileName}.html', styleUrls: ['./${componentFileName}.css'] }`] });
-        componentClass.addProperty({ name: 'data$!', type: `Observable<${resource.modelName}[]>` });
-        componentClass.addProperty({ name: 'displayedColumns', type: 'string[]', initializer: `[${resource.listColumns.map(c => `'${c}'`).join(', ')}, 'actions']` });
-        componentClass.addConstructor({ parameters: [{ name: camelCase(resource.serviceName), type: resource.serviceName, scope: 'private' }] });
-        componentClass.addMethod({ name: 'ngOnInit', returnType: 'void', statements: 'this.loadData();' });
-        componentClass.addMethod({ name: 'loadData', returnType: 'void', statements: `this.data$ = this.${camelCase(resource.serviceName)}.${resource.operations.list!.methodName}();` });
-        if (resource.operations.delete) {
-            componentClass.addMethod({
-                name: 'delete', parameters: [{ name: 'id', type: 'number | string' }], returnType: 'void',
-                statements: `if (confirm('Are you sure you want to delete this item?')) { this.${camelCase(resource.serviceName)}.${resource.operations.delete!.methodName}({ ${resource.operations.delete!.idParamName}: id }).subscribe(() => this.loadData()); }`
-            });
-        }
-        sourceFile.formatText();
+        const compName = `${resource.pluralName}-list.component`;
+        const htmlFile = this.project.createSourceFile(path.join(listDir, `${compName}.html`), "", { overwrite: true });
+        const cssFile = this.project.createSourceFile(path.join(listDir, `${compName}.css`), "", { overwrite: true });
+        const tsFile = this.project.createSourceFile(path.join(listDir, `${compName}.ts`), "", { overwrite: true });
+
+        const idKey = resource.operations.read?.idParamName || resource.operations.delete?.idParamName || 'name';
+        const createBtn = resource.operations.create ? `<button mat-flat-button color="primary" [routerLink]="['new']"><mat-icon>add</mat-icon><span>Create ${resource.titleName}</span></button>` : '';
+        const editBtn = resource.operations.update ? `<button mat-icon-button [routerLink]="[element.${idKey}, 'edit']" matTooltip="Edit ${resource.titleName}"><mat-icon>edit</mat-icon></button>` : '';
+        const deleteBtn = resource.operations.delete ? `<button mat-icon-button color="warn" (click)="delete(element.${idKey})" matTooltip="Delete ${resource.titleName}"><mat-icon>delete</mat-icon></button>` : '';
+        const columnsTemplate = resource.listColumns.map(col => `<ng-container matColumnDef="${col}"><th mat-header-cell *matHeaderCellDef>${titleCase(col)}</th><td mat-cell *matCellDef="let element">{{element.${col}}}</td></ng-container>`).join('\n');
+        htmlFile.insertText(0, renderTemplate(this.getTemplate('list.component.html.template'), { ...resource, pluralTitleName: plural(resource.titleName), columnsTemplate, createButtonTemplate: createBtn, editButtonTemplate: editBtn, deleteButtonTemplate: deleteBtn }));
+
+        cssFile.insertText(0, `:host { display: block; padding: 2rem; } .header-actions { display: flex; justify-content: flex-end; margin-bottom: 1rem; } .mat-elevation-z8 { width: 100%; } .actions-cell { width: 120px; text-align: right; }`);
+
+        tsFile.addStatements(`/* eslint-disable */
+import { Component, inject, signal, WritableSignal } from '@angular/core'; import { CommonModule } from '@angular/common'; import { RouterModule } from '@angular/router'; import { MatTableModule } from '@angular/material/table'; import { MatIconModule } from '@angular/material/icon'; import { MatButtonModule } from '@angular/material/button'; import { MatTooltipModule } from '@angular/material/tooltip'; import { ${resource.serviceName} } from '../../../services'; import { ${resource.modelName} } from '../../../models';
+@Component({ selector: 'app-${resource.pluralName}-list', standalone: true, imports: [CommonModule, RouterModule, MatTableModule, MatIconModule, MatButtonModule, MatTooltipModule], templateUrl: './${compName}.html', styleUrls: ['./${compName}.css'] })
+export class ${resource.className}ListComponent {
+  private readonly svc = inject(${resource.serviceName}); readonly data: WritableSignal<${resource.modelName}[]> = signal([]); readonly displayedColumns: string[] = ['${resource.listColumns.join("', '")}', 'actions'];
+  constructor() { this.loadData(); }
+  loadData() { this.svc.${resource.operations.list.methodName}().subscribe((d: any) => this.data.set(d.${resource.pluralName} || d.profiles || d.repos || d)); }
+  ${resource.operations.delete ? `delete(id: number | string): void { if (confirm('Are you sure?')) { this.svc.${resource.operations.delete.methodName}({ ${resource.operations.delete.idParamName}: id } as any).subscribe(() => this.loadData()); } }` : ''}
+}`);
+
+        htmlFile.saveSync(); cssFile.saveSync(); tsFile.formatText(); tsFile.saveSync();
     }
 
-    private generateFormComponent(resource: Resource, dir: string) {
+    private generateModernFormComponent(resource: Resource, dir: string) {
+        if (!resource.operations.create && !resource.operations.update) return;
         const formDir = path.join(dir, `${resource.name}-form`);
-        const componentFileName = `${resource.name}-form.component`;
-        const templatePath = path.join(__dirname, 'templates', 'form.component.html.template');
+        const compName = `${resource.name}-form.component`;
+        const htmlFile = this.project.createSourceFile(path.join(formDir, `${compName}.html`), "", { overwrite: true });
+        const cssFile = this.project.createSourceFile(path.join(formDir, `${compName}.css`), "", { overwrite: true });
+        const tsFile = this.project.createSourceFile(path.join(formDir, `${compName}.ts`), "", { overwrite: true });
 
-        const formFieldsTemplate = resource.formProperties.map(prop => {
-            const errorBlock = prop.required ? `\n      <mat-error *ngIf="form.get('${prop.name}')?.hasError('required')">Required.</mat-error>` : '';
-            if (prop.type === 'enum') { return `\n    <mat-form-field appearance="outline"><mat-label>${titleCase(prop.name)}</mat-label><mat-select formControlName="${prop.name}">${prop.enumValues?.map(val => `<mat-option value="${val}">${val}</mat-option>`).join('\n        ')}</mat-select>${errorBlock}</mat-form-field>`; }
-            if (prop.type === 'boolean') { return `\n    <div class="checkbox-field"><mat-checkbox formControlName="${prop.name}">${titleCase(prop.name)}</mat-checkbox></div>`; }
-            return `\n    <mat-form-field appearance="outline"><mat-label>${titleCase(prop.name)}</mat-label><input matInput type="${prop.inputType}" formControlName="${prop.name}">${errorBlock}</mat-form-field>`;
-        }).join('');
+        const fields = resource.formProperties.map(p => `<mat-form-field appearance="outline"><mat-label>${titleCase(p.name)}</mat-label><input matInput formControlName="${p.name}">${p.required ? `<mat-error>Required.</mat-error>` : ''}</mat-form-field>`).join('\n');
+        htmlFile.insertText(0, `<form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container"><h3>{{ isEditMode() ? 'Edit' : 'Create' }} ${resource.titleName}</h3>${fields}<div class="action-buttons"><button mat-stroked-button type="button" (click)="onCancel()">Cancel</button><button mat-flat-button color="primary" type="submit" [disabled]="form.invalid">Save</button></div></form>`);
+        cssFile.insertText(0, `:host { display: block; padding: 2rem; } .form-container { display: flex; flex-direction: column; gap: 0.5rem; max-width: 500px; } .action-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }`);
 
-        const templateContent = fs.readFileSync(templatePath, 'utf8');
-        const htmlContent = renderTemplate(templateContent, { ...resource, formFieldsTemplate });
-        this.project.createSourceFile(path.join(formDir, `${componentFileName}.html`), htmlContent, { overwrite: true });
+        const formGroupFields = resource.formProperties.map(p => `'${p.name}': [null as any, [${p.validators.join(', ')}]]`).join(',\n');
+        const canEdit = resource.operations.read && resource.operations.update;
+        const editModeLogic = canEdit ? `
+              readonly id = input<string | number>(); readonly isEditMode = computed(() => !!this.id());
+              constructor() {
+                effect(() => {
+                  const currentId = this.id();
+                  if (this.isEditMode() && currentId) {
+                    this.svc.${resource.operations.read!.methodName}({ ${resource.operations.read!.idParamName}: currentId } as any).subscribe(data => this.form.patchValue(data as any));
+                  }
+                });
+              }` : `readonly isEditMode = computed(() => false); constructor() {}`;
+        const submitLogic = `
+              onSubmit(): void {
+                if (this.form.invalid) return;
+                const action$ = ${canEdit ? `this.isEditMode()
+                  ? this.svc.${resource.operations.update!.methodName}({ ${resource.operations.update!.idParamName}: this.id(), body: this.form.value } as any)
+                  :` : ''} this.svc.${resource.operations.create!.methodName}({ body: this.form.value } as any);
+                action$.subscribe(() => this.router.navigate(['admin/${resource.pluralName}']));
+              }`;
 
-        const cssContent = `.container { padding: 2rem; } .form-container { display: flex; flex-direction: column; gap: 0.5rem; max-width: 500px; } .action-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; } .checkbox-field { padding: 1rem 0; }`;
-        this.project.createSourceFile(path.join(formDir, `${componentFileName}.css`), cssContent, { overwrite: true });
-
-        const tsFilePath = path.join(formDir, `${componentFileName}.ts`);
-        const sourceFile = this.project.createSourceFile(tsFilePath, undefined, { overwrite: true });
-        sourceFile.addImportDeclarations([
-            { moduleSpecifier: '@angular/core', namedImports: ['Component', 'OnInit'] },
-            { moduleSpecifier: '@angular/forms', namedImports: ['FormBuilder', 'FormGroup', 'Validators'] },
-            { moduleSpecifier: '@angular/router', namedImports: ['ActivatedRoute', 'Router'] },
-            { moduleSpecifier: `../../../models`, namedImports: [resource.modelName] },
-            { moduleSpecifier: `../../../services`, namedImports: [resource.serviceName] },
-        ]);
-        const componentClass = sourceFile.addClass({ name: `${resource.className}FormComponent`, isExported: true });
-        componentClass.addImplements('OnInit');
-        componentClass.addDecorator({ name: 'Component', arguments: [`{ selector: 'app-${resource.name}-form', templateUrl: './${componentFileName}.html', styleUrls: ['./${componentFileName}.css'] }`] });
-        componentClass.addProperty({ name: 'form!', type: 'FormGroup' });
-        componentClass.addProperty({ name: 'isEditMode', type: 'boolean', initializer: 'false' });
-        componentClass.addProperty({ name: 'id: string | number | undefined' });
-        componentClass.addConstructor({
-            parameters: [
-                { name: 'fb', type: 'FormBuilder', scope: 'private' },
-                { name: 'route', type: 'ActivatedRoute', scope: 'private' },
-                { name: 'router', type: 'Router', scope: 'private' },
-                { name: camelCase(resource.serviceName), type: resource.serviceName, scope: 'private' },
-            ]
-        });
-        const formGroupFields = resource.formProperties.map(p => `'${p.name}': [null, [${p.validators.join(', ')}]]`).join(',\n          ');
-        componentClass.addMethod({
-            name: 'ngOnInit', returnType: 'void', statements: `
-            this.id = this.route.snapshot.params['id'];
-            this.isEditMode = !!this.id;
-            this.form = this.fb.group({
-              ${formGroupFields}
-            });
-            if (this.isEditMode) {
-              this.${camelCase(resource.serviceName)}.${resource.operations.read!.methodName}({ ${resource.operations.read!.idParamName}: this.id }).subscribe(data => this.form.patchValue(data));
-            }`
-        });
-        componentClass.addMethod({
-            name: 'onSubmit', returnType: 'void', statements: `
-            if (this.form.invalid) return;
-            const action$ = this.isEditMode
-                ? this.${camelCase(resource.serviceName)}.${resource.operations.update!.methodName}({ ${resource.operations.update!.idParamName}: this.id!, body: this.form.value })
-                : this.${camelCase(resource.serviceName)}.${resource.operations.create!.methodName}({ body: this.form.value });
-            action$.subscribe(() => this.router.navigate(['/${resource.pluralName}']));
-        ` });
-        componentClass.addMethod({ name: 'onCancel', returnType: 'void', statements: `this.router.navigate(['/${resource.pluralName}']);` });
-        sourceFile.formatText();
+        tsFile.addStatements(`/* eslint-disable */
+import { Component, inject, input, computed, effect } from '@angular/core'; import { CommonModule } from '@angular/common'; import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms'; import { Router } from '@angular/router'; import { MatFormFieldModule } from '@angular/material/form-field'; import { MatInputModule } from '@angular/material/input'; import { MatButtonModule } from '@angular/material/button'; import { ${resource.serviceName} } from '../../../services';
+@Component({ selector: 'app-${resource.name}-form', standalone: true, imports: [ CommonModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule ], templateUrl: './${compName}.html', styleUrls: ['./${compName}.css'] })
+export class ${resource.className}FormComponent {
+  private readonly fb = inject(FormBuilder); private readonly router = inject(Router); private readonly svc = inject(${resource.serviceName});
+  readonly form = this.fb.group({ ${formGroupFields} });
+  ${editModeLogic}
+  ${submitLogic}
+  onCancel(): void { this.router.navigate(['admin/${resource.pluralName}']); }
+}`);
+        htmlFile.saveSync(); cssFile.saveSync(); tsFile.formatText(); tsFile.saveSync();
     }
 
-    private generateRoutingModule(resource: Resource, dir: string) {
-        const filePath = path.join(dir, `${resource.pluralName}-admin-routing.module.ts`);
-        const sourceFile = this.project.createSourceFile(filePath, undefined, { overwrite: true });
-        sourceFile.addImportDeclarations([
-            { moduleSpecifier: '@angular/core', namedImports: ['NgModule'] },
-            { moduleSpecifier: '@angular/router', namedImports: ['RouterModule', 'Routes'] },
-            { moduleSpecifier: `./${resource.pluralName}-list/${resource.pluralName}-list.component`, namedImports: [`${resource.className}ListComponent`] },
-            { moduleSpecifier: `./${resource.name}-form/${resource.name}-form.component`, namedImports: [`${resource.className}FormComponent`] },
-        ]);
-        sourceFile.addVariableStatement({
-            isExported: false, declarationKind: 'const',
-            declarations: [{ name: 'routes', type: 'Routes', initializer: `[
-                { path: '', component: ${resource.className}ListComponent, title: '${plural(resource.titleName)}' },
-                { path: 'new', component: ${resource.className}FormComponent, title: 'Create ${resource.titleName}' },
-                { path: ':id/edit', component: ${resource.className}FormComponent, title: 'Edit ${resource.titleName}' }
-            ]`}]
-        });
-        sourceFile.addClass({ name: `${resource.className}AdminRoutingModule`, isExported: true }).addDecorator({
-            name: 'NgModule',
-            arguments: [`{ imports: [RouterModule.forChild(routes)], exports: [RouterModule] }`],
-        });
-        sourceFile.formatText();
-    }
+    private generateModernRoutes(resource: Resource, dir: string) {
+        const filePath = path.join(dir, `${resource.pluralName}.routes.ts`);
+        const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
+        const routesName = `${resource.pluralName.toUpperCase()}_ROUTES`;
 
-    private generateModule(resource: Resource, dir: string) {
-        const filePath = path.join(dir, `${resource.pluralName}-admin.module.ts`);
-        const sourceFile = this.project.createSourceFile(filePath, undefined, { overwrite: true });
-        sourceFile.addImportDeclarations([
-            { moduleSpecifier: '@angular/core', namedImports: ['NgModule'] },
-            { moduleSpecifier: '@angular/common', namedImports: ['CommonModule'] },
-            { moduleSpecifier: '@angular/forms', namedImports: ['ReactiveFormsModule'] },
-            { moduleSpecifier: `./${resource.pluralName}-admin-routing.module`, namedImports: [`${resource.className}AdminRoutingModule`] },
-            { moduleSpecifier: `./${resource.pluralName}-list/${resource.pluralName}-list.component`, namedImports: [`${resource.className}ListComponent`] },
-            { moduleSpecifier: `./${resource.name}-form/${resource.name}-form.component`, namedImports: [`${resource.className}FormComponent`] },
-            { moduleSpecifier: '@angular/material/table', namedImports: ['MatTableModule'] },
-            { moduleSpecifier: '@angular/material/icon', namedImports: ['MatIconModule'] },
-            { moduleSpecifier: '@angular/material/button', namedImports: ['MatButtonModule'] },
-            { moduleSpecifier: '@angular/material/tooltip', namedImports: ['MatTooltipModule'] },
-            { moduleSpecifier: '@angular/material/form-field', namedImports: ['MatFormFieldModule'] },
-            { moduleSpecifier: '@angular/material/input', namedImports: ['MatInputModule'] },
-            { moduleSpecifier: '@angular/material/select', namedImports: ['MatSelectModule'] },
-            { moduleSpecifier: '@angular/material/checkbox', namedImports: ['MatCheckboxModule'] },
-        ]);
-        sourceFile.addClass({ name: `${resource.className}AdminModule`, isExported: true }).addDecorator({
-            name: 'NgModule',
-            arguments: [`{
-                declarations: [${resource.className}ListComponent, ${resource.className}FormComponent ],
-                imports: [
-                    CommonModule, ReactiveFormsModule, ${resource.className}AdminRoutingModule,
-                    MatTableModule, MatIconModule, MatButtonModule, MatTooltipModule, MatFormFieldModule,
-                    MatInputModule, MatSelectModule, MatCheckboxModule
-                ]
-            }`]
-        });
+        const routeEntries = [];
+        routeEntries.push(`{ path: '', title: '${plural(resource.titleName)}', loadComponent: () => import('./${resource.pluralName}-list/${resource.pluralName}-list.component').then(m => m.${resource.className}ListComponent) }`);
+        if(resource.operations.create) {
+            routeEntries.push(`{ path: 'new', title: 'Create ${resource.titleName}', loadComponent: () => import('./${resource.name}-form/${resource.name}-form.component').then(m => m.${resource.className}FormComponent) }`);
+        }
+        if(resource.operations.read && resource.operations.update) {
+            const idParam = resource.operations.read.idParamName;
+            routeEntries.push(`{ path: ':${idParam}/edit', title: 'Edit ${resource.titleName}', loadComponent: () => import('./${resource.name}-form/${resource.name}-form.component').then(m => m.${resource.className}FormComponent) }`);
+        }
+
+        sourceFile.addStatements(`/* eslint-disable */
+import { Routes } from '@angular/router';
+export const ${routesName}: Routes = [ ${routeEntries.join(',\n')} ];`);
         sourceFile.formatText();
+        sourceFile.saveSync();
     }
 }

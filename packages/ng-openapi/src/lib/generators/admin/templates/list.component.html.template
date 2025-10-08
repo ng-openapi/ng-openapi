@@ -2,10 +2,7 @@
   <h1>{{pluralTitleName}}</h1>
 
   <div class="header-actions">
-    <button mat-flat-button color="primary" [routerLink]="['new']">
-      <mat-icon>add</mat-icon>
-      <span>Create {{titleName}}</span>
-    </button>
+    {{createButtonTemplate}}
   </div>
 
   @if (data().length > 0) {
@@ -17,9 +14,7 @@
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let element" class="actions-cell">
-            <button mat-icon-button [routerLink]="[element.id, 'edit']" matTooltip="Edit {{titleName}}">
-              <mat-icon>edit</mat-icon>
-            </button>
+            {{editButtonTemplate}}
             {{deleteButtonTemplate}}
           </td>
         </ng-container>
