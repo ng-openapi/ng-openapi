@@ -3,11 +3,20 @@
  */
 export interface FormProperty {
     name: string;
-    type: 'string' | 'number' | 'boolean' | 'enum';
-    inputType: 'text' | 'number' | 'checkbox' | 'date' | 'datetime-local';
+    type: 'string' | 'number' | 'boolean' | 'enum' | 'array';
+    inputType: 'text' | 'number' | 'checkbox' | 'datepicker' | 'select' | 'textarea' | 'slider' | 'password' | 'slide-toggle' | 'radio-group' | 'chip-list' | 'button-toggle-group';
     required: boolean;
     validators: string[];
+    description?: string;
+    // For enum, select, radio, button-toggle
     enumValues?: (string | number)[];
+    // For slider
+    min?: number;
+    max?: number;
+    // For inputs
+    minLength?: number;
+    maxLength?: number;
+    pattern?: string;
 }
 
 /**
