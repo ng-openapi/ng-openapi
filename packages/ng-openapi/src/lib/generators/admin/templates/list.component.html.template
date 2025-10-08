@@ -8,27 +8,29 @@
     </button>
   </div>
 
-  <div class="mat-elevation-z8">
-    <table mat-table [dataSource]="data$" class="full-width-table">
-      {{columnsTemplate}}
+  @if (data().length > 0) {
+    <div class="mat-elevation-z8">
+      <table mat-table [dataSource]="data()" class="full-width-table">
+        {{columnsTemplate}}
 
-      <!-- Actions Column -->
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef></th>
-        <td mat-cell *matCellDef="let element" class="actions-cell">
-          <button mat-icon-button [routerLink]="[element.id, 'edit']" matTooltip="Edit {{titleName}}">
-            <mat-icon>edit</mat-icon>
-          </button>
-          {{deleteButtonTemplate}}
-        </td>
-      </ng-container>
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let element" class="actions-cell">
+            <button mat-icon-button [routerLink]="[element.id, 'edit']" matTooltip="Edit {{titleName}}">
+              <mat-icon>edit</mat-icon>
+            </button>
+            {{deleteButtonTemplate}}
+          </td>
+        </ng-container>
 
-      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-    </table>
-
-    <div *ngIf="!(data$ | async)?.length" class="no-data-message">
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </div>
+  } @else {
+    <div class="no-data-message">
       No {{pluralName}} found. Get started by creating one.
     </div>
-  </div>
+  }
 </div>

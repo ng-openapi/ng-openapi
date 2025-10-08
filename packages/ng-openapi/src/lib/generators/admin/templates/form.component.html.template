@@ -1,10 +1,12 @@
 <div class="container">
-  <h1>{{isEditMode ? 'Edit' : 'Create'}} {{titleName}}</h1>
-  <form *ngIf="form" [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container">
-    {{formFieldsTemplate}}
-    <div class="action-buttons">
-      <button mat-stroked-button type="button" (click)="onCancel()">Cancel</button>
-      <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || form.pristine">Save</button>
-    </div>
-  </form>
+  <h1>{{isEditMode() ? 'Edit' : 'Create'}} {{titleName}}</h1>
+  @if (form) {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container">
+      {{formFieldsTemplate}}
+      <div class="action-buttons">
+        <button mat-stroked-button type="button" (click)="onCancel()">Cancel</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || form.pristine">Save</button>
+      </div>
+    </form>
+  }
 </div>
