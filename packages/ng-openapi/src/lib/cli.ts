@@ -60,17 +60,24 @@ async function generateFromOptions(options: any): Promise<void> {
     try {
         if (options.config) {
             const config = await loadConfigFile(options.config);
+            // Manually add the admin option from CLI if it exists, overriding the config file
+            if (options.admin) {
+                // Use a type assertion to add the property
+                (config.options as any).admin = true;
+            }
             await generateFromConfig(config);
         } else if (options.input) {
             const config: GeneratorConfig = {
                 input: options.input, // Can now be a URL or file path
                 output: options.output || "./src/generated",
+                // Use a type assertion here to add the 'admin' property
                 options: {
                     dateType: options.dateType || "Date",
                     enumStyle: "enum",
                     generateEnumBasedOnDescription: true,
                     generateServices: !options.typesOnly,
-                },
+                    admin: options.admin || false,
+                } as any,
             };
 
             await generateFromConfig(config);
@@ -91,32 +98,30 @@ async function generateFromOptions(options: any): Promise<void> {
     }
 }
 
-// Main command with options (allows: ng-openapi -c config.ts)
-program
+// Common options for both main command and subcommand
+const addCommonOptions = (command: Command) => {
+    return command
+        .option("-c, --config <path>", "Path to configuration file")
+        .option("-i, --input <path>", "Path or URL to OpenAPI/Swagger specification (.json, .yaml, .yml)")
+        .option("-o, --output <path>", "Output directory", "./src/generated")
+        .option("--types-only", "Generate only TypeScript interfaces")
+        .option("--date-type <type>", "Date type to use (string | Date)", "Date")
+        .option("--admin", "Generate Angular Material admin components for RESTful resources");
+};
+
+// Main command
+addCommonOptions(program)
     .name("ng-openapi")
     .description(
         "Generate Angular services and types from OpenAPI/Swagger specifications (JSON, YAML, YML) from files or URLs"
     )
     .version(packageJson.version)
-    .option("-c, --config <path>", "Path to configuration file")
-    .option("-i, --input <path>", "Path or URL to OpenAPI/Swagger specification (.json, .yaml, .yml)")
-    .option("-o, --output <path>", "Output directory", "./src/generated")
-    .option("--types-only", "Generate only TypeScript interfaces")
-    .option("--date-type <type>", "Date type to use (string | Date)", "Date")
     .action(async (options) => {
         await generateFromOptions(options);
     });
 
-// Sub-command for backward compatibility (allows: ng-openapi generate -c config.ts)
-program
-    .command("generate")
-    .alias("gen")
-    .description("Generate code from OpenAPI/Swagger specification")
-    .option("-c, --config <path>", "Path to configuration file")
-    .option("-i, --input <path>", "Path or URL to OpenAPI/Swagger specification (.json, .yaml, .yml)")
-    .option("-o, --output <path>", "Output directory", "./src/generated")
-    .option("--types-only", "Generate only TypeScript interfaces")
-    .option("--date-type <type>", "Date type to use (string | Date)", "Date")
+// Sub-command for backward compatibility
+addCommonOptions(program.command("generate").alias("gen").description("Generate code from OpenAPI/Swagger specification"))
     .action(async (options) => {
         await generateFromOptions(options);
     });
@@ -127,12 +132,9 @@ program.on("--help", () => {
     console.log("Examples:");
     console.log("  $ ng-openapi -c ./openapi.config.ts");
     console.log("  $ ng-openapi -i ./swagger.json -o ./src/api");
-    console.log("  $ ng-openapi -i ./openapi.yaml -o ./src/api");
-    console.log("  $ ng-openapi -i ./api-spec.yml -o ./src/api");
-    console.log("  $ ng-openapi -i https://api.example.com/openapi.json -o ./src/api");
+    console.log("  $ ng-openapi -i ./api-spec.yml -o ./src/api --admin");
     console.log("  $ ng-openapi -i https://petstore.swagger.io/v2/swagger.json -o ./src/api");
-    console.log("  $ ng-openapi generate -c ./openapi.config.ts");
-    console.log("  $ ng-openapi generate -i https://api.example.com/swagger.yaml --types-only");
+    console.log("  $ ng-openapi generate -c ./openapi.config.ts --admin");
 });
 
 program.parse();

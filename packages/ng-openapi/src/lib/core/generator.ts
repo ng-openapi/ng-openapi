@@ -1,5 +1,5 @@
 import { ModuleKind, Project, ScriptTarget } from 'ts-morph';
-import { TypeGenerator } from '../generators';
+import { AdminGenerator, TypeGenerator } from '../generators';
 import {
     BaseInterceptorGenerator,
     DateTransformerGenerator,
@@ -108,6 +108,14 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
             indexGenerator.generateIndex(outputPath);
 
             console.log(`✅ Angular services generated`);
+
+            // NEW: Generate admin components if enabled
+            // Use a type assertion to check for the dynamically added 'admin' property
+            if ((config.options as any).admin) {
+                const adminGenerator = new AdminGenerator(swaggerParser, project, config);
+                await adminGenerator.generate(outputPath);
+                console.log(`✅ Angular admin components generated`);
+            }
         }
 
         if (config.plugins?.length) {

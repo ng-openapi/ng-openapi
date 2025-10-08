@@ -59,7 +59,8 @@
   ],
   "scripts": {
     "prepublishOnly": "echo 'Build the package using: npm run build:ng-openapi from workspace root'",
-    "build": "tsup"
+    "build": "tsup",
+    "test": "vitest run"
   },
   "dependencies": {
     "commander": "^14.0.0",
@@ -68,6 +69,11 @@
     "typescript": "^5.8.3",
     "@types/swagger-schema-official": "^2.0.25",
     "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "vitest": "^2.0.4",
+    "vitest-tsconfig-paths": "^3.4.1"
   },
   "peerDependencies": {
     "@angular/core": ">=15",
