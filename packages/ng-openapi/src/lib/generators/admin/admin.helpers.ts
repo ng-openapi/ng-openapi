@@ -16,10 +16,19 @@ export function plural(word: string): string {
 }
 
 /**
- * Converts a string to Title Case.
- * e.g., "hello world" -> "Hello World"
+ * Converts a camelCase or snake_case string to a capitalized title.
+ * e.g., "helloWorld" -> "Hello World"
+ * e.g., "is_admin" -> "Is Admin"
  */
 export function titleCase(str: string): string {
     if (!str) return '';
-    return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase());
+
+    return str
+        // Split on uppercase letters and underscores/dashes
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/[_-]/g, ' ')
+        // Capitalize the first letter of each word
+        .replace(/\b\w/g, char => char.toUpperCase())
+        // Remove leading space if any
+        .trim();
 }
