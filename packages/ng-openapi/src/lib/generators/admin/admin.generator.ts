@@ -35,8 +35,6 @@ export class AdminGenerator {
 
         for (const resource of resources) {
             const adminDir = path.join(outputRoot, 'admin', resource.pluralName);
-
-            // Generate files for each resource
             this.generateListComponent(resource, adminDir);
             this.generateFormComponent(resource, adminDir);
             this.generateRoutingModule(resource, adminDir);
@@ -47,7 +45,6 @@ export class AdminGenerator {
     public collectResources(): Resource[] {
         const paths = extractPaths(this.parser.getSpec().paths);
         const pathGroups = new Map<string, { collection?: string, item?: string }>();
-
         for (const pathInfo of paths) {
             const currentPath = pathInfo.path;
             const itemMatch = currentPath.match(/^(\/[^/]+)\/{[^}]+}$/); // Matches /resource/{id}
@@ -70,37 +67,24 @@ export class AdminGenerator {
         const resources: Resource[] = [];
         for (const [basePath, group] of pathGroups.entries()) {
             if (!group.collection) continue;
-
             const pluralName = basePath.substring(1);
-            // CORRECTED: Singularize the resource name
             const resourceName = pluralName.endsWith('ies') ? pluralName.slice(0, -3) + 'y' : (pluralName.endsWith('s') ? pluralName.slice(0, -1) : pluralName);
-
             const listOp = paths.find(p => p.path === group.collection && p.method === 'GET');
             const createOp = paths.find(p => p.path === group.collection && p.method === 'POST');
-
             if (!listOp || !createOp) continue;
-
             const schemaObject = createOp.requestBody?.content?.['application/json']?.schema;
             if (!schemaObject) continue;
-
             let finalSchema: any;
             let modelName: string | undefined;
-
             if (schemaObject.$ref) {
                 modelName = schemaObject.$ref.split('/').pop();
                 finalSchema = this.parser.resolveReference(schemaObject.$ref);
-            } else {
-                continue;
-            }
-
+            } else { continue; }
             if (!finalSchema || !modelName || finalSchema.type !== 'object') continue;
-
             const readOp = paths.find(p => p.path === group.item && p.method === 'GET');
             const updateOp = paths.find(p => p.path === group.item && p.method === 'PUT');
             const deleteOp = paths.find(p => p.path === group.item && p.method === 'DELETE');
-
             if (!readOp || !updateOp) continue;
-
             const resource: Resource = {
                 name: resourceName,
                 className: pascalCase(resourceName),
@@ -124,20 +108,16 @@ export class AdminGenerator {
     }
 
     private getMethodName(operation: any): string {
-        if (operation.operationId) {
-            return camelCase(operation.operationId);
-        }
+        if (operation.operationId) { return camelCase(operation.operationId); }
         return `${camelCase(operation.path.replace(/[\/{}]/g, ''))}${pascalCase(operation.method)}`;
     }
 
     private processSchemaToFormProperties(schema: any): FormProperty[] {
         const properties: FormProperty[] = [];
         if (!schema.properties) return properties;
-
         for (const propName in schema.properties) {
             const prop = schema.properties[propName];
             if (prop.readOnly) continue;
-
             const formProp: FormProperty = {
                 name: propName,
                 type: 'string',
@@ -146,95 +126,53 @@ export class AdminGenerator {
                 validators: [],
                 enumValues: prop.enum
             };
-
             if (formProp.required) formProp.validators.push('Validators.required');
             if (prop.minLength) formProp.validators.push(`Validators.minLength(${prop.minLength})`);
             if (prop.maxLength) formProp.validators.push(`Validators.maxLength(${prop.maxLength})`);
             if (prop.pattern) formProp.validators.push(`Validators.pattern(/${prop.pattern}/)`);
             if (prop.minimum) formProp.validators.push(`Validators.min(${prop.minimum})`);
             if (prop.maximum) formProp.validators.push(`Validators.max(${prop.maximum})`);
-
-            if (prop.enum) {
-                formProp.type = 'enum';
-            } else if (prop.type === 'boolean') {
-                formProp.type = 'boolean';
-                formProp.inputType = 'checkbox';
-            } else if (prop.type === 'integer' || prop.type === 'number') {
-                formProp.type = 'number';
-                formProp.inputType = 'number';
-            } else if (prop.type === 'string' && prop.format === 'date-time') {
-                formProp.inputType = 'datetime-local';
-            }
+            if (prop.enum) { formProp.type = 'enum'; }
+            else if (prop.type === 'boolean') { formProp.type = 'boolean'; formProp.inputType = 'checkbox'; }
+            else if (prop.type === 'integer' || prop.type === 'number') { formProp.type = 'number'; formProp.inputType = 'number'; }
+            else if (prop.type === 'string' && prop.format === 'date-time') { formProp.inputType = 'datetime-local'; }
             properties.push(formProp);
         }
         return properties;
     }
 
-    // --- Component Generation Logic ---
-
     private generateListComponent(resource: Resource, dir: string) {
         const listDir = path.join(dir, `${resource.pluralName}-list`);
         const componentFileName = `${resource.pluralName}-list.component`;
         const templatePath = path.join(__dirname, 'templates', 'list.component.html.template');
-
         const columnsTemplate = resource.listColumns.map(col => `
       <!-- ${titleCase(col)} Column -->
       <ng-container matColumnDef="${col}">
         <th mat-header-cell *matHeaderCellDef>${titleCase(col)}</th>
         <td mat-cell *matCellDef="let element">{{element.${col}}}</td>
       </ng-container>`).join('');
-        const deleteButtonTemplate = resource.operations.delete
-            ? `<button mat-icon-button color="warn" (click)="delete(element.id)" matTooltip="Delete ${resource.titleName}"><mat-icon>delete</mat-icon></button>`
-            : '';
-
+        const deleteButtonTemplate = resource.operations.delete ? `<button mat-icon-button color="warn" (click)="delete(element.id)" matTooltip="Delete ${resource.titleName}"><mat-icon>delete</mat-icon></button>` : '';
         const templateContent = fs.readFileSync(templatePath, 'utf8');
-        const htmlContent = renderTemplate(templateContent, {
-            ...resource,
-            pluralTitleName: plural(resource.titleName),
-            columnsTemplate,
-            deleteButtonTemplate
-        });
-
+        const htmlContent = renderTemplate(templateContent, { ...resource, pluralTitleName: plural(resource.titleName), columnsTemplate, deleteButtonTemplate });
         this.project.createSourceFile(path.join(listDir, `${componentFileName}.html`), htmlContent, { overwrite: true });
-
         const cssContent = `.container { padding: 2rem; } .header-actions { display: flex; justify-content: flex-end; margin-bottom: 1rem; } .full-width-table { width: 100%; } .no-data-message { padding: 2rem; text-align: center; color: grey; } .actions-cell { width: 120px; text-align: right; }`;
         this.project.createSourceFile(path.join(listDir, `${componentFileName}.css`), cssContent, { overwrite: true });
-
         const tsFilePath = path.join(listDir, `${componentFileName}.ts`);
         const sourceFile = this.project.createSourceFile(tsFilePath, undefined, { overwrite: true });
-
         sourceFile.addImportDeclarations([
             { moduleSpecifier: '@angular/core', namedImports: ['Component', 'OnInit'] },
             { moduleSpecifier: 'rxjs', namedImports: ['Observable'] },
             { moduleSpecifier: `../../../models`, namedImports: [resource.modelName] },
             { moduleSpecifier: `../../../services`, namedImports: [resource.serviceName] },
         ]);
-
-        const componentClass = sourceFile.addClass({
-            name: `${resource.className}ListComponent`,
-            isExported: true,
-        });
-
-        // CORRECTED: Don't chain after addImplements
+        const componentClass = sourceFile.addClass({ name: `${resource.className}ListComponent`, isExported: true });
         componentClass.addImplements('OnInit');
-
-        componentClass.addDecorator({
-            name: 'Component',
-            arguments: [`{
-                selector: 'app-${resource.pluralName}-list',
-                templateUrl: './${componentFileName}.html',
-                styleUrls: ['./${componentFileName}.css']
-            }`],
-        });
-
+        componentClass.addDecorator({ name: 'Component', arguments: [`{ selector: 'app-${resource.pluralName}-list', templateUrl: './${componentFileName}.html', styleUrls: ['./${componentFileName}.css'] }`] });
         componentClass.addProperty({ name: 'data$!', type: `Observable<${resource.modelName}[]>` });
         componentClass.addProperty({ name: 'displayedColumns', type: 'string[]', initializer: `[${resource.listColumns.map(c => `'${c}'`).join(', ')}, 'actions']` });
-        componentClass.addConstructor({
-            parameters: [{ name: camelCase(resource.serviceName), type: resource.serviceName, scope: 'private' }],
-        });
+        componentClass.addConstructor({ parameters: [{ name: camelCase(resource.serviceName), type: resource.serviceName, scope: 'private' }] });
         componentClass.addMethod({ name: 'ngOnInit', returnType: 'void', statements: 'this.loadData();' });
         componentClass.addMethod({ name: 'loadData', returnType: 'void', statements: `this.data$ = this.${camelCase(resource.serviceName)}.${resource.operations.list!.methodName}();` });
-
         if (resource.operations.delete) {
             componentClass.addMethod({
                 name: 'delete', parameters: [{ name: 'id', type: 'number | string' }], returnType: 'void',
@@ -250,13 +188,17 @@ export class AdminGenerator {
         const templatePath = path.join(__dirname, 'templates', 'form.component.html.template');
 
         const formFieldsTemplate = resource.formProperties.map(prop => {
+            // Conditionally create the error block based on the 'required' property.
+            const errorBlock = prop.required
+                ? `\n      <mat-error *ngIf="form.get('${prop.name}')?.hasError('required')">Required.</mat-error>`
+                : '';
+
             if (prop.type === 'enum') {
                 return `\n    <mat-form-field appearance="outline">
       <mat-label>${titleCase(prop.name)}</mat-label>
       <mat-select formControlName="${prop.name}">
         ${prop.enumValues?.map(val => `<mat-option value="${val}">${val}</mat-option>`).join('\n        ')}
-      </mat-select>
-      <mat-error *ngIf="form.get('${prop.name}')?.hasError('required')">Required.</mat-error>
+      </mat-select>${errorBlock}
     </mat-form-field>`;
             }
             if (prop.type === 'boolean') {
@@ -266,16 +208,12 @@ export class AdminGenerator {
             }
             return `\n    <mat-form-field appearance="outline">
       <mat-label>${titleCase(prop.name)}</mat-label>
-      <input matInput type="${prop.inputType}" formControlName="${prop.name}">
-      <mat-error *ngIf="form.get('${prop.name}')?.hasError('required')">Required.</mat-error>
+      <input matInput type="${prop.inputType}" formControlName="${prop.name}">${errorBlock}
     </mat-form-field>`;
         }).join('');
 
         const templateContent = fs.readFileSync(templatePath, 'utf8');
-        const htmlContent = renderTemplate(templateContent, {
-            ...resource,
-            formFieldsTemplate
-        });
+        const htmlContent = renderTemplate(templateContent, { ...resource, formFieldsTemplate });
         this.project.createSourceFile(path.join(formDir, `${componentFileName}.html`), htmlContent, { overwrite: true });
 
         const cssContent = `.container { padding: 2rem; } .form-container { display: flex; flex-direction: column; gap: 0.5rem; max-width: 500px; } .action-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; } .checkbox-field { padding: 1rem 0; }`;
@@ -283,7 +221,6 @@ export class AdminGenerator {
 
         const tsFilePath = path.join(formDir, `${componentFileName}.ts`);
         const sourceFile = this.project.createSourceFile(tsFilePath, undefined, { overwrite: true });
-
         sourceFile.addImportDeclarations([
             { moduleSpecifier: '@angular/core', namedImports: ['Component', 'OnInit'] },
             { moduleSpecifier: '@angular/forms', namedImports: ['FormBuilder', 'FormGroup', 'Validators'] },
@@ -291,28 +228,12 @@ export class AdminGenerator {
             { moduleSpecifier: `../../../models`, namedImports: [resource.modelName] },
             { moduleSpecifier: `../../../services`, namedImports: [resource.serviceName] },
         ]);
-
-        const componentClass = sourceFile.addClass({
-            name: `${resource.className}FormComponent`,
-            isExported: true,
-        });
-
-        // CORRECTED: Don't chain after addImplements
+        const componentClass = sourceFile.addClass({ name: `${resource.className}FormComponent`, isExported: true });
         componentClass.addImplements('OnInit');
-
-        componentClass.addDecorator({
-            name: 'Component',
-            arguments: [`{
-                selector: 'app-${resource.name}-form',
-                templateUrl: './${componentFileName}.html',
-                styleUrls: ['./${componentFileName}.css']
-            }`],
-        });
-
+        componentClass.addDecorator({ name: 'Component', arguments: [`{ selector: 'app-${resource.name}-form', templateUrl: './${componentFileName}.html', styleUrls: ['./${componentFileName}.css'] }`] });
         componentClass.addProperty({ name: 'form!', type: 'FormGroup' });
         componentClass.addProperty({ name: 'isEditMode', type: 'boolean', initializer: 'false' });
         componentClass.addProperty({ name: 'id: string | number | undefined' });
-
         componentClass.addConstructor({
             parameters: [
                 { name: 'fb', type: 'FormBuilder', scope: 'private' },
@@ -321,11 +242,7 @@ export class AdminGenerator {
                 { name: camelCase(resource.serviceName), type: resource.serviceName, scope: 'private' },
             ]
         });
-
-        const formGroupFields = resource.formProperties
-            .map(p => `'${p.name}': [null, [${p.validators.join(', ')}]]`)
-            .join(',\n          ');
-
+        const formGroupFields = resource.formProperties.map(p => `'${p.name}': [null, [${p.validators.join(', ')}]]`).join(',\n          ');
         componentClass.addMethod({
             name: 'ngOnInit', returnType: 'void', statements: `
             this.id = this.route.snapshot.params['id'];
@@ -337,15 +254,14 @@ export class AdminGenerator {
               this.${camelCase(resource.serviceName)}.${resource.operations.read!.methodName}({ ${resource.operations.read!.idParamName}: this.id }).subscribe(data => this.form.patchValue(data));
             }`
         });
-
-        componentClass.addMethod({ name: 'onSubmit', returnType: 'void', statements: `
+        componentClass.addMethod({
+            name: 'onSubmit', returnType: 'void', statements: `
             if (this.form.invalid) return;
             const action$ = this.isEditMode
                 ? this.${camelCase(resource.serviceName)}.${resource.operations.update!.methodName}({ ${resource.operations.update!.idParamName}: this.id!, body: this.form.value })
                 : this.${camelCase(resource.serviceName)}.${resource.operations.create!.methodName}({ body: this.form.value });
-            action$.subscribe(() => this.router.navigate(['/${resource.pluralName}']));
-        ` });
-
+            action$.subscribe(() => this.router.navigate(['/${resource.pluralName}']));`
+        });
         componentClass.addMethod({ name: 'onCancel', returnType: 'void', statements: `this.router.navigate(['/${resource.pluralName}']);` });
         sourceFile.formatText();
     }
@@ -353,14 +269,12 @@ export class AdminGenerator {
     private generateRoutingModule(resource: Resource, dir: string) {
         const filePath = path.join(dir, `${resource.pluralName}-admin-routing.module.ts`);
         const sourceFile = this.project.createSourceFile(filePath, undefined, { overwrite: true });
-
         sourceFile.addImportDeclarations([
             { moduleSpecifier: '@angular/core', namedImports: ['NgModule'] },
             { moduleSpecifier: '@angular/router', namedImports: ['RouterModule', 'Routes'] },
             { moduleSpecifier: `./${resource.pluralName}-list/${resource.pluralName}-list.component`, namedImports: [`${resource.className}ListComponent`] },
             { moduleSpecifier: `./${resource.name}-form/${resource.name}-form.component`, namedImports: [`${resource.className}FormComponent`] },
         ]);
-
         sourceFile.addVariableStatement({
             isExported: false, declarationKind: 'const',
             declarations: [{ name: 'routes', type: 'Routes', initializer: `[
@@ -369,19 +283,16 @@ export class AdminGenerator {
                 { path: ':id/edit', component: ${resource.className}FormComponent, title: 'Edit ${resource.titleName}' }
             ]`}]
         });
-
         sourceFile.addClass({ name: `${resource.className}AdminRoutingModule`, isExported: true }).addDecorator({
             name: 'NgModule',
             arguments: [`{ imports: [RouterModule.forChild(routes)], exports: [RouterModule] }`],
         });
-
         sourceFile.formatText();
     }
 
     private generateModule(resource: Resource, dir: string) {
         const filePath = path.join(dir, `${resource.pluralName}-admin.module.ts`);
         const sourceFile = this.project.createSourceFile(filePath, undefined, { overwrite: true });
-
         sourceFile.addImportDeclarations([
             { moduleSpecifier: '@angular/core', namedImports: ['NgModule'] },
             { moduleSpecifier: '@angular/common', namedImports: ['CommonModule'] },
@@ -389,7 +300,6 @@ export class AdminGenerator {
             { moduleSpecifier: `./${resource.pluralName}-admin-routing.module`, namedImports: [`${resource.className}AdminRoutingModule`] },
             { moduleSpecifier: `./${resource.pluralName}-list/${resource.pluralName}-list.component`, namedImports: [`${resource.className}ListComponent`] },
             { moduleSpecifier: `./${resource.name}-form/${resource.name}-form.component`, namedImports: [`${resource.className}FormComponent`] },
-            // Material Modules
             { moduleSpecifier: '@angular/material/table', namedImports: ['MatTableModule'] },
             { moduleSpecifier: '@angular/material/icon', namedImports: ['MatIconModule'] },
             { moduleSpecifier: '@angular/material/button', namedImports: ['MatButtonModule'] },
@@ -399,7 +309,6 @@ export class AdminGenerator {
             { moduleSpecifier: '@angular/material/select', namedImports: ['MatSelectModule'] },
             { moduleSpecifier: '@angular/material/checkbox', namedImports: ['MatCheckboxModule'] },
         ]);
-
         sourceFile.addClass({ name: `${resource.className}AdminModule`, isExported: true }).addDecorator({
             name: 'NgModule',
             arguments: [`{
@@ -411,7 +320,6 @@ export class AdminGenerator {
                 ]
             }`]
         });
-
         sourceFile.formatText();
     }
 }
