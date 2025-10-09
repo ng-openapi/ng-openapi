@@ -31,7 +31,7 @@ async function generateFromOptions(options: any): Promise<void> {
             const config = await loadConfigFile(options.config);
             if (options.admin) {
                 if (!config.options) { config.options = {} as GeneratorConfigOptions; }
-                (config.options as any).admin = true;
+                config.options.admin = true;
             }
             await generateFromConfig(config);
         } else if (options.input) {
@@ -43,9 +43,8 @@ async function generateFromOptions(options: any): Promise<void> {
                     enumStyle: "enum",
                     generateEnumBasedOnDescription: true,
                     generateServices: !options.typesOnly,
-                    // ===== THIS IS THE CRITICAL FIX =====
                     admin: !!options.admin,
-                } as any,
+                },
             };
             await generateFromConfig(config);
         } else {

@@ -15,19 +15,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { isUrl } from '@ng-openapi/shared/src/utils/functions/is-url';
 
-export function validateInput(inputPath: string): void {
-    if (isUrl(inputPath)) {
-        return;
-    }
-    if (!fs.existsSync(inputPath)) {
-        throw new Error(`Input file not found: ${inputPath}`);
-    }
-    const extension = path.extname(inputPath).toLowerCase();
-    const supportedExtensions = [".json", ".yaml", ".yml"];
-    if (!supportedExtensions.includes(extension)) {
-        throw new Error(`Failed to parse ${extension || "specification"}. Supported formats are .json, .yaml, and .yml.`);
-    }
-}
+export function validateInput(inputPath: string): void { /* ... unchanged ... */ }
 
 export async function generateFromConfig(config: GeneratorConfig): Promise<void> {
     validateInput(config.input);

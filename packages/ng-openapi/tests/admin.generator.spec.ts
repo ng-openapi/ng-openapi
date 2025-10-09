@@ -69,7 +69,7 @@ describe('AdminGenerator', () => {
         let formComponentHtml: string; let formComponentTs: string;
         beforeEach(async () => {
             const project = new Project({ useInMemoryFileSystem: true });
-            const generator = await setupGenerator(ultimateSpec, project, { options: { admin: { booleanType: 'slide-toggle' } } });
+            const generator = await setupGenerator(ultimateSpec, project, { options: { admin: { booleanType: 'slide-toggle' } as any } });
             await generator.generate('/output');
             formComponentHtml = project.getSourceFileOrThrow('/output/admin/servers/server-form/server-form.component.html').getFullText();
             formComponentTs = project.getSourceFileOrThrow('/output/admin/servers/server-form/server-form.component.ts').getFullText();
@@ -99,10 +99,18 @@ describe('AdminGenerator', () => {
         it("should generate a textarea from a string with textarea format", () => {
             expect(formComponentHtml).toContain('<textarea matInput');
         });
+
         it("should generate a FormControl with a pattern validator", () => {
-            // Correct regex: `\\\.` matches the literal `\.` in the source file.
-            const patternRegex = /'ipAddress':\s*new FormControl<CreateServer\['ipAddress']\s*\|\s*null>\(null,\s*{\s*validators:\s*\[Validators\.pattern\(\/\^\(\[0-9]{1,3}\\\.\){3}[0-9]{1,3}\$\/\)\]\s*\}\)/;
-            expect(formComponentTs).toMatch(patternRegex);
+            // This is the literal string expected in the generated file.
+            // The `\\.` is how a `\.` is represented inside a TypeScript regex literal.
+            // We use a simple string `toContain` check, which is more robust than a complex regex.
+            const expectedControlString = `'ipAddress': new FormControl<CreateServer['ipAddress'] | null>(null, { validators: [Validators.pattern(/^([0-9]{1,3}\\.){3}[0-9]{1,3}$/)] })`;
+
+            // Remove all whitespace from both the actual and expected strings for a robust comparison.
+            const normalizedActual = formComponentTs.replace(/\s/g, '');
+            const normalizedExpected = expectedControlString.replace(/\s/g, '');
+
+            expect(normalizedActual).toContain(normalizedExpected);
         });
     });
 
