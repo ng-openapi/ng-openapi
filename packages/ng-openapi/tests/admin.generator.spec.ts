@@ -75,32 +75,33 @@ describe('AdminGenerator', () => {
             formComponentTs = project.getSourceFileOrThrow('/output/admin/servers/server-form/server-form.component.ts').getFullText();
         });
 
-        it("should generate a MatDatepicker from `{ type: 'string', format: 'date' }`", () => {
+        it("should generate a MatDatepicker from a string with date format", () => {
             expect(formComponentHtml).toContain('mat-datepicker-toggle');
         });
-        it("should generate a MatButtonToggleGroup from `{ type: 'array', items: { enum: [...] } }`", () => {
+        it("should generate a MatButtonToggleGroup from an array with an enum", () => {
             expect(formComponentHtml).toContain('mat-button-toggle-group');
         });
-        it("should generate a MatRadioGroup from an `enum` with 4 or fewer options", () => {
+        it("should generate a MatRadioGroup from an enum with 4 or fewer options", () => {
             expect(formComponentHtml).toContain('mat-radio-group');
         });
-        it("should generate a MatSelect from an `enum` with more than 4 options", () => {
+        it("should generate a MatSelect from an enum with more than 4 options", () => {
             expect(formComponentHtml).toContain('mat-select');
         });
-        it("should generate MatSlideToggles from `{ type: 'boolean' }` when configured", () => {
+        it("should generate MatSlideToggles from a boolean when configured", () => {
             expect(formComponentHtml).toContain('mat-slide-toggle');
         });
-        it("should generate a MatChipList from `{ type: 'array', items: { type: 'string' } }`", () => {
+        it("should generate a MatChipList from a string array", () => {
             expect(formComponentHtml).toContain('mat-chip-grid');
         });
-        it("should generate a MatSlider from `{ type: 'integer', minimum: X, maximum: Y }`", () => {
+        it("should generate a MatSlider from an integer with min and max", () => {
             expect(formComponentHtml).toContain('mat-slider');
         });
-        it("should generate a <textarea> from `{ format: 'textarea' }`", () => {
+        it("should generate a textarea from a string with textarea format", () => {
             expect(formComponentHtml).toContain('<textarea matInput');
         });
-        it("should generate a MatInput with pattern validator from `{ pattern: '...' }`", () => {
-            const patternRegex = /'ipAddress':\s*\["",\s*\[Validators\.pattern\(\/\^\([0-9]{1,3}\\.\){3}[0-9]{1,3}\$\/\)]]/;
+        it("should generate a FormControl with a pattern validator", () => {
+            // Correct regex: `\\\.` matches the literal `\.` in the source file.
+            const patternRegex = /'ipAddress':\s*new FormControl<CreateServer\['ipAddress']\s*\|\s*null>\(null,\s*{\s*validators:\s*\[Validators\.pattern\(\/\^\(\[0-9]{1,3}\\\.\){3}[0-9]{1,3}\$\/\)\]\s*\}\)/;
             expect(formComponentTs).toMatch(patternRegex);
         });
     });
@@ -121,23 +122,23 @@ describe('AdminGenerator', () => {
         });
 
         it('should use the default value from a string property', () => {
-            expect(formComponentTs).toContain(`'name': ["Default Name", []]`);
+            expect(formComponentTs).toContain(`'name': new FormControl<CreateConfig['name'] | null>("Default Name")`);
         });
 
         it('should use the default value from a number property', () => {
-            expect(formComponentTs).toContain(`'retries': [3, []]`);
+            expect(formComponentTs).toContain(`'retries': new FormControl<CreateConfig['retries'] | null>(3)`);
         });
 
         it('should use the default value from a boolean property', () => {
-            expect(formComponentTs).toContain(`'isActive': [true, []]`);
+            expect(formComponentTs).toContain(`'isActive': new FormControl<CreateConfig['isActive'] | null>(true)`);
         });
 
         it('should use the default value from an array property', () => {
-            expect(formComponentTs).toContain(`'tags': [["initial", "default"], []]`);
+            expect(formComponentTs).toContain(`'tags': new FormControl<CreateConfig['tags'] | null>(["initial", "default"])`);
         });
 
-        it('should use a sane fallback for a property without a default value', () => {
-            expect(formComponentTs).toContain(`'description': ["", []]`);
+        it('should use null for a property without a default value', () => {
+            expect(formComponentTs).toContain(`'description': new FormControl<CreateConfig['description'] | null>(null)`);
         });
     });
 });
