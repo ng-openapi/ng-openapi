@@ -1,4 +1,4 @@
-import { GeneratorConfig, SwaggerParser, extractPaths, pascalCase, camelCase, PathInfo } from "@ng-openapi/shared";
+import { camelCase, extractPaths, GeneratorConfig, pascalCase, PathInfo, SwaggerParser } from "@ng-openapi/shared";
 import * as path from "path";
 import * as fs from "fs";
 import { Project } from "ts-morph";
@@ -315,16 +315,24 @@ export class ${resource.className}ListComponent {
                 const hint = p.description ? `<mat-hint>${p.description}</mat-hint>` : "";
                 const errors = [
                     p.required
-                        ? `<mat-error *ngIf="form.get('${p.name}')?.hasError('required')">This field is required.</mat-error>`
+                        ? `\n@if (form.get('${p.name}')?.hasError('required')) {
+    <mat-error>This field is required.</mat-error>
+}\n`
                         : "",
                     p.minLength
-                        ? `<mat-error *ngIf="form.get('${p.name}')?.hasError('minlength')">Must be at least ${p.minLength} characters long.</mat-error>`
+                        ? `\n@if (form.get('${p.name}')?.hasError('minlength')) {
+    <mat-error>Must be at least ${p.minLength} characters long.</mat-error>
+}\n`
                         : "",
                     p.maxLength
-                        ? `<mat-error *ngIf="form.get('${p.name}')?.hasError('maxlength')">Cannot exceed ${p.maxLength} characters.</mat-error>`
+                        ? `\n@if (form.get('${p.name}')?.hasError('maxlength')) {
+    <mat-error>Cannot exceed ${p.maxLength} characters.</mat-error>
+}\n`
                         : "",
                     p.pattern
-                        ? `<mat-error *ngIf="form.get('${p.name}')?.hasError('pattern')">Invalid format.</mat-error>`
+                        ? `\n@if (form.get('${p.name}')?.hasError('pattern')) {
+    <mat-error>Invalid format.</mat-error>
+}\n`
                         : "",
                 ]
                     .filter(Boolean)
@@ -337,19 +345,21 @@ export class ${resource.className}ListComponent {
                     case "slide-toggle":
                         materialModules.add("MatSlideToggleModule");
                         return `<mat-slide-toggle formControlName="${p.name}">${label}</mat-slide-toggle>`;
-                    case "radio-group":
+                    case "radio-group": {
                         materialModules.add("MatRadioModule");
                         const radioButtons = p.enumValues
                             ?.map((val) => `<mat-radio-button value="${val}">${val}</mat-radio-button>`)
                             .join("\n");
                         return `<div class="group-container"><label class="mat-body-strong">${label}</label><mat-radio-group formControlName="${p.name}">${radioButtons}</mat-radio-group>${hint}</div>`;
-                    case "select":
+                    }
+                    case "select": {
                         materialModules.add("MatSelectModule");
                         materialModules.add("MatFormFieldModule");
                         const options = p.enumValues
                             ?.map((val) => `  <mat-option value="${val}">${val}</mat-option>`)
                             .join("\n");
                         return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><mat-select formControlName="${p.name}">${options}</mat-select>${hint}${errors}</mat-form-field>`;
+                    }
                     case "slider":
                         materialModules.add("MatSliderModule");
                         return `<div class="group-container"><label class="mat-body-strong">${label}</label><mat-slider min="${p.min}" max="${p.max}" discrete="true" showTickMarks="true"><input matSliderThumb formControlName="${p.name}"></mat-slider>${hint}</div>`;
@@ -368,13 +378,14 @@ export class ${resource.className}ListComponent {
                         )}(item)">{{item}}<button matChipRemove><mat-icon>cancel</mat-icon></button></mat-chip-row>}</mat-chip-listbox></mat-chip-grid><input placeholder="New tag..." [matChipInputFor]="chipGrid${pascalCase(
                             p.name
                         )}" (matChipInputTokenEnd)="add${pascalCase(p.name)}($event)"/>${hint}</mat-form-field>`;
-                    case "button-toggle-group":
+                    case "button-toggle-group": {
                         materialModules.add("MatButtonToggleModule");
                         const toggles = p.enumValues
                             ?.map((val) => `<mat-button-toggle value="${val}">${val}</mat-button-toggle>`)
                             .join("\n");
                         return `<div class="group-container"><label class="mat-body-strong">${label}</label><mat-button-toggle-group formControlName="${p.name}" multiple>${toggles}</mat-button-toggle-group>${hint}</div>`;
-                    case "datepicker":
+                    }
+                    case "datepicker": {
                         materialModules.add("MatDatepickerModule");
                         materialModules.add("MatFormFieldModule");
                         materialModules.add("MatInputModule");
@@ -382,6 +393,7 @@ export class ${resource.className}ListComponent {
                         hasDatepicker = true;
                         const pickerId = `picker${pascalCase(p.name)}`;
                         return `<mat-form-field><mat-label>${label}</mat-label><input matInput [matDatepicker]="${pickerId}" formControlName="${p.name}"><mat-hint>MM/DD/YYYY</mat-hint><mat-datepicker-toggle matIconSuffix [for]="${pickerId}"></mat-datepicker-toggle><mat-datepicker #${pickerId}></mat-datepicker>${errors}</mat-form-field>`;
+                    }
                     case "textarea":
                         materialModules.add("MatFormFieldModule");
                         materialModules.add("MatInputModule");
