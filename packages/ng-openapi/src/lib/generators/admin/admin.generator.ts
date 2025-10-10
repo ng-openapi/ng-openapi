@@ -20,6 +20,7 @@ function getInitialValue(p: FormProperty): string {
         case "boolean": return "false";
         case "number": return "0";
         case "array": return "[]";
+        case "object": case "relationship": return "null"; // Objects and relations default to null
         case "string": case "enum": default: return JSON.stringify("");
     }
 }
@@ -54,6 +55,23 @@ function generateFormFieldsHTML(properties: FormProperty[], materialModules: Set
             p.maxLength ? `@if (form.get('${p.name}')?.hasError('maxlength')) { <mat-error>Cannot exceed ${p.maxLength} characters.</mat-error> }` : "",
             p.pattern ? `@if (form.get('${p.name}')?.hasError('pattern')) { <mat-error>Invalid format.</mat-error> }` : "",
         ].filter(Boolean).join("\n");
+
+        if (p.type === 'relationship') {
+            materialModules.add('MatSelectModule');
+            materialModules.add('MatFormFieldModule');
+            const signalName = `${p.relationResourceName}Items`;
+            const displayField = p.relationDisplayField || 'name';
+            const valueField = p.relationValueField || 'id';
+            return `<mat-form-field appearance="outline">
+  <mat-label>${label}</mat-label>
+  <mat-select formControlName="${p.name}" [compareWith]="compareById">
+    @for(item of ${signalName}(); track item.${valueField}) {
+      <mat-option [value]="item">{{ item.${displayField} }}</mat-option>
+    }
+  </mat-select>
+  ${hint}${errors}
+</mat-form-field>`;
+        }
 
         if (p.type === 'object' && p.nestedProperties) {
             materialModules.add('MatExpansionModule');
@@ -118,6 +136,7 @@ export class AdminGenerator {
     private readonly project: Project;
     private readonly parser: SwaggerParser;
     private readonly config: GeneratorConfig;
+    private allResources: Resource[] = []; // Catalog of all identified resources
 
     constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
         this.config = config;
@@ -135,13 +154,20 @@ export class AdminGenerator {
 
     async generate(outputRoot: string): Promise<void> {
         console.log("[ADMIN] Starting admin component generation...");
-        const resources = this.collectResources();
-        if (resources.length === 0) {
+        // First Pass: Collect all possible resources to build a catalog
+        this.allResources = this.collectAllResources();
+
+        if (this.allResources.length === 0) {
             console.warn("[ADMIN] No viable resources found. A resource to be generated needs at least a Create (POST) endpoint on a collection path that takes a single model body, identified by a common tag.");
             return;
         }
-        for (const resource of resources) {
+
+        // Second Pass: Generate components for each resource, using the full catalog to resolve relationships
+        for (const resource of this.allResources) {
             console.log(`[ADMIN] Generating UI for resource: "${resource.name}"...`);
+            // Enrich the resource with processed form properties, now with relationship info
+            resource.formProperties = this.processSchemaToFormProperties(this.parser.resolveReference(resource.createModelRef!), this.allResources);
+
             const adminDir = path.join(outputRoot, "admin", resource.pluralName);
             if (resource.operations.list) { this.generateModernListComponent(resource, adminDir); }
             if (resource.operations.create || resource.operations.update) { this.generateModernFormComponent(resource, adminDir); }
@@ -149,9 +175,9 @@ export class AdminGenerator {
         }
     }
 
-    public collectResources(): Resource[] {
+    private collectAllResources(): Resource[] {
         const paths = extractPaths(this.parser.getSpec().paths);
-        console.log(`[ADMIN] Analyzing ${paths.length} API paths by grouping them by tag...`);
+        console.log(`[ADMIN] Pass 1: Analyzing ${paths.length} API paths to build resource catalog...`);
         const tagGroups = new Map<string, PathInfo[]>();
         paths.forEach((p) => {
             const t = p.tags?.[0];
@@ -160,36 +186,37 @@ export class AdminGenerator {
                 tagGroups.get(t)!.push(p);
             }
         });
+
         const resources: Resource[] = [];
         for (const [tag, tagPaths] of tagGroups.entries()) {
             const isItemPath = (p: PathInfo) => /\{[^}]+\}$/.test(p.path);
             const createOp = tagPaths.find(p => p.method === 'POST' && !isItemPath(p) && (p.requestBody?.content?.['application/json']?.schema?.$ref || (p.parameters || []).find(param => param.in === 'body')?.schema?.$ref));
-            if (!createOp) {
-                console.log(`[ADMIN] Skipping tag "${tag}": No suitable Create (POST) endpoint found.`);
-                continue;
-            }
-            const bodyParam = (createOp.parameters || []).find(p => p.in === 'body');
-            const schemaObject = bodyParam?.schema || createOp.requestBody?.content?.['application/json']?.schema;
-            if (!schemaObject?.$ref) continue;
-            const refName = schemaObject.$ref.split('/').pop()!;
-            const finalSchema = this.parser.resolveReference(schemaObject.$ref);
-            if (!finalSchema) continue;
-            const modelName = refName.startsWith('Create') ? refName.replace(/^Create/, '') : refName;
-            const createModelName = refName;
+
+            const bodyParam = (createOp?.parameters || []).find(p => p.in === 'body');
+            const schemaObject = bodyParam?.schema || createOp?.requestBody?.content?.['application/json']?.schema;
+            const ref = schemaObject?.$ref;
+
             const listOp = tagPaths.find(p => p.method === 'GET' && !isItemPath(p) && p.responses?.['200']?.schema?.type === 'array');
+            const mainModelSchemaName = listOp?.responses?.['200']?.schema?.items?.$ref?.split('/')?.pop();
+
+            const refName = ref?.split('/').pop()!;
+            const modelName = mainModelSchemaName || (refName?.startsWith('Create') ? refName.replace(/^Create/, '') : refName);
+
             const readOp = tagPaths.find(p => p.method === 'GET' && isItemPath(p));
             const updateOp = tagPaths.find(p => (p.method === 'PUT' || p.method === 'PATCH') && isItemPath(p)) || tagPaths.find(p => p.method === 'PUT' && !isItemPath(p));
             const deleteOp = tagPaths.find(p => p.method === 'DELETE' && isItemPath(p));
             const getIdParamName = (op: PathInfo | undefined) => op?.parameters?.find(p => p.in === 'path')?.name || 'id';
             const singularTag = tag.endsWith('s') && !tag.endsWith('ss') ? tag.slice(0, -1) : tag;
+
             const resource: Resource = {
                 name: singularTag.toLowerCase(),
                 className: pascalCase(singularTag),
                 pluralName: plural(singularTag).toLowerCase(),
                 titleName: titleCase(singularTag),
                 serviceName: pascalCase(tag) + "Service",
-                modelName: pascalCase(modelName),
-                createModelName: pascalCase(createModelName),
+                modelName: pascalCase(modelName) || '',
+                createModelName: ref ? pascalCase(ref.split('/').pop()!) : '',
+                createModelRef: ref,
                 operations: {
                     list: listOp ? { methodName: this.getMethodName(listOp) } : undefined,
                     create: createOp ? { methodName: this.getMethodName(createOp), bodyParamName: bodyParam?.name } : undefined,
@@ -197,13 +224,24 @@ export class AdminGenerator {
                     update: updateOp ? { methodName: this.getMethodName(updateOp), idParamName: getIdParamName(updateOp), bodyParamName: (updateOp.parameters || []).find(p => p.in === 'body')?.name } : undefined,
                     delete: deleteOp ? { methodName: this.getMethodName(deleteOp), idParamName: getIdParamName(deleteOp) } : undefined,
                 },
-                formProperties: this.processSchemaToFormProperties(finalSchema),
-                listColumns: Object.keys(finalSchema.properties || {}).filter(key => finalSchema.properties[key].type !== 'object' && finalSchema.properties[key].type !== 'array'),
+                formProperties: [],
+                listColumns: [],
             };
-            resources.push(resource);
+            if(createOp || listOp) {
+                const schemaForColumns = this.parser.resolveReference(ref || listOp?.responses?.['200']?.schema?.items?.$ref);
+                if (schemaForColumns) {
+                    resource.listColumns = Object.keys(schemaForColumns.properties || {}).filter(key => {
+                        const propSchema = schemaForColumns.properties[key];
+                        return propSchema.type !== 'object' && propSchema.type !== 'array' && !propSchema.$ref;
+                    });
+                }
+            }
+            if (createOp || listOp) {
+                resources.push(resource);
+            }
         }
-        console.log(`[ADMIN] Identified ${resources.length} viable resources: ${resources.map((r) => r.name).join(", ") || "None"}.`);
-        return resources;
+        console.log(`[ADMIN] Pass 1 Complete: Identified ${resources.length} potential resources: ${resources.map((r) => r.name).join(", ") || "None"}.`);
+        return resources.filter(r => r.createModelRef);
     }
 
     private getMethodName(operation: any): string {
@@ -211,34 +249,47 @@ export class AdminGenerator {
         return `${camelCase(operation.path.replace(/[\/{}]/g, ""))}${pascalCase(operation.method)}`;
     }
 
-    private processSchemaToFormProperties(schema: any): FormProperty[] {
+    private processSchemaToFormProperties(schema: any, allResources: Resource[]): FormProperty[] {
         const properties: FormProperty[] = [];
         if (!schema || !schema.properties) return properties;
+
         for (const propName in schema.properties) {
             const prop = schema.properties[propName];
             const isRequired = schema.required?.includes(propName) ?? false;
 
-            if (prop.readOnly) {
-                console.log(`[ADMIN] Skipping readOnly property "${propName}".`);
+            if (prop.readOnly) continue;
+
+            const subSchema = prop.$ref ? this.parser.resolveReference(prop.$ref) : prop;
+            const refModelName = prop.$ref?.split('/').pop();
+            const relatedResource = allResources.find(r => r.modelName === refModelName && r.operations.list);
+
+            if (relatedResource) {
+                console.log(`[ADMIN] Detected relationship '${propName}' to resource '${relatedResource.name}'`);
+                properties.push({
+                    name: propName, type: 'relationship', required: isRequired,
+                    validators: isRequired ? ["Validators.required"] : [],
+                    relationResourceName: relatedResource.name, relationDisplayField: 'name', relationValueField: 'id',
+                    relationServiceName: relatedResource.serviceName, relationListMethodName: relatedResource.operations.list!.methodName,
+                    relationModelName: relatedResource.modelName,
+                });
                 continue;
             }
 
-            if (prop.type === 'object' || prop.$ref) {
-                const subSchema = prop.$ref ? this.parser.resolveReference(prop.$ref) : prop;
+            // ===== BUG FIX IS HERE: Correctly identify nested objects from $ref or inline =====
+            if (subSchema.type === 'object' && subSchema.properties) {
                 properties.push({
                     name: propName, type: 'object',
-                    nestedProperties: this.processSchemaToFormProperties(subSchema),
+                    nestedProperties: this.processSchemaToFormProperties(subSchema, allResources),
                     inputType: '', required: isRequired, validators: []
                 });
                 continue;
             }
 
             if (prop.type === 'array' && (prop.items?.$ref)) {
-                console.log(`[ADMIN] Processing array of objects property "${propName}".`);
-                const subSchema = this.parser.resolveReference(prop.items.$ref);
+                const arrayItemSchema = this.parser.resolveReference(prop.items.$ref);
                 properties.push({
                     name: propName, type: 'array_object',
-                    nestedProperties: this.processSchemaToFormProperties(subSchema),
+                    nestedProperties: this.processSchemaToFormProperties(arrayItemSchema, allResources),
                     inputType: '', required: isRequired, validators: []
                 });
                 continue;
@@ -246,10 +297,8 @@ export class AdminGenerator {
 
             const formProp: FormProperty = {
                 name: propName, type: "string", inputType: "text", required: isRequired,
-                validators: isRequired ? ["Validators.required"] : [],
-                description: prop.description, defaultValue: prop.default, minLength: prop.minLength,
-                maxLength: prop.maxLength, pattern: prop.pattern, enumValues: prop.enum,
-                min: prop.minimum, max: prop.maximum,
+                validators: isRequired ? ["Validators.required"] : [], description: prop.description, defaultValue: prop.default, minLength: prop.minLength,
+                maxLength: prop.maxLength, pattern: prop.pattern, enumValues: prop.enum, min: prop.minimum, max: prop.maximum,
             };
             if (prop.minLength) formProp.validators.push(`Validators.minLength(${prop.minLength})`);
             if (prop.maxLength) formProp.validators.push(`Validators.maxLength(${prop.maxLength})`);
@@ -274,6 +323,7 @@ export class AdminGenerator {
     }
 
     private generateModernListComponent(resource: Resource, dir: string) {
+        // ... Method is unchanged, but included for completeness ...
         const listDir = path.join(dir, `${resource.pluralName}-list`);
         const compName = `${resource.pluralName}-list.component`;
         const htmlFile = this.project.createSourceFile(path.join(listDir, `${compName}.html`), "", { overwrite: true });
@@ -325,6 +375,17 @@ export class ${resource.className}ListComponent {
 
         const formControlFields = generateFormControlsTS(resource.formProperties, resource.createModelName);
 
+        // ===== NEW: Logic for handling relationships =====
+        const relationshipProps = resource.formProperties.filter(p => p.type === 'relationship');
+        const relationServices = new Map<string, string>();
+        relationshipProps.forEach(p => relationServices.set(p.relationServiceName!, p.relationResourceName!));
+
+        const relationServiceInjections = Array.from(relationServices.entries()).map(([serviceName, resName]) => `private readonly ${resName}Svc = inject(${serviceName});`).join('\n  ');
+
+        const relationDataSignals = relationshipProps.map(p => `readonly ${p.relationResourceName}Items = signal<${p.relationModelName}[]>([]);`).join('\n  ');
+
+        const relationDataFetches = Array.from(relationServices.entries()).map(([_, resName]) => `this.${resName}Svc.${this.allResources.find(r => r.name === resName)!.operations.list!.methodName}({} as any).subscribe(data => this.${resName}Items.set(data as any[]));`).join('\n    ');
+
         const canEdit = resource.operations.read && resource.operations.update;
         const chipListMethods = chipListSignals.map(p => `readonly ${p.name}Signal = (this.form.get('${p.name}')! as any).valueChanges.pipe(startWith(this.form.get('${p.name}')!.value || []));\nadd${p.pascalName}(event: MatChipInputEvent): void { const value = (event.value || '').trim(); if (value) { const current = this.form.get('${p.name}')!.value; this.form.get('${p.name}')!.setValue([...new Set([...(current || []), value])]); } event.chipInput!.clear(); }\nremove${p.pascalName}(item: string): void { const current = this.form.get('${p.name}')!.value; this.form.get('${p.name}')!.setValue(current.filter((i: string) => i !== item)); }`).join("\n");
 
@@ -343,8 +404,7 @@ add${singularPascal}(): void { this.${p.name}.push(this.create${singularPascal}(
 remove${singularPascal}(index: number): void { this.${p.name}.removeAt(index); }`;
         }).join('\n\n');
 
-        // ===== BUG FIX IS HERE =====
-        let editModeLogic = `readonly isEditMode = computed(() => false); constructor() {}`;
+        let editModeLogic = `readonly isEditMode = computed(() => false); constructor() { ${relationDataFetches} }`;
         if (canEdit && resource.operations.read) {
             const formArrayPatchLogic = resource.formProperties
                 .filter(p => p.type === 'array_object' && p.nestedProperties)
@@ -360,7 +420,9 @@ remove${singularPascal}(index: number): void { this.${p.name}.removeAt(index); }
             delete (data as any).${p.name};`;
                 }).join('');
 
-            const constructorBody = `effect(() => {
+            const constructorBody = `
+    ${relationDataFetches}
+    effect(() => {
         const currentId = this.id();
         if (this.isEditMode() && currentId) {
           this.svc.${resource.operations.read!.methodName}({ ${resource.operations.read!.idParamName}: currentId } as any).subscribe(data => {
@@ -401,8 +463,11 @@ remove${singularPascal}(index: number): void { this.${p.name}.removeAt(index); }
         if (chipListSignals.length > 0) { specialImports.push(`import { startWith } from 'rxjs';`); specialImports.push(`import { MatChipInputEvent } from '@angular/material/chips';`); }
         if (componentProviders.has("provideNativeDateAdapter()")) { specialImports.push(`import { provideNativeDateAdapter } from '@angular/material/core';`); }
 
+        const allServiceNames = [resource.serviceName, ...Array.from(relationServices.keys())];
+        const allModelNames = [resource.createModelName, ...relationshipProps.map(p => p.relationModelName!)];
+
         const providerDecor = componentProviders.size > 0 ? `\n  providers: [${Array.from(componentProviders).join(", ")}],` : "";
-        const angularCoreImports = new Set(["Component", "inject", "computed"]);
+        const angularCoreImports = new Set(["Component", "inject", "computed", "signal"]);
         if (canEdit) { angularCoreImports.add("input"); angularCoreImports.add("effect"); }
         tsFile.addStatements(`/* eslint-disable */
 import { ${Array.from(angularCoreImports).join(", ")} } from '@angular/core';
@@ -411,8 +476,8 @@ import { FormControl, FormGroup, FormArray, Validators, ReactiveFormsModule } fr
 import { Router, ActivatedRoute } from '@angular/router';
 ${specialImports.join("\n")}
 ${materialImports}
-import { ${resource.serviceName} } from '../../../services';
-import { ${resource.createModelName} } from '../../../models';
+import { ${[...new Set(allServiceNames)].join(", ")} } from '../../../services';
+import { ${[...new Set(allModelNames)].join(", ")} } from '../../../models';
 
 @Component({
   selector: 'app-${resource.name}-form',
@@ -425,10 +490,15 @@ export class ${resource.className}FormComponent {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly svc = inject(${resource.serviceName});
+  ${relationServiceInjections}
   
+  ${relationDataSignals}
+
   readonly form = new FormGroup({
     ${formControlFields}
   });
+  
+  compareById = (o1: any, o2: any): boolean => o1?.id === o2?.id;
 
   ${editModeLogic}
   ${submitLogic}
@@ -441,6 +511,7 @@ export class ${resource.className}FormComponent {
     }
 
     private generateModernRoutes(resource: Resource, dir: string) {
+        // ... Method is unchanged, but included for completeness ...
         const filePath = path.join(dir, `${resource.pluralName}.routes.ts`);
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
         const routesName = `${resource.pluralName.toUpperCase()}_ROUTES`;
