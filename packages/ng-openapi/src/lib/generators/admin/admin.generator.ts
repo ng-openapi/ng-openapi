@@ -5,6 +5,8 @@ import { Project } from "ts-morph";
 import { FormProperty, Resource } from "./admin.types";
 import { plural, titleCase } from "./admin.helpers";
 
+// --- START: Helper Functions ---
+
 function renderTemplate(template: string, context: Record<string, any>): string {
     return template.replace(/\{\{(\w+)\}\}/g, (placeholder, key) =>
         context[key] !== undefined ? String(context[key]) : placeholder
@@ -25,11 +27,11 @@ function getInitialValue(p: FormProperty): string {
 function generateFormControlsTS(properties: FormProperty[], createModelName: string): string {
     return properties.map(p => {
         if (p.type === 'object' && p.nestedProperties) {
-            // Recurse for nested FormGroup
             const nestedControls = generateFormControlsTS(p.nestedProperties, `${createModelName}['${p.name}']`);
-            return `'${p.name}': new FormGroup({
-                ${nestedControls}
-            })`;
+            return `'${p.name}': new FormGroup({\n    ${nestedControls}\n})`;
+        } else if (p.type === 'array_object' && p.nestedProperties) {
+            const validators = p.required ? `, { validators: [Validators.required] }` : '';
+            return `'${p.name}': new FormArray([]${validators})`;
         } else {
             const initialValue = getInitialValue(p);
             const options: string[] = [];
@@ -47,10 +49,10 @@ function generateFormFieldsHTML(properties: FormProperty[], materialModules: Set
         const label = titleCase(p.name);
         const hint = p.description ? `<mat-hint>${p.description}</mat-hint>` : "";
         const errors = [
-            p.required ? `\n@if (form.get('${p.name}')?.hasError('required')) {\n    <mat-error>This field is required.</mat-error>\n}\n` : "",
-            p.minLength ? `\n@if (form.get('${p.name}')?.hasError('minlength')) {\n    <mat-error>Must be at least ${p.minLength} characters long.</mat-error>\n}\n` : "",
-            p.maxLength ? `\n@if (form.get('${p.name}')?.hasError('maxlength')) {\n    <mat-error>Cannot exceed ${p.maxLength} characters.</mat-error>\n}\n` : "",
-            p.pattern ? `\n@if (form.get('${p.name}')?.hasError('pattern')) {\n    <mat-error>Invalid format.</mat-error>\n}\n` : "",
+            p.required ? `@if (form.get('${p.name}')?.hasError('required')) { <mat-error>This field is required.</mat-error> }` : "",
+            p.minLength ? `@if (form.get('${p.name}')?.hasError('minlength')) { <mat-error>Must be at least ${p.minLength} characters long.</mat-error> }` : "",
+            p.maxLength ? `@if (form.get('${p.name}')?.hasError('maxlength')) { <mat-error>Cannot exceed ${p.maxLength} characters.</mat-error> }` : "",
+            p.pattern ? `@if (form.get('${p.name}')?.hasError('pattern')) { <mat-error>Invalid format.</mat-error> }` : "",
         ].filter(Boolean).join("\n");
 
         if (p.type === 'object' && p.nestedProperties) {
@@ -59,13 +61,49 @@ function generateFormFieldsHTML(properties: FormProperty[], materialModules: Set
             return `<mat-expansion-panel><mat-expansion-panel-header><mat-panel-title>${label}</mat-panel-title></mat-expansion-panel-header><div formGroupName="${p.name}" class="nested-form-group">${nestedHtml}</div></mat-expansion-panel>`;
         }
 
+        if (p.type === 'array_object' && p.nestedProperties) {
+            materialModules.add('MatExpansionModule');
+            materialModules.add('MatButtonModule');
+            materialModules.add('MatIconModule');
+            const singularName = p.name.endsWith('s') ? p.name.slice(0, -1) : p.name;
+            const nestedHtml = generateFormFieldsHTML(p.nestedProperties, materialModules, componentProviders, chipListSignals);
+            return `
+<div class="form-array-container">
+  <div class="form-array-header">
+    <h3>${label}</h3>
+    <button mat-flat-button color="primary" type="button" (click)="add${pascalCase(singularName)}()">
+      <mat-icon>add</mat-icon>
+      <span>Add ${titleCase(singularName)}</span>
+    </button>
+  </div>
+  <div formArrayName="${p.name}">
+    @if(${p.name}.controls.length === 0 && form.get('${p.name}')?.hasError('required')) {
+        <mat-error class="form-array-error">At least one ${titleCase(singularName)} is required.</mat-error>
+    }
+    @for(item of ${p.name}.controls; track $index) {
+      <mat-expansion-panel [expanded]="true" class="form-array-panel">
+        <mat-expansion-panel-header>
+          <mat-panel-title>${titleCase(singularName)} {{ $index + 1 }}</mat-panel-title>
+          <button mat-icon-button color="warn" type="button" (click)="remove${pascalCase(singularName)}($index)" matTooltip="Remove ${titleCase(singularName)}">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </mat-expansion-panel-header>
+        <div [formGroupName]="$index" class="nested-form-group">
+          ${nestedHtml}
+        </div>
+      </mat-expansion-panel>
+    }
+  </div>
+</div>`;
+        }
+
         switch (p.inputType) {
             case "checkbox": materialModules.add("MatCheckboxModule"); return `<mat-checkbox formControlName="${p.name}">${label}</mat-checkbox>`;
             case "slide-toggle": materialModules.add("MatSlideToggleModule"); return `<mat-slide-toggle formControlName="${p.name}">${label}</mat-slide-toggle>`;
             case "radio-group": { materialModules.add("MatRadioModule"); const radioButtons = p.enumValues?.map((val) => `<mat-radio-button value="${val}">${val}</mat-radio-button>`).join("\n"); return `<div class="group-container"><label class="mat-body-strong">${label}</label><mat-radio-group formControlName="${p.name}">${radioButtons}</mat-radio-group>${hint}</div>`; }
             case "select": { materialModules.add("MatSelectModule"); materialModules.add("MatFormFieldModule"); const options = p.enumValues?.map((val) => `  <mat-option value="${val}">${val}</mat-option>`).join("\n"); return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><mat-select formControlName="${p.name}">${options}</mat-select>${hint}${errors}</mat-form-field>`; }
             case "slider": materialModules.add("MatSliderModule"); return `<div class="group-container"><label class="mat-body-strong">${label}</label><mat-slider min="${p.min}" max="${p.max}" discrete="true" showTickMarks="true"><input matSliderThumb formControlName="${p.name}"></mat-slider>${hint}</div>`;
-            case "chip-list": materialModules.add("MatChipsModule"); materialModules.add("MatFormFieldModule"); materialModules.add("MatIconModule"); materialModules.add("MatInputModule"); chipListSignals.push({ name: p.name, pascalName: pascalCase(p.name) }); return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><mat-chip-grid #chipGrid${pascalCase(p.name)}><mat-chip-listbox aria-label="Tag selection">@for(item of ${p.name}(); track item){<mat-chip-row (removed)="remove${pascalCase(p.name)}(item)">{{item}}<button matChipRemove><mat-icon>cancel</mat-icon></button></mat-chip-row>}</mat-chip-listbox></mat-chip-grid><input placeholder="New tag..." [matChipInputFor]="chipGrid${pascalCase(p.name)}" (matChipInputTokenEnd)="add${pascalCase(p.name)}($event)"/>${hint}</mat-form-field>`;
+            case "chip-list": materialModules.add("MatChipsModule"); materialModules.add("MatFormFieldModule"); materialModules.add("MatIconModule"); materialModules.add("MatInputModule"); chipListSignals.push({ name: p.name, pascalName: pascalCase(p.name) }); return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><mat-chip-grid #chipGrid${pascalCase(p.name)}><mat-chip-listbox aria-label="Tag selection">@for(item of ${p.name}Signal(); track item){<mat-chip-row (removed)="remove${pascalCase(p.name)}(item)">{{item}}<button matChipRemove><mat-icon>cancel</mat-icon></button></mat-chip-row>}</mat-chip-listbox></mat-chip-grid><input placeholder="New tag..." [matChipInputFor]="chipGrid${pascalCase(p.name)}" (matChipInputTokenEnd)="add${pascalCase(p.name)}($event)"/>${hint}</mat-form-field>`;
             case "button-toggle-group": { materialModules.add("MatButtonToggleModule"); const toggles = p.enumValues?.map((val) => `<mat-button-toggle value="${val}">${val}</mat-button-toggle>`).join("\n"); return `<div class="group-container"><label class="mat-body-strong">${label}</label><mat-button-toggle-group formControlName="${p.name}" multiple>${toggles}</mat-button-toggle-group>${hint}</div>`; }
             case "datepicker": { materialModules.add("MatDatepickerModule"); materialModules.add("MatFormFieldModule"); materialModules.add("MatInputModule"); componentProviders.add("provideNativeDateAdapter()"); const pickerId = `picker${pascalCase(p.name)}`; return `<mat-form-field><mat-label>${label}</mat-label><input matInput [matDatepicker]="${pickerId}" formControlName="${p.name}"><mat-hint>MM/DD/YYYY</mat-hint><mat-datepicker-toggle matIconSuffix [for]="${pickerId}"></mat-datepicker-toggle><mat-datepicker #${pickerId}></mat-datepicker>${errors}</mat-form-field>`; }
             case "textarea": materialModules.add("MatFormFieldModule"); materialModules.add("MatInputModule"); return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><textarea matInput formControlName="${p.name}"></textarea>${hint}${errors}</mat-form-field>`;
@@ -73,6 +111,8 @@ function generateFormFieldsHTML(properties: FormProperty[], materialModules: Set
         }
     }).join("\n");
 }
+
+// --- END: Helper Functions ---
 
 export class AdminGenerator {
     private readonly project: Project;
@@ -176,9 +216,10 @@ export class AdminGenerator {
         if (!schema || !schema.properties) return properties;
         for (const propName in schema.properties) {
             const prop = schema.properties[propName];
+            const isRequired = schema.required?.includes(propName) ?? false;
 
             if (prop.readOnly) {
-                console.log(`[ADMIN] Skipping readOnly property "${propName}" in form generation.`);
+                console.log(`[ADMIN] Skipping readOnly property "${propName}".`);
                 continue;
             }
 
@@ -187,17 +228,22 @@ export class AdminGenerator {
                 properties.push({
                     name: propName, type: 'object',
                     nestedProperties: this.processSchemaToFormProperties(subSchema),
-                    inputType: '', required: schema.required?.includes(propName) ?? false, validators: []
+                    inputType: '', required: isRequired, validators: []
                 });
                 continue;
             }
 
-            if (prop.type === 'array' && (prop.items?.$ref || prop.items?.type === 'object')) {
-                console.log(`[ADMIN] Skipping complex array property "${propName}" in form generation.`);
+            if (prop.type === 'array' && (prop.items?.$ref)) {
+                console.log(`[ADMIN] Processing array of objects property "${propName}".`);
+                const subSchema = this.parser.resolveReference(prop.items.$ref);
+                properties.push({
+                    name: propName, type: 'array_object',
+                    nestedProperties: this.processSchemaToFormProperties(subSchema),
+                    inputType: '', required: isRequired, validators: []
+                });
                 continue;
             }
 
-            const isRequired = schema.required?.includes(propName) ?? false;
             const formProp: FormProperty = {
                 name: propName, type: "string", inputType: "text", required: isRequired,
                 validators: isRequired ? ["Validators.required"] : [],
@@ -270,31 +316,65 @@ export class ${resource.className}ListComponent {
 
         const fields = generateFormFieldsHTML(resource.formProperties, materialModules, componentProviders, chipListSignals);
 
-        materialModules.add("MatButtonModule"); materialModules.add("MatIconModule");
+        materialModules.add("MatButtonModule"); materialModules.add("MatIconModule"); materialModules.add("MatTooltipModule");
 
         htmlFile.insertText(0, renderTemplate(this.getTemplate("form.component.html.template"), { titleName: resource.titleName, formFieldsTemplate: fields }));
-        const cssContent = `:host { display: block; padding: 2rem; } .form-container { display: flex; flex-direction: column; gap: 0.5rem; max-width: 500px; } .nested-form-group { display: flex; flex-direction: column; gap: 0.5rem; padding-top: 1rem; border-left: 1px solid #ccc; padding-left: 1rem; margin-left: -1rem; } .action-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; } mat-checkbox, mat-slide-toggle { margin: 0.5rem 0; } .group-container { display: flex; flex-direction: column; margin: 0.5rem 0; } .group-container label { margin-bottom: 0.5rem; } mat-radio-group { display: flex; gap: 1rem; }`;
+
+        const cssContent = `:host { display: block; padding: 2rem; } .form-container { display: flex; flex-direction: column; gap: 1rem; max-width: 600px; } .nested-form-group { display: flex; flex-direction: column; gap: 0.5rem; padding-top: 1rem; } .form-array-container { display: flex; flex-direction: column; gap: 1rem; border: 1px solid #e0e0e0; padding: 1rem; border-radius: 4px; } .form-array-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; } .form-array-panel { margin-bottom: 1rem !important; } .form-array-error { font-size: 75%; } .action-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; } mat-checkbox, mat-slide-toggle { margin-bottom: 0.5rem; } .group-container { display: flex; flex-direction: column; } .group-container label { margin-bottom: 0.5rem; } mat-radio-group { display: flex; gap: 1rem; }`;
         cssFile.insertText(0, cssContent);
 
         const formControlFields = generateFormControlsTS(resource.formProperties, resource.createModelName);
 
         const canEdit = resource.operations.read && resource.operations.update;
-        const chipListMethods = chipListSignals.map(p => `
-readonly ${p.name} = (this.form.get('${p.name}')! as any).valueChanges.pipe(startWith(this.form.get('${p.name}')!.value || []));
-add${p.pascalName}(event: MatChipInputEvent): void { const value = (event.value || '').trim(); if (value) { const current = this.form.get('${p.name}')!.value as any[]; this.form.get('${p.name}')!.setValue([...new Set([...current, value])]); } event.chipInput!.clear(); }
-remove${p.pascalName}(item: string): void { const current = this.form.get('${p.name}')!.value as any[]; this.form.get('${p.name}')!.setValue(current.filter(i => i !== item)); }`).join("\n");
+        const chipListMethods = chipListSignals.map(p => `readonly ${p.name}Signal = (this.form.get('${p.name}')! as any).valueChanges.pipe(startWith(this.form.get('${p.name}')!.value || []));\nadd${p.pascalName}(event: MatChipInputEvent): void { const value = (event.value || '').trim(); if (value) { const current = this.form.get('${p.name}')!.value; this.form.get('${p.name}')!.setValue([...new Set([...(current || []), value])]); } event.chipInput!.clear(); }\nremove${p.pascalName}(item: string): void { const current = this.form.get('${p.name}')!.value; this.form.get('${p.name}')!.setValue(current.filter((i: string) => i !== item)); }`).join("\n");
 
-        const editModeLogic = (canEdit && resource.operations.read) ? `
-              readonly id = input<string | number>();
-              readonly isEditMode = computed(() => !!this.id());
-              constructor() {
-                effect(() => {
-                  const currentId = this.id();
-                  if (this.isEditMode() && currentId) {
-                    this.svc.${resource.operations.read!.methodName}({ ${resource.operations.read!.idParamName}: currentId } as any).subscribe(data => this.form.patchValue(data as any));
-                  }
-                });
-              }` : `readonly isEditMode = computed(() => false); constructor() {}`;
+        const formArrayMethods = resource.formProperties.filter(p => p.type === 'array_object' && p.nestedProperties).map(p => {
+            const singularName = p.name.endsWith('s') ? p.name.slice(0, -1) : p.name;
+            const singularPascal = pascalCase(singularName);
+            const formGroupStructure = generateFormControlsTS(p.nestedProperties!, `${resource.createModelName}['${p.name}'][0]`);
+            return `
+get ${p.name}(): FormArray { return this.form.get('${p.name}') as FormArray; }
+create${singularPascal}(): FormGroup {
+  return new FormGroup({
+    ${formGroupStructure}
+  });
+}
+add${singularPascal}(): void { this.${p.name}.push(this.create${singularPascal}()); }
+remove${singularPascal}(index: number): void { this.${p.name}.removeAt(index); }`;
+        }).join('\n\n');
+
+        // ===== BUG FIX IS HERE =====
+        let editModeLogic = `readonly isEditMode = computed(() => false); constructor() {}`;
+        if (canEdit && resource.operations.read) {
+            const formArrayPatchLogic = resource.formProperties
+                .filter(p => p.type === 'array_object' && p.nestedProperties)
+                .map(p => {
+                    const singularPascal = pascalCase(p.name.endsWith('s') ? p.name.slice(0, -1) : p.name);
+                    return `
+            this.${p.name}.clear();
+            (data as any).${p.name}?.forEach((item: any) => {
+              const formGroup = this.create${singularPascal}();
+              formGroup.patchValue(item as any);
+              this.${p.name}.push(formGroup);
+            });
+            delete (data as any).${p.name};`;
+                }).join('');
+
+            const constructorBody = `effect(() => {
+        const currentId = this.id();
+        if (this.isEditMode() && currentId) {
+          this.svc.${resource.operations.read!.methodName}({ ${resource.operations.read!.idParamName}: currentId } as any).subscribe(data => {
+            ${formArrayPatchLogic}
+            this.form.patchValue(data as any);
+          });
+        }
+      });`;
+
+            editModeLogic = `
+                  readonly id = input<string | number>();
+                  readonly isEditMode = computed(() => !!this.id());
+                  constructor() { ${constructorBody} }`;
+        }
 
         const createParam = resource.operations.create!.bodyParamName ? `${resource.operations.create!.bodyParamName}: formValue` : `body: formValue`;
         const updateParam = resource.operations.update?.bodyParamName ? `${resource.operations.update.bodyParamName}: formValue` : `body: formValue`;
@@ -302,6 +382,7 @@ remove${p.pascalName}(item: string): void { const current = this.form.get('${p.n
 
         const submitLogic = `
               onSubmit(): void {
+                this.form.markAllAsTouched();
                 if (this.form.invalid) return;
                 const formValue = this.form.getRawValue() as ${resource.createModelName};
                 const action$ = ${(canEdit && resource.operations.update) ? `this.isEditMode()
@@ -312,7 +393,8 @@ remove${p.pascalName}(item: string): void { const current = this.form.get('${p.n
                     this.router.navigate(navTarget, { relativeTo: this.route });
                 });
               }`;
-        const materialImportsMap = { MatFormFieldModule: "@angular/material/form-field", MatInputModule: "@angular/material/input", MatButtonModule: "@angular/material/button", MatIconModule: "@angular/material/icon", MatCheckboxModule: "@angular/material/checkbox", MatSlideToggleModule: "@angular/material/slide-toggle", MatSelectModule: "@angular/material/select", MatRadioModule: "@angular/material/radio", MatSliderModule: "@angular/material/slider", MatChipsModule: "@angular/material/chips", MatButtonToggleModule: "@angular/material/button-toggle", MatDatepickerModule: "@angular/material/datepicker", MatExpansionModule: "@angular/material/expansion" };
+
+        const materialImportsMap = { MatFormFieldModule: "@angular/material/form-field", MatInputModule: "@angular/material/input", MatButtonModule: "@angular/material/button", MatIconModule: "@angular/material/icon", MatCheckboxModule: "@angular/material/checkbox", MatSlideToggleModule: "@angular/material/slide-toggle", MatSelectModule: "@angular/material/select", MatRadioModule: "@angular/material/radio", MatSliderModule: "@angular/material/slider", MatChipsModule: "@angular/material/chips", MatButtonToggleModule: "@angular/material/button-toggle", MatDatepickerModule: "@angular/material/datepicker", MatExpansionModule: "@angular/material/expansion", MatTooltipModule: "@angular/material/tooltip" };
         const materialImports = Array.from(materialModules).map((mod) => `import { ${mod} } from '${materialImportsMap[mod as keyof typeof materialImportsMap]}';`).join("\n");
 
         const specialImports: string[] = [];
@@ -325,7 +407,7 @@ remove${p.pascalName}(item: string): void { const current = this.form.get('${p.n
         tsFile.addStatements(`/* eslint-disable */
 import { ${Array.from(angularCoreImports).join(", ")} } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 ${specialImports.join("\n")}
 ${materialImports}
@@ -352,6 +434,7 @@ export class ${resource.className}FormComponent {
   ${submitLogic}
   onCancel(): void { this.router.navigate(['..'], { relativeTo: this.route }); }
   ${chipListMethods}
+  ${formArrayMethods}
 }`);
         tsFile.formatText();
         htmlFile.saveSync(); cssFile.saveSync(); tsFile.saveSync();
