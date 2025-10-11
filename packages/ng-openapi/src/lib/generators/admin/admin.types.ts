@@ -13,6 +13,14 @@ export interface ResourceOperation {
     filterParameters?: FilterParameter[];
 }
 
+export interface ActionOperation {
+    label: string; // e.g., "Reboot Server"
+    methodName: string; // e.g., "serversidRebootPOST"
+    level: 'item' | 'collection';
+    path: string; // The raw path, e.g., /servers/{id}/reboot
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+}
+
 export interface Resource {
     name: string; // e.g. 'pet'
     pluralName: string; // e.g. 'pets'
@@ -22,6 +30,7 @@ export interface Resource {
     modelName: string; // e.g. 'Pet'
     createModelName: string; // e.g. 'CreatePet'
     createModelRef: string | undefined; // '#/components/schemas/CreatePet'
+    isEditable: boolean; // NEW: True if create or update ops exist
     operations: {
         list?: ResourceOperation;
         create?: ResourceOperation;
@@ -29,6 +38,7 @@ export interface Resource {
         update?: ResourceOperation;
         delete?: ResourceOperation;
     };
+    actions: ActionOperation[];
     formProperties: FormProperty[];
     listColumns: string[];
 }
