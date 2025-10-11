@@ -7,7 +7,7 @@ import { isUrl } from "../utils/functions/is-url";
 export class SwaggerParser {
     private readonly spec: SwaggerSpec;
 
-    private constructor(spec: SwaggerSpec, config: GeneratorConfig) {
+    public constructor(spec: SwaggerSpec, config: GeneratorConfig) {
         const isInputValid = config.validateInput?.(spec) ?? true;
         if (!isInputValid) {
             throw new Error("Swagger spec is not valid. Check your `validateInput` condition.");
@@ -152,6 +152,11 @@ export class SwaggerParser {
 
     resolveReference(ref: string): SwaggerDefinition | undefined {
         // Handle $ref like "#/definitions/User" or "#/components/schemas/User"
+
+        // If 'ref' is already a resolved object (not a string), just return it.
+        if (typeof ref !== 'string') {
+            return ref;
+        }
         const parts = ref.split("/");
         const definitionName = parts[parts.length - 1];
         return this.getDefinition(definitionName);

@@ -1,9 +1,8 @@
 // packages/ng-openapi/src/lib/generators/admin/admin.generator.ts
 
-import { GeneratorConfig, SwaggerDefinition, SwaggerParser } from "@ng-openapi/shared";
+import { GeneratorConfig, SwaggerParser } from "@ng-openapi/shared";
 import * as path from "path";
 import { Project } from "ts-morph";
-
 import { FormProperty, Resource } from "./admin.types";
 import { discoverAdminResources } from "./resource-discovery";
 import { writeListComponent } from "./component-writers/list-component.writer";
@@ -37,7 +36,7 @@ export class AdminGenerator {
 
             const modelForPropsRef = resource.createModelRef || (resource.operations.read ? Object.entries(this.parser.getSpec().components.schemas).find(([name]) => name === resource.modelName)?.[1] : null);
             if (modelForPropsRef) {
-                resource.formProperties = this.processSchemaToFormProperties(this.parser.resolveReference(modelForPropsRef as string));
+                resource.formProperties = this.processSchemaToFormProperties(this.parser.resolveReference(modelForPropsRef));
             }
 
             const adminDir = path.join(outputRoot, "admin");

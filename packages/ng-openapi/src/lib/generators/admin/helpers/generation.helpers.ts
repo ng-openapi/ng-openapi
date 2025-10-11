@@ -4,12 +4,13 @@ import { pascalCase, titleCase } from "@ng-openapi/shared";
 export function getInitialValue(p: FormProperty): string {
     if (p.defaultValue !== undefined) { return JSON.stringify(p.defaultValue); }
     if (!p.required) { return "null"; }
+    // For required fields without a default, provide a sensible non-null initial value
     switch (p.type) {
         case "boolean": return "false";
         case "number": return "0";
-        case "array": return "[]";
-        case "object": case "relationship": return "null";
-        case "string": case "enum": default: return JSON.stringify("");
+        case "array": case "array_object": return "[]";
+        case "object": case "relationship": return "null"; // Still may need null for objects
+        case "string": case "enum": default: return "''"; // Use empty string for required strings
     }
 }
 
@@ -25,9 +26,15 @@ export function generateFormControlsTS(properties: FormProperty[], createModelNa
             const initialValue = getInitialValue(p);
             const options: string[] = [];
             if (p.validators.length > 0) { options.push(`validators: [${p.validators.join(", ")}]`); }
-            if (p.required) { options.push("nonNullable: true"); }
+
+            // <<< FIX #2: A field is NOT nullable if it's required OR has a default value. >>>
+            const isNullable = !p.required && p.defaultValue === undefined;
+            if (!isNullable) { options.push("nonNullable: true"); }
+
             const optionsString = options.length > 0 ? `, { ${options.join(", ")} }` : "";
-            const typeArgument = `${createModelName}['${p.name}']${p.required ? "" : " | null"}`;
+
+            const typeArgument = `${createModelName}['${p.name}']${isNullable ? " | null" : ""}`;
+
             return `'${p.name}': new FormControl<${typeArgument}>(${initialValue}${optionsString})`;
         }
     }).join(',\n    ');
@@ -60,7 +67,7 @@ export function generateFormFieldsHTML(properties: FormProperty[], materialModul
   ${hint}${errors}
 </mat-form-field>`;
         }
-        
+
         if (p.type === 'object' && p.nestedProperties) {
             materialModules.add('MatExpansionModule');
             const nestedHtml = generateFormFieldsHTML(p.nestedProperties, materialModules, componentProviders, chipListSignals);
@@ -102,7 +109,7 @@ export function generateFormFieldsHTML(properties: FormProperty[], materialModul
   </div>
 </div>`;
         }
-        
+
         switch (p.inputType) {
             case "checkbox": materialModules.add("MatCheckboxModule"); return `<mat-checkbox formControlName="${p.name}">${label}</mat-checkbox>`;
             case "slide-toggle": materialModules.add("MatSlideToggleModule"); return `<mat-slide-toggle formControlName="${p.name}">${label}</mat-slide-toggle>`;

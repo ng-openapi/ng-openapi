@@ -1,3 +1,5 @@
+// packages/ng-openapi/src/lib/generators/admin/resource-discovery.ts
+
 import { SwaggerParser, extractPaths, PathInfo, pascalCase, camelCase, titleCase } from "@ng-openapi/shared";
 import { ActionOperation, FilterParameter, Resource } from "./admin.types";
 import { plural } from "./admin.helpers";
@@ -20,38 +22,46 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
 
     const resources: Resource[] = [];
     for (const [tag, tagPaths] of tagGroups.entries()) {
-        const isItemPath = (p: PathInfo) => /\{[^}]+\}$/.test(p.path);
-        const initialPaths = [...tagPaths];
+        const isItemPath = (p: PathInfo) => /\{[^}]+\}/.test(p.path);
+        const getResponseSchema = (p: PathInfo | undefined) => p?.responses?.['200']?.content?.['application/json']?.schema;
+
+        let listOp: PathInfo | undefined, createOp: PathInfo | undefined, readOp: PathInfo | undefined, updateOp: PathInfo | undefined, deleteOp: PathInfo | undefined;
         const usedPaths = new Set<string>();
 
-        const findAndMarkUsed = (predicate: (p: PathInfo) => boolean): PathInfo | undefined => {
-            const found = initialPaths.find(p => !usedPaths.has(`${p.method}:${p.path}`) && predicate(p));
-            if (found) { usedPaths.add(`${found.method}:${found.path}`); }
-            return found;
-        };
+        // <<< THE FINAL FIX IS HERE >>>
+        // Loosen the listOp definition to be any GET on a non-item path. This is the key.
+        listOp = tagPaths.find(p => p.method === 'GET' && !isItemPath(p));
+        if(listOp) usedPaths.add(`${listOp.method}:${listOp.path}`);
 
-        const createOp = findAndMarkUsed(p => p.method === 'POST' && !isItemPath(p) && (p.requestBody?.content?.['application/json']?.schema?.$ref || (p.parameters || []).find(param => param.in === 'body')?.schema?.$ref));
-        const listOp = findAndMarkUsed(p => p.method === 'GET' && !isItemPath(p) && p.responses?.['200']?.schema?.type === 'array');
-        const readOp = findAndMarkUsed(p => p.method === 'GET' && isItemPath(p));
-        const updateOp = findAndMarkUsed(p => (p.method === 'PUT' || p.method === 'PATCH') && isItemPath(p));
-        const deleteOp = findAndMarkUsed(p => p.method === 'DELETE' && isItemPath(p));
-        
-        const remainingPaths = initialPaths.filter(p => !usedPaths.has(`${p.method}:${p.path}`));
+        createOp = tagPaths.find(p => p.method === 'POST' && !isItemPath(p) && p.requestBody?.content?.['application/json']?.schema?.$ref);
+        if(createOp) usedPaths.add(`${createOp.method}:${createOp.path}`);
 
-        if (!listOp && !createOp && !readOp && remainingPaths.length === 0) {
+        // Make readOp more specific to avoid matching action paths like /items/{id}/action
+        readOp = tagPaths.find(p => p.method === 'GET' && isItemPath(p) && p.path.endsWith('}'));
+        if(readOp) usedPaths.add(`${readOp.method}:${readOp.path}`);
+
+        updateOp = tagPaths.find(p => (p.method === 'PUT' || p.method === 'PATCH') && isItemPath(p));
+        if(updateOp) usedPaths.add(`${updateOp.method}:${updateOp.path}`);
+
+        deleteOp = tagPaths.find(p => p.method === 'DELETE' && isItemPath(p));
+        if(deleteOp) usedPaths.add(`${deleteOp.method}:${deleteOp.path}`);
+
+        if (!listOp && !createOp && !readOp && tagPaths.every(p => usedPaths.has(`${p.method}:${p.path}`))) {
             continue;
         }
 
-        const actions: ActionOperation[] = remainingPaths.map(p => ({
-            label: titleCase(p.summary || p.operationId || p.path.split('/').pop()!.replace(/\{|\}/g, '')),
-            methodName: getMethodName(p),
-            level: isItemPath(p) ? 'item' : 'collection',
-            path: p.path,
-            method: p.method.toUpperCase() as any,
-        }));
+        // Actions are ONLY what's left over
+        const actions: ActionOperation[] = tagPaths
+            .filter(p => !usedPaths.has(`${p.method}:${p.path}`))
+            .map(p => ({
+                label: titleCase(p.summary || p.operationId || p.path.split('/').pop()!.replace(/\{|\}/g, '')),
+                methodName: getMethodName(p),
+                level: isItemPath(p) ? 'item' : 'collection',
+                path: p.path,
+                method: p.method.toUpperCase() as any,
+            }));
 
-        const bodyParam = (createOp?.parameters || []).find(p => p.in === 'body');
-        const schemaObject = bodyParam?.schema || createOp?.requestBody?.content?.['application/json']?.schema;
+        const schemaObject = createOp?.requestBody?.content?.['application/json']?.schema;
         const ref = schemaObject?.$ref;
 
         const filterParameters: FilterParameter[] = [];
@@ -67,14 +77,14 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
                 }
             });
         }
-        
-        const mainModelSchemaName = listOp?.responses?.['200']?.schema?.items?.$ref?.split('/')?.pop() || readOp?.responses?.['200']?.schema?.$ref?.split('/')?.pop();
+
+        const mainModelSchemaName = getResponseSchema(listOp)?.items?.$ref?.split('/')?.pop() || getResponseSchema(readOp)?.$ref?.split('/')?.pop();
         const refName = ref?.split('/').pop();
         const modelName = mainModelSchemaName || (refName?.startsWith('Create') ? refName.replace(/^Create/, '') : refName);
-        
+
         const getIdParamName = (op: PathInfo | undefined) => op?.parameters?.find(p => p.in === 'path')?.name || 'id';
         const singularTag = tag.endsWith('s') && !tag.endsWith('ss') ? tag.slice(0, -1) : tag;
-        
+
         const resource: Resource = {
             name: singularTag.toLowerCase(),
             className: pascalCase(singularTag),
@@ -87,9 +97,9 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
             isEditable: !!(createOp || updateOp),
             operations: {
                 list: listOp ? { methodName: getMethodName(listOp), filterParameters } : undefined,
-                create: createOp ? { methodName: getMethodName(createOp), bodyParamName: bodyParam?.name } : undefined,
+                create: createOp ? { methodName: getMethodName(createOp) } : undefined,
                 read: readOp ? { methodName: getMethodName(readOp), idParamName: getIdParamName(readOp) } : undefined,
-                update: updateOp ? { methodName: getMethodName(updateOp), idParamName: getIdParamName(updateOp), bodyParamName: (updateOp.parameters || []).find(p => p.in === 'body')?.name } : undefined,
+                update: updateOp ? { methodName: getMethodName(updateOp), idParamName: getIdParamName(updateOp) } : undefined,
                 delete: deleteOp ? { methodName: getMethodName(deleteOp), idParamName: getIdParamName(deleteOp) } : undefined,
             },
             actions,
@@ -97,7 +107,7 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
             listColumns: [],
         };
 
-        const modelRefForColumns = listOp?.responses?.['200']?.schema?.items?.$ref || readOp?.responses?.['200']?.schema?.$ref || ref;
+        const modelRefForColumns = getResponseSchema(listOp)?.items?.$ref || getResponseSchema(readOp)?.$ref || ref;
         if (modelRefForColumns) {
             const schemaForColumns = parser.resolveReference(modelRefForColumns);
             if (schemaForColumns && schemaForColumns.properties) {

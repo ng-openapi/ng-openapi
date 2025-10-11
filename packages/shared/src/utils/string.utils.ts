@@ -26,8 +26,10 @@ export function titleCase(str: string): string {
     if (!str) return '';
 
     return str
-        // Split on uppercase letters and underscores/dashes
-        .replace(/([A-Z])/g, ' $1')
+        // <<< THE FIX IS HERE >>>
+        // This regex correctly splits camelCase ("oneTwo" -> "one Two")
+        // without incorrectly splitting all-caps words ("SERVERS" remains "SERVERS").
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
         .replace(/[_-]/g, ' ')
         // Capitalize the first letter of each word
         .replace(/\b\w/g, char => char.toUpperCase())
