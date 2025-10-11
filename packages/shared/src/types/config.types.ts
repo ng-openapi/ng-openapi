@@ -3,25 +3,28 @@ import { HttpInterceptor } from "@angular/common/http";
 import { SwaggerSpec } from "./swagger.types";
 import { IPluginGenerator } from "./plugin.types";
 
+export interface GeneratorConfigOptions {
+    dateType: "string" | "Date";
+    enumStyle: "enum" | "union";
+    validation?: {
+        response?: boolean;
+    };
+    generateServices?: boolean;
+    generateEnumBasedOnDescription?: boolean;
+    customHeaders?: Record<string, string>;
+    responseTypeMapping?: {
+        [contentType: string]: "json" | "blob" | "arraybuffer" | "text";
+    };
+    customizeMethodName?: (operationId: string) => string;
+    admin?: boolean;
+}
+
 export interface GeneratorConfig {
     input: string;
     output: string;
     clientName?: string;
     validateInput?: (spec: SwaggerSpec) => boolean;
-    options: {
-        dateType: "string" | "Date";
-        enumStyle: "enum" | "union";
-        validation?: {
-            response?: boolean;
-        };
-        generateServices?: boolean;
-        generateEnumBasedOnDescription?: boolean;
-        customHeaders?: Record<string, string>;
-        responseTypeMapping?: {
-            [contentType: string]: "json" | "blob" | "arraybuffer" | "text";
-        };
-        customizeMethodName?: (operationId: string) => string;
-    };
+    options: GeneratorConfigOptions;
     compilerOptions?: {
         declaration?: boolean;
         target?: ScriptTarget;
