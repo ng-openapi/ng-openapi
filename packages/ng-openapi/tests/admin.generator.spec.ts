@@ -292,9 +292,13 @@ describe('AdminGenerator', () => {
             });
 
             it('should generate loadData and delete methods with correct service calls', () => {
-                expect(listTs).toContain('loadData() { this.svc.booksGET({} as any)');
-                // ===== THE FIX: Corrected booksIdDELETE to booksidDELETE =====
-                expect(listTs).toContain(`delete(id: number | string): void { if (confirm('Are you sure?')) { this.svc.booksidDELETE({ id: id } as any)`);
+                expect(listTs).toContain('loadData(): void');
+                expect(listTs).toContain('const cleanFilters = Object.entries');
+                expect(listTs).toContain('this.svc.booksGET(cleanFilters as any)');
+
+                expect(listTs).toContain('delete(id: number | string): void');
+                expect(listTs).toContain('this.svc.booksidDELETE({ id: id } as any)');
+                expect(listTs).toContain('.subscribe(() => this.loadData())');
             });
 
             it('should generate HTML with a mat-table and the correct columns', () => {
@@ -349,6 +353,80 @@ describe('AdminGenerator', () => {
                 expect(routesTs).toContain(`path: 'new', title: 'Create Book', loadComponent: () => import('./book-form/book-form.component')`);
                 expect(routesTs).toContain(`path: ':id', title: 'Edit Book', loadComponent: () => import('./book-form/book-form.component')`);
             });
+        });
+    });
+
+    describe('Form Component (Submission & Feedback)', () => {
+        let formTs: string;
+        beforeEach(async () => {
+            const project = new Project({ useInMemoryFileSystem: true });
+            const generator = await setupGenerator(relationshipSpec, project);
+            await generator.generate('/output');
+
+            formTs = project.getSourceFileOrThrow('/output/admin/books/book-form/book-form.component.ts').getFullText();
+        });
+
+        it('should inject MatSnackBar and import its module', () => {
+            expect(formTs).toContain(`import { MatSnackBar } from '@angular/material/snack-bar';`);
+            expect(formTs).toContain(`private readonly snackBar = inject(MatSnackBar);`);
+            // Use a regex to make the test resilient to module order changes
+            expect(formTs).toMatch(/imports:\s*\[[^\]]*MatSnackBarModule[^\]]*\]/);
+        });
+
+        it('should show a success snackbar on successful submission', () => {
+            const successBlock = `next: () => {
+                    this.snackBar.open('Book saved successfully.', 'Dismiss', { duration: 3000 });`;
+            expect(formTs.replace(/\s/g, '')).toContain(successBlock.replace(/\s/g, ''));
+        });
+
+        it('should show an error snackbar on failed submission', () => {
+            const errorBlock = `error: (err) => {
+                    console.error('Error saving book:', err);
+                    this.snackBar.open('Error: Book could not be saved.', 'Dismiss', { duration: 5000 });
+                  }`;
+            expect(formTs.replace(/\s/g, '')).toContain(errorBlock.replace(/\s/g, ''));
+        });
+
+        it('should show a validation warning if the form is invalid on submit', () => {
+            const invalidBlock = `if (this.form.invalid) {
+                  this.snackBar.open('Please correct the errors on the form.', 'Dismiss', { duration: 3000 });
+                  return;
+                }`;
+            expect(formTs.replace(/\s/g, '')).toContain(invalidBlock.replace(/\s/g, ''));
+        });
+    });
+
+    describe('Master Admin Routing', () => {
+        let masterRoutesTs: string;
+        let project: Project;
+
+        beforeEach(async () => {
+            project = new Project({ useInMemoryFileSystem: true });
+            const generator = await setupGenerator(relationshipSpec, project);
+            await generator.generate('/output');
+            masterRoutesTs = project.getSourceFileOrThrow('/output/admin/admin.routes.ts').getFullText();
+        });
+
+        it('should create the admin.routes.ts file', () => {
+            expect(project.getSourceFile('/output/admin/admin.routes.ts')).toBeDefined();
+        });
+
+        it('should contain a lazy-loaded route for each generated resource', () => {
+            expect(masterRoutesTs).toContain(`path: 'books'`);
+            expect(masterRoutesTs).toContain(`path: 'authors'`);
+            expect(masterRoutesTs).toContain(`path: 'publishers'`);
+        });
+
+        it('should generate create-only routes for resources without a list view', () => {
+            const publisherRoutes = project.getSourceFileOrThrow('/output/admin/publishers/publishers.routes.ts').getFullText();
+            expect(publisherRoutes).toContain(`path: '', redirectTo: 'new', pathMatch: 'full'`);
+            expect(publisherRoutes).toContain(`path: 'new', title: 'Create Publisher'`);
+            expect(publisherRoutes).not.toContain(`title: 'Publishers'`);
+        });
+
+        it('should add a default redirect to the first resource in the list', () => {
+            const redirectRoute = `{ path: '', redirectTo: 'books', pathMatch: 'full' }`;
+            expect(masterRoutesTs.replace(/\s/g, '')).toContain(redirectRoute.replace(/\s/g, ''));
         });
     });
 });

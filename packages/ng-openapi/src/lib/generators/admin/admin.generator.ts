@@ -2,7 +2,7 @@ import { GeneratorConfig, SwaggerParser, extractPaths, pascalCase, camelCase, Pa
 import * as path from "path";
 import * as fs from "fs";
 import { Project } from "ts-morph";
-import { FormProperty, Resource } from "./admin.types";
+import { FilterParameter, FormProperty, Resource } from "./admin.types";
 import { plural, titleCase } from "./admin.helpers";
 
 // --- START: Helper Functions ---
@@ -20,7 +20,7 @@ function getInitialValue(p: FormProperty): string {
         case "boolean": return "false";
         case "number": return "0";
         case "array": return "[]";
-        case "object": case "relationship": return "null"; // Objects and relations default to null
+        case "object": case "relationship": return "null";
         case "string": case "enum": default: return JSON.stringify("");
     }
 }
@@ -136,7 +136,7 @@ export class AdminGenerator {
     private readonly project: Project;
     private readonly parser: SwaggerParser;
     private readonly config: GeneratorConfig;
-    private allResources: Resource[] = []; // Catalog of all identified resources
+    private allResources: Resource[] = [];
 
     constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
         this.config = config;
@@ -154,30 +154,69 @@ export class AdminGenerator {
 
     async generate(outputRoot: string): Promise<void> {
         console.log("[ADMIN] Starting admin component generation...");
-        // First Pass: Collect all possible resources to build a catalog
         this.allResources = this.collectAllResources();
 
         if (this.allResources.length === 0) {
-            console.warn("[ADMIN] No viable resources found. A resource to be generated needs at least a Create (POST) endpoint on a collection path that takes a single model body, identified by a common tag.");
+            console.warn("[ADMIN] No viable resources found.");
             return;
         }
 
-        // Second Pass: Generate components for each resource, using the full catalog to resolve relationships
+        const generatedResources: Resource[] = [];
         for (const resource of this.allResources) {
             console.log(`[ADMIN] Generating UI for resource: "${resource.name}"...`);
-            // Enrich the resource with processed form properties, now with relationship info
-            resource.formProperties = this.processSchemaToFormProperties(this.parser.resolveReference(resource.createModelRef!), this.allResources);
+
+            if (resource.operations.create && resource.createModelRef) {
+                resource.formProperties = this.processSchemaToFormProperties(this.parser.resolveReference(resource.createModelRef), this.allResources);
+            }
 
             const adminDir = path.join(outputRoot, "admin", resource.pluralName);
-            if (resource.operations.list) { this.generateModernListComponent(resource, adminDir); }
-            if (resource.operations.create || resource.operations.update) { this.generateModernFormComponent(resource, adminDir); }
+            // We can generate a list component shell even for create-only resources
+            if (resource.operations.list || resource.operations.create) {
+                this.generateModernListComponent(resource, adminDir);
+            }
+            if (resource.operations.create || resource.operations.update) {
+                this.generateModernFormComponent(resource, adminDir);
+            }
             this.generateModernRoutes(resource, adminDir);
+            generatedResources.push(resource);
         }
+
+        this.generateMasterAdminRoutes(outputRoot, generatedResources);
+    }
+
+    private generateMasterAdminRoutes(outputRoot: string, resources: Resource[]) {
+        const adminRootDir = path.join(outputRoot, "admin");
+        const filePath = path.join(adminRootDir, "admin.routes.ts");
+        const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
+
+        console.log("[ADMIN] Generating master admin routes file...");
+
+        const routeObjects = resources.map(resource => {
+            const routesConstantName = `${resource.pluralName.toUpperCase()}_ROUTES`;
+            return `{
+        path: '${resource.pluralName}',
+        loadChildren: () => import('./${resource.pluralName}/${resource.pluralName}.routes').then(m => m.${routesConstantName})
+    }`;
+        });
+
+        if (resources.length > 0) {
+            routeObjects.unshift(`{ path: '', redirectTo: '${resources[0].pluralName}', pathMatch: 'full' }`);
+        }
+
+        sourceFile.addStatements(`/* eslint-disable */
+import { Routes } from '@angular/router';
+
+export const ADMIN_ROUTES: Routes = [
+    ${routeObjects.join(',\n    ')}
+];
+`);
+        sourceFile.formatText();
+        sourceFile.saveSync();
+        console.log(`[ADMIN] Master admin routes file created at ${filePath}`);
     }
 
     private collectAllResources(): Resource[] {
         const paths = extractPaths(this.parser.getSpec().paths);
-        console.log(`[ADMIN] Pass 1: Analyzing ${paths.length} API paths to build resource catalog...`);
         const tagGroups = new Map<string, PathInfo[]>();
         paths.forEach((p) => {
             const t = p.tags?.[0];
@@ -191,15 +230,32 @@ export class AdminGenerator {
         for (const [tag, tagPaths] of tagGroups.entries()) {
             const isItemPath = (p: PathInfo) => /\{[^}]+\}$/.test(p.path);
             const createOp = tagPaths.find(p => p.method === 'POST' && !isItemPath(p) && (p.requestBody?.content?.['application/json']?.schema?.$ref || (p.parameters || []).find(param => param.in === 'body')?.schema?.$ref));
+            const listOp = tagPaths.find(p => p.method === 'GET' && !isItemPath(p) && p.responses?.['200']?.schema?.type === 'array');
+
+            if (!listOp && !createOp) {
+                continue;
+            }
 
             const bodyParam = (createOp?.parameters || []).find(p => p.in === 'body');
             const schemaObject = bodyParam?.schema || createOp?.requestBody?.content?.['application/json']?.schema;
             const ref = schemaObject?.$ref;
 
-            const listOp = tagPaths.find(p => p.method === 'GET' && !isItemPath(p) && p.responses?.['200']?.schema?.type === 'array');
-            const mainModelSchemaName = listOp?.responses?.['200']?.schema?.items?.$ref?.split('/')?.pop();
+            const filterParameters: FilterParameter[] = [];
+            if (listOp?.parameters) {
+                listOp.parameters.filter(p => p.in === 'query').forEach((p) => {
+                    const schema = p.schema || p;
+                    if (schema.type === 'string' && schema.enum) {
+                        filterParameters.push({ name: p.name, inputType: 'select', enumValues: schema.enum });
+                    } else if (schema.type === 'string') {
+                        filterParameters.push({ name: p.name, inputType: 'text' });
+                    } else if (schema.type === 'number' || schema.type === 'integer') {
+                        filterParameters.push({ name: p.name, inputType: 'number' });
+                    }
+                });
+            }
 
-            const refName = ref?.split('/').pop()!;
+            const mainModelSchemaName = listOp?.responses?.['200']?.schema?.items?.$ref?.split('/')?.pop();
+            const refName = ref?.split('/').pop();
             const modelName = mainModelSchemaName || (refName?.startsWith('Create') ? refName.replace(/^Create/, '') : refName);
 
             const readOp = tagPaths.find(p => p.method === 'GET' && isItemPath(p));
@@ -214,11 +270,11 @@ export class AdminGenerator {
                 pluralName: plural(singularTag).toLowerCase(),
                 titleName: titleCase(singularTag),
                 serviceName: pascalCase(tag) + "Service",
-                modelName: pascalCase(modelName) || '',
+                modelName: pascalCase(modelName || '') || '',
                 createModelName: ref ? pascalCase(ref.split('/').pop()!) : '',
                 createModelRef: ref,
                 operations: {
-                    list: listOp ? { methodName: this.getMethodName(listOp) } : undefined,
+                    list: listOp ? { methodName: this.getMethodName(listOp), filterParameters } : undefined,
                     create: createOp ? { methodName: this.getMethodName(createOp), bodyParamName: bodyParam?.name } : undefined,
                     read: readOp ? { methodName: this.getMethodName(readOp), idParamName: getIdParamName(readOp) } : undefined,
                     update: updateOp ? { methodName: this.getMethodName(updateOp), idParamName: getIdParamName(updateOp), bodyParamName: (updateOp.parameters || []).find(p => p.in === 'body')?.name } : undefined,
@@ -227,21 +283,25 @@ export class AdminGenerator {
                 formProperties: [],
                 listColumns: [],
             };
-            if(createOp || listOp) {
-                const schemaForColumns = this.parser.resolveReference(ref || listOp?.responses?.['200']?.schema?.items?.$ref);
-                if (schemaForColumns) {
-                    resource.listColumns = Object.keys(schemaForColumns.properties || {}).filter(key => {
+
+            // ===== THE FIX IS HERE =====
+            // Decouple column generation from the listOp. Use listOp if present, otherwise fallback to createOp.
+            const modelRefForColumns = listOp?.responses?.['200']?.schema?.items?.$ref || ref;
+            if(modelRefForColumns) {
+                const schemaForColumns = this.parser.resolveReference(modelRefForColumns);
+                if (schemaForColumns && schemaForColumns.properties) {
+                    resource.listColumns = Object.keys(schemaForColumns.properties).filter(key => {
                         const propSchema = schemaForColumns.properties[key];
+                        // Also check for a top-level `id` property as it's common in list models.
+                        if (key === 'id' && propSchema.type) return true;
                         return propSchema.type !== 'object' && propSchema.type !== 'array' && !propSchema.$ref;
                     });
                 }
             }
-            if (createOp || listOp) {
-                resources.push(resource);
-            }
+            resources.push(resource);
         }
-        console.log(`[ADMIN] Pass 1 Complete: Identified ${resources.length} potential resources: ${resources.map((r) => r.name).join(", ") || "None"}.`);
-        return resources.filter(r => r.createModelRef);
+        console.log(`[ADMIN] Pass 1 Complete: Identified ${resources.length} potential scaffolding targets.`);
+        return resources;
     }
 
     private getMethodName(operation: any): string {
@@ -264,7 +324,6 @@ export class AdminGenerator {
             const relatedResource = allResources.find(r => r.modelName === refModelName && r.operations.list);
 
             if (relatedResource) {
-                console.log(`[ADMIN] Detected relationship '${propName}' to resource '${relatedResource.name}'`);
                 properties.push({
                     name: propName, type: 'relationship', required: isRequired,
                     validators: isRequired ? ["Validators.required"] : [],
@@ -275,7 +334,6 @@ export class AdminGenerator {
                 continue;
             }
 
-            // ===== BUG FIX IS HERE: Correctly identify nested objects from $ref or inline =====
             if (subSchema.type === 'object' && subSchema.properties) {
                 properties.push({
                     name: propName, type: 'object',
@@ -323,32 +381,194 @@ export class AdminGenerator {
     }
 
     private generateModernListComponent(resource: Resource, dir: string) {
-        // ... Method is unchanged, but included for completeness ...
         const listDir = path.join(dir, `${resource.pluralName}-list`);
         const compName = `${resource.pluralName}-list.component`;
         const htmlFile = this.project.createSourceFile(path.join(listDir, `${compName}.html`), "", { overwrite: true });
         const cssFile = this.project.createSourceFile(path.join(listDir, `${compName}.css`), "", { overwrite: true });
         const tsFile = this.project.createSourceFile(path.join(listDir, `${compName}.ts`), "", { overwrite: true });
 
-        const idKey = resource.operations.read?.idParamName || resource.operations.delete?.idParamName || 'id';
-        const createBtn = resource.operations.create ? `<button mat-flat-button color="primary" [routerLink]="['../new']"><mat-icon>add</mat-icon><span>Create ${resource.titleName}</span></button>` : '';
-        const editBtn = (resource.operations.read || resource.operations.update) ? `<button mat-icon-button [routerLink]="['../', element.${idKey}]" matTooltip="View/Edit ${resource.titleName}"><mat-icon>edit</mat-icon></button>` : '';
-        const deleteBtn = resource.operations.delete ? `<button mat-icon-button color="warn" (click)="delete(element.${idKey})" matTooltip="Delete ${resource.titleName}"><mat-icon>delete</mat-icon></button>` : '';
-        const columnsTemplate = resource.listColumns.map((col) => `<ng-container matColumnDef="${col}"><th mat-header-cell *matHeaderCellDef>${titleCase(col)}</th><td mat-cell *matCellDef="let element">{{element.${col}}}</td></ng-container>`).join("\n");
+        const hasListOp = !!resource.operations.list;
 
-        htmlFile.insertText(0, renderTemplate(this.getTemplate("list.component.html.template"), { ...resource, pluralTitleName: plural(resource.titleName), columnsTemplate, createButtonTemplate: createBtn, editButtonTemplate: editBtn, deleteButtonTemplate: deleteBtn }));
-        cssFile.insertText(0, `:host { display: block; padding: 2rem; } .header-actions { display: flex; justify-content: flex-end; margin-bottom: 1rem; } .mat-elevation-z8 { width: 100%; } .actions-cell { width: 120px; text-align: right; }`);
-        tsFile.addStatements(`/* eslint-disable */
-import { Component, inject, signal, WritableSignal } from '@angular/core'; import { CommonModule } from '@angular/common'; import { RouterModule } from '@angular/router'; import { MatTableModule } from '@angular/material/table'; import { MatIconModule } from '@angular/material/icon'; import { MatButtonModule } from '@angular/material/button'; import { MatTooltipModule } from '@angular/material/tooltip'; import { ${resource.serviceName} } from '../../../services'; import { ${resource.modelName} } from '../../../models';
-@Component({ selector: 'app-${resource.pluralName}-list', standalone: true, imports: [CommonModule, RouterModule, MatTableModule, MatIconModule, MatButtonModule, MatTooltipModule], templateUrl: './${compName}.html', styleUrls: ['./${compName}.css'] })
+        // --- Common variables ---
+        const createBtn = resource.operations.create ? `<button mat-flat-button color="primary" [routerLink]="['../new']"><mat-icon>add</mat-icon><span>Create ${resource.titleName}</span></button>` : '';
+        const pluralTitleName = plural(resource.titleName);
+
+        // --- Path 1: Create-Only Shell Component ---
+        if (!hasListOp) {
+            htmlFile.insertText(0, `
+<div class="header-actions">
+    <h2>${pluralTitleName}</h2>
+    ${createBtn}
+</div>
+<div class="no-data-message">
+    <p>This resource does not have a list view. You can create new items.</p>
+</div>
+        `);
+
+            cssFile.insertText(0, `:host { display: block; padding: 2rem; } .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; } .no-data-message { text-align: center; padding: 2rem; color: #666; }`);
+
+            tsFile.addStatements(`/* eslint-disable */
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+
+@Component({
+  selector: 'app-${resource.pluralName}-list',
+  standalone: true,
+  imports: [CommonModule, RouterModule, MatButtonModule, MatIconModule],
+  templateUrl: './${compName}.html',
+  styleUrls: ['./${compName}.css']
+})
+export class ${resource.className}ListComponent {}
+`);
+
+            // --- Path 2: Full List Component with Table and Filters ---
+        } else {
+            const filters = resource.operations.list!.filterParameters || [];
+
+            let filtersHtml = '';
+            if (filters.length > 0) {
+                const filterControlsHtml = filters.map(f => {
+                    const label = titleCase(f.name);
+                    if (f.inputType === 'select') {
+                        const options = f.enumValues!.map(val => `<mat-option value="${val}">${val}</mat-option>`).join('\n                        ');
+                        return `<mat-form-field appearance="outline">
+                        <mat-label>${label}</mat-label>
+                        <mat-select formControlName="${f.name}">
+                            <mat-option [value]="null">Any</mat-option>
+                            ${options}
+                        </mat-select>
+                    </mat-form-field>`;
+                    }
+                    const inputType = f.inputType === 'number' ? 'number' : 'text';
+                    return `<mat-form-field appearance="outline">
+                    <mat-label>${label}</mat-label>
+                    <input matInput formControlName="${f.name}" placeholder="Search by ${f.name}..." type="${inputType}">
+                </mat-form-field>`;
+                }).join('\n');
+
+                filtersHtml = `
+<div class="filters-container">
+    <form [formGroup]="filterForm" class="filters-form">
+        ${filterControlsHtml}
+    </form>
+    <button mat-stroked-button (click)="resetFilters()" matTooltip="Reset Filters">
+        <mat-icon>refresh</mat-icon>
+        <span>Reset</span>
+    </button>
+</div>`;
+            }
+
+            const idKey = resource.operations.read?.idParamName || resource.operations.delete?.idParamName || 'id';
+            const editBtn = (resource.operations.read || resource.operations.update) ? `<button mat-icon-button [routerLink]="['../', element.${idKey}]" matTooltip="View/Edit ${resource.titleName}"><mat-icon>edit</mat-icon></button>` : '';
+            const deleteBtn = resource.operations.delete ? `<button mat-icon-button color="warn" (click)="delete(element.${idKey})" matTooltip="Delete ${resource.titleName}"><mat-icon>delete</mat-icon></button>` : '';
+            const columnsTemplate = resource.listColumns.map((col) => `<ng-container matColumnDef="${col}"><th mat-header-cell *matHeaderCellDef>${titleCase(col)}</th><td mat-cell *matCellDef="let element">{{element.${col}}}</td></ng-container>`).join("\n");
+
+            const templateContext = { ...resource, pluralTitleName, columnsTemplate, createButtonTemplate: createBtn, editButtonTemplate: editBtn, deleteButtonTemplate: deleteBtn, filtersHtml };
+            htmlFile.insertText(0, renderTemplate(this.getTemplate("list.component.html.template"), templateContext));
+
+            const cssContent = `:host { display: block; padding: 2rem; } .header-actions { display: flex; justify-content: flex-end; margin-bottom: 1rem; } .mat-elevation-z8 { width: 100%; } .actions-cell { width: 120px; text-align: right; } .filters-container { display: flex; align-items: flex-start; gap: 1rem; padding: 1rem; background-color: #f9f9f9; border-radius: 4px; margin-bottom: 1rem; } .filters-form { display: flex; flex-wrap: wrap; gap: 1rem; flex-grow: 1; }`;
+            cssFile.insertText(0, cssContent);
+
+            const filterFormControls = filters.map(f => `'${f.name}': new FormControl(null)`).join(',\n      ');
+            const hasFilters = filters.length > 0;
+
+            const tsImports = new Set(['Component', 'inject', 'signal', 'WritableSignal']);
+            const angularCommonImports = new Set(['CommonModule']);
+            const angularRouterImports = new Set(['RouterModule']);
+            const materialModules: { [key: string]: string } = {
+                MatTableModule: '@angular/material/table',
+                MatIconModule: '@angular/material/icon',
+                MatButtonModule: '@angular/material/button',
+                MatTooltipModule: '@angular/material/tooltip',
+            };
+            const specialImports: string[] = [];
+            if (hasFilters) {
+                specialImports.push(`import { ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';`);
+                specialImports.push(`import { debounceTime, distinctUntilChanged } from 'rxjs';`);
+                materialModules['MatFormFieldModule'] = '@angular/material/form-field';
+                materialModules['MatInputModule'] = '@angular/material/input';
+                if (filters.some(f => f.inputType === 'select')) {
+                    materialModules['MatSelectModule'] = '@angular/material/select';
+                }
+            }
+
+            const componentImports = [
+                ...angularCommonImports,
+                ...angularRouterImports,
+                ...Object.keys(materialModules),
+                ...(hasFilters ? ['ReactiveFormsModule'] : [])
+            ];
+
+            const materialImportsStr = Object.entries(materialModules).map(([mod, path]) => `import { ${mod} } from '${path}';`).join('\n');
+
+            const tsContent = `/* eslint-disable */
+import { ${Array.from(tsImports).join(', ')} } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+${specialImports.join('\n')}
+${materialImportsStr}
+import { ${resource.serviceName} } from '../../../services';
+import { ${resource.modelName} } from '../../../models';
+
+@Component({
+  selector: 'app-${resource.pluralName}-list',
+  standalone: true,
+  imports: [${componentImports.join(', ')}],
+  templateUrl: './${compName}.html',
+  styleUrls: ['./${compName}.css']
+})
 export class ${resource.className}ListComponent {
-  private readonly svc = inject(${resource.serviceName}); readonly data: WritableSignal<${resource.modelName}[]> = signal([]); readonly displayedColumns: string[] = ['${resource.listColumns.join("', '")}', 'actions'];
-  constructor() { this.loadData(); }
-  loadData() { this.svc.${resource.operations.list!.methodName}({} as any).subscribe((d: any) => this.data.set(d)); }
-  ${resource.operations.delete ? `delete(id: number | string): void { if (confirm('Are you sure?')) { this.svc.${resource.operations.delete.methodName}({ ${resource.operations.delete.idParamName}: id } as any).subscribe(() => this.loadData()); } }` : ''}
-}`);
+  private readonly svc = inject(${resource.serviceName});
+  readonly data: WritableSignal<${resource.modelName}[]> = signal([]);
+  readonly displayedColumns: string[] = [${resource.listColumns.map(c => `'${c}'`).join(", ")}, 'actions'];
+  ${hasFilters ? `
+  readonly filterForm = new FormGroup({
+      ${filterFormControls}
+  });` : ''}
+
+  constructor() {
+    this.loadData();
+    ${hasFilters ? `
+    this.filterForm.valueChanges.pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe(() => this.loadData());` : ''}
+  }
+
+  loadData(): void {
+    const filters = ${hasFilters ? 'this.filterForm.getRawValue()' : '{}'};
+    // Clean up filters to remove null/undefined/empty string values
+    const cleanFilters = Object.entries(filters).reduce((acc, [key, value]) => {
+        if (value !== null && value !== undefined && value !== '') {
+            (acc as any)[key] = value;
+        }
+        return acc;
+    }, {});
+
+    this.svc.${resource.operations.list!.methodName}(cleanFilters as any).subscribe((d) => this.data.set(d as any[]));
+  }
+  ${hasFilters ? `
+  resetFilters(): void {
+    this.filterForm.reset();
+  }`: ''}
+  ${resource.operations.delete ? `
+  delete(id: number | string): void {
+    if (confirm('Are you sure?')) {
+      this.svc.${resource.operations.delete.methodName}({ ${resource.operations.delete.idParamName}: id } as any).subscribe(() => this.loadData());
+    }
+  }` : ''}
+}`;
+            tsFile.addStatements(tsContent);
+        }
+
+        // --- Finalization ---
         tsFile.formatText();
-        htmlFile.saveSync(); cssFile.saveSync(); tsFile.saveSync();
+        htmlFile.saveSync();
+        cssFile.saveSync();
+        tsFile.saveSync();
     }
 
     private generateModernFormComponent(resource: Resource, dir: string) {
@@ -366,7 +586,10 @@ export class ${resource.className}ListComponent {
 
         const fields = generateFormFieldsHTML(resource.formProperties, materialModules, componentProviders, chipListSignals);
 
-        materialModules.add("MatButtonModule"); materialModules.add("MatIconModule"); materialModules.add("MatTooltipModule");
+        materialModules.add("MatButtonModule");
+        materialModules.add("MatIconModule");
+        materialModules.add("MatTooltipModule");
+        materialModules.add("MatSnackBarModule");
 
         htmlFile.insertText(0, renderTemplate(this.getTemplate("form.component.html.template"), { titleName: resource.titleName, formFieldsTemplate: fields }));
 
@@ -375,7 +598,6 @@ export class ${resource.className}ListComponent {
 
         const formControlFields = generateFormControlsTS(resource.formProperties, resource.createModelName);
 
-        // ===== NEW: Logic for handling relationships =====
         const relationshipProps = resource.formProperties.filter(p => p.type === 'relationship');
         const relationServices = new Map<string, string>();
         relationshipProps.forEach(p => relationServices.set(p.relationServiceName!, p.relationResourceName!));
@@ -445,18 +667,29 @@ remove${singularPascal}(index: number): void { this.${p.name}.removeAt(index); }
         const submitLogic = `
               onSubmit(): void {
                 this.form.markAllAsTouched();
-                if (this.form.invalid) return;
+                if (this.form.invalid) {
+                  this.snackBar.open('Please correct the errors on the form.', 'Dismiss', { duration: 3000 });
+                  return;
+                }
                 const formValue = this.form.getRawValue() as ${resource.createModelName};
                 const action$ = ${(canEdit && resource.operations.update) ? `this.isEditMode()
                   ? this.svc.${resource.operations.update!.methodName}({ ${updateParam} ${updateIdParam} } as any)
                   :` : ""} this.svc.${resource.operations.create!.methodName}({ ${createParam} } as any);
-                action$.subscribe(() => {
+
+                action$.subscribe({
+                  next: () => {
+                    this.snackBar.open('${resource.titleName} saved successfully.', 'Dismiss', { duration: 3000 });
                     const navTarget = this.isEditMode() ? ['..'] : ['../'];
                     this.router.navigate(navTarget, { relativeTo: this.route });
+                  },
+                  error: (err) => {
+                    console.error('Error saving ${resource.name}:', err);
+                    this.snackBar.open('Error: ${resource.titleName} could not be saved.', 'Dismiss', { duration: 5000 });
+                  }
                 });
               }`;
 
-        const materialImportsMap = { MatFormFieldModule: "@angular/material/form-field", MatInputModule: "@angular/material/input", MatButtonModule: "@angular/material/button", MatIconModule: "@angular/material/icon", MatCheckboxModule: "@angular/material/checkbox", MatSlideToggleModule: "@angular/material/slide-toggle", MatSelectModule: "@angular/material/select", MatRadioModule: "@angular/material/radio", MatSliderModule: "@angular/material/slider", MatChipsModule: "@angular/material/chips", MatButtonToggleModule: "@angular/material/button-toggle", MatDatepickerModule: "@angular/material/datepicker", MatExpansionModule: "@angular/material/expansion", MatTooltipModule: "@angular/material/tooltip" };
+        const materialImportsMap = { MatFormFieldModule: "@angular/material/form-field", MatInputModule: "@angular/material/input", MatButtonModule: "@angular/material/button", MatIconModule: "@angular/material/icon", MatCheckboxModule: "@angular/material/checkbox", MatSlideToggleModule: "@angular/material/slide-toggle", MatSelectModule: "@angular/material/select", MatRadioModule: "@angular/material/radio", MatSliderModule: "@angular/material/slider", MatChipsModule: "@angular/material/chips", MatButtonToggleModule: "@angular/material/button-toggle", MatDatepickerModule: "@angular/material/datepicker", MatExpansionModule: "@angular/material/expansion", MatTooltipModule: "@angular/material/tooltip", MatSnackBarModule: "@angular/material/snack-bar" };
         const materialImports = Array.from(materialModules).map((mod) => `import { ${mod} } from '${materialImportsMap[mod as keyof typeof materialImportsMap]}';`).join("\n");
 
         const specialImports: string[] = [];
@@ -474,6 +707,7 @@ import { ${Array.from(angularCoreImports).join(", ")} } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
 ${specialImports.join("\n")}
 ${materialImports}
 import { ${[...new Set(allServiceNames)].join(", ")} } from '../../../services';
@@ -490,6 +724,7 @@ export class ${resource.className}FormComponent {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly svc = inject(${resource.serviceName});
+  private readonly snackBar = inject(MatSnackBar);
   ${relationServiceInjections}
   
   ${relationDataSignals}
@@ -511,7 +746,6 @@ export class ${resource.className}FormComponent {
     }
 
     private generateModernRoutes(resource: Resource, dir: string) {
-        // ... Method is unchanged, but included for completeness ...
         const filePath = path.join(dir, `${resource.pluralName}.routes.ts`);
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
         const routesName = `${resource.pluralName.toUpperCase()}_ROUTES`;
