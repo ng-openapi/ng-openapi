@@ -25,7 +25,7 @@ export default defineConfig([
                 copyFileSync(join("..", "..", "LICENSE"), join(distDir, "LICENSE"));
 
             const sourceTemplateDir = join('src', 'lib', 'generators', 'admin', 'templates');
-            const destTemplateDir = join(distDir, 'templates');
+            const destTemplateDir = join("..", "..", "dist", "packages", "templates");
             if (existsSync(sourceTemplateDir)) {
                 if (!existsSync(destTemplateDir)) mkdirSync(destTemplateDir, { recursive: true });
                 cpSync(sourceTemplateDir, destTemplateDir, { recursive: true });

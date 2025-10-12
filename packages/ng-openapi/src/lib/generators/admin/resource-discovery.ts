@@ -1,26 +1,36 @@
-// packages/ng-openapi/src/lib/generators/admin/resource-discovery.ts
 import { SwaggerParser, extractPaths, PathInfo, pascalCase, camelCase, titleCase } from "@ng-openapi/shared";
 import { ActionOperation, FilterParameter, Resource } from "./admin.types";
 import { plural } from "./admin.helpers";
 
 function getMethodName(operation: any): string {
     if (operation.operationId) return camelCase(operation.operationId);
-    // Fallback if operationId is missing
     const pathForMethod = operation.path.replace(/[\/{}]/g, '');
     return `${camelCase(pathForMethod)}${pascalCase(operation.method)}`;
+}
+
+// Helper to find the request body schema in both OpenAPI 3.x and Swagger 2.0
+function findRequestBodySchema(op: PathInfo | undefined) {
+    if (!op) return null;
+    // OpenAPI 3.x
+    if (op.requestBody?.content) {
+        return op.requestBody.content['application/json']?.schema
+            || op.requestBody.content['multipart/form-data']?.schema;
+    }
+    // Swagger 2.0
+    const bodyParam = op.parameters?.find(p => p.in === 'body');
+    if (bodyParam) return bodyParam.schema;
+
+    return null;
 }
 
 export function discoverAdminResources(parser: SwaggerParser): Resource[] {
     const paths = extractPaths(parser.getSpec().paths);
     const tagGroups = new Map<string, PathInfo[]>();
 
-    // Group all paths by their primary tag
     paths.forEach((p) => {
         const tag = p.tags?.[0];
-        if (tag && !tag.includes("_")) { // Ignore tags with underscores
-            if (!tagGroups.has(tag)) {
-                tagGroups.set(tag, []);
-            }
+        if (tag && !tag.includes("_")) {
+            if (!tagGroups.has(tag)) tagGroups.set(tag, []);
             tagGroups.get(tag)!.push(p);
         }
     });
@@ -30,7 +40,7 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
         const isItemPath = (p: PathInfo) => /\{[^}]+\}/.test(p.path);
         const getResponseSchema = (p: PathInfo | undefined) => p?.responses?.['200']?.content?.['application/json']?.schema;
         const getRequestContentType = (p: PathInfo | undefined): 'multipart/form-data' | 'application/json' => {
-            if (p?.requestBody?.content?.['multipart/form-data']) return 'multipart/form-data';
+            if (p?.requestBody?.content?.['multipart/form-data'] || p?.parameters?.some(param => param.in === 'formData')) return 'multipart/form-data';
             return 'application/json';
         }
         const getIdParamName = (op: PathInfo | undefined) => op?.parameters?.find(p => p.in === 'path')?.name || 'id';
@@ -38,28 +48,26 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
         let listOp: PathInfo | undefined, createOp: PathInfo | undefined, readOp: PathInfo | undefined, updateOp: PathInfo | undefined, deleteOp: PathInfo | undefined;
         const usedPaths = new Set<string>();
 
-        // Identify standard CRUD operations
         listOp = tagPaths.find(p => p.method === 'GET' && !isItemPath(p));
-        if (listOp) usedPaths.add(`${listOp.method}:${listOp.path}`);
+        if(listOp) usedPaths.add(`${listOp.method}:${listOp.path}`);
 
-        createOp = tagPaths.find(p => p.method === 'POST' && !isItemPath(p) && p.requestBody?.content);
-        if (createOp) usedPaths.add(`${createOp.method}:${createOp.path}`);
+        // Updated check to be Swagger 2.0 compatible
+        createOp = tagPaths.find(p => p.method === 'POST' && !isItemPath(p) && findRequestBodySchema(p));
+        if(createOp) usedPaths.add(`${createOp.method}:${createOp.path}`);
 
         readOp = tagPaths.find(p => p.method === 'GET' && isItemPath(p) && p.path.endsWith('}'));
-        if (readOp) usedPaths.add(`${readOp.method}:${readOp.path}`);
+        if(readOp) usedPaths.add(`${readOp.method}:${readOp.path}`);
 
         updateOp = tagPaths.find(p => (p.method === 'PUT' || p.method === 'PATCH') && isItemPath(p));
-        if (updateOp) usedPaths.add(`${updateOp.method}:${updateOp.path}`);
+        if(updateOp) usedPaths.add(`${updateOp.method}:${updateOp.path}`);
 
         deleteOp = tagPaths.find(p => p.method === 'DELETE' && isItemPath(p));
-        if (deleteOp) usedPaths.add(`${deleteOp.method}:${deleteOp.path}`);
+        if(deleteOp) usedPaths.add(`${deleteOp.method}:${deleteOp.path}`);
 
-        // If no standard operations are found and all paths were non-standard actions, skip this tag.
         if (!listOp && !createOp && !readOp && tagPaths.every(p => usedPaths.has(`${p.method}:${p.path}`))) {
             continue;
         }
 
-        // Any remaining paths are treated as custom actions
         const actions: ActionOperation[] = tagPaths
             .filter(p => !usedPaths.has(`${p.method}:${p.path}`))
             .map(p => ({
@@ -71,8 +79,7 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
                 idParamName: isItemPath(p) ? getIdParamName(p) : undefined,
             }));
 
-        const createOpContent = createOp?.requestBody?.content || {};
-        const schemaObject = createOpContent['application/json']?.schema || createOpContent['multipart/form-data']?.schema;
+        const schemaObject = findRequestBodySchema(createOp);
         const ref = schemaObject?.$ref;
 
         const listOpParams = listOp?.parameters?.filter(p => p.in === 'query').map(p => p.name) ?? [];

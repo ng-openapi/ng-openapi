@@ -15,7 +15,7 @@ export class AdminGenerator {
     private allResources: Resource[] = [];
     private customValidatorsCreated = false;
 
-    constructor(parser: SwaggerParser, project: Project, config: Generatorconfig) {
+    constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
         this.config = config;
         this.project = project;
         this.parser = parser;
@@ -30,15 +30,30 @@ export class AdminGenerator {
             return;
         }
 
+        const allDefinitions = this.parser.getDefinitions();
+
         const generatedResources: Resource[] = [];
         for (const resource of this.allResources) {
             console.log(`[ADMIN] Generating UI for resource: "${resource.name}"...`);
 
-            const modelForPropsRef = resource.createModelRef || (resource.operations.read ? Object.entries(this.parser.getSpec().components.schemas).find(([name]) => name === resource.modelName)?.[1] : null);
+            const modelForPropsRef = resource.createModelRef
+                || (resource.operations.read ? Object.entries(allDefinitions).find(([name]) => name === resource.modelName)?.[1] : null);
+
+            //
+            // THE DEFINITIVE FIX IS HERE
+            // This block now correctly handles all cases for finding and resolving the schema.
+            //
             if (modelForPropsRef) {
-                resource.formProperties = this.processSchemaToFormProperties(this.parser.resolveReference(modelForPropsRef));
+                let schemaToProcess: any;
+                if (typeof modelForPropsRef === 'string') {
+                    // It's a $ref string like '#/definitions/CreateWidget'
+                    schemaToProcess = this.parser.resolveReference(modelForPropsRef);
+                } else {
+                    // It's a schema object, which might itself be a reference
+                    schemaToProcess = modelForPropsRef.$ref ? this.parser.resolveReference(modelForPropsRef.$ref) : modelForPropsRef;
+                }
+                resource.formProperties = this.processSchemaToFormProperties(schemaToProcess);
             } else {
-                // FIX: If there's no schema, ensure formProperties is an empty array to prevent crashes.
                 resource.formProperties = [];
             }
 
@@ -109,7 +124,7 @@ export class AdminGenerator {
                 validators.push(`CustomValidators.multipleOf(${prop.multipleOf})`);
             }
 
-            if (prop.type === 'string' && prop.format === 'binary') {
+            if (prop.type === 'file' || (prop.type === 'string' && prop.format === 'binary')) {
                 properties.push({ name: propName, type: 'file', inputType: 'file', required: isRequired, validators, description: prop.description });
                 continue;
             }
@@ -122,7 +137,7 @@ export class AdminGenerator {
                 properties.push({
                     name: propName, type: 'relationship', required: isRequired, validators,
                     relationResourceName: relatedResource.name,
-                    relationDisplayField: 'name', // Assuming 'name' is a safe default
+                    relationDisplayField: 'name',
                     relationValueField: 'id',
                     relationServiceName: relatedResource.serviceName,
                     relationListMethodName: relatedResource.operations.list!.methodName,

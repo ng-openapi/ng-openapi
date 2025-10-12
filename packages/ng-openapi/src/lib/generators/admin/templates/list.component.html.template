@@ -9,9 +9,11 @@
 {{filtersHtml}}
 
 <div class="table-container mat-elevation-z8">
-  <div class="loading-shade" *ngIf="isLoading()">
-    <mat-spinner></mat-spinner>
-  </div>
+  @if (isLoading()) {
+    <div class="loading-shade">
+      <mat-spinner></mat-spinner>
+    </div>
+  }
 
   <table mat-table [dataSource]="data()" matSort (matSortChange)="onSortChange()">
     {{columnsTemplate}}

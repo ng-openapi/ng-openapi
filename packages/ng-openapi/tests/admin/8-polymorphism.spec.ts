@@ -43,7 +43,7 @@ describe('Integration: OpenAPI Polymorphism (oneOf) Generation', () => {
         expect(formHtml).toContain(`<mat-option [value]="opt">{{ opt }}</mat-option>`);
     });
 
-    it('should generate an ngSwitch to dynamically show sub-forms', () => {
+    it('should generate an @switch to dynamically show sub-forms', () => {
         // FIX: Test now looks for the new @switch syntax.
         expect(formHtml).toContain(`@switch (form.get('item.typeSelector')?.value)`);
         expect(formHtml).toContain(`@case ('Cat')`);

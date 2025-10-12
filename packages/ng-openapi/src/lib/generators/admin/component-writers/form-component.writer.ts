@@ -170,8 +170,8 @@ export class ${pascalCase(resource.name)}FormComponent {
     })` : 'null as any'};
     compareById = (o1: any, o2: any): boolean => o1?.id === o2?.id;
     
-    ${resource.operations.read ? effectLogic : ''}
-    ${isEditable && polymorphicProps.length > 0 ? constructorLogic : (isEditable ? 'constructor() {}' : '')}
+    ${(resource.operations.read && isEditable) ? effectLogic : ''}
+    ${isEditable ? constructorLogic : ''}
     ${isEditable ? onSubmitLogic : ''}
     onCancel(): void { this.router.navigate(['..'], { relativeTo: this.route }); }
     ${isEditable ? formArrayChipHelpers : ''}
