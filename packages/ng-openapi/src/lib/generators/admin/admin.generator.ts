@@ -65,6 +65,15 @@ export class AdminGenerator {
 
             if (prop.readOnly) continue;
 
+            if (prop.type === 'string' && prop.format === 'binary') {
+                properties.push({
+                    name: propName, type: 'file', inputType: 'file', required: isRequired,
+                    validators: isRequired ? ["Validators.required"] : [],
+                    description: prop.description,
+                });
+                continue;
+            }
+
             const subSchema = prop.$ref ? this.parser.resolveReference(prop.$ref) : prop;
             const refModelName = prop.$ref?.split('/').pop();
             const relatedResource = this.allResources.find(r => r.modelName === refModelName && r.operations.list);

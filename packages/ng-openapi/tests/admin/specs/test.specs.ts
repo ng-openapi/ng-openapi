@@ -152,8 +152,43 @@ export const securitySpecObj = {
     }
 };
 
+const petstoreUploadSpecObj = {
+    openapi: '3.0.0',
+    info: { ...info, title: 'File Upload API' },
+    paths: {
+        '/pets': {
+            get: { tags: ['Pets'], operationId: 'listPets', responses: { '200': { content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Pet' } } } } } } },
+            post: {
+                tags: ['Pets'],
+                operationId: 'createPet',
+                requestBody: {
+                    content: {
+                        'multipart/form-data': {
+                            schema: { $ref: '#/components/schemas/CreatePet' }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    components: {
+        schemas: {
+            Pet: { type: 'object', properties: { id: { type: 'integer' }, name: { type: 'string' } } },
+            CreatePet: {
+                type: 'object',
+                required: ['name', 'photo'],
+                properties: {
+                    name: { type: 'string' },
+                    photo: { type: 'string', format: 'binary', description: 'The pet\'s photo' }
+                }
+            }
+        }
+    }
+};
+
 export const basicControlsSpec = JSON.stringify(basicControlsSpecObj);
 export const advancedStructuresSpec = JSON.stringify(advancedStructuresSpecObj);
 export const defaultValueSpec = JSON.stringify(defaultValueSpecObj);
 export const fullE2ESpec = JSON.stringify(fullE2ESpecObj);
 export const securitySpec = JSON.stringify(securitySpecObj);
+export const petstoreUploadSpec = JSON.stringify(petstoreUploadSpecObj);

@@ -77,7 +77,7 @@ ${itemActionsButtons}
 }`;
     htmlFile.insertText(0, formTemplate);
 
-    const cssContent = `:host { display: block; padding: 2rem; } .form-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; } .item-actions { display: flex; gap: 0.5rem; } .form-container, .details-list { display: flex; flex-direction: column; gap: 1rem; max-width: 600px; } .details-list { gap: 1.5rem; } .detail-item dt { font-weight: bold; color: #666; margin-bottom: 0.25rem; } .detail-item dd { margin-left: 0; font-size: 1.1em; } .action-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }`;
+    const cssContent = `:host { display: block; padding: 2rem; } .form-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; } .item-actions { display: flex; gap: 0.5rem; } .form-container, .details-list { display: flex; flex-direction: column; gap: 1rem; max-width: 600px; } .details-list { gap: 1.5rem; } .detail-item dt { font-weight: bold; color: #666; margin-bottom: 0.25rem; } .detail-item dd { margin-left: 0; font-size: 1.1em; } .action-buttons { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; } .file-input-control { display: flex; align-items: center; gap: 1rem; } .file-name { color: #666; font-style: italic; } .hidden-file-input { display: none; }`;
     cssFile.insertText(0, cssContent);
 
     const relationshipProps = resource.formProperties.filter(p => p.type === 'relationship');
@@ -88,6 +88,14 @@ ${itemActionsButtons}
     const relationDataFetches = Array.from(relationServices.entries()).map(([_, resName]) => `this.${resName}Svc.${allResources.find(r => r.name === resName)!.operations.list!.methodName}({} as any).subscribe(data => this.${resName}Items.set(data as any[]));`).join('\n    ');
 
     const chipListMethods = chipListSignals.map(p => `readonly ${p.name}Signal = (this.form.get('${p.name}')! as any).valueChanges.pipe(startWith(this.form.get('${p.name}')!.value || []));\nadd${p.pascalName}(event: MatChipInputEvent): void { const value = (event.value || '').trim(); if (value) { const current = this.form.get('${p.name}')!.value; this.form.get('${p.name}')!.setValue([...new Set([...(current || []), value])]); } event.chipInput!.clear(); }\nremove${p.pascalName}(item: string): void { const current = this.form.get('${p.name}')!.value; this.form.get('${p.name}')!.setValue(current.filter((i: string) => i !== item)); }`).join("\n");
+    const fileInputMethod = resource.formProperties.some(p => p.type === 'file') ? `
+    onFileSelected(event: Event, controlName: string): void {
+        const input = event.target as HTMLInputElement;
+        if (input.files?.length) {
+            const file = input.files[0];
+            this.form.get(controlName)!.setValue(file);
+        }
+    }` : '';
 
     const formArrayMethods = resource.formProperties.filter(p => p.type === 'array_object' && p.nestedProperties).map(p => {
         const singularName = p.name.endsWith('s') ? p.name.slice(0, -1) : p.name;
@@ -182,11 +190,11 @@ export class ${resource.className}FormComponent {
   private readonly svc = inject(${resource.serviceName});
   ${resource.isEditable ? `private readonly snackBar = inject(MatSnackBar);` : ''}
   ${relationServiceInjections}
-  
+    
   readonly data = signal<${resource.modelName} | null>(null);
   readonly isEditable = ${resource.isEditable};
   ${relationDataSignals}
-  
+    
   readonly id = input<string | number>();
   readonly isEditMode = computed(() => this.isEditable && !!this.id());
   readonly isViewMode = computed(() => !this.isEditable && !!this.id());
@@ -224,6 +232,7 @@ export class ${resource.className}FormComponent {
   ${itemActionMethod}
   ${formArrayMethods}
   ${chipListMethods}
+  ${fileInputMethod}
 }`;
     tsFile.addStatements(tsContent);
     tsFile.formatText();

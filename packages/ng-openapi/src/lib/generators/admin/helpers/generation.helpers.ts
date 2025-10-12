@@ -9,7 +9,7 @@ export function getInitialValue(p: FormProperty): string {
         case "boolean": return "false";
         case "number": return "0";
         case "array": case "array_object": return "[]";
-        case "object": case "relationship": return "null"; // Still may need null for objects
+        case "object": case "relationship": case "file": return "null"; // Still may need null for objects / files
         case "string": case "enum": default: return "''"; // Use empty string for required strings
     }
 }
@@ -22,6 +22,9 @@ export function generateFormControlsTS(properties: FormProperty[], createModelNa
         } else if (p.type === 'array_object' && p.nestedProperties) {
             const validators = p.required ? `, { validators: [Validators.required] }` : '';
             return `'${p.name}': new FormArray([]${validators})`;
+        } else if (p.type === 'file') {
+            const validators = p.required ? `{ validators: [Validators.required] }` : '';
+            return `'${p.name}': new FormControl<File | null>(null${validators ? ', ' + validators : ''})`;
         } else {
             const initialValue = getInitialValue(p);
             const options: string[] = [];
@@ -111,6 +114,7 @@ export function generateFormFieldsHTML(properties: FormProperty[], materialModul
         }
 
         switch (p.inputType) {
+            case "file": { materialModules.add("MatButtonModule"); materialModules.add("MatIconModule"); return `<div class="form-field-container"><label class="mat-body-strong">${label}</label><div class="file-input-control"><input type="file" class="hidden-file-input" #fileInput${pascalCase(p.name)} (change)="onFileSelected($event, '${p.name}')"><button mat-stroked-button type="button" (click)="fileInput${pascalCase(p.name)}.click()"><mat-icon>attach_file</mat-icon><span>Choose File</span></button><span class="file-name">{{ form.get('${p.name}')?.value?.name || "No file chosen" }}</span></div>${errors}</div>`; }
             case "checkbox": materialModules.add("MatCheckboxModule"); return `<mat-checkbox formControlName="${p.name}">${label}</mat-checkbox>`;
             case "slide-toggle": materialModules.add("MatSlideToggleModule"); return `<mat-slide-toggle formControlName="${p.name}">${label}</mat-slide-toggle>`;
             case "radio-group": { materialModules.add("MatRadioModule"); const radioButtons = p.enumValues?.map((val) => `<mat-radio-button value="${val}">${val}</mat-radio-button>`).join("\n"); return `<div class="group-container"><label class="mat-body-strong">${label}</label><mat-radio-group formControlName="${p.name}">${radioButtons}</mat-radio-group>${hint}</div>`; }

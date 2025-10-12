@@ -1,5 +1,3 @@
-// packages/ng-openapi/src/lib/generators/admin/resource-discovery.ts
-
 import { SwaggerParser, extractPaths, PathInfo, pascalCase, camelCase, titleCase } from "@ng-openapi/shared";
 import { ActionOperation, FilterParameter, Resource } from "./admin.types";
 import { plural } from "./admin.helpers";
@@ -24,6 +22,10 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
     for (const [tag, tagPaths] of tagGroups.entries()) {
         const isItemPath = (p: PathInfo) => /\{[^}]+\}/.test(p.path);
         const getResponseSchema = (p: PathInfo | undefined) => p?.responses?.['200']?.content?.['application/json']?.schema;
+        const getRequestContentType = (p: PathInfo | undefined): 'multipart/form-data' | 'application/json' => {
+            if (p?.requestBody?.content?.['multipart/form-data']) return 'multipart/form-data';
+            return 'application/json';
+        }
 
         let listOp: PathInfo | undefined, createOp: PathInfo | undefined, readOp: PathInfo | undefined, updateOp: PathInfo | undefined, deleteOp: PathInfo | undefined;
         const usedPaths = new Set<string>();
@@ -33,7 +35,7 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
         listOp = tagPaths.find(p => p.method === 'GET' && !isItemPath(p));
         if(listOp) usedPaths.add(`${listOp.method}:${listOp.path}`);
 
-        createOp = tagPaths.find(p => p.method === 'POST' && !isItemPath(p) && p.requestBody?.content?.['application/json']?.schema?.$ref);
+        createOp = tagPaths.find(p => p.method === 'POST' && !isItemPath(p) && p.requestBody?.content);
         if(createOp) usedPaths.add(`${createOp.method}:${createOp.path}`);
 
         // Make readOp more specific to avoid matching action paths like /items/{id}/action
@@ -61,7 +63,9 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
                 method: p.method.toUpperCase() as any,
             }));
 
-        const schemaObject = createOp?.requestBody?.content?.['application/json']?.schema;
+        const createOpContent = createOp?.requestBody?.content || {};
+        const schemaObject = createOpContent['application/json']?.schema || createOpContent['multipart/form-data']?.schema;
+
         const ref = schemaObject?.$ref;
 
         const filterParameters: FilterParameter[] = [];
@@ -97,9 +101,9 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
             isEditable: !!(createOp || updateOp),
             operations: {
                 list: listOp ? { methodName: getMethodName(listOp), filterParameters } : undefined,
-                create: createOp ? { methodName: getMethodName(createOp) } : undefined,
+                create: createOp ? { methodName: getMethodName(createOp), contentType: getRequestContentType(createOp) } : undefined,
                 read: readOp ? { methodName: getMethodName(readOp), idParamName: getIdParamName(readOp) } : undefined,
-                update: updateOp ? { methodName: getMethodName(updateOp), idParamName: getIdParamName(updateOp) } : undefined,
+                update: updateOp ? { methodName: getMethodName(updateOp), idParamName: getIdParamName(updateOp), contentType: getRequestContentType(updateOp) } : undefined,
                 delete: deleteOp ? { methodName: getMethodName(deleteOp), idParamName: getIdParamName(deleteOp) } : undefined,
             },
             actions,

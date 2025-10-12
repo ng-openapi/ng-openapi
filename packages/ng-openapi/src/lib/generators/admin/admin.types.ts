@@ -1,5 +1,3 @@
-// packages/ng-openapi/src/lib/generators/admin/admin.types.ts
-
 export interface FilterParameter {
     name: string;
     inputType: 'text' | 'select' | 'number' | 'boolean';
@@ -11,6 +9,7 @@ export interface ResourceOperation {
     idParamName?: string;
     bodyParamName?: string;
     filterParameters?: FilterParameter[];
+    contentType?: 'application/json' | 'multipart/form-data';
 }
 
 export interface ActionOperation {
@@ -45,8 +44,8 @@ export interface Resource {
 
 export interface FormProperty {
     name: string;
-    type: 'string' | 'number' | 'boolean' | 'enum' | 'array' | 'object' | 'array_object' | 'relationship';
-    inputType?: 'text' | 'number' | 'password' | 'email' | 'textarea' | 'checkbox' | 'slide-toggle' | 'select' | 'radio-group' | 'slider' | 'chip-list' | 'button-toggle-group' | 'datepicker' | '';
+    type: 'string' | 'number' | 'boolean' | 'enum' | 'array' | 'object' | 'array_object' | 'relationship' | 'file';
+    inputType?: 'text' | 'number' | 'password' | 'email' | 'textarea' | 'checkbox' | 'slide-toggle' | 'select' | 'radio-group' | 'slider' | 'chip-list' | 'button-toggle-group' | 'datepicker' | 'file' | '';
     required: boolean;
     validators: string[];
     description?: string;
