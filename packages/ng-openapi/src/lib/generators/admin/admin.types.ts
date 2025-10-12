@@ -46,9 +46,14 @@ export interface Resource {
     listColumns: string[];
 }
 
+export interface PolymorphicOption {
+    name: string;
+    properties: FormProperty[];
+}
+
 export interface FormProperty {
     name: string;
-    type: 'string' | 'number' | 'boolean' | 'enum' | 'array' | 'object' | 'array_object' | 'relationship' | 'file';
+    type: 'string' | 'number' | 'boolean' | 'enum' | 'array' | 'object' | 'array_object' | 'relationship' | 'file' | 'polymorphic';
     inputType?: 'text' | 'number' | 'password' | 'email' | 'textarea' | 'checkbox' | 'slide-toggle' | 'select' | 'radio-group' | 'slider' | 'chip-list' | 'button-toggle-group' | 'datepicker' | 'file' | '';
     required: boolean;
     validators: string[];
@@ -61,6 +66,7 @@ export interface FormProperty {
     min?: number;
     max?: number;
     nestedProperties?: FormProperty[];
+    polymorphicOptions?: PolymorphicOption[]; // NEW
     relationResourceName?: string;
     relationDisplayField?: string;
     relationValueField?: string;

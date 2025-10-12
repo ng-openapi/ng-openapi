@@ -241,6 +241,48 @@ const advancedValidationSpecObj = {
     }
 };
 
+const polymorphismSpecObj = {
+    openapi: '3.0.0',
+    info: { ...info, title: 'Polymorphism API' },
+    paths: {
+        '/containers': {
+            post: { tags: ['Containers'], requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateContainer' } } } } }
+        }
+    },
+    components: {
+        schemas: {
+            CreateContainer: {
+                type: 'object',
+                properties: {
+                    name: { type: 'string' },
+                    item: {
+                        oneOf: [
+                            { $ref: '#/components/schemas/Cat' },
+                            { $ref: '#/components/schemas/Dog' }
+                        ]
+                    }
+                }
+            },
+            Cat: {
+                type: 'object',
+                required: ['name'],
+                properties: {
+                    name: { type: 'string' },
+                    meowVolume: { type: 'integer' }
+                }
+            },
+            Dog: {
+                type: 'object',
+                required: ['name'],
+                properties: {
+                    name: { type: 'string' },
+                    barkPitch: { type: 'number' }
+                }
+            }
+        }
+    }
+};
+
 export const basicControlsSpec = JSON.stringify(basicControlsSpecObj);
 export const advancedStructuresSpec = JSON.stringify(advancedStructuresSpecObj);
 export const defaultValueSpec = JSON.stringify(defaultValueSpecObj);
@@ -249,3 +291,4 @@ export const securitySpec = JSON.stringify(securitySpecObj);
 export const petstoreUploadSpec = JSON.stringify(petstoreUploadSpecObj);
 export const paginationAndSortSpec = JSON.stringify(paginationAndSortSpecObj);
 export const advancedValidationSpec = JSON.stringify(advancedValidationSpecObj);
+export const polymorphismSpec = JSON.stringify(polymorphismSpecObj);

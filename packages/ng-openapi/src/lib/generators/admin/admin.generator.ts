@@ -1,9 +1,7 @@
-// packages/ng-openapi/src/lib/generators/admin/admin.generator.ts
-
 import { GeneratorConfig, SwaggerParser } from "@ng-openapi/shared";
 import * as path from "path";
 import { Project } from "ts-morph";
-import { FormProperty, Resource } from "./admin.types";
+import { FormProperty, PolymorphicOption, Resource } from "./admin.types";
 import { discoverAdminResources } from "./resource-discovery";
 import { writeListComponent } from "./component-writers/list-component.writer";
 import { writeFormComponent } from "./component-writers/form-component.writer";
@@ -17,7 +15,7 @@ export class AdminGenerator {
     private allResources: Resource[] = [];
     private customValidatorsCreated = false;
 
-    constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
+    constructor(parser: SwaggerParser, project: Project, config: Generatorconfig) {
         this.config = config;
         this.project = project;
         this.parser = parser;
@@ -39,6 +37,9 @@ export class AdminGenerator {
             const modelForPropsRef = resource.createModelRef || (resource.operations.read ? Object.entries(this.parser.getSpec().components.schemas).find(([name]) => name === resource.modelName)?.[1] : null);
             if (modelForPropsRef) {
                 resource.formProperties = this.processSchemaToFormProperties(this.parser.resolveReference(modelForPropsRef));
+            } else {
+                // FIX: If there's no schema, ensure formProperties is an empty array to prevent crashes.
+                resource.formProperties = [];
             }
 
             const adminDir = path.join(outputRoot, "admin");
@@ -46,7 +47,7 @@ export class AdminGenerator {
             if (resource.operations.list || resource.operations.create || resource.actions.some(a => a.level === 'collection')) {
                 writeListComponent(resource, this.project, adminDir);
             }
-            if (resource.operations.read || resource.operations.create || resource.operations.update) {
+            if (resource.createModelName || resource.operations.read) {
                 const usesCustomValidators = resource.formProperties.some(p => p.validators.some(v => v.startsWith('CustomValidators')));
                 if (usesCustomValidators && !this.customValidatorsCreated) {
                     this.createCustomValidatorsFile(adminDir);
@@ -76,35 +77,40 @@ export class AdminGenerator {
         for (const propName in schema.properties) {
             const prop = schema.properties[propName];
             const isRequired = schema.required?.includes(propName) ?? false;
-            // FIX: The validators array is now declared here, and subsequent checks append to it.
             const validators = isRequired ? ["Validators.required"] : [];
 
             if (prop.readOnly) continue;
 
-            // Add numeric validators
-            if (prop.minimum !== undefined) {
-                if (prop.exclusiveMinimum) {
-                    validators.push(`CustomValidators.exclusiveMin(${prop.minimum})`);
-                } else {
-                    validators.push(`Validators.min(${prop.minimum})`);
+            const subSchemas = prop.oneOf || prop.anyOf;
+            if (subSchemas) {
+                const polymorphicOptions: PolymorphicOption[] = [];
+                for (const subSchemaRef of subSchemas) {
+                    const subSchemaName = subSchemaRef.$ref.split('/').pop()!;
+                    const resolvedSubSchema = this.parser.resolveReference(subSchemaRef.$ref);
+                    polymorphicOptions.push({
+                        name: subSchemaName,
+                        properties: this.processSchemaToFormProperties(resolvedSubSchema)
+                    });
                 }
+                properties.push({
+                    name: propName, type: 'polymorphic', inputType: '',
+                    required: isRequired, validators: [], polymorphicOptions
+                });
+                continue;
+            }
+
+            if (prop.minimum !== undefined) {
+                validators.push(prop.exclusiveMinimum ? `CustomValidators.exclusiveMin(${prop.minimum})` : `Validators.min(${prop.minimum})`);
             }
             if (prop.maximum !== undefined) {
-                if (prop.exclusiveMaximum) {
-                    validators.push(`CustomValidators.exclusiveMax(${prop.maximum})`);
-                } else {
-                    validators.push(`Validators.max(${prop.maximum})`);
-                }
+                validators.push(prop.exclusiveMaximum ? `CustomValidators.exclusiveMax(${prop.maximum})` : `Validators.max(${prop.maximum})`);
             }
             if (prop.multipleOf !== undefined) {
                 validators.push(`CustomValidators.multipleOf(${prop.multipleOf})`);
             }
 
             if (prop.type === 'string' && prop.format === 'binary') {
-                properties.push({
-                    name: propName, type: 'file', inputType: 'file', required: isRequired,
-                    validators, description: prop.description,
-                });
+                properties.push({ name: propName, type: 'file', inputType: 'file', required: isRequired, validators, description: prop.description });
                 continue;
             }
 
@@ -115,20 +121,21 @@ export class AdminGenerator {
             if (relatedResource) {
                 properties.push({
                     name: propName, type: 'relationship', required: isRequired, validators,
-                    relationResourceName: relatedResource.name, relationDisplayField: 'name', relationValueField: 'id',
-                    relationServiceName: relatedResource.serviceName, relationListMethodName: relatedResource.operations.list!.methodName,
+                    relationResourceName: relatedResource.name,
+                    relationDisplayField: 'name', // Assuming 'name' is a safe default
+                    relationValueField: 'id',
+                    relationServiceName: relatedResource.serviceName,
+                    relationListMethodName: relatedResource.operations.list!.methodName,
                     relationModelName: relatedResource.modelName,
                 });
                 continue;
             }
 
             if (subSchema.type === 'object' && subSchema.properties) {
-                // Nested objects don't have validators on the group itself in this implementation
                 properties.push({ name: propName, type: 'object', nestedProperties: this.processSchemaToFormProperties(subSchema), inputType: '', required: isRequired, validators: [] });
                 continue;
             }
 
-            // Handle array validators
             if (prop.type === 'array') {
                 if (prop.minItems !== undefined) validators.push(`Validators.minLength(${prop.minItems})`);
                 if (prop.maxItems !== undefined) validators.push(`Validators.maxLength(${prop.maxItems})`);
@@ -137,11 +144,10 @@ export class AdminGenerator {
 
             if (prop.type === 'array' && (prop.items?.$ref)) {
                 const arrayItemSchema = this.parser.resolveReference(prop.items.$ref);
-                properties.push({ name: propName, type: 'array_object', nestedProperties: this.processSchemaToFormProperties(arrayItemSchema), inputType: '', required: isRequired, validators });
+                properties.push({ name: propName, type: 'array_object', nestedProperties: this.processSchemaToFormProperties(arrayItemSchema), inputType: '', required: isRequired, validators, defaultValue: prop.default });
                 continue;
             }
 
-            // Moved from below to apply to all remaining types, including arrays of strings
             if (prop.minLength) validators.push(`Validators.minLength(${prop.minLength})`);
             if (prop.maxLength) validators.push(`Validators.maxLength(${prop.maxLength})`);
             if (prop.pattern) {

@@ -1,10 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-
 import { Project } from 'ts-morph';
-
-import { SwaggerParser } from '@ng-openapi/shared';
-
 import { AdminGenerator } from '../../src/lib/generators/admin/admin.generator';
+import { SwaggerParser } from '@ng-openapi/shared';
 import { advancedStructuresSpec } from './specs/test.specs';
 
 describe('Integration: Form Structures Generation', () => {
@@ -15,7 +12,6 @@ describe('Integration: Form Structures Generation', () => {
     beforeAll(async () => {
         project = new Project({ useInMemoryFileSystem: true });
         const config = { options: { admin: {} } } as any;
-        // The parser needs a JavaScript object, not a JSON string.
         const parser = new SwaggerParser(JSON.parse(advancedStructuresSpec), config);
         const generator = new AdminGenerator(parser, project, config);
         await generator.generate('/output');
@@ -26,14 +22,19 @@ describe('Integration: Form Structures Generation', () => {
 
     it('should NOT generate form controls for readOnly properties', () => {
         expect(formTs).not.toContain(`'id': new FormControl`);
+        expect(formHtml).not.toContain(`formControlName="id"`);
     });
 
     it('should generate a nested FormGroup for object properties', () => {
         expect(formTs).toContain(`'contactPerson': new FormGroup({`);
+        expect(formTs).toContain(`'name': new FormControl`);
+        expect(formTs).toContain(`'email': new FormControl`);
     });
 
     it('should generate HTML with formGroupName for nested objects', () => {
         expect(formHtml).toContain('formGroupName="contactPerson"');
+        expect(formHtml).toContain('formControlName="name"');
+        expect(formHtml).toContain('formControlName="email"');
     });
 
     it('should generate a FormArray for a required array of objects', () => {
@@ -55,6 +56,7 @@ describe('Integration: Form Structures Generation', () => {
     it('should generate correct HTML for the FormArray', () => {
         expect(formHtml).toContain('formArrayName="milestones"');
         expect(formHtml).toContain('(click)="addMilestone()"');
-        expect(formHtml).toContain('(click)="removeMilestone($index)"');
+        // FIX: Update test to expect the correct method signature in the template
+        expect(formHtml).toContain('(click)="removeMilestone(i)"');
     });
 });
