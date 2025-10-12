@@ -1,6 +1,8 @@
 import { ModuleKind, Project, ScriptTarget } from 'ts-morph';
 import { AdminGenerator, TypeGenerator } from '../generators';
 import {
+    AuthInterceptorGenerator,
+    AuthTokensGenerator,
     BaseInterceptorGenerator,
     DateTransformerGenerator,
     FileDownloadGenerator,
@@ -47,6 +49,12 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
         console.log(`✅ TypeScript interfaces generated`);
 
         if (generateServices) {
+            const authTokensGenerator = new AuthTokensGenerator(project);
+            authTokensGenerator.generate(outputPath);
+
+            const authInterceptorGenerator = new AuthInterceptorGenerator(swaggerParser, project);
+            authInterceptorGenerator.generate(outputPath);
+
             const tokenGenerator = new TokenGenerator(project, config.clientName);
             tokenGenerator.generate(outputPath);
 
@@ -61,7 +69,7 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
             const httpParamsBuilderGenerator = new HttpParamsBuilderGenerator(project);
             httpParamsBuilderGenerator.generate(outputPath);
 
-            const providerGenerator = new ProviderGenerator(project, config);
+            const providerGenerator = new ProviderGenerator(project, config, swaggerParser);
             providerGenerator.generate(outputPath);
 
             const baseInterceptorGenerator = new BaseInterceptorGenerator(project, config.clientName);

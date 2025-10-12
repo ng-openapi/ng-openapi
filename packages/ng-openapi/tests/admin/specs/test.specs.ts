@@ -128,7 +128,32 @@ const fullE2ESpecObj = {
     }
 };
 
+export const securitySpecObj = {
+    openapi: '3.0.0',
+    info: { title: 'Security Test API', version: '1.0' },
+    paths: {
+        '/secure/path': {
+            get: {
+                tags: ['Secure'],
+                summary: 'A protected endpoint',
+                security: [{ ApiKeyAuth: [] }],
+                responses: { '200': { description: 'OK' } }
+            }
+        }
+    },
+    components: {
+        securitySchemes: {
+            ApiKeyAuth: {
+                type: 'apiKey',
+                in: 'header',
+                name: 'X-API-KEY'
+            }
+        }
+    }
+};
+
 export const basicControlsSpec = JSON.stringify(basicControlsSpecObj);
 export const advancedStructuresSpec = JSON.stringify(advancedStructuresSpecObj);
 export const defaultValueSpec = JSON.stringify(defaultValueSpecObj);
 export const fullE2ESpec = JSON.stringify(fullE2ESpecObj);
+export const securitySpec = JSON.stringify(securitySpecObj);

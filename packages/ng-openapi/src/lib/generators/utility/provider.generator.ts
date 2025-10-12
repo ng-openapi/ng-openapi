@@ -1,3 +1,5 @@
+// packages/ng-openapi/src/lib/generators/utility/provider.generator.ts
+
 import { Project } from "ts-morph";
 import * as path from "path";
 import {
@@ -5,16 +7,20 @@ import {
     getBasePathTokenName,
     getInterceptorsTokenName,
     PROVIDER_GENERATOR_HEADER_COMMENT,
+    SwaggerParser,
+    SwaggerSpec,
 } from "@ng-openapi/shared";
 
 export class ProviderGenerator {
     private project: Project;
     private config: GeneratorConfig;
+    private spec: SwaggerSpec;
     private clientName: string;
 
-    constructor(project: Project, config: GeneratorConfig) {
+    constructor(project: Project, config: GeneratorConfig, parser: SwaggerParser) { // Modified constructor
         this.project = project;
         this.config = config;
+        this.spec = parser.getSpec(); // Store the spec
         this.clientName = config.clientName || "default";
     }
 
@@ -28,180 +34,109 @@ export class ProviderGenerator {
         const interceptorsTokenName = getInterceptorsTokenName(this.clientName);
         const baseInterceptorClassName = `${this.capitalizeFirst(this.clientName)}BaseInterceptor`;
 
+        // Check for security schemes
+        const securitySchemes = this.spec.components?.securitySchemes ?? (this.spec as any).securityDefinitions;
+        const hasSecurity = securitySchemes && Object.keys(securitySchemes).length > 0;
+        const hasApiKey = hasSecurity && Object.values(securitySchemes).some(s => s.type === 'apiKey');
+        const hasBearer = hasSecurity && Object.values(securitySchemes).some(s => s.type === 'http' && s.scheme === 'bearer');
+
         // Add imports
         sourceFile.addImportDeclarations([
-            {
-                namedImports: ["EnvironmentProviders", "Provider", "makeEnvironmentProviders"],
-                moduleSpecifier: "@angular/core",
-            },
-            {
-                namedImports: ["HTTP_INTERCEPTORS", "HttpInterceptor"],
-                moduleSpecifier: "@angular/common/http",
-            },
-            {
-                namedImports: [basePathTokenName, interceptorsTokenName],
-                moduleSpecifier: "./tokens",
-            },
-            {
-                namedImports: [baseInterceptorClassName],
-                moduleSpecifier: "./utils/base-interceptor",
-            },
+            { namedImports: ["EnvironmentProviders", "Provider", "makeEnvironmentProviders"], moduleSpecifier: "@angular/core" },
+            { namedImports: ["HTTP_INTERCEPTORS", "HttpInterceptor"], moduleSpecifier: "@angular/common/http" },
+            { namedImports: [basePathTokenName, interceptorsTokenName], moduleSpecifier: "./tokens" },
+            { namedImports: [baseInterceptorClassName], moduleSpecifier: "./utils/base-interceptor" },
         ]);
 
-        // Add conditional import for DateInterceptor
         if (this.config.options.dateType === "Date") {
-            sourceFile.addImportDeclaration({
-                namedImports: ["DateInterceptor"],
-                moduleSpecifier: "./utils/date-transformer",
-            });
+            sourceFile.addImportDeclaration({ namedImports: ["DateInterceptor"], moduleSpecifier: "./utils/date-transformer" });
+        }
+        if (hasSecurity) {
+            sourceFile.addImportDeclaration({ namedImports: ["AuthInterceptor"], moduleSpecifier: "./auth/auth.interceptor" });
+            if (hasApiKey) sourceFile.addImportDeclaration({ namedImports: ["API_KEY_TOKEN"], moduleSpecifier: "./auth/auth.tokens" });
+            if (hasBearer) sourceFile.addImportDeclaration({ namedImports: ["BEARER_TOKEN_TOKEN"], moduleSpecifier: "./auth/auth.tokens" });
         }
 
         // Add config interface
-        sourceFile.addInterface({
+        const configInterface = sourceFile.addInterface({
             name: `${this.capitalizeFirst(this.clientName)}Config`,
             isExported: true,
-            docs: [`Configuration options for ${this.clientName} client`],
             properties: [
-                {
-                    name: "basePath",
-                    type: "string",
-                    docs: ["Base API URL"],
-                },
-                {
-                    name: "enableDateTransform",
-                    type: "boolean",
-                    hasQuestionToken: true,
-                    docs: ["Enable automatic date transformation (default: true)"],
-                },
-                {
-                    name: "interceptors",
-                    type: "(new (...args: HttpInterceptor[]) => HttpInterceptor)[]",
-                    hasQuestionToken: true,
-                    docs: ["Array of HTTP interceptor classes to apply to this client"],
-                },
+                { name: "basePath", type: "string" },
+                { name: "enableDateTransform", type: "boolean", hasQuestionToken: true },
+                { name: "interceptors", type: "(new (...args: any[]) => HttpInterceptor)[]", hasQuestionToken: true },
             ],
         });
+        if (hasApiKey) configInterface.addProperty({ name: "apiKey", type: "string", hasQuestionToken: true });
+        if (hasBearer) configInterface.addProperty({ name: "bearerToken", type: "string | (() => string)", hasQuestionToken: true });
 
         // Add main provider function
-        this.addMainProviderFunction(sourceFile, basePathTokenName, interceptorsTokenName, baseInterceptorClassName);
+        this.addMainProviderFunction(sourceFile, basePathTokenName, interceptorsTokenName, baseInterceptorClassName, hasSecurity, hasApiKey, hasBearer);
 
         sourceFile.formatText();
         sourceFile.saveSync();
     }
 
-    private addMainProviderFunction(
-        sourceFile: any,
-        basePathTokenName: string,
-        interceptorsTokenName: string,
-        baseInterceptorClassName: string
-    ): void {
-        const hasDateInterceptor = this.config.options.dateType === "Date";
+    private addMainProviderFunction(sourceFile: any, basePathTokenName: string, interceptorsTokenName: string, baseInterceptorClassName: string, hasSecurity: boolean, hasApiKey: boolean, hasBearer: boolean): void {
         const functionName = `provide${this.capitalizeFirst(this.clientName)}Client`;
         const configTypeName = `${this.capitalizeFirst(this.clientName)}Config`;
 
+        let securityProviders = '';
+        if (hasSecurity) {
+            securityProviders += `
+    // Provide the AuthInterceptor
+    providers.push({
+        provide: HTTP_INTERCEPTORS,
+        useClass: AuthInterceptor,
+        multi: true
+    });
+`;
+            if (hasApiKey) {
+                securityProviders += `
+    // Provide the API key if present
+    if (config.apiKey) {
+        providers.push({ provide: API_KEY_TOKEN, useValue: config.apiKey });
+    }
+`;
+            }
+            if (hasBearer) {
+                securityProviders += `
+    // Provide the Bearer token if present
+    if (config.bearerToken) {
+        providers.push({ provide: BEARER_TOKEN_TOKEN, useValue: config.bearerToken });
+    }
+`;
+            }
+        }
+
         const functionBody = `
 const providers: Provider[] = [
-    // Base path token for this client
-    {
-        provide: ${basePathTokenName},
-        useValue: config.basePath
-    },
-    // Base interceptor that handles client-specific interceptors
-    {
-        provide: HTTP_INTERCEPTORS,
-        useClass: ${baseInterceptorClassName},
-        multi: true
-    }
+    { provide: ${basePathTokenName}, useValue: config.basePath },
+    { provide: HTTP_INTERCEPTORS, useClass: ${baseInterceptorClassName}, multi: true }
 ];
 
-// Add client-specific interceptor instances
-if (config.interceptors && config.interceptors.length > 0) {
-    const interceptorInstances = config.interceptors.map(InterceptorClass => new InterceptorClass());
-    
-    ${
-        hasDateInterceptor
-            ? `// Add date interceptor if enabled (default: true)
-    if (config.enableDateTransform !== false) {
-        interceptorInstances.unshift(new DateInterceptor());
-    }`
-            : `// Date transformation not available (dateType: 'string' was used in generation)`
-    }
-    
-    providers.push({
-        provide: ${interceptorsTokenName},
-        useValue: interceptorInstances
-    });
-} ${
-            hasDateInterceptor
-                ? `else if (config.enableDateTransform !== false) {
-    // Only date interceptor enabled
-    providers.push({
-        provide: ${interceptorsTokenName},
-        useValue: [new DateInterceptor()]
-    });
-}`
-                : ``
-        } else {
-    // No interceptors
-    providers.push({
-        provide: ${interceptorsTokenName},
-        useValue: []
-    });
+${securityProviders}
+
+const customInterceptors = config.interceptors?.map(InterceptorClass => new InterceptorClass()) || [];
+
+if (config.enableDateTransform !== false && ${this.config.options.dateType === "Date"}) {
+    customInterceptors.unshift(new DateInterceptor());
 }
+
+providers.push({
+    provide: ${interceptorsTokenName},
+    useValue: customInterceptors
+});
 
 return makeEnvironmentProviders(providers);`;
 
         sourceFile.addFunction({
             name: functionName,
             isExported: true,
-            docs: [
-                `Provides configuration for ${this.clientName} client`,
-                "",
-                "@example",
-                "```typescript",
-                "// In your app.config.ts",
-                `import { ${functionName} } from './api/providers';`,
-                "",
-                "export const appConfig: ApplicationConfig = {",
-                "  providers: [",
-                `    ${functionName}({`,
-                "      basePath: 'https://api.example.com',",
-                "      interceptors: [AuthInterceptor, LoggingInterceptor] // Classes, not instances",
-                "    }),",
-                "    // other providers...",
-                "  ]",
-                "};",
-                "```",
-            ],
-            parameters: [
-                {
-                    name: "config",
-                    type: configTypeName,
-                },
-            ],
+            parameters: [{ name: "config", type: configTypeName }],
             returnType: "EnvironmentProviders",
-            statements: functionBody,
+            statements: functionBody
         });
-
-        // For backward compatibility, add generic provider if this is the default client
-        if (this.clientName === "default") {
-            sourceFile.addFunction({
-                name: "provideNgOpenapi",
-                isExported: true,
-                docs: [
-                    "@deprecated Use provideDefaultClient instead for better clarity",
-                    "Provides configuration for the default client",
-                ],
-                parameters: [
-                    {
-                        name: "config",
-                        type: configTypeName,
-                    },
-                ],
-                returnType: "EnvironmentProviders",
-                statements: `return ${functionName}(config);`,
-            });
-        }
     }
 
     private capitalizeFirst(str: string): string {
