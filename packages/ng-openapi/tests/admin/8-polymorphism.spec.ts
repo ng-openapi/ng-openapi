@@ -28,23 +28,27 @@ describe('Integration: OpenAPI Polymorphism (oneOf) Generation', () => {
     it('should generate disabled FormGroups for each oneOf option', () => {
         // Test is now more robust against quote style changes.
         expect(formTs).toContain(`'Cat': new FormGroup({`);
-        expect(formTs).toContain(`'name': new FormControl<any>('', { validators: [Validators.required], nonNullable: true })`);
-        expect(formTs).toContain(`'meowVolume': new FormControl<any>(null)`);
+
+        // ===== THE FIX IS HERE =====
+        // Update the test to expect the strongly-typed FormControl, not <any>.
+        expect(formTs).toContain(`'name': new FormControl<Cat['name']>('', { validators: [Validators.required], nonNullable: true })`);
+        expect(formTs).toContain(`'meowVolume': new FormControl<Cat['meowVolume'] | null>(null)`);
+
         expect(formTs).toContain(`}, { disabled: true })`);
 
         expect(formTs).toContain(`'Dog': new FormGroup({`);
-        expect(formTs).toContain(`'barkPitch': new FormControl<any>(null)`);
+
+        // And update it for the Dog form as well.
+        expect(formTs).toContain(`'barkPitch': new FormControl<Dog['barkPitch'] | null>(null)`);
     });
 
     it('should generate a mat-select for the type selector in HTML', () => {
-        // FIX: Test now looks for the new @for syntax.
         expect(formHtml).toContain('<mat-select formControlName="typeSelector"');
         expect(formHtml).toContain(`@for (opt of ['Cat', 'Dog']; track opt)`);
         expect(formHtml).toContain(`<mat-option [value]="opt">{{ opt }}</mat-option>`);
     });
 
     it('should generate an @switch to dynamically show sub-forms', () => {
-        // FIX: Test now looks for the new @switch syntax.
         expect(formHtml).toContain(`@switch (form.get('item.typeSelector')?.value)`);
         expect(formHtml).toContain(`@case ('Cat')`);
         expect(formHtml).toContain('formGroupName="Cat"');

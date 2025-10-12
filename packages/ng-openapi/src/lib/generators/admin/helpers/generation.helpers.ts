@@ -1,55 +1,71 @@
 import { FormProperty, PolymorphicOption } from "../admin.types";
-import { titleCase } from "@ng-openapi/shared";
+import { pascalCase, titleCase } from "@ng-openapi/shared";
 
 export function getInitialValue(p: FormProperty): string {
-    if (p.defaultValue !== undefined) { return JSON.stringify(p.defaultValue); }
-    if (!p.required) { return "null"; }
+    if (p.defaultValue !== undefined) {
+        return JSON.stringify(p.defaultValue);
+    }
+    if (!p.required) {
+        return "null";
+    }
     switch (p.type) {
         case "boolean": return "false";
         case "number": return "0";
-        case "array": case "array_object": return "[]";
-        case "object": case "relationship": case "file": case "polymorphic": return "null";
-        case "string": case "enum": default: return "''";
+        case "array":
+        case "array_object": return "[]";
+        case "object":
+        case "relationship":
+        case "file":
+        case "polymorphic": return "null";
+        case "string":
+        case "enum":
+        default: return "''";
     }
 }
 
-
-export function generateFormControlsTS(properties: FormProperty[], createModelName: string): string {
+export function generateFormControlsTS(properties: FormProperty[], parentModelName: string): string {
     return properties.map(p => {
+        let controlValueString: string;
+
         if (p.type === 'object' && p.nestedProperties) {
-            const nestedControls = generateFormControlsTS(p.nestedProperties, `${createModelName}['${p.name}']`);
-            return `'${p.name}': new FormGroup({\n    ${nestedControls}\n})`;
+            // Use the strongly typed interface name (e.g., 'PetCategory') passed from the generator.
+            const nestedModelName = p.nestedObjectTypeName!;
+            const nestedControls = generateFormControlsTS(p.nestedProperties, nestedModelName);
+            controlValueString = `new FormGroup({\n    ${nestedControls}\n})`;
         } else if (p.type === 'polymorphic' && p.polymorphicOptions) {
             const typeSelectorValidators = p.required ? `, { validators: [Validators.required] }` : '';
             const subForms = p.polymorphicOptions.map(opt =>
                 `'${opt.name}': new FormGroup({
-        ${generateFormControlsTS(opt.properties, 'any')}
+        ${generateFormControlsTS(opt.properties, opt.name)}
     }, { disabled: true })`
             ).join(',\n    ');
-            return `'${p.name}': new FormGroup({
+            controlValueString = `new FormGroup({
         'typeSelector': new FormControl<string | null>(null${typeSelectorValidators}),
         ${subForms}
     })`;
         } else if (p.type === 'array_object' || p.type === 'array') {
-            const validators = p.validators.length > 0 ? `, { validators: [${p.validators.join(', ')}] }` : '';
+            const validators = p.validators.length > 0 ? `{ validators: [${p.validators.join(', ')}] }` : '';
             let initialControls = '[]';
             if (p.defaultValue && Array.isArray(p.defaultValue)) {
                 initialControls = `[${p.defaultValue.map(val => `new FormControl(${JSON.stringify(val)})`).join(', ')}]`;
             }
-            return `'${p.name}': new FormArray(${initialControls}${validators})`;
+            controlValueString = `new FormArray(${initialControls}${validators ? ', ' + validators : ''})`;
         } else if (p.type === 'file') {
             const validators = p.validators.length > 0 ? `{ validators: [${p.validators.join(", ")}] }` : '';
-            return `'${p.name}': new FormControl<File | null>(null${validators ? ', ' + validators : ''})`;
+            controlValueString = `new FormControl<File | null>(null${validators ? ', ' + validators : ''})`;
         } else {
             const initialValue = getInitialValue(p);
             const options: string[] = [];
             if (p.validators.length > 0) { options.push(`validators: [${p.validators.join(", ")}]`); }
             const isNullable = !p.required && p.defaultValue === undefined;
             if (!isNullable) { options.push("nonNullable: true"); }
-            const optionsString = options.length > 0 ? `, { ${options.join(", ")} }` : "";
-            const typeArgument = createModelName === 'any' ? 'any' : `${createModelName}['${p.name}']${isNullable ? " | null" : ""}`;
-            return `'${p.name}': new FormControl<${typeArgument}>(${initialValue}${optionsString})`;
+            const optionsString = options.length > 0 ? `{ ${options.join(", ")} }` : "";
+
+            const typeArgument = `${parentModelName}['${p.name}']${isNullable ? " | null" : ""}`;
+
+            controlValueString = `new FormControl<${typeArgument}>(${initialValue}${optionsString ? ', ' + optionsString : ''})`;
         }
+        return `'${p.name}': ${controlValueString}`;
     }).join(',\n    ');
 }
 
@@ -83,9 +99,9 @@ export function generateFormFieldsHTML(properties: FormProperty[], isViewMode = 
                 </mat-button-toggle-group></div>`;
             case 'chip-list':
                 const singularName = p.name.endsWith('s') ? p.name.slice(0, -1) : p.name;
-                return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><mat-chip-grid #chipGrid${titleCase(p.name)}>
-                @for (item of ${p.name}Signal | async; track item) {<mat-chip-row (removed)="remove${titleCase(p.name)}(item)">{{item}}<button matChipRemove><mat-icon>cancel</mat-icon></button></mat-chip-row>}
-                <input placeholder="New ${singularName}..." [matChipInputFor]="chipGrid${titleCase(p.name)}" (matChipInputTokenEnd)="add${titleCase(p.name)}($event)"/></mat-chip-grid></mat-form-field>`;
+                return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><mat-chip-grid #chipGrid${pascalCase(p.name)}>
+                @for (item of ${p.name}Signal | async; track item) {<mat-chip-row (removed)="remove${pascalCase(p.name)}(item)">{{item}}<button matChipRemove><mat-icon>cancel</mat-icon></button></mat-chip-row>}
+                <input placeholder="New ${singularName}..." [matChipInputFor]="chipGrid${pascalCase(p.name)}" (matChipInputTokenEnd)="add${pascalCase(p.name)}($event)"/></mat-chip-grid></mat-form-field>`;
             case 'datepicker':
                 return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><input matInput [matDatepicker]="picker${p.name}" formControlName="${p.name}" ${isRequired}><mat-datepicker-toggle matSuffix [for]="picker${p.name}"></mat-datepicker-toggle><mat-datepicker #picker${p.name}></mat-datepicker></mat-form-field>`;
             case 'select':
@@ -96,8 +112,8 @@ export function generateFormFieldsHTML(properties: FormProperty[], isViewMode = 
             case 'file':
                 const controlName = p.name;
                 return `<div class="file-input-container"><span class="mat-body-2">${label}${p.required ? ' *' : ''}</span>
-                <input type="file" class="hidden-file-input" #fileInput${titleCase(controlName)} (change)="onFileSelected($event, '${controlName}')">
-                <button mat-stroked-button type="button" (click)="fileInput${titleCase(controlName)}.click()"><mat-icon>attach_file</mat-icon>Choose File</button>
+                <input type="file" class="hidden-file-input" #fileInput${pascalCase(controlName)} (change)="onFileSelected($event, '${controlName}')">
+                <button mat-stroked-button type="button" (click)="fileInput${pascalCase(controlName)}.click()"><mat-icon>attach_file</mat-icon>Choose File</button>
                 <span class="file-name">{{ form.get('${controlName}')?.value?.name || "No file chosen" }}</span></div>`;
         }
         switch(p.type) {
@@ -110,7 +126,7 @@ export function generateFormFieldsHTML(properties: FormProperty[], isViewMode = 
                 </mat-select></mat-form-field>${generatePolymorphicSwitchHTML(p.polymorphicOptions!)}</div>`;
             case 'array_object':
                 const arrayName = p.name;
-                const singularTitle = titleCase(arrayName).replace(/s$/, '');
+                const singularTitle = pascalCase(arrayName).replace(/s$/, '');
                 return `<div class="form-array-container"><div class="form-array-header"><h4>${label}</h4><button type="button" mat-stroked-button (click)="add${singularTitle}()">
                  <mat-icon>add</mat-icon> Add ${singularTitle}</button></div><div formArrayName="${arrayName}">
                  @for (item of ${arrayName}.controls; track $index; let i = $index) {

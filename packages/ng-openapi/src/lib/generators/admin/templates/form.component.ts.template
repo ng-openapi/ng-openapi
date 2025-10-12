@@ -1,0 +1,47 @@
+/* eslint-disable */
+import { {{angularCoreImports}} } from '@angular/core';
+import { CommonModule } from '@angular/common';
+{{rxjsImports}}
+{{reactiveFormsImports}}
+import { Router, ActivatedRoute } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
+{{matChipInputEventImport}}
+{{customValidatorsImport}}
+{{materialImports}}
+
+import { {{serviceImports}} } from '../../../services';
+import { {{modelImports}} } from '../../../models';
+
+{{inlineInterfaces}}
+
+@Component({
+  selector: 'app-{{kebab-case-name}}-form',
+  standalone: true,
+  imports: [CommonModule, {{componentImports}} ],
+  templateUrl: './{{kebab-case-name}}-form.component.html',
+  styleUrls: ['./{{kebab-case-name}}-form.component.css']
+})
+export class {{PascalCaseName}}FormComponent {
+    private readonly router = inject(Router);
+    private readonly route = inject(ActivatedRoute);
+    private readonly svc = inject({{serviceClassName}});
+    {{snackBarInjection}}
+    {{relationServiceInjections}}
+
+    readonly data = signal<{{modelClassName}} | null>(null);
+    readonly isEditable = {{isEditable}};
+
+    readonly id = input<string | number>();
+    readonly isEditMode = computed(() => this.isEditable && !!this.id());
+    readonly isViewMode = computed(() => !this.isEditable && !!this.id());
+    readonly isNewMode = computed(() => !this.id());
+
+    {{formDeclaration}}
+    {{compareById}}
+
+    {{effectBlock}}
+    {{constructorBlock}}
+    {{onSubmitBlock}}
+    onCancel(): void { this.router.navigate(['..'], { relativeTo: this.route }); }
+    {{helperMethods}}
+}

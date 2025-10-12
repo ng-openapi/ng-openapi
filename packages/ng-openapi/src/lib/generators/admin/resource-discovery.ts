@@ -51,20 +51,21 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
         listOp = tagPaths.find(p => p.method === 'GET' && !isItemPath(p));
         if(listOp) usedPaths.add(`${listOp.method}:${listOp.path}`);
 
-        // Updated check to be Swagger 2.0 compatible
         createOp = tagPaths.find(p => p.method === 'POST' && !isItemPath(p) && findRequestBodySchema(p));
         if(createOp) usedPaths.add(`${createOp.method}:${createOp.path}`);
 
         readOp = tagPaths.find(p => p.method === 'GET' && isItemPath(p) && p.path.endsWith('}'));
         if(readOp) usedPaths.add(`${readOp.method}:${readOp.path}`);
 
-        updateOp = tagPaths.find(p => (p.method === 'PUT' || p.method === 'PATCH') && isItemPath(p));
+        // ===== THE FIX IS HERE =====
+        // An 'update' operation must accept a body, just like 'create'.
+        updateOp = tagPaths.find(p => (p.method === 'PUT' || p.method === 'PATCH') && isItemPath(p) && findRequestBodySchema(p));
         if(updateOp) usedPaths.add(`${updateOp.method}:${updateOp.path}`);
 
         deleteOp = tagPaths.find(p => p.method === 'DELETE' && isItemPath(p));
         if(deleteOp) usedPaths.add(`${deleteOp.method}:${deleteOp.path}`);
 
-        if (!listOp && !createOp && !readOp && tagPaths.every(p => usedPaths.has(`${p.method}:${p.path}`))) {
+        if (!listOp && !createOp && !readOp && !updateOp && !deleteOp) {
             continue;
         }
 
@@ -79,8 +80,9 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
                 idParamName: isItemPath(p) ? getIdParamName(p) : undefined,
             }));
 
-        const schemaObject = findRequestBodySchema(createOp);
-        const ref = schemaObject?.$ref;
+        const createSchemaObject = findRequestBodySchema(createOp);
+        const createModelRef = createSchemaObject?.$ref;
+        const createModelName = createModelRef ? createModelRef.split('/').pop()! : '';
 
         const listOpParams = listOp?.parameters?.filter(p => p.in === 'query').map(p => p.name) ?? [];
         const hasPagination = listOpParams.includes('page') && listOpParams.includes('pageSize');
@@ -101,8 +103,7 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
         }
 
         const mainModelSchemaName = getResponseSchema(listOp)?.items?.$ref?.split('/')?.pop() || getResponseSchema(readOp)?.$ref?.split('/')?.pop();
-        const refName = ref?.split('/').pop();
-        const modelName = mainModelSchemaName || (refName?.startsWith('Create') ? refName.replace(/^Create/, '') : refName);
+        const modelName = mainModelSchemaName || (createModelName.startsWith('Create') ? createModelName.replace(/^Create/, '') : createModelName);
 
         const singularTag = tag.endsWith('s') && !tag.endsWith('ss') ? tag.slice(0, -1) : tag;
 
@@ -113,8 +114,8 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
             titleName: titleCase(singularTag),
             serviceName: pascalCase(tag) + "Service",
             modelName: pascalCase(modelName || '') || '',
-            createModelName: ref ? pascalCase(ref.split('/').pop()!) : '',
-            createModelRef: ref,
+            createModelName: pascalCase(createModelName),
+            createModelRef: createModelRef,
             isEditable: !!(createOp || updateOp),
             operations: {
                 list: listOp ? { methodName: getMethodName(listOp), filterParameters, hasPagination, hasSorting } : undefined,
@@ -128,7 +129,7 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
             listColumns: [],
         };
 
-        const modelRefForColumns = getResponseSchema(listOp)?.items?.$ref || getResponseSchema(readOp)?.$ref || ref;
+        const modelRefForColumns = getResponseSchema(listOp)?.items?.$ref || getResponseSchema(readOp)?.$ref || createModelRef;
         if (modelRefForColumns) {
             const schemaForColumns = parser.resolveReference(modelRefForColumns);
             if (schemaForColumns && schemaForColumns.properties) {

@@ -33,8 +33,8 @@ export class ServiceGenerator {
             const versionInfo = this.parser.getSpecVersion();
             throw new Error(
                 `Invalid or unsupported specification format. ` +
-                    `Expected OpenAPI 3.x or Swagger 2.x. ` +
-                    `${versionInfo ? `Found: ${versionInfo.type} ${versionInfo.version}` : "No version info found"}`
+                `Expected OpenAPI 3.x or Swagger 2.x. ` +
+                `${versionInfo ? `Found: ${versionInfo.type} ${versionInfo.version}` : "No version info found"}`
             );
         }
 
@@ -94,7 +94,7 @@ export class ServiceGenerator {
 
         this.addServiceClass(sourceFile, controllerName, operations);
 
-        sourceFile.fixMissingImports().formatText(); //TODO: add models
+        sourceFile.fixMissingImports().formatText();
         sourceFile.saveSync();
     }
 
@@ -106,34 +106,11 @@ export class ServiceGenerator {
         sourceFile.insertText(0, SERVICE_GENERATOR_HEADER_COMMENT(controllerName));
 
         sourceFile.addImportDeclarations([
-            {
-                namedImports: [
-                    "HttpClient",
-                    "HttpContext",
-                    "HttpContextToken",
-                    "HttpEvent",
-                    "HttpHeaders",
-                    "HttpParams",
-                    "HttpResponse",
-                ],
-                moduleSpecifier: "@angular/common/http",
-            },
-            {
-                namedImports: ["inject", "Injectable"],
-                moduleSpecifier: "@angular/core",
-            },
-            {
-                namedImports: ["Observable"],
-                moduleSpecifier: "rxjs",
-            },
-            {
-                namedImports: [basePathTokenName, clientContextTokenName],
-                moduleSpecifier: "../tokens",
-            },
-            {
-                namedImports: ["HttpParamsBuilder"],
-                moduleSpecifier: "../utils/http-params-builder",
-            }
+            { namedImports: ["HttpClient", "HttpContext", "HttpContextToken", "HttpParams"], moduleSpecifier: "@angular/common/http" },
+            { namedImports: ["inject", "Injectable"], moduleSpecifier: "@angular/core" },
+            { namedImports: ["Observable"], moduleSpecifier: "rxjs" },
+            { namedImports: [basePathTokenName, clientContextTokenName, "RequestOptions"], moduleSpecifier: "../", },
+            { namedImports: ["HttpParamsBuilder"], moduleSpecifier: "../utils" }
         ]);
 
         const serviceClass = sourceFile.addClass({
@@ -142,47 +119,18 @@ export class ServiceGenerator {
             decorators: [{ name: "Injectable", arguments: ['{ providedIn: "root" }'] }],
         });
 
-        serviceClass.addProperty({
-            name: "httpClient",
-            type: "HttpClient",
-            scope: Scope.Private,
-            isReadonly: true,
-            initializer: "inject(HttpClient)",
-        });
+        serviceClass.addProperty({ name: "httpClient", type: "HttpClient", scope: Scope.Private, isReadonly: true, initializer: "inject(HttpClient)" });
+        serviceClass.addProperty({ name: "basePath", type: "string", scope: Scope.Private, isReadonly: true, initializer: `inject(${basePathTokenName})` });
+        serviceClass.addProperty({ name: "clientContextToken", type: "HttpContextToken<string>", scope: Scope.Private, isReadonly: true, initializer: clientContextTokenName });
 
-        serviceClass.addProperty({
-            name: "basePath",
-            type: "string",
-            scope: Scope.Private,
-            isReadonly: true,
-            initializer: `inject(${basePathTokenName})`,
-        });
-
-        serviceClass.addProperty({
-            name: "clientContextToken",
-            type: "HttpContextToken<string>",
-            scope: Scope.Private,
-            isReadonly: true,
-            initializer: clientContextTokenName,
-        });
-
-        // Add the helper method for creating context with client ID
         serviceClass.addMethod({
             name: "createContextWithClientId",
             scope: Scope.Private,
-            parameters: [
-                {
-                    name: "existingContext",
-                    type: "HttpContext",
-                    hasQuestionToken: true,
-                },
-            ],
+            parameters: [{ name: "existingContext", type: "HttpContext", hasQuestionToken: true, }],
             returnType: "HttpContext",
-            statements: `const context = existingContext || new HttpContext();
-return context.set(this.clientContextToken, '${this.config.clientName || "default"}');`,
+            statements: `const context = existingContext || new HttpContext();\nreturn context.set(this.clientContextToken, '${this.config.clientName || "default"}');`,
         });
 
-        // Generate methods for each operation
         operations.forEach((operation) => {
             this.methodGenerator.addServiceMethod(serviceClass, operation);
         });

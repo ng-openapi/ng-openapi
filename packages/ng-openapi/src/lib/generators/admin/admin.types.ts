@@ -1,49 +1,21 @@
-// packages/ng-openapi/src/lib/generators/admin/admin.types.ts
-
-export interface FilterParameter {
+export interface SwaggerParameter {
     name: string;
-    inputType: 'text' | 'select' | 'number' | 'boolean';
-    enumValues?: string[];
+    in: 'query' | 'header' | 'path' | 'cookie' | 'body';
+    description?: string;
+    required?: boolean;
+    type?: string;
+    schema?: any;
 }
 
-export interface ResourceOperation {
-    methodName: string;
-    idParamName?: string;
-    bodyParamName?: string;
-    filterParameters?: FilterParameter[];
-    contentType?: 'application/json' | 'multipart/form-data';
-    hasPagination?: boolean;
-    hasSorting?: boolean;
-}
-
-export interface ActionOperation {
-    label: string; // e.g., "Reboot Server"
-    methodName: string; // e.g., "serversidRebootPOST"
-    level: 'item' | 'collection';
-    path: string; // The raw path, e.g., /servers/{id}/reboot
-    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-}
-
-export interface Resource {
-    name: string; // e.g. 'pet'
-    pluralName: string; // e.g. 'pets'
-    className: string; // e.g. 'Pet'
-    titleName: string; // e.g. 'Pet'
-    serviceName: string; // e.g. 'PetService'
-    modelName: string; // e.g. 'Pet'
-    createModelName: string; // e.g. 'CreatePet'
-    createModelRef: string | undefined; // '#/components/schemas/CreatePet'
-    isEditable: boolean; // NEW: True if create or update ops exist
-    operations: {
-        list?: ResourceOperation;
-        create?: ResourceOperation;
-        read?: ResourceOperation;
-        update?: ResourceOperation;
-        delete?: ResourceOperation;
-    };
-    actions: ActionOperation[];
-    formProperties: FormProperty[];
-    listColumns: string[];
+export interface SwaggerPath {
+    summary?: string;
+    description?: string;
+    operationId?: string;
+    parameters?: any[];
+    responses?: any;
+    requestBody?: any;
+    tags?: string[];
+    security?: any[];
 }
 
 export interface PolymorphicOption {
@@ -54,7 +26,7 @@ export interface PolymorphicOption {
 export interface FormProperty {
     name: string;
     type: 'string' | 'number' | 'boolean' | 'enum' | 'array' | 'object' | 'array_object' | 'relationship' | 'file' | 'polymorphic';
-    inputType?: 'text' | 'number' | 'password' | 'email' | 'textarea' | 'checkbox' | 'slide-toggle' | 'select' | 'radio-group' | 'slider' | 'chip-list' | 'button-toggle-group' | 'datepicker' | 'file' | '';
+    inputType: 'text' | 'number' | 'password' | 'email' | 'textarea' | 'checkbox' | 'slide-toggle' | 'select' | 'radio-group' | 'slider' | 'chip-list' | 'button-toggle-group' | 'datepicker' | 'file' | '';
     required: boolean;
     validators: string[];
     description?: string;
@@ -65,12 +37,49 @@ export interface FormProperty {
     enumValues?: (string | number)[];
     min?: number;
     max?: number;
+    arrayItemModelName?: string;
     nestedProperties?: FormProperty[];
-    polymorphicOptions?: PolymorphicOption[]; // NEW
+    nestedObjectTypeName?: string; // e.g., 'PetCategory'
     relationResourceName?: string;
-    relationDisplayField?: string;
-    relationValueField?: string;
-    relationServiceName?: string;
-    relationListMethodName?: string;
-    relationModelName?: string;
+    relationDisplayField?: string,
+    relationValueField?: string,
+    relationServiceName?: string,
+    relationListMethodName?: string,
+    relationModelName?: string,
+    polymorphicOptions?: PolymorphicOption[];
+}
+
+export interface ResourceAction {
+    level: 'collection' | 'item';
+    label: string,
+    methodName: string;
+    idParamName: string;
+}
+
+export interface ResourceOperation {
+    methodName: string;
+    idParamName: string;
+    idParamType: 'string' | 'number';
+}
+
+export interface Resource {
+    name: string; // "pet"
+    pluralName: string; // "pets"
+    titleName: string; // "Pet"
+    modelName: string; // "Pet"
+    createModelName: string;
+    createModelRef: string;
+    serviceName: string; // "PetService"
+    isEditable: boolean;
+    operations: {
+        list?: ResourceOperation;
+        create?: ResourceOperation;
+        read?: ResourceOperation;
+        update?: ResourceOperation;
+        delete?: ResourceOperation;
+    };
+    actions: ResourceAction[];
+    formProperties: FormProperty[];
+    displayProperties: string[];
+    inlineInterfaces?: { name: string; definition: string; }[];
 }
