@@ -186,9 +186,39 @@ const petstoreUploadSpecObj = {
     }
 };
 
+const paginationAndSortSpecObj = {
+    openapi: '3.0.0',
+    info: { ...info, title: 'Pagination & Sort API' },
+    paths: {
+        '/items': {
+            get: {
+                tags: ['Items'],
+                operationId: 'listItems',
+                parameters: [
+                    { name: 'page', in: 'query', schema: { type: 'integer' } },
+                    { name: 'pageSize', in: 'query', schema: { type: 'integer' } },
+                    { name: 'sort', in: 'query', schema: { type: 'string' } },
+                    { name: 'order', in: 'query', schema: { type: 'string', enum: ['asc', 'desc'] } },
+                    { name: 'search', in: 'query', schema: { type: 'string' } },
+                ],
+                responses: { '200': {
+                        headers: { 'X-Total-Count': { schema: { type: 'integer' } } },
+                        content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Item' } } } }
+                    }}
+            }
+        }
+    },
+    components: {
+        schemas: {
+            Item: { type: 'object', properties: { id: { type: 'integer' }, name: { type: 'string' } } }
+        }
+    }
+};
+
 export const basicControlsSpec = JSON.stringify(basicControlsSpecObj);
 export const advancedStructuresSpec = JSON.stringify(advancedStructuresSpecObj);
 export const defaultValueSpec = JSON.stringify(defaultValueSpecObj);
 export const fullE2ESpec = JSON.stringify(fullE2ESpecObj);
 export const securitySpec = JSON.stringify(securitySpecObj);
 export const petstoreUploadSpec = JSON.stringify(petstoreUploadSpecObj);
+export const paginationAndSortSpec = JSON.stringify(paginationAndSortSpecObj);

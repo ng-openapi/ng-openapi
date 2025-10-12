@@ -1,3 +1,5 @@
+import { describe, it, expect } from 'vitest';
+
 import { GeneratorConfig, SwaggerParser } from '@ng-openapi/shared';
 import { discoverAdminResources } from '../../src/lib/generators/admin/resource-discovery';
 import { fullE2ESpec } from './specs/test.specs';

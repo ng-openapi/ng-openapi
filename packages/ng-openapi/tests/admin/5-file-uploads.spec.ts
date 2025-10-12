@@ -1,6 +1,10 @@
+import { describe, it, expect, beforeAll } from 'vitest';
+
 import { Project } from 'ts-morph';
-import { AdminGenerator } from '../../src/lib/generators/admin/admin.generator';
+
 import { SwaggerParser } from '@ng-openapi/shared';
+
+import { AdminGenerator } from '../../src/lib/generators/admin/admin.generator';
 import { petstoreUploadSpec } from './specs/test.specs';
 
 describe('Integration: File Uploads Generation', () => {

@@ -1,31 +1,37 @@
-<div class="container">
-  <h1>{{pluralTitleName}}</h1>
+<div class="header-actions">
+  <h2>{{pluralTitleName}}</h2>
+  <div class="header-buttons">
+      {{actionsMenuTemplate}}
+      {{createButtonTemplate}}
+  </div>
+</div>
 
-  <div class="header-actions">
-    {{createButtonTemplate}}
+{{filtersHtml}}
+
+<div class="table-container mat-elevation-z8">
+  <div class="loading-shade" *ngIf="isLoading()">
+    <mat-spinner></mat-spinner>
   </div>
 
-  @if (data().length > 0) {
-    <div class="mat-elevation-z8">
-      <table mat-table [dataSource]="data()" class="full-width-table">
-        {{columnsTemplate}}
+  <table mat-table [dataSource]="data()" matSort (matSortChange)="onSortChange()">
+    {{columnsTemplate}}
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let element" class="actions-cell">
+        {{editButtonTemplate}}
+        {{deleteButtonTemplate}}
+      </td>
+    </ng-container>
 
-        <!-- Actions Column -->
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef></th>
-          <td mat-cell *matCellDef="let element" class="actions-cell">
-            {{editButtonTemplate}}
-            {{deleteButtonTemplate}}
-          </td>
-        </ng-container>
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
 
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-      </table>
-    </div>
-  } @else {
-    <div class="no-data-message">
-      No {{pluralName}} found. Get started by creating one.
-    </div>
-  }
+    <tr class="mat-row" *matNoDataRow>
+      <td class="mat-cell" [attr.colspan]="displayedColumns.length">
+        No data matching the filter.
+      </td>
+    </tr>
+  </table>
+
+  <mat-paginator [length]="totalItems()" [pageSizeOptions]="[5, 10, 25, 100]" showFirstLastButtons></mat-paginator>
 </div>

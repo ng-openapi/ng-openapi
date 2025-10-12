@@ -50,7 +50,8 @@ export class ${resource.className}ListComponent {}
 `);
         // Path 2: Full List Component
     } else {
-        const filters = resource.operations.list!.filterParameters || [];
+        const listOp = resource.operations.list;
+        const filters = listOp.filterParameters || [];
 
         let filtersHtml = '';
         if (filters.length > 0) {
@@ -101,44 +102,53 @@ export class ${resource.className}ListComponent {}
         const idKey = resource.operations.read?.idParamName || resource.operations.delete?.idParamName || 'id';
         const editBtn = (resource.operations.read || resource.operations.update) ? `<button mat-icon-button [routerLink]="['../', element.${idKey}]" matTooltip="View/Edit ${resource.titleName}"><mat-icon>edit</mat-icon></button>` : '';
         const deleteBtn = resource.operations.delete ? `<button mat-icon-button color="warn" (click)="delete(element.${idKey})" matTooltip="Delete ${resource.titleName}"><mat-icon>delete</mat-icon></button>` : '';
-        const columnsTemplate = resource.listColumns.map((col) => `<ng-container matColumnDef="${col}"><th mat-header-cell *matHeaderCellDef>${titleCase(col)}</th><td mat-cell *matCellDef="let element">{{element.${col}}}</td></ng-container>`).join("\n");
+        const sortHeader = listOp.hasSorting ? 'mat-sort-header' : '';
+        const columnsTemplate = resource.listColumns.map((col) => `<ng-container matColumnDef="${col}"><th mat-header-cell *matHeaderCellDef ${sortHeader}="${col}">${titleCase(col)}</th><td mat-cell *matCellDef="let element">{{element.${col}}}</td></ng-container>`).join("\n");
 
         const templateContext = { ...resource, pluralTitleName, columnsTemplate, createButtonTemplate: createBtn, editButtonTemplate: editBtn, deleteButtonTemplate: deleteBtn, filtersHtml, actionsMenuTemplate: actionsMenu };
         htmlFile.insertText(0, renderTemplate(getTemplate("list.component.html.template"), templateContext));
 
-        const cssContent = `:host { display: block; padding: 2rem; } .header-actions { display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem; margin-bottom: 1rem; } .mat-elevation-z8 { width: 100%; } .actions-cell { width: 120px; text-align: right; } .filters-container { display: flex; align-items: flex-start; gap: 1rem; padding: 1rem; background-color: #f9f9f9; border-radius: 4px; margin-bottom: 1rem; } .filters-form { display: flex; flex-wrap: wrap; gap: 1rem; flex-grow: 1; }`;
+        const cssContent = `:host { display: block; padding: 2rem; } .header-actions { display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem; margin-bottom: 1rem; } .table-container { position: relative; } .loading-shade { position: absolute; top: 0; left: 0; bottom: 56px; right: 0; background: rgba(0, 0, 0, 0.15); z-index: 100; display: flex; align-items: center; justify-content: center; } .mat-elevation-z8 { width: 100%; } .actions-cell { width: 120px; text-align: right; } .filters-container { display: flex; align-items: flex-start; gap: 1rem; padding: 1rem; background-color: #f9f9f9; border-radius: 4px; margin-bottom: 1rem; } .filters-form { display: flex; flex-wrap: wrap; gap: 1rem; flex-grow: 1; }`;
         cssFile.insertText(0, cssContent);
 
         const filterFormControls = filters.map(f => `'${f.name}': new FormControl(null)`).join(',\n      ');
         const hasFilters = filters.length > 0;
 
-        const tsImports = new Set(['Component', 'inject', 'signal', 'WritableSignal']);
-        const materialModules: { [key: string]: string } = {
-            MatTableModule: '@angular/material/table',
-            MatIconModule: '@angular/material/icon',
-            MatButtonModule: '@angular/material/button',
-            MatTooltipModule: '@angular/material/tooltip',
+        const tsImports = new Set(['Component', 'inject', 'signal', 'AfterViewInit', 'ViewChild']);
+        const materialModules: { [key: string]: string[] } = {
+            '@angular/material/table': ['MatTableModule'], '@angular/material/icon': ['MatIconModule'],
+            '@angular/material/button': ['MatButtonModule'], '@angular/material/tooltip': ['MatTooltipModule'],
+            '@angular/material/progress-spinner': ['MatProgressSpinnerModule'],
         };
+
         const specialImports: string[] = [];
         if (hasFilters) {
             specialImports.push(`import { ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';`);
-            specialImports.push(`import { debounceTime, distinctUntilChanged } from 'rxjs';`);
-            materialModules['MatFormFieldModule'] = '@angular/material/form-field';
-            materialModules['MatInputModule'] = '@angular/material/input';
+            materialModules['@angular/material/form-field'] = ['MatFormFieldModule'];
+            materialModules['@angular/material/input'] = ['MatInputModule'];
             if (filters.some(f => f.inputType === 'select')) {
-                materialModules['MatSelectModule'] = '@angular/material/select';
+                materialModules['@angular/material/select'] = ['MatSelectModule'];
             }
         }
+        if (listOp.hasPagination) {
+            tsImports.add('MatPaginator');
+            materialModules['@angular/material/paginator'] = ['MatPaginator', 'MatPaginatorModule'];
+        }
+        if (listOp.hasSorting) {
+            tsImports.add('MatSort');
+            materialModules['@angular/material/sort'] = ['MatSort', 'MatSortModule'];
+        }
         if (collectionActions.length > 0) {
-            materialModules['MatMenuModule'] = '@angular/material/menu';
+            materialModules['@angular/material/menu'] = ['MatMenuModule'];
         }
 
-        const componentImports = [ 'CommonModule', 'RouterModule', ...Object.keys(materialModules)];
+        const componentImportNames = Object.values(materialModules).flatMap(imports => imports.filter(i => i.endsWith('Module')));
+        const componentImports = ['CommonModule', 'RouterModule', ...componentImportNames];
         if (hasFilters) componentImports.push('ReactiveFormsModule');
 
-        const materialImportsStr = Object.entries(materialModules).map(([mod, path]) => `import { ${mod} } from '${path}';`).join('\n');
+        const materialImportsStr = Object.entries(materialModules).map(([path, imports]) => `import { ${[...new Set(imports)].join(', ')} } from '${path}';`).join('\n');
 
-        const executeActionCases = collectionActions.map(a => `case '${a.methodName}': this.svc.${a.methodName}({} as any).subscribe({ next: () => { this.snackBar.open('Action successful.', 'OK', { duration: 3000 }); this.loadData(); }, error: (e) => this.snackBar.open('Action failed.', 'OK', { duration: 5000 }) }); break;`).join('\n');
+        const executeActionCases = collectionActions.map(a => `case '${a.methodName}': this.svc.${a.methodName}({} as any).subscribe({ next: () => { this.snackBar.open('Action successful.', 'OK', { duration: 3000 }); }, error: (e) => this.snackBar.open('Action failed.', 'OK', { duration: 5000 }) }); break;`).join('\n');
         const collectionActionMethod = collectionActions.length > 0 ? `
 readonly collectionActions = JSON.parse('${JSON.stringify(collectionActions)}');
 executeCollectionAction(action: any): void {
@@ -154,6 +164,7 @@ import { ${Array.from(tsImports).join(', ')} } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { merge, of, startWith, switchMap, catchError, map, debounceTime, distinctUntilChanged, tap } from 'rxjs';
 ${specialImports.join('\n')}
 ${materialImportsStr}
 import { ${resource.serviceName} } from '../../../services';
@@ -166,43 +177,85 @@ import { ${resource.modelName} } from '../../../models';
   templateUrl: './${compName}.html',
   styleUrls: ['./${compName}.css']
 })
-export class ${resource.className}ListComponent {
+export class ${resource.className}ListComponent implements AfterViewInit {
   private readonly svc = inject(${resource.serviceName});
   private readonly snackBar = inject(MatSnackBar);
-  readonly data: WritableSignal<${resource.modelName}[]> = signal([]);
+  readonly data = signal<${resource.modelName}[]>([]);
   readonly displayedColumns: string[] = [${resource.listColumns.map(c => `'${c}'`).join(", ")}, 'actions'];
+  readonly totalItems = signal(0);
+  readonly isLoading = signal(true);
+  
+  ${listOp.hasPagination ? `@ViewChild(MatPaginator) paginator!: MatPaginator;` : ''}
+  ${listOp.hasSorting ? `@ViewChild(MatSort) sorter!: MatSort;` : ''}
   ${hasFilters ? `
   readonly filterForm = new FormGroup({
       ${filterFormControls}
   });` : ''}
+  
+  ngAfterViewInit(): void {
+    ${listOp.hasSorting ? 'this.sorter.sortChange.subscribe(() => this.paginator.pageIndex = 0);' : ''}
 
-  constructor() {
-    this.loadData();
-    ${hasFilters ? `
-    this.filterForm.valueChanges.pipe(
-      debounceTime(300),
-      distinctUntilChanged()
-    ).subscribe(() => this.loadData());` : ''}
+    const events = [
+      ${listOp.hasSorting ? 'this.sorter.sortChange' : ''},
+      ${listOp.hasPagination ? 'this.paginator.page' : ''},
+      ${hasFilters ? 'this.filterForm.valueChanges.pipe(debounceTime(300), distinctUntilChanged(), tap(() => this.paginator.pageIndex = 0))' : ''}
+    ].filter(Boolean);
+
+    merge(...events).pipe(
+      startWith({}),
+      switchMap(() => this.loadData()),
+    ).subscribe(data => this.data.set(data));
   }
 
-  loadData(): void {
-    const filters = ${hasFilters ? 'this.filterForm.getRawValue()' : '{}'};
-    const cleanFilters = Object.entries(filters).reduce((acc, [key, value]) => {
-        if (value !== null && value !== undefined && value !== '') { (acc as any)[key] = value; }
-        return acc;
-    }, {});
-    this.svc.${resource.operations.list!.methodName}(cleanFilters as any).subscribe((d) => this.data.set(d as any[]));
+  loadData() {
+    this.isLoading.set(true);
+    const params: any = ${hasFilters ? 'this.filterForm.getRawValue()' : '{}'};
+    ${listOp.hasPagination ? `
+    params.page = this.paginator.pageIndex;
+    params.pageSize = this.paginator.pageSize;
+    ` : ''}
+    ${listOp.hasSorting ? `
+    params.sort = this.sorter.active;
+    params.order = this.sorter.direction;
+    ` : ''}
+    
+    return this.svc.${listOp.methodName}(params as any, 'response').pipe(
+      catchError(() => {
+        this.isLoading.set(false);
+        this.snackBar.open('Failed to load data.', 'OK', { duration: 5000 });
+        return of(null);
+      }),
+      map(res => {
+        this.isLoading.set(false);
+        if (res) {
+          ${listOp.hasPagination ? `this.totalItems.set(Number(res.headers.get('X-Total-Count') ?? 0));` : `this.totalItems.set(res.body?.length ?? 0);`}
+          return res.body as ${resource.modelName}[];
+        }
+        return [];
+      })
+    );
   }
+
+  onSortChange() {
+    this.paginator.pageIndex = 0;
+  }
+  
   ${hasFilters ? `
   resetFilters(): void {
     this.filterForm.reset();
   }`: ''}
+  
   ${resource.operations.delete ? `
   delete(id: number | string): void {
     if (confirm('Are you sure?')) {
-      this.svc.${resource.operations.delete.methodName}({ ${resource.operations.delete.idParamName}: id } as any).subscribe(() => this.loadData());
+      this.svc.${resource.operations.delete.methodName}({ ${resource.operations.delete.idParamName}: id } as any).subscribe(() => {
+        // Refresh data after delete
+        this.loadData().subscribe(data => this.data.set(data));
+        this.snackBar.open('${resource.titleName} deleted.', 'OK', { duration: 3000 });
+      });
     }
   }` : ''}
+  
   ${collectionActionMethod}
 }`;
         tsFile.addStatements(tsContent);

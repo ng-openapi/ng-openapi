@@ -1,3 +1,5 @@
+// packages/ng-openapi/src/lib/generators/admin/admin.types.ts
+
 export interface FilterParameter {
     name: string;
     inputType: 'text' | 'select' | 'number' | 'boolean';
@@ -10,6 +12,8 @@ export interface ResourceOperation {
     bodyParamName?: string;
     filterParameters?: FilterParameter[];
     contentType?: 'application/json' | 'multipart/form-data';
+    hasPagination?: boolean;
+    hasSorting?: boolean;
 }
 
 export interface ActionOperation {

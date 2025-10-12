@@ -1,3 +1,5 @@
+// packages/ng-openapi/src/lib/generators/admin/resource-discovery.ts
+
 import { SwaggerParser, extractPaths, PathInfo, pascalCase, camelCase, titleCase } from "@ng-openapi/shared";
 import { ActionOperation, FilterParameter, Resource } from "./admin.types";
 import { plural } from "./admin.helpers";
@@ -30,15 +32,12 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
         let listOp: PathInfo | undefined, createOp: PathInfo | undefined, readOp: PathInfo | undefined, updateOp: PathInfo | undefined, deleteOp: PathInfo | undefined;
         const usedPaths = new Set<string>();
 
-        // <<< THE FINAL FIX IS HERE >>>
-        // Loosen the listOp definition to be any GET on a non-item path. This is the key.
         listOp = tagPaths.find(p => p.method === 'GET' && !isItemPath(p));
         if(listOp) usedPaths.add(`${listOp.method}:${listOp.path}`);
 
         createOp = tagPaths.find(p => p.method === 'POST' && !isItemPath(p) && p.requestBody?.content);
         if(createOp) usedPaths.add(`${createOp.method}:${createOp.path}`);
 
-        // Make readOp more specific to avoid matching action paths like /items/{id}/action
         readOp = tagPaths.find(p => p.method === 'GET' && isItemPath(p) && p.path.endsWith('}'));
         if(readOp) usedPaths.add(`${readOp.method}:${readOp.path}`);
 
@@ -52,7 +51,6 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
             continue;
         }
 
-        // Actions are ONLY what's left over
         const actions: ActionOperation[] = tagPaths
             .filter(p => !usedPaths.has(`${p.method}:${p.path}`))
             .map(p => ({
@@ -65,12 +63,15 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
 
         const createOpContent = createOp?.requestBody?.content || {};
         const schemaObject = createOpContent['application/json']?.schema || createOpContent['multipart/form-data']?.schema;
-
         const ref = schemaObject?.$ref;
+
+        const listOpParams = listOp?.parameters?.filter(p => p.in === 'query').map(p => p.name) ?? [];
+        const hasPagination = listOpParams.includes('page') && listOpParams.includes('pageSize');
+        const hasSorting = listOpParams.includes('sort') && listOpParams.includes('order');
 
         const filterParameters: FilterParameter[] = [];
         if (listOp?.parameters) {
-            listOp.parameters.filter(p => p.in === 'query').forEach((p) => {
+            listOp.parameters.filter(p => p.in === 'query' && !['page', 'pageSize', 'sort', 'order'].includes(p.name)).forEach((p) => {
                 const schema = p.schema || p;
                 if (schema.type === 'string' && schema.enum) {
                     filterParameters.push({ name: p.name, inputType: 'select', enumValues: schema.enum });
@@ -100,7 +101,7 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
             createModelRef: ref,
             isEditable: !!(createOp || updateOp),
             operations: {
-                list: listOp ? { methodName: getMethodName(listOp), filterParameters } : undefined,
+                list: listOp ? { methodName: getMethodName(listOp), filterParameters, hasPagination, hasSorting } : undefined,
                 create: createOp ? { methodName: getMethodName(createOp), contentType: getRequestContentType(createOp) } : undefined,
                 read: readOp ? { methodName: getMethodName(readOp), idParamName: getIdParamName(readOp) } : undefined,
                 update: updateOp ? { methodName: getMethodName(updateOp), idParamName: getIdParamName(updateOp), contentType: getRequestContentType(updateOp) } : undefined,

@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
+
 import { Project } from "ts-morph";
+
 import { GeneratorConfig, SwaggerParser, SwaggerSpec } from "@ng-openapi/shared";
+
 import { AuthInterceptorGenerator } from "../../src/lib/generators/utility/auth-interceptor.generator";
 import { securitySpecObj } from "./specs/test.specs";
 
