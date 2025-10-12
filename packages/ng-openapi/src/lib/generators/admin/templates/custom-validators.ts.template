@@ -1,0 +1,59 @@
+import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+
+/**
+ * Provides custom validators that are not part of Angular's built-in set.
+ */
+export class CustomValidators {
+
+  /**
+   * Validator that requires a control's numeric value to be greater than a number.
+   */
+  public static exclusiveMin(min: number): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (control.value === null || control.value === undefined || control.value <= min) {
+        return { exclusiveMin: { min, actual: control.value } };
+      }
+      return null;
+    };
+  }
+
+  /**
+   * Validator that requires a control's numeric value to be less than a number.
+   */
+  public static exclusiveMax(max: number): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (control.value === null || control.value === undefined || control.value >= max) {
+        return { exclusiveMax: { max, actual: control.value } };
+      }
+      return null;
+    };
+  }
+
+  /**
+   * Validator that requires a control's numeric value to be a multiple of a number.
+   */
+  public static multipleOf(factor: number): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (control.value === null || control.value === undefined || control.value % factor !== 0) {
+        return { multipleOf: { factor, actual: control.value } };
+      }
+      return null;
+    };
+  }
+
+  /**
+   * Validator that requires an array to have unique items.
+   */
+  public static uniqueItems(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!Array.isArray(control.value)) {
+        return null;
+      }
+      const unique = new Set(control.value);
+      if (unique.size !== control.value.length) {
+        return { uniqueItems: true };
+      }
+      return null;
+    };
+  }
+}

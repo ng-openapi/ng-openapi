@@ -6,7 +6,7 @@ import { Resource } from '../admin.types';
 import { pascalCase, titleCase } from "@ng-openapi/shared";
 import { generateFormControlsTS, generateFormFieldsHTML } from '../helpers/generation.helpers';
 
-export function writeFormComponent(resource: Resource, project: Project, allResources: Resource[], adminDir: string) {
+export function writeFormComponent(resource: Resource, project: Project, allResources: Resource[], adminDir: string, usesCustomValidators: boolean) {
     if (!resource.isEditable && !resource.operations.read) return;
 
     const dir = path.join(adminDir, resource.pluralName, `${resource.name}-form`);
@@ -122,6 +122,7 @@ remove${singularPascal}(index: number): void { this.${p.name}.removeAt(index); }
 
     const materialImportsMap = { MatFormFieldModule: "@angular/material/form-field", MatInputModule: "@angular/material/input", MatButtonModule: "@angular/material/button", MatIconModule: "@angular/material/icon", MatCheckboxModule: "@angular/material/checkbox", MatSlideToggleModule: "@angular/material/slide-toggle", MatSelectModule: "@angular/material/select", MatRadioModule: "@angular/material/radio", MatSliderModule: "@angular/material/slider", MatChipsModule: "@angular/material/chips", MatButtonToggleModule: "@angular/material/button-toggle", MatDatepickerModule: "@angular/material/datepicker", MatExpansionModule: "@angular/material/expansion", MatTooltipModule: "@angular/material/tooltip", MatSnackBarModule: "@angular/material/snack-bar" };
     const materialImports = Array.from(materialModules).map((mod) => `import { ${mod} } from '${materialImportsMap[mod as keyof typeof materialImportsMap]}';`).join("\n");
+    const customValidatorImport = usesCustomValidators ? `import { CustomValidators } from '../../helpers/custom-validators';` : '';
 
     const formControlFields = resource.isEditable ? generateFormControlsTS(resource.formProperties, resource.createModelName) : '';
     const angularCoreImports = new Set(["Component", "inject", "computed", "signal", "input", "effect"]);
@@ -173,6 +174,7 @@ import { CommonModule } from '@angular/common';
 ${resource.isEditable ? "import { FormControl, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';" : ''}
 import { Router, ActivatedRoute } from '@angular/router';
 ${resource.isEditable ? "import { MatSnackBar } from '@angular/material/snack-bar';" : ''}
+${customValidatorImport}
 ${materialImports}
 import { ${[...new Set([resource.serviceName, ...relationServices.keys()])].join(", ")} } from '../../../../services';
 import { ${[...new Set([resource.modelName, resource.createModelName, ...relationshipProps.map(p => p.relationModelName!)].filter(Boolean))].join(", ")} } from '../../../../models';

@@ -19,9 +19,14 @@ export function generateFormControlsTS(properties: FormProperty[], createModelNa
         if (p.type === 'object' && p.nestedProperties) {
             const nestedControls = generateFormControlsTS(p.nestedProperties, `${createModelName}['${p.name}']`);
             return `'${p.name}': new FormGroup({\n    ${nestedControls}\n})`;
-        } else if (p.type === 'array_object' && p.nestedProperties) {
-            const validators = p.required ? `, { validators: [Validators.required] }` : '';
-            return `'${p.name}': new FormArray([]${validators})`;
+        } else if (p.type === 'array_object' || p.type === 'array') {
+            const validators = p.validators.length > 0 ? `, { validators: [${p.validators.join(', ')}] }` : '';
+            // FIX: Handle default values for FormArray
+            let initialControls = '[]';
+            if (p.defaultValue && Array.isArray(p.defaultValue)) {
+                initialControls = `[\n      ${p.defaultValue.map(val => `new FormControl(${JSON.stringify(val)})`).join(',\n      ')}\n    ]`;
+            }
+            return `'${p.name}': new FormArray(${initialControls}${validators})`;
         } else if (p.type === 'file') {
             const validators = p.required ? `{ validators: [Validators.required] }` : '';
             return `'${p.name}': new FormControl<File | null>(null${validators ? ', ' + validators : ''})`;
@@ -30,7 +35,6 @@ export function generateFormControlsTS(properties: FormProperty[], createModelNa
             const options: string[] = [];
             if (p.validators.length > 0) { options.push(`validators: [${p.validators.join(", ")}]`); }
 
-            // <<< FIX #2: A field is NOT nullable if it's required OR has a default value. >>>
             const isNullable = !p.required && p.defaultValue === undefined;
             if (!isNullable) { options.push("nonNullable: true"); }
 

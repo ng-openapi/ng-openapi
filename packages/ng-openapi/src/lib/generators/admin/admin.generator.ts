@@ -8,12 +8,14 @@ import { discoverAdminResources } from "./resource-discovery";
 import { writeListComponent } from "./component-writers/list-component.writer";
 import { writeFormComponent } from "./component-writers/form-component.writer";
 import { writeMasterAdminRoutes, writeResourceRoutes } from "./component-writers/routes.writer";
+import { getTemplate } from './helpers/template.reader';
 
 export class AdminGenerator {
     private readonly project: Project;
     private readonly parser: SwaggerParser;
     private readonly config: GeneratorConfig;
     private allResources: Resource[] = [];
+    private customValidatorsCreated = false;
 
     constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
         this.config = config;
@@ -45,7 +47,11 @@ export class AdminGenerator {
                 writeListComponent(resource, this.project, adminDir);
             }
             if (resource.operations.read || resource.operations.create || resource.operations.update) {
-                writeFormComponent(resource, this.project, this.allResources, adminDir);
+                const usesCustomValidators = resource.formProperties.some(p => p.validators.some(v => v.startsWith('CustomValidators')));
+                if (usesCustomValidators && !this.customValidatorsCreated) {
+                    this.createCustomValidatorsFile(adminDir);
+                }
+                writeFormComponent(resource, this.project, this.allResources, adminDir, usesCustomValidators);
             }
 
             writeResourceRoutes(resource, this.project, adminDir);
@@ -55,6 +61,14 @@ export class AdminGenerator {
         writeMasterAdminRoutes(generatedResources, this.project, path.join(outputRoot, "admin"));
     }
 
+    private createCustomValidatorsFile(adminDir: string) {
+        const helpersDir = path.join(adminDir, "helpers");
+        const filePath = path.join(helpersDir, "custom-validators.ts");
+        const template = getTemplate("custom-validators.ts.template");
+        this.project.createSourceFile(filePath, template, { overwrite: true }).saveSync();
+        this.customValidatorsCreated = true;
+    }
+
     private processSchemaToFormProperties(schema: any): FormProperty[] {
         const properties: FormProperty[] = [];
         if (!schema || !schema.properties) return properties;
@@ -62,14 +76,34 @@ export class AdminGenerator {
         for (const propName in schema.properties) {
             const prop = schema.properties[propName];
             const isRequired = schema.required?.includes(propName) ?? false;
+            // FIX: The validators array is now declared here, and subsequent checks append to it.
+            const validators = isRequired ? ["Validators.required"] : [];
 
             if (prop.readOnly) continue;
+
+            // Add numeric validators
+            if (prop.minimum !== undefined) {
+                if (prop.exclusiveMinimum) {
+                    validators.push(`CustomValidators.exclusiveMin(${prop.minimum})`);
+                } else {
+                    validators.push(`Validators.min(${prop.minimum})`);
+                }
+            }
+            if (prop.maximum !== undefined) {
+                if (prop.exclusiveMaximum) {
+                    validators.push(`CustomValidators.exclusiveMax(${prop.maximum})`);
+                } else {
+                    validators.push(`Validators.max(${prop.maximum})`);
+                }
+            }
+            if (prop.multipleOf !== undefined) {
+                validators.push(`CustomValidators.multipleOf(${prop.multipleOf})`);
+            }
 
             if (prop.type === 'string' && prop.format === 'binary') {
                 properties.push({
                     name: propName, type: 'file', inputType: 'file', required: isRequired,
-                    validators: isRequired ? ["Validators.required"] : [],
-                    description: prop.description,
+                    validators, description: prop.description,
                 });
                 continue;
             }
@@ -80,8 +114,7 @@ export class AdminGenerator {
 
             if (relatedResource) {
                 properties.push({
-                    name: propName, type: 'relationship', required: isRequired,
-                    validators: isRequired ? ["Validators.required"] : [],
+                    name: propName, type: 'relationship', required: isRequired, validators,
                     relationResourceName: relatedResource.name, relationDisplayField: 'name', relationValueField: 'id',
                     relationServiceName: relatedResource.serviceName, relationListMethodName: relatedResource.operations.list!.methodName,
                     relationModelName: relatedResource.modelName,
@@ -90,36 +123,47 @@ export class AdminGenerator {
             }
 
             if (subSchema.type === 'object' && subSchema.properties) {
+                // Nested objects don't have validators on the group itself in this implementation
                 properties.push({ name: propName, type: 'object', nestedProperties: this.processSchemaToFormProperties(subSchema), inputType: '', required: isRequired, validators: [] });
                 continue;
             }
 
+            // Handle array validators
+            if (prop.type === 'array') {
+                if (prop.minItems !== undefined) validators.push(`Validators.minLength(${prop.minItems})`);
+                if (prop.maxItems !== undefined) validators.push(`Validators.maxLength(${prop.maxItems})`);
+                if (prop.uniqueItems === true) validators.push(`CustomValidators.uniqueItems()`);
+            }
+
             if (prop.type === 'array' && (prop.items?.$ref)) {
                 const arrayItemSchema = this.parser.resolveReference(prop.items.$ref);
-                properties.push({ name: propName, type: 'array_object', nestedProperties: this.processSchemaToFormProperties(arrayItemSchema), inputType: '', required: isRequired, validators: [] });
+                properties.push({ name: propName, type: 'array_object', nestedProperties: this.processSchemaToFormProperties(arrayItemSchema), inputType: '', required: isRequired, validators });
                 continue;
+            }
+
+            // Moved from below to apply to all remaining types, including arrays of strings
+            if (prop.minLength) validators.push(`Validators.minLength(${prop.minLength})`);
+            if (prop.maxLength) validators.push(`Validators.maxLength(${prop.maxLength})`);
+            if (prop.pattern) {
+                const escapedPattern = prop.pattern.replace(/\\/g, "\\\\");
+                validators.push(`Validators.pattern(/${escapedPattern}/)`);
             }
 
             const formProp: FormProperty = {
                 name: propName, type: "string", inputType: "text", required: isRequired,
-                validators: isRequired ? ["Validators.required"] : [], description: prop.description, defaultValue: prop.default, minLength: prop.minLength,
+                validators, description: prop.description, defaultValue: prop.default, minLength: prop.minLength,
                 maxLength: prop.maxLength, pattern: prop.pattern, enumValues: prop.enum, min: prop.minimum, max: prop.maximum,
             };
-            if (prop.minLength) formProp.validators.push(`Validators.minLength(${prop.minLength})`);
-            if (prop.maxLength) formProp.validators.push(`Validators.maxLength(${prop.maxLength})`);
-            if (prop.pattern) {
-                const escapedPattern = prop.pattern.replace(/\\/g, "\\\\");
-                formProp.validators.push(`Validators.pattern(/${escapedPattern}/)`);
-            }
+
             if (prop.enum) {
                 formProp.type = "enum";
                 formProp.inputType = prop.enum.length <= 4 ? "radio-group" : "select";
             } else {
                 switch (prop.type) {
                     case "boolean": formProp.type = "boolean"; formProp.inputType = (this.config.options.admin as any)?.booleanType === "slide-toggle" ? "slide-toggle" : "checkbox"; break;
-                    case "number": case "integer": formProp.type = "number"; formProp.inputType = formProp.min !== undefined && formProp.max !== undefined ? "slider" : "number"; break;
+                    case "number": case "integer": formProp.type = "number"; formProp.inputType = formProp.min !== undefined && formProp.max !== undefined && !prop.exclusiveMinimum && !prop.exclusiveMaximum ? "slider" : "number"; break;
                     case "string": formProp.type = "string"; if (prop.format === "date" || prop.format === "date-time") formProp.inputType = "datepicker"; else if (prop.format === "password") formProp.inputType = "password"; else if (prop.format === "textarea") formProp.inputType = "textarea"; break;
-                    case "array": if (prop.items?.type === "string" && prop.items?.enum) { formProp.type = "array"; formProp.inputType = "button-toggle-group"; formProp.enumValues = prop.items.enum; } else if (prop.items?.type === "string") { formProp.type = "array"; formProp.inputType = "chip-list"; } break;
+                    case "array": formProp.type = "array"; if (prop.items?.type === "string" && prop.items?.enum) { formProp.inputType = "button-toggle-group"; formProp.enumValues = prop.items.enum; } else if (prop.items?.type === "string") { formProp.inputType = "chip-list"; } break;
                 }
             }
             properties.push(formProp);

@@ -215,6 +215,32 @@ const paginationAndSortSpecObj = {
     }
 };
 
+const advancedValidationSpecObj = {
+    openapi: '3.0.0',
+    info: { ...info, title: 'Advanced Validation API' },
+    paths: {
+        '/items': {
+            post: { tags: ['Items'], requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateItem' } } } } }
+        }
+    },
+    components: {
+        schemas: {
+            CreateItem: {
+                type: 'object',
+                required: ['quantity'],
+                properties: {
+                    quantity: { type: 'integer', minimum: 1, maximum: 100 },
+                    // FIX: Correctly define exclusiveMinimum/Maximum as boolean flags modifying minimum/maximum.
+                    price: { type: 'number', minimum: 0, exclusiveMinimum: true, maximum: 1000, exclusiveMaximum: true },
+                    step: { type: 'number', multipleOf: 5 },
+                    tags: { type: 'array', items: { type: 'string' }, minItems: 2, maxItems: 5 },
+                    categories: { type: 'array', items: { type: 'string' }, uniqueItems: true }
+                }
+            }
+        }
+    }
+};
+
 export const basicControlsSpec = JSON.stringify(basicControlsSpecObj);
 export const advancedStructuresSpec = JSON.stringify(advancedStructuresSpecObj);
 export const defaultValueSpec = JSON.stringify(defaultValueSpecObj);
@@ -222,3 +248,4 @@ export const fullE2ESpec = JSON.stringify(fullE2ESpecObj);
 export const securitySpec = JSON.stringify(securitySpecObj);
 export const petstoreUploadSpec = JSON.stringify(petstoreUploadSpecObj);
 export const paginationAndSortSpec = JSON.stringify(paginationAndSortSpecObj);
+export const advancedValidationSpec = JSON.stringify(advancedValidationSpecObj);
