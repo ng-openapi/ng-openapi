@@ -90,6 +90,8 @@ export class TypeGenerator {
             this.collectEnumStructure(interfaceName, definition);
         } else if (definition.allOf) {
             this.collectCompositeTypeStructure(interfaceName, definition);
+        } else if (definition.items) {
+            this.collectArrayTypeStructure(interfaceName, definition);
         } else {
             this.collectInterfaceStructure(interfaceName, definition);
         }
@@ -221,6 +223,18 @@ export class TypeGenerator {
             type: typeExpression,
             isExported: true,
             docs: definition.description ? [definition.description] : undefined,
+        });
+    }
+
+    private collectArrayTypeStructure(name: string, definition: SwaggerDefinition): void {
+        const itemType = definition.items ? this.getArrayItemType(definition.items) : "unknown";
+
+        this.statements.push({
+            kind: StructureKind.TypeAlias,
+            name,
+            isExported: true,
+            docs: definition.description ? [definition.description] : undefined,
+            type: `Array<${itemType}>`,
         });
     }
 
