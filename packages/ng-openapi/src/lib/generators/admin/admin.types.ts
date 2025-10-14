@@ -80,6 +80,6 @@ export interface Resource {
     };
     actions: ResourceAction[];
     formProperties: FormProperty[];
-    displayProperties: string[];
+    listColumns: string[];
     inlineInterfaces?: { name: string; definition: string; }[];
 }

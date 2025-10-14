@@ -1,0 +1,122 @@
+/* eslint-disable */
+import { {{tsImports}} } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { merge, of, startWith, switchMap, catchError, map, debounceTime, distinctUntilChanged, tap } from 'rxjs';
+{{specialImports}}
+{{materialImports}}
+import { {{serviceName}} } from '../../../services';
+import { {{modelName}} } from '../../../models';
+
+@Component({
+  selector: 'app-{{pluralKebabName}}-list',
+  standalone: true,
+  imports: [{{componentImports}}],
+  templateUrl: './{{compName}}.html',
+  styleUrls: ['./{{compName}}.css']
+})
+export class {{componentClassName}} {{implementsAfterViewInit}} {
+  private readonly svc = inject({{serviceName}});
+  private readonly snackBar = inject(MatSnackBar);
+  readonly data = signal<{{modelName}}[]>([]);
+  readonly displayedColumns: string[] = {{displayedColumns}};
+  readonly totalItems = signal(0);
+  readonly isLoading = signal(true);
+
+  @if (hasPagination) { @ViewChild(MatPaginator) paginator!: MatPaginator; }
+  @if (hasSorting) { @ViewChild(MatSort) sorter!: MatSort; }
+  @if (hasFilters) {
+  readonly filterForm = new FormGroup({
+      {{filterFormControls}}
+  });
+  }
+
+  @if (hasNgAfterViewInit) {
+  ngAfterViewInit(): void {
+    @if (hasSorting) { if(this.paginator) this.sorter.sortChange.subscribe(() => this.paginator.pageIndex = 0); }
+
+    const events = [
+      @if (hasSorting) { this.sorter.sortChange, }
+      @if (hasPagination) { this.paginator.page, }
+      @if (hasFilters) { this.filterForm.valueChanges.pipe(debounceTime(300), distinctUntilChanged(), tap(() => { if (this.paginator) this.paginator.pageIndex = 0; })), }
+    ].filter(Boolean).filter(e => e); // Ensure no empty slots from template
+
+    // If there are no events to merge, just load data once.
+    if (events.length === 0) {
+        this.loadData().subscribe(data => this.data.set(data));
+        return;
+    }
+
+    merge(...events).pipe(
+      startWith({}),
+      switchMap(() => this.loadData()),
+    ).subscribe(data => this.data.set(data));
+  }
+
+  loadData() {
+    this.isLoading.set(true);
+    const params: any = @if (hasFilters) { this.filterForm.getRawValue() } @else { {} };
+    @if (hasPagination) {
+    if (this.paginator) {
+      params.page = this.paginator.pageIndex;
+      params.pageSize = this.paginator.pageSize;
+    }
+    }
+    @if (hasSorting) {
+    if (this.sorter) {
+      params.sort = this.sorter.active;
+      params.order = this.sorter.direction;
+    }
+    }
+
+    return this.svc.{{listMethodName}}(params as any, 'response').pipe(
+      catchError(() => {
+        this.isLoading.set(false);
+        this.snackBar.open('Failed to load data.', 'OK', { duration: 5000 });
+        return of(null);
+      }),
+      map(res => {
+        this.isLoading.set(false);
+        if (res) {
+          @if (hasPagination) { this.totalItems.set(Number(res.headers.get('X-Total-Count') ?? 0)); } @else { this.totalItems.set(res.body?.length ?? 0); }
+          return res.body as {{modelName}}[];
+        }
+        return [];
+      })
+    );
+  }
+  } @else {
+    constructor() {
+        this.isLoading.set(false); // No data to load
+    }
+  }
+
+  @if (hasSorting) {
+  onSortChange() {
+    if(this.paginator) this.paginator.pageIndex = 0;
+  }
+  }
+
+  @if (hasFilters) {
+  resetFilters(): void {
+    this.filterForm.reset();
+  }
+  }
+
+  @if (hasDeleteMethod) {
+  delete(id: number | string): void {
+    if (confirm('Are you sure?')) {
+      this.svc.{{deleteMethodName}}({ {{deleteIdParamName}}: id } as any).subscribe(() => {
+        @if (hasNgAfterViewInit) {
+        // Refresh data after delete
+        this.loadData().subscribe(data => this.data.set(data));
+        }
+        this.snackBar.open('{{titleName}} deleted.', 'OK', { duration: 3000 });
+      });
+    }
+  }
+  }
+
+  {{collectionActionMethodTs}}
+}

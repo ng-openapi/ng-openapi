@@ -71,7 +71,8 @@ export class AdminGenerator {
 
             const adminDir = path.join(outputRoot, "admin");
 
-            if (resource.operations.list || resource.operations.create || resource.actions.some(a => a.level === 'collection')) {
+            const hasCollectionActions = resource.actions.some(a => a.level === 'collection');
+            if (resource.operations.list || resource.operations.create || hasCollectionActions) {
                 writeListComponent(resource, this.project, adminDir);
             }
             if (resource.createModelName || resource.operations.read) {

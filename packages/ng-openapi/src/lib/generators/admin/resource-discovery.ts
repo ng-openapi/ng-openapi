@@ -1,147 +1,136 @@
-import { SwaggerParser, extractPaths, PathInfo, pascalCase, camelCase, titleCase } from "@ng-openapi/shared";
-import { ActionOperation, FilterParameter, Resource } from "./admin.types";
+import { SwaggerParser, extractPaths, PathInfo, pascalCase, camelCase, titleCase, SwaggerDefinition } from "@ng-openapi/shared";
+import { ResourceAction, Resource } from "./admin.types";
 import { plural } from "./admin.helpers";
 
-function getMethodName(operation: any): string {
-    if (operation.operationId) return camelCase(operation.operationId);
-    const pathForMethod = operation.path.replace(/[\/{}]/g, '');
-    return `${camelCase(pathForMethod)}${pascalCase(operation.method)}`;
+function getMethodName(op: PathInfo): string {
+    if (op.operationId) return camelCase(op.operationId);
+    const pathForMethod = op.path.replace(/[\/{}]/g, '');
+    return `${camelCase(pathForMethod)}${pascalCase(op.method)}`;
 }
 
-// Helper to find the request body schema in both OpenAPI 3.x and Swagger 2.0
-function findRequestBodySchema(op: PathInfo | undefined) {
+function findSchema(op: PathInfo | undefined, type: 'request' | 'response'): { ref: string | null; schema: SwaggerDefinition; contentType?: string; } | null {
     if (!op) return null;
-    // OpenAPI 3.x
-    if (op.requestBody?.content) {
-        return op.requestBody.content['application/json']?.schema
-            || op.requestBody.content['multipart/form-data']?.schema;
+    if (type === 'request') {
+        const content = op.requestBody?.content;
+        if (content) {
+            const jsonSchema = content['application/json']?.schema;
+            if (jsonSchema) return { ref: jsonSchema.$ref || null, schema: jsonSchema, contentType: 'application/json' };
+            const multipartSchema = content['multipart/form-data']?.schema;
+            if (multipartSchema) return { ref: multipartSchema.$ref || null, schema: multipartSchema, contentType: 'multipart/form-data' };
+        }
+    } else { // response
+        const schema = op.responses?.['200']?.content?.['application/json']?.schema;
+        if (schema) {
+            if (schema.type === 'array' && schema.items) {
+                return { ref: (schema.items as any).$ref || null, schema: schema.items as SwaggerDefinition };
+            }
+            return { ref: schema.$ref || null, schema };
+        }
     }
-    // Swagger 2.0
-    const bodyParam = op.parameters?.find(p => p.in === 'body');
-    if (bodyParam) return bodyParam.schema;
-
     return null;
 }
 
 export function discoverAdminResources(parser: SwaggerParser): Resource[] {
     const paths = extractPaths(parser.getSpec().paths);
-    const tagGroups = new Map<string, PathInfo[]>();
-
-    paths.forEach((p) => {
-        const tag = p.tags?.[0];
-        if (tag && !tag.includes("_")) {
-            if (!tagGroups.has(tag)) tagGroups.set(tag, []);
-            tagGroups.get(tag)!.push(p);
-        }
-    });
+    const tagMap = new Map<string, PathInfo[]>();
+    paths.forEach(p => p.tags?.forEach(t => {
+        if (!tagMap.has(t)) tagMap.set(t, []);
+        tagMap.get(t)!.push(p);
+    }));
 
     const resources: Resource[] = [];
-    for (const [tag, tagPaths] of tagGroups.entries()) {
-        const isItemPath = (p: PathInfo) => /\{[^}]+\}/.test(p.path);
-        const getResponseSchema = (p: PathInfo | undefined) => p?.responses?.['200']?.content?.['application/json']?.schema;
-        const getRequestContentType = (p: PathInfo | undefined): 'multipart/form-data' | 'application/json' => {
-            if (p?.requestBody?.content?.['multipart/form-data'] || p?.parameters?.some(param => param.in === 'formData')) return 'multipart/form-data';
-            return 'application/json';
-        }
-        const getIdParamName = (op: PathInfo | undefined) => op?.parameters?.find(p => p.in === 'path')?.name || 'id';
+    for (const [tag, operations] of tagMap.entries()) {
+        const usedOps = new Set<PathInfo>();
 
-        let listOp: PathInfo | undefined, createOp: PathInfo | undefined, readOp: PathInfo | undefined, updateOp: PathInfo | undefined, deleteOp: PathInfo | undefined;
-        const usedPaths = new Set<string>();
+        const shortestPath = [...operations].sort((a,b) => a.path.length - b.path.length)[0]?.path;
+        if (!shortestPath) continue;
+        const resourcePath = shortestPath.split('/{')[0];
 
-        listOp = tagPaths.find(p => p.method === 'GET' && !isItemPath(p));
-        if(listOp) usedPaths.add(`${listOp.method}:${listOp.path}`);
+        const isCollectionPath = (p: PathInfo) => p.path === resourcePath;
+        const isItemPath = (p: PathInfo) => p.path.startsWith(resourcePath + '/') && p.path.includes('{');
 
-        createOp = tagPaths.find(p => p.method === 'POST' && !isItemPath(p) && findRequestBodySchema(p));
-        if(createOp) usedPaths.add(`${createOp.method}:${createOp.path}`);
+        const listOpRawSchema = operations.find(p => p.method === 'GET' && isCollectionPath(p))?.responses?.['200']?.content?.['application/json']?.schema;
+        const listOp = listOpRawSchema?.type === 'array' ? operations.find(p => p.method === 'GET' && isCollectionPath(p)) : undefined;
+        if (listOp) usedOps.add(listOp);
 
-        readOp = tagPaths.find(p => p.method === 'GET' && isItemPath(p) && p.path.endsWith('}'));
-        if(readOp) usedPaths.add(`${readOp.method}:${readOp.path}`);
+        const createOp = operations.find(p => p.method === 'POST' && isCollectionPath(p) && findSchema(p, 'request'));
+        if (createOp) usedOps.add(createOp);
 
-        // ===== THE FIX IS HERE =====
-        // An 'update' operation must accept a body, just like 'create'.
-        updateOp = tagPaths.find(p => (p.method === 'PUT' || p.method === 'PATCH') && isItemPath(p) && findRequestBodySchema(p));
-        if(updateOp) usedPaths.add(`${updateOp.method}:${updateOp.path}`);
+        const readOp = operations.find(p => p.method === 'GET' && isItemPath(p));
+        if (readOp) usedOps.add(readOp);
 
-        deleteOp = tagPaths.find(p => p.method === 'DELETE' && isItemPath(p));
-        if(deleteOp) usedPaths.add(`${deleteOp.method}:${deleteOp.path}`);
+        const updateOp = operations.find(p => p.method === 'PUT' && (isItemPath(p) || isCollectionPath(p)) && findSchema(p, 'request'));
+        if (updateOp) usedOps.add(updateOp);
 
-        if (!listOp && !createOp && !readOp && !updateOp && !deleteOp) {
-            continue;
-        }
+        const deleteOp = operations.find(p => p.method === 'DELETE' && isItemPath(p));
+        if (deleteOp) usedOps.add(deleteOp);
 
-        const actions: ActionOperation[] = tagPaths
-            .filter(p => !usedPaths.has(`${p.method}:${p.path}`))
-            .map(p => ({
-                label: titleCase(p.summary || p.operationId || p.path.split('/').pop()!.replace(/\{|\}/g, '')),
-                methodName: getMethodName(p),
-                level: isItemPath(p) ? 'item' : 'collection',
-                path: p.path,
-                method: p.method.toUpperCase() as any,
-                idParamName: isItemPath(p) ? getIdParamName(p) : undefined,
-            }));
+        const listModelRef = findSchema(listOp, 'response')?.ref;
+        const readModelRef = findSchema(readOp, 'response')?.ref;
+        const createModelRef = findSchema(createOp, 'request')?.ref;
+        const modelRef = listModelRef ?? readModelRef ?? createModelRef;
 
-        const createSchemaObject = findRequestBodySchema(createOp);
-        const createModelRef = createSchemaObject?.$ref;
-        const createModelName = createModelRef ? createModelRef.split('/').pop()! : '';
+        if (!modelRef && !(listOp || createOp || readOp || updateOp || deleteOp || operations.some(op => op.summary))) continue;
 
-        const listOpParams = listOp?.parameters?.filter(p => p.in === 'query').map(p => p.name) ?? [];
-        const hasPagination = listOpParams.includes('page') && listOpParams.includes('pageSize');
-        const hasSorting = listOpParams.includes('sort') && listOpParams.includes('order');
+        const modelName = modelRef ? pascalCase(modelRef.split('/').pop()!) : pascalCase(tag.replace(/s$/, ''));
+        const createModelSchemaInfo = findSchema(createOp, 'request');
+        const createModelName = createModelSchemaInfo?.ref ? pascalCase(createModelSchemaInfo.ref.split('/').pop()!) : modelName;
 
-        const filterParameters: FilterParameter[] = [];
-        if (listOp?.parameters) {
-            listOp.parameters.filter(p => p.in === 'query' && !['page', 'pageSize', 'sort', 'order'].includes(p.name)).forEach((p) => {
-                const schema = p.schema || p;
-                if (schema.type === 'string' && schema.enum) {
-                    filterParameters.push({ name: p.name, inputType: 'select', enumValues: schema.enum });
-                } else if (schema.type === 'string') {
-                    filterParameters.push({ name: p.name, inputType: 'text' });
-                } else if (schema.type === 'number' || schema.type === 'integer') {
-                    filterParameters.push({ name: p.name, inputType: 'number' });
-                }
-            });
-        }
+        // --- THE FINAL FIX IS HERE ---
+        // A custom action MUST be a non-CRUD mutation with a summary. This is a robust definition.
+        const actions: ResourceAction[] = operations.filter(p => {
+            if (usedOps.has(p)) return false; // Already used for standard CRUD
+            // Actions are mutations (POST/PUT/PATCH/DELETE) that are not standard CRUD ops.
+            if (p.method === 'POST' || p.method === 'PUT' || p.method === 'PATCH' || p.method === 'DELETE') {
+                return !!p.summary;
+            }
+            return false; // Exclude all non-mutating methods (like GET) that aren't list/read.
+        }).map(p => ({
+            label: p.summary!, methodName: getMethodName(p),
+            level: isItemPath(p) ? 'item' : 'collection',
+            idParamName: p.parameters?.find(param => param.in === 'path')?.name || 'id',
+        }));
 
-        const mainModelSchemaName = getResponseSchema(listOp)?.items?.$ref?.split('/')?.pop() || getResponseSchema(readOp)?.$ref?.split('/')?.pop();
-        const modelName = mainModelSchemaName || (createModelName.startsWith('Create') ? createModelName.replace(/^Create/, '') : createModelName);
-
-        const singularTag = tag.endsWith('s') && !tag.endsWith('ss') ? tag.slice(0, -1) : tag;
+        const singularTag = tag.replace(/s$/, '');
 
         const resource: Resource = {
-            name: singularTag.toLowerCase(),
-            className: pascalCase(singularTag),
-            pluralName: plural(singularTag).toLowerCase(),
+            name: camelCase(singularTag),
+            pluralName: plural(camelCase(singularTag)),
             titleName: titleCase(singularTag),
-            serviceName: pascalCase(tag) + "Service",
-            modelName: pascalCase(modelName || '') || '',
-            createModelName: pascalCase(createModelName),
-            createModelRef: createModelRef,
+            className: modelName,
+            modelName, createModelName,
+            createModelRef: createModelSchemaInfo?.ref || '',
+            serviceName: `${pascalCase(tag)}Service`,
             isEditable: !!(createOp || updateOp),
             operations: {
-                list: listOp ? { methodName: getMethodName(listOp), filterParameters, hasPagination, hasSorting } : undefined,
-                create: createOp ? { methodName: getMethodName(createOp), contentType: getRequestContentType(createOp) } : undefined,
-                read: readOp ? { methodName: getMethodName(readOp), idParamName: getIdParamName(readOp) } : undefined,
-                update: updateOp ? { methodName: getMethodName(updateOp), idParamName: getIdParamName(updateOp), contentType: getRequestContentType(updateOp) } : undefined,
-                delete: deleteOp ? { methodName: getMethodName(deleteOp), idParamName: getIdParamName(deleteOp) } : undefined,
+                list: listOp ? {
+                    methodName: getMethodName(listOp),
+                    hasPagination: !!listOp.parameters?.some(p => ['page', 'pageSize'].includes(p.name)),
+                    hasSorting: !!listOp.parameters?.some(p => ['sort', 'order'].includes(p.name)),
+                    filterParameters: listOp.parameters?.filter(p => p.in ==='query' && !['page', 'pageSize', 'sort', 'order'].includes(p.name.toLowerCase())).map(p => {
+                        const schema = p.schema || p;
+                        return { name: p.name, inputType: schema.enum ? 'select' : (schema.type === 'number' || schema.type === 'integer' ? 'number' : 'text'), enumValues: schema.enum };
+                    })
+                } : undefined,
+                create: createOp ? { methodName: getMethodName(createOp), idParamName: '', idParamType: 'string' } : undefined,
+                read: readOp ? { methodName: getMethodName(readOp), idParamName: readOp.parameters?.find(p=>p.in==='path')?.name || 'id', idParamType: 'number' } : undefined,
+                update: updateOp ? { methodName: getMethodName(updateOp), idParamName: updateOp.parameters?.find(p=>p.in==='path')?.name || 'id', idParamType: 'number' } : undefined,
+                delete: deleteOp ? { methodName: getMethodName(deleteOp), idParamName: deleteOp.parameters?.find(p=>p.in==='path')?.name || 'id', idParamType: 'number' } : undefined,
             },
-            actions,
-            formProperties: [],
-            listColumns: [],
+            actions, formProperties: [], listColumns: [],
         };
 
-        const modelRefForColumns = getResponseSchema(listOp)?.items?.$ref || getResponseSchema(readOp)?.$ref || createModelRef;
-        if (modelRefForColumns) {
-            const schemaForColumns = parser.resolveReference(modelRefForColumns);
-            if (schemaForColumns && schemaForColumns.properties) {
-                resource.listColumns = Object.keys(schemaForColumns.properties).filter(key => {
-                    const propSchema = schemaForColumns.properties![key];
-                    if (key === 'id' && propSchema.type) return true;
-                    return propSchema.type !== 'object' && propSchema.type !== 'array' && !propSchema.$ref;
+        let schemaForColumns = findSchema(listOp, 'response')?.schema ?? findSchema(readOp, 'response')?.schema;
+        if(schemaForColumns) {
+            const resolved = schemaForColumns.$ref ? parser.resolveReference(schemaForColumns.$ref) : schemaForColumns;
+            if (resolved?.properties) {
+                resource.listColumns = Object.keys(resolved.properties).filter(key => {
+                    const prop = resolved.properties![key];
+                    return !prop.$ref && (!prop.type || ['string', 'number', 'integer', 'boolean'].includes(prop.type as string));
                 });
             }
         }
         resources.push(resource);
     }
-    console.log(`[ADMIN] Pass 1 Complete: Identified ${resources.length} potential scaffolding targets.`);
     return resources;
 }

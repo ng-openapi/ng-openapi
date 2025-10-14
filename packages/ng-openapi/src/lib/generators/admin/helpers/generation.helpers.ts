@@ -97,24 +97,26 @@ export function generateFormFieldsHTML(properties: FormProperty[], isViewMode = 
                 return `<div><label class="mat-body-2">${label}</label><mat-button-toggle-group formControlName="${p.name}" ${isRequired}>
                 @for (val of [${p.enumValues!.map(e => `'${e}'`).join(', ')}]; track val) { <mat-button-toggle [value]="val">{{ val }}</mat-button-toggle> }
                 </mat-button-toggle-group></div>`;
+            case 'checkbox':
+                return `<mat-checkbox formControlName="${p.name}" ${isRequired}>${label}</mat-checkbox>`;
             case 'chip-list':
-                const singularName = p.name.endsWith('s') ? p.name.slice(0, -1) : p.name;
+                { const singularName = p.name.endsWith('s') ? p.name.slice(0, -1) : p.name;
                 return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><mat-chip-grid #chipGrid${pascalCase(p.name)}>
                 @for (item of ${p.name}Signal | async; track item) {<mat-chip-row (removed)="remove${pascalCase(p.name)}(item)">{{item}}<button matChipRemove><mat-icon>cancel</mat-icon></button></mat-chip-row>}
-                <input placeholder="New ${singularName}..." [matChipInputFor]="chipGrid${pascalCase(p.name)}" (matChipInputTokenEnd)="add${pascalCase(p.name)}($event)"/></mat-chip-grid></mat-form-field>`;
+                <input placeholder="New ${singularName}..." [matChipInputFor]="chipGrid${pascalCase(p.name)}" (matChipInputTokenEnd)="add${pascalCase(p.name)}($event)"/></mat-chip-grid></mat-form-field>`; }
             case 'datepicker':
                 return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><input matInput [matDatepicker]="picker${p.name}" formControlName="${p.name}" ${isRequired}><mat-datepicker-toggle matSuffix [for]="picker${p.name}"></mat-datepicker-toggle><mat-datepicker #picker${p.name}></mat-datepicker></mat-form-field>`;
             case 'select':
             case 'radio-group':
-                const options = p.enumValues!.map(val => p.inputType === 'select' ? `<mat-option value="${val}">${val}</mat-option>` : `<mat-radio-button value="${val}">${val}</mat-radio-button>`).join('\n');
+                { const options = p.enumValues!.map(val => p.inputType === 'select' ? `<mat-option value="${val}">${val}</mat-option>` : `<mat-radio-button value="${val}">${val}</mat-radio-button>`).join('\n');
                 const control = p.inputType === 'select' ? `<mat-select formControlName="${p.name}" ${isRequired}>${options}</mat-select>` : `<mat-radio-group formControlName="${p.name}" ${isRequired}>${options}</mat-radio-group>`;
-                return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label>${control}</mat-form-field>`;
+                return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label>${control}</mat-form-field>`; }
             case 'file':
-                const controlName = p.name;
+                { const controlName = p.name;
                 return `<div class="file-input-container"><span class="mat-body-2">${label}${p.required ? ' *' : ''}</span>
                 <input type="file" class="hidden-file-input" #fileInput${pascalCase(controlName)} (change)="onFileSelected($event, '${controlName}')">
                 <button mat-stroked-button type="button" (click)="fileInput${pascalCase(controlName)}.click()"><mat-icon>attach_file</mat-icon>Choose File</button>
-                <span class="file-name">{{ form.get('${controlName}')?.value?.name || "No file chosen" }}</span></div>`;
+                <span class="file-name">{{ form.get('${controlName}')?.value?.name || "No file chosen" }}</span></div>`; }
         }
         switch(p.type) {
             case 'object':
@@ -125,14 +127,14 @@ export function generateFormFieldsHTML(properties: FormProperty[], isViewMode = 
                 @for (opt of [${p.polymorphicOptions!.map(o => `'${o.name}'`).join(', ')}]; track opt) {<mat-option [value]="opt">{{ opt }}</mat-option>}
                 </mat-select></mat-form-field>${generatePolymorphicSwitchHTML(p.polymorphicOptions!)}</div>`;
             case 'array_object':
-                const arrayName = p.name;
+                { const arrayName = p.name;
                 const singularTitle = pascalCase(arrayName).replace(/s$/, '');
                 return `<div class="form-array-container"><div class="form-array-header"><h4>${label}</h4><button type="button" mat-stroked-button (click)="add${singularTitle}()">
                  <mat-icon>add</mat-icon> Add ${singularTitle}</button></div><div formArrayName="${arrayName}">
                  @for (item of ${arrayName}.controls; track $index; let i = $index) {
                      <div [formGroupName]="i" class="form-array-item"><div class="form-array-item-fields">${generateFormFieldsHTML(p.nestedProperties!)}</div>
                      <button type="button" mat-icon-button color="warn" (click)="remove${singularTitle}(i)"><mat-icon>delete</mat-icon></button></div>
-                 }</div></div>`;
+                 }</div></div>`; }
             case 'relationship':
                 return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><mat-select formControlName="${p.name}" ${isRequired} [compareWith]="compareById">
                 @for(option of ${p.name}Options | async; track option.id) {<mat-option [value]="option">{{ option.${p.relationDisplayField} }}</mat-option>}
@@ -140,7 +142,9 @@ export function generateFormFieldsHTML(properties: FormProperty[], isViewMode = 
         }
         const inputType = p.inputType === 'textarea' ? 'textarea' : 'input';
         const typeAttr = p.inputType === 'textarea' ? '' : `type="${p.inputType || 'text'}"`;
-        const component = `<${inputType} matInput formControlName="${p.name}" ${typeAttr} ${isRequired}></${inputType}>`;
-        return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label>${component}</mat-form-field>`;
+        if (p.type === 'boolean') {
+            return `<div class="form-field-container"><mat-checkbox formControlName="${p.name}" ${isRequired}>${label}</mat-checkbox></div>`;
+        }
+        return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><${inputType} matInput formControlName="${p.name}" ${typeAttr} ${isRequired}></${inputType}></mat-form-field>`;
     }).join('\n');
 }
