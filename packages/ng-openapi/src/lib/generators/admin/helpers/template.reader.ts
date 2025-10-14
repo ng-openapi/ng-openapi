@@ -26,27 +26,67 @@ export function renderTemplate(template: string, context: Record<string, any>): 
         return value !== undefined && value !== null ? String(value) : '';
     });
 
-    // Pass 2: Iteratively resolve @if blocks. This handles nesting correctly
-    // by repeatedly finding and replacing the innermost blocks until none are left.
-    const ifRegex = /@if\s*\(([\w\d.-]+)\)\s*\{([\s\S]*?)\}(?:\s*@else\s*\{([\s\S]*?)\})?/g;
+    // Pass 2: Iteratively resolve @if blocks to handle nesting.
+    const findMatchingBrace = (str: string, start: number): number => {
+        let depth = 1;
+        for (let i = start + 1; i < str.length; i++) {
+            if (str[i] === '{') depth++;
+            else if (str[i] === '}') {
+                depth--;
+                if (depth === 0) return i;
+            }
+        }
+        return -1; // Not found
+    };
 
     let lastOutput;
-    // Keep looping as long as substitutions are being made.
     do {
         lastOutput = output;
-        output = output.replace(ifRegex, (match, conditionKey, ifContent, elseContent) => {
-            // This is the key: if the content still has an @if, it's not the innermost block.
-            // Skip it on this pass; it will be processed in a subsequent iteration.
-            if (ifRegex.test(ifContent) || (elseContent && ifRegex.test(elseContent))) {
-                return match;
+        // Start from the end to find the innermost block first, which simplifies handling of nested @if statements.
+        const startIndex = output.lastIndexOf('@if');
+        if (startIndex === -1) break;
+
+        const openParenIndex = output.indexOf('(', startIndex);
+        const closeParenIndex = output.indexOf(')', openParenIndex);
+        const openBraceIndex = output.indexOf('{', closeParenIndex);
+
+        if (openParenIndex === -1 || closeParenIndex === -1 || openBraceIndex === -1) {
+            break; // Malformed, break to avoid infinite loop
+        }
+
+        const closeBraceIndex = findMatchingBrace(output, openBraceIndex);
+        if (closeBraceIndex === -1) {
+            break; // Unmatched brace, break to avoid infinite loop
+        }
+
+        const conditionKey = output.substring(openParenIndex + 1, closeParenIndex).trim();
+        const ifContent = output.substring(openBraceIndex + 1, closeBraceIndex);
+
+        const afterIfBlock = output.substring(closeBraceIndex + 1);
+        const elseMatch = afterIfBlock.match(/^\s*@else\s*\{/);
+
+        let elseContent: string | null = null;
+        let blockEndIndex = closeBraceIndex + 1;
+
+        if (elseMatch) {
+            const elseOpenBraceIndex = closeBraceIndex + 1 + elseMatch[0].length - 1;
+            const elseCloseBraceIndex = findMatchingBrace(output, elseOpenBraceIndex);
+            if (elseCloseBraceIndex !== -1) {
+                elseContent = output.substring(elseOpenBraceIndex + 1, elseCloseBraceIndex);
+                blockEndIndex = elseCloseBraceIndex + 1;
             }
-            // This is an innermost block, so we can safely process it.
-            return context[conditionKey.trim()] ? ifContent : (elseContent || '');
-        });
+        }
+
+        const condition = !!context[conditionKey];
+        const replacement = condition ? ifContent : (elseContent ?? '');
+
+        // Reconstruct the string to avoid issues with special characters in `replace`
+        output = output.substring(0, startIndex) + replacement + output.substring(blockEndIndex);
+
     } while (output !== lastOutput);
 
     // Clean up excessive newlines that might result from removed blocks.
-    output = output.replace(/(\r\n|\n|\r){2,}/g, '$1\n');
+    output = output.replace(/(\r\n|\n|\r){3,}/g, '$1\n\n');
 
     return output;
 }
