@@ -98,7 +98,7 @@ export class ServiceMethodBodyGenerator {
 
         if (context.pathParams.length > 0) {
             context.pathParams.forEach((param) => {
-                urlExpression = urlExpression.replace(`{${param.name}}`, `\${${param.name}}`);
+                urlExpression = urlExpression.replace(`{${param.name}}`, `\${${camelCase(param.name)}}`);
             });
         }
 
@@ -113,8 +113,8 @@ export class ServiceMethodBodyGenerator {
         const paramMappings = context.queryParams
             .map(
                 (param) =>
-                    `if (${param.name} != null) {
-  params = HttpParamsBuilder.addToHttpParams(params, ${param.name}, '${param.name}');
+                    `if (${camelCase(param.name)} != null) {
+  params = HttpParamsBuilder.addToHttpParams(params, ${camelCase(param.name)}, '${param.name}');
 }`
             )
             .join("\n");

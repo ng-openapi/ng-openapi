@@ -46,7 +46,7 @@ export class ServiceMethodParamsGenerator {
         const pathParams = operation.parameters?.filter((p) => p.in === "path") || [];
         pathParams.forEach((param) => {
             params.push({
-                name: param.name,
+                name: camelCase(param.name),
                 type: getTypeScriptType(param.schema || param, this.config),
                 hasQuestionToken: !param.required,
             });
@@ -87,7 +87,7 @@ export class ServiceMethodParamsGenerator {
         const queryParams = operation.parameters?.filter((p) => p.in === "query") || [];
         queryParams.forEach((param) => {
             params.push({
-                name: param.name,
+                name: camelCase(param.name),
                 type: getTypeScriptType(param.schema || param, this.config),
                 hasQuestionToken: !param.required,
             });
