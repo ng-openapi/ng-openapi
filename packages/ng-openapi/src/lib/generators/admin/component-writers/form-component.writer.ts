@@ -1,62 +1,65 @@
 import * as path from 'path';
-import { Project } from 'ts-morph';
-import { Resource, ResourceOperation, SwaggerParameter, ResourceAction } from '../admin.types';
+import { Project, ClassDeclaration, SourceFile } from "ts-morph";
+import { Resource, ResourceOperation, ResourceAction } from '../admin.types';
 import { pascalCase, titleCase, camelCase } from "@ng-openapi/shared";
 import { generateFormControlsTS, generateFormFieldsHTML } from '../helpers/generation.helpers';
 import { getTemplate } from '../helpers/template.reader';
 
-function buildCrudServiceCallArgs(operation: ResourceOperation, context: { idVarName?: string, bodyVarName?: string }): string {
-    const idArg = context.idVarName ? `${context.idVarName} as ${operation.idParamType}` : '';
-    let bodyArg = '';
+function addManualImports(sourceFile: SourceFile, resource: Resource, allResources: Resource[]) {
+    const componentDir = path.dirname(sourceFile.getFilePath());
+    const servicesDir = path.resolve(componentDir, '../../../services');
+    const relativeServicesPath = `./${path.relative(componentDir, servicesDir).replace(/\\/g, '/')}`;
 
-    // Check if there is a body parameter
-    const hasBody = (operation.parameters ?? []).some(p => (p as any).in === 'body');
-    if (hasBody && context.bodyVarName) {
-        bodyArg = `, ${context.bodyVarName}`;
-    }
+    const imports = new Set<string>([resource.serviceName]);
+    resource.formProperties
+        .filter(p => p.type === 'relationship')
+        .forEach(p => {
+            const relatedResource = allResources.find(r => r.name === p.relationResourceName);
+            if (relatedResource && relatedResource.serviceName) {
+                imports.add(relatedResource.serviceName);
+            }
+        });
 
-    if (operation.methodName.startsWith('create')) return context.bodyVarName || '';
-
-    // For update, the order is typically id, then body.
-    if (operation.methodName.startsWith('update')) {
-        return `${idArg}${bodyArg}`;
-    }
-
-    // For read, it's just the id.
-    return idArg;
+    sourceFile.addImportDeclaration({
+        namedImports: Array.from(imports),
+        moduleSpecifier: relativeServicesPath,
+    });
 }
 
+/**
+ * Builds the arguments string for a CRUD service call (create, update).
+ * @param operation The resource operation definition.
+ * @param context Variables to use for ID and body arguments.
+ * @returns A string like "id as number, formValue".
+ */
+function buildCrudServiceCallArgs(operation: ResourceOperation, context: { idVarName?: string, bodyVarName?: string }): string {
+    const idArg = context.idVarName ? `${context.idVarName} as ${operation.idParamType}` : '';
+    const hasBody = operation.methodName.includes('POST') || operation.methodName.includes('PUT');
+    const bodyArg = (hasBody && context.bodyVarName) ? `, ${context.bodyVarName}` : '';
+
+    return `${idArg}${bodyArg}`.replace(/^, /, '');
+}
+
+/**
+ * Builds the service call for a custom resource action.
+ * @param action The resource action definition.
+ * @param idVarName The name of the variable holding the resource ID.
+ * @returns A string representing the service call, e.g., "this.svc.rebootServer(id as string)".
+ */
 function buildActionServiceCall(action: ResourceAction, idVarName: string): string {
     const args = (action.parameters ?? []).map(p => {
         if (p.in === 'path') {
-            const castType = action.idParamType !== 'string' ? ` as ${action.idParamType}` : '';
-            return `${idVarName}${castType}`;
+            return `${idVarName} as ${action.idParamType}`;
         }
-        // For other parameters (formData, query, etc.), we don't have form controls for them yet,
-        // so we pass undefined to allow optional params to work.
         return 'undefined';
     }).join(', ');
-
-    return `this.svc.${action.methodName}(${args})`;
+    return `this.svc.${action.methodName}(${args || ''})`;
 }
 
-const MAT_MODULE_MAP = {
-    'text': { module: 'MatFormFieldModule', path: '@angular/material/form-field' },
-    'number': { module: 'MatFormFieldModule', path: '@angular/material/form-field' },
-    'password': { module: 'MatFormFieldModule', path: '@angular/material/form-field' },
-    'email': { module: 'MatFormFieldModule', path: '@angular/material/form-field' },
-    'textarea': { module: 'MatFormFieldModule', path: '@angular/material/form-field' },
-    'checkbox': { module: 'MatCheckboxModule', path: '@angular/material/checkbox' },
-    'slide-toggle': { module: 'MatSlideToggleModule', path: '@angular/material/slide-toggle' },
-    'select': { module: 'MatSelectModule', path: '@angular/material/select' },
-    'radio-group': { module: 'MatRadioModule', path: '@angular/material/radio' },
-    'slider': { module: 'MatSliderModule', path: '@angular/material/slider' },
-    'chip-list': { module: 'MatChipsModule', path: '@angular/material/chips' },
-    'button-toggle-group': { module: 'MatButtonToggleModule', path: '@angular/material/button-toggle' },
-    'datepicker': { module: 'MatDatepickerModule', path: '@angular/material/datepicker' },
-    'relationship': { module: 'MatSelectModule', path: '@angular/material/select' }
-};
-
+/**
+ * Writes the component.ts, component.html, and component.css files for a resource's form.
+ * This function uses a fully programmatic approach with `ts-morph` to build the TypeScript file.
+ */
 export function writeFormComponent(resource: Resource, project: Project, allResources: Resource[], adminDir: string, usesCustomValidators: boolean) {
     if (!resource.createModelName && !resource.operations.read) return;
 
@@ -64,189 +67,202 @@ export function writeFormComponent(resource: Resource, project: Project, allReso
     const compName = `${resource.name}-form.component`;
     const sourceFile = project.createSourceFile(path.join(dir, `${compName}.ts`), "", { overwrite: true });
 
-    const isEditable = resource.isEditable;
     const formProperties = resource.formProperties ?? [];
-    const modelForForm = resource.createModelName || resource.modelName;
-    const modelClassName = resource.modelName || 'any';
-
-    // 1. Generate HTML
     const itemActions = resource.actions.filter(a => a.level === 'item');
-    const itemActionButtons = itemActions.map(a => `<button mat-stroked-button type="button" (click)="onAction('${a.methodName}')">${titleCase(a.label)}</button>`).join('\n');
-    const htmlFormFields = generateFormFieldsHTML(formProperties, !isEditable);
-    const htmlContent = getTemplate('form.component.html.template')
-        .replace(/{{TitleCaseName}}/g, resource.titleName)
-        .replace(/{{formFieldsTemplate}}/g, htmlFormFields)
-        .replace(/{{isEditable}}/g, String(isEditable))
-        .replace(/{{itemActionButtons}}/g, itemActionButtons);
+
+    // --- HTML & CSS Generation ---
+    let htmlContent: string;
+    if (resource.isEditable) {
+        const htmlFormFields = generateFormFieldsHTML(formProperties, false);
+        const htmlReadOnlyFields = generateFormFieldsHTML(formProperties, true);
+        htmlContent = getTemplate('form.component.html.template')
+            .replace(/{{TitleCaseName}}/g, resource.titleName)
+            .replace(/{{formFieldsEditableTemplate}}/g, htmlFormFields)
+            .replace(/{{formFieldsReadOnlyTemplate}}/g, htmlReadOnlyFields)
+            .replace(/{{itemActionButtons}}/g, itemActions.map(a => `<button mat-stroked-button type="button" (click)="onAction('${a.methodName}')">${titleCase(a.label)}</button>`).join('\n'));
+    } else {
+        const htmlReadOnlyFields = generateFormFieldsHTML(formProperties, true);
+        const itemActionButtons = itemActions.map(a => `<button mat-stroked-button type="button" (click)="onAction('${a.methodName}')">${titleCase(a.label)}</button>`).join('\n');
+        htmlContent = `
+<div class="container">
+    <h1>View ${resource.titleName}</h1>
+    ${htmlReadOnlyFields}
+    <div class="action-buttons">
+        <div class="item-actions">
+            ${itemActionButtons}
+        </div>
+        <button mat-stroked-button type="button" (click)="onCancel()">Back to List</button>
+    </div>
+</div>`.trim();
+    }
+
     project.createSourceFile(path.join(dir, `${compName}.html`), htmlContent, { overwrite: true }).saveSync();
     project.createSourceFile(path.join(dir, `${compName}.css`), "/* Add component styles here */", { overwrite: true }).saveSync();
 
-    // 2. Assemble all string pieces for the TS Template
-    const angularCoreImports = new Set(['Component', 'inject', 'computed', 'signal', 'input']);
-    if (resource.operations.read) angularCoreImports.add('effect');
+    // --- TypeScript Generation (Fully Programmatic) ---
+    addManualImports(sourceFile, resource, allResources);
+    sourceFile.addStatements((resource.inlineInterfaces ?? []).map(i => i.definition));
 
-    // --- Imports ---
-    const needsStartWith = isEditable && (formProperties.some(p => p.inputType === 'chip-list') || formProperties.some(p => p.type === 'relationship'));
-    const formArrayChipProps = formProperties.filter(p => p.inputType === 'chip-list');
-
-    const requiredMatModules = new Map<string, string>();
-    formProperties.forEach(p => {
-        const inputType = p.type === 'relationship' ? 'relationship' : p.inputType;
-        if (inputType && MAT_MODULE_MAP[inputType]) {
-            const { module, path } = MAT_MODULE_MAP[inputType];
-            if (!requiredMatModules.has(module)) {
-                requiredMatModules.set(module, path);
-            }
-        }
+    const classDeclaration = sourceFile.addClass({
+        name: `${pascalCase(resource.name)}FormComponent`,
+        isExported: true,
     });
 
-    if (isEditable) {
-        requiredMatModules.set('MatInputModule', '@angular/material/input');
+    addBaseProperties(classDeclaration, resource, itemActions.length > 0);
+    addFormProperties(classDeclaration, resource);
+    addEffect(classDeclaration, resource);
+    addConstructor(classDeclaration, resource);
+    addMethods(classDeclaration, resource, itemActions);
+    addFormArrayHelperMethods(classDeclaration, resource);
+    addDecoratorAndImports(classDeclaration, resource, compName);
+
+    sourceFile.fixMissingImports({}, { importModuleSpecifierPreference: 'relative' });
+    sourceFile.formatText({ indentSize: 2 });
+    sourceFile.saveSync();
+}
+
+function addBaseProperties(classDeclaration: ClassDeclaration, resource: Resource, hasItemActions: boolean): void {
+    classDeclaration.addProperties([
+        { name: 'router', scope: 'private', isReadonly: true, initializer: 'inject(Router)' },
+        { name: 'route', scope: 'private', isReadonly: true, initializer: 'inject(ActivatedRoute)' },
+        { name: 'svc', type: resource.serviceName, scope: 'private', isReadonly: true, initializer: `inject(${resource.serviceName})` },
+    ]);
+    if (resource.isEditable || hasItemActions) {
+        classDeclaration.addProperty({ name: 'snackBar', scope: 'private', isReadonly: true, initializer: 'inject(MatSnackBar)' });
     }
-    requiredMatModules.set('MatButtonModule', '@angular/material/button');
-    requiredMatModules.set('MatIconModule', '@angular/material/icon');
-    const matImportStatements = Array.from(requiredMatModules.entries()).map(([module, path]) => `import { ${module} } from '${path}';`).join('\n');
-    const matModulesForComponentArray = Array.from(requiredMatModules.keys());
+    resource.formProperties.filter(p => p.type === 'relationship').forEach(p => {
+        classDeclaration.addProperty({ name: `${camelCase(p.relationResourceName!)}Options$`, initializer: `this.${camelCase(p.relationResourceName! + 'Svc')}.${p.relationListMethodName}()` });
+        classDeclaration.addProperty({ name: `${camelCase(p.relationResourceName! + 'Svc')}`, scope: 'private', isReadonly: true, initializer: `inject(${p.relationServiceName})` });
+    });
+    classDeclaration.addProperties([
+        { name: 'data', isReadonly: true, initializer: `signal<${resource.modelName || 'any'} | null>(null)` },
+        { name: 'isEditable', isReadonly: true, initializer: String(resource.isEditable) },
+        { name: 'id', isReadonly: true, initializer: 'input<string | number>()' },
+        { name: 'isEditMode', isReadonly: true, initializer: 'computed(() => this.isEditable && !!this.id())' },
+        { name: 'isViewMode', isReadonly: true, initializer: 'computed(() => !this.isEditable && !!this.id())' },
+        { name: 'isNewMode', isReadonly: true, initializer: 'computed(() => !this.id())' },
+    ]);
+}
 
-    const relationshipProps = formProperties.filter(p => p.type === 'relationship');
-    const formArrayObjectProps = formProperties.filter(p => p.type === 'array_object');
-
-    const serviceImports = [...new Set([resource.serviceName, ...relationshipProps.map(p => p.relationServiceName!)])].filter(Boolean);
-    const modelImports = [...new Set([modelClassName, modelForForm, ...relationshipProps.map(p => p.relationModelName!), ...formArrayObjectProps.map(p => p.arrayItemModelName!)])].filter(Boolean);
-
-    // --- Inline Interfaces ---
-    const inlineInterfaces = (resource.inlineInterfaces ?? []).map(i => i.definition).join('\n\n');
-
-    // --- Class Body ---
-    const relationServiceInjections = relationshipProps.map(p => `private readonly ${camelCase(p.relationResourceName! + 'Svc')} = inject(${p.relationServiceName});`).join('\n    ');
-    const formControlFields = generateFormControlsTS(formProperties, modelForForm);
-    const formDeclaration = isEditable ? `readonly form = new FormGroup({
-    ${formControlFields}
-    });` : 'readonly form = null as any;';
-
-    const compareById = `compareById = (o1: { id: unknown }, o2: { id: unknown }): boolean => o1?.id === o2?.id;`;
-
-    const helperMethods: string[] = [];
-    if (itemActions.length > 0) {
-        const actionCases = itemActions.map(a => {
-            const serviceCall = buildActionServiceCall(a, 'id');
-            return `case '${a.methodName}':
-                ${serviceCall}.subscribe(() => this.snackBar.open('${titleCase(a.label)} completed.', 'Dismiss', { duration: 3000 }));
-                break;`;
-        }).join('\n            ');
-
-        helperMethods.push(`onAction(actionName: string): void {
-        const id = this.id(); if (!id) return;
-        switch(actionName) {
-            ${actionCases}
+function addFormProperties(classDeclaration: ClassDeclaration, resource: Resource): void {
+    const modelForForm = resource.createModelName || resource.modelName;
+    if (resource.isEditable) {
+        const formControls = generateFormControlsTS(resource.formProperties, modelForForm);
+        classDeclaration.addProperty({
+            name: 'form',
+            isReadonly: true,
+            initializer: writer => {
+                writer.write("new FormGroup({").newLine().indent(() => {
+                    formControls.forEach((prop, i) => {
+                        writer.write(`${prop.name}: ${prop.initializer}`);
+                        if (i < formControls.length - 1) writer.write(',');
+                        writer.newLine();
+                    });
+                }).write("})");
+            }
+        });
+        if (resource.formProperties.some(p => p.type === 'relationship')) {
+            classDeclaration.addProperty({ name: 'compareById', initializer: `(o1: { id: unknown }, o2: { id: unknown }): boolean => o1?.id === o2?.id` });
         }
-    }`);
+    } else {
+        classDeclaration.addProperty({ name: 'form', isReadonly: true, initializer: 'null as any' });
     }
+}
 
-    helperMethods.push(...formArrayChipProps.map(p => `
-    readonly ${p.name}Signal = (this.form.get('${p.name}') as FormArray<FormControl<string>>).valueChanges.pipe(startWith((this.form.get('${p.name}') as FormArray<FormControl<string>>).value));
-    add${pascalCase(p.name)}(event: MatChipInputEvent): void { const value = (event.value || '').trim(); if (value) { const current = (this.form.get('${p.name}') as FormArray).value; (this.form.get('${p.name}') as FormArray).setValue([...new Set([...(current || []), value])]); } event.chipInput!.clear(); }
-    remove${pascalCase(p.name)}(item: string): void { const current = (this.form.get('${p.name}') as FormArray).value; (this.form.get('${p.name}') as FormArray).setValue(current.filter((i: string) => i !== item)); }`));
-
-    helperMethods.push(...formArrayObjectProps.map(p => {
-        const singularTitle = pascalCase(p.name).replace(/s$/, '');
-        const itemType = p.arrayItemModelName!;
-        return `get ${p.name}(): FormArray { return this.form.get('${p.name}') as FormArray; }
-create${singularTitle}(): FormGroup { return new FormGroup({ ${generateFormControlsTS(p.nestedProperties!, itemType)} }); }
-add${singularTitle}(): void { this.${p.name}.push(this.create${singularTitle}()); }
-remove${singularTitle}(index: number): void { this.${p.name}.removeAt(index); }`;
-    }));
-
-    if (formProperties.some(p => p.type === 'file')) {
-        helperMethods.push(`onFileSelected(event: Event, controlName: string): void { const file = (event.target as HTMLInputElement).files?.[0]; if (file) { this.form.get(controlName)!.setValue(file); } }`);
-    }
-
-    // --- Logic Blocks ---
-    let effectBlock = '';
+function addEffect(classDeclaration: ClassDeclaration, resource: Resource): void {
     if (resource.operations.read) {
         const readOp = resource.operations.read;
-        const readArgs = buildCrudServiceCallArgs(readOp, { idVarName: 'id' });
-
-        const formArrayPatchLogic = formArrayObjectProps.map(p => {
-            const itemType = p.arrayItemModelName!;
-            return `if (data.${p.name} && Array.isArray(data.${p.name})) {
-            this.${p.name}.clear();
-            data.${p.name}.forEach((item: ${itemType}) => {
-                const formGroup = this.create${pascalCase(p.name).replace(/s$/, '')}();
-                formGroup.patchValue(item);
-                this.${p.name}.push(formGroup);
-            });
-        }`;}).join('\n');
-        effectBlock = `private readonly formEffect = effect(() => {
-        const id = this.id();
-        const data = this.data();
-        if (id && !data) { this.svc.${readOp.methodName}(${readArgs}).subscribe(data => this.data.set(data)); }
-        else if (data) { this.form.patchValue(data); ${formArrayPatchLogic} }
-        else if (!id) { this.form.reset(); }
-        if (this.isViewMode()) { this.form.disable(); }
-    });`;
+        const patchLogic = resource.formProperties.filter(p => p.type === 'array_object').map(p =>
+            `if (data.${p.name} && Array.isArray(data.${p.name})) { this.${p.name}.clear(); data.${p.name}.forEach(item => { const fg = this.create${pascalCase(p.name).replace(/s$/, '')}(); fg.patchValue(item as any); this.${p.name}.push(fg); }); }`
+        ).join(' ');
+        const effectBody = `const id = this.id(); const data = this.data(); if (id && !data) { this.svc.${readOp.methodName}(id as ${readOp.idParamType}).subscribe(d => this.data.set(d)); } else if (data && this.form) { this.form.patchValue(data as any); ${patchLogic} } else if (!id && this.form) { this.form.reset(); } if (this.isViewMode() && this.form) { this.form.disable(); }`;
+        classDeclaration.addProperty({ name: 'formEffect', scope: 'private', isReadonly: true, initializer: `effect(() => { ${effectBody} })` });
     }
+}
 
-    let constructorBlock = 'constructor() {}';
-    const polymorphicProps = formProperties.filter(p => p.type === 'polymorphic');
-    if (isEditable && polymorphicProps.length > 0) {
-        const subscriptions = polymorphicProps.map(p => {
-            const optionsLogic = p.polymorphicOptions!.map(opt => `const ${opt.name.toLowerCase()}Form = this.form.get('${p.name}.${opt.name}')!;
-            if (type === '${opt.name}') { ${opt.name.toLowerCase()}Form.enable(); } else { ${opt.name.toLowerCase()}Form.disable(); ${opt.name.toLowerCase()}Form.reset(); }`).join('\n');
-            return `this.form.get('${p.name}.typeSelector')!.valueChanges.subscribe(type => { ${optionsLogic} });`
-        }).join('');
-        constructorBlock = `constructor() { ${subscriptions} }`;
+function addConstructor(classDeclaration: ClassDeclaration, resource: Resource): void {
+    const polymorphicProps = resource.formProperties.filter(p => p.type === 'polymorphic');
+    if (resource.isEditable && polymorphicProps.length > 0) {
+        const subscriptions = polymorphicProps.map(p =>
+            `this.form.get('${p.name}.typeSelector')!.valueChanges.subscribe(type => { ${
+                p.polymorphicOptions!.map(opt => `const ${opt.name.toLowerCase()}Form = this.form.get('${p.name}.${opt.name}')!; if (type === '${opt.name}') { ${opt.name.toLowerCase()}Form.enable(); } else { ${opt.name.toLowerCase()}Form.disable(); ${opt.name.toLowerCase()}Form.reset(); }`).join(' ')
+            } });`
+        ).join(' ');
+        classDeclaration.addConstructor({ statements: subscriptions });
     }
+}
 
-    let onSubmitBlock = '';
-    if (isEditable) {
+function addMethods(classDeclaration: ClassDeclaration, resource: Resource, itemActions: ResourceAction[]): void {
+    if (resource.isEditable) {
+        const modelForForm = resource.createModelName || resource.modelName;
         const updateOp = resource.operations.update;
         const createOp = resource.operations.create;
-        const updateArgs = updateOp ? buildCrudServiceCallArgs(updateOp, { idVarName: 'this.id()', bodyVarName: 'formValue' }) : '';
-        const createArgs = createOp ? buildCrudServiceCallArgs(createOp, { bodyVarName: 'formValue' }) : '';
+        const updateCall = updateOp ? `this.svc.${updateOp.methodName}(${buildCrudServiceCallArgs(updateOp, { idVarName: 'this.id()', bodyVarName: 'formValue' })})` : 'null';
+        const createCall = createOp ? `this.svc.${createOp.methodName}(${buildCrudServiceCallArgs(createOp, { bodyVarName: 'formValue' })})` : 'null';
 
-        const updateCall = updateOp ? `this.svc.${updateOp.methodName}(${updateArgs})` : 'null';
-        const createCall = createOp ? `this.svc.${createOp.methodName}(${createArgs})` : 'null';
-        onSubmitBlock = `onSubmit(): void {
-        this.form.markAllAsTouched(); if (this.form.invalid) { this.snackBar.open('Please correct the errors on the form.', 'Dismiss', { duration: 3000 }); return; }
-        const formValue = this.form.getRawValue() as ${modelForForm};
-        const action$ = this.isEditMode() ? ${updateCall} : ${createCall};
-        action$?.subscribe({
-            next: () => { this.snackBar.open('${resource.titleName} saved successfully.', 'Dismiss', { duration: 3000 }); this.router.navigate(['..'], { relativeTo: this.route }); },
-            error: (err) => { console.error('Error saving ${resource.name}:', err); this.snackBar.open('Error: ${resource.name} could not be saved.', 'Dismiss', { duration: 5000 }); }
-        });
-    }`;
+        const body = `if (this.form.invalid) { this.snackBar.open('Please correct the errors.', 'Dismiss', { duration: 3000 }); return; } const formValue = this.form.getRawValue() as ${modelForForm}; const action$ = this.isEditMode() ? ${updateCall} : ${createCall}; action$?.subscribe({ next: () => { this.snackBar.open('${resource.titleName} saved.', 'OK', { duration: 3000 }); this.router.navigate(['..'], { relativeTo: this.route }); }, error: (err) => { this.snackBar.open('Save failed.', 'OK', { duration: 5000 }); console.error(err); } });`;
+        classDeclaration.addMethod({ name: 'onSubmit', statements: body });
     }
+    classDeclaration.addMethod({ name: 'onCancel', statements: `this.router.navigate(['..'], { relativeTo: this.route });` });
+    if (itemActions.length > 0) {
+        const cases = itemActions.map(a => `case '${a.methodName}': ${buildActionServiceCall(a, 'id')}.subscribe(() => this.snackBar.open('${titleCase(a.label)} completed.', 'OK', { duration: 3000 })); break;`).join('\n');
+        classDeclaration.addMethod({ name: 'onAction', parameters: [{ name: 'actionName', type: 'string' }], statements: `const id = this.id(); if (!id) return; switch(actionName) { ${cases} }` });
+    }
+}
 
-    // 3. Populate and write the template
-    const template = getTemplate('form.component.ts.template');
-    const finalContent = template
-        .replace('{{angularCoreImports}}', Array.from(angularCoreImports).join(', '))
-        .replace('{{rxjsImports}}', needsStartWith ? `import { startWith } from 'rxjs/operators';` : '')
-        .replace('{{reactiveFormsImports}}', '') // This will be handled by fixMissingImports
-        .replace('{{matChipInputEventImport}}', formArrayChipProps.length > 0 ? `import { MatChipInputEvent } from '@angular/material/chips';` : '')
-        .replace('{{customValidatorsImport}}', usesCustomValidators ? `import { CustomValidators } from '../../helpers/custom-validators';` : '')
-        .replace('{{materialImports}}', matImportStatements)
-        .replace('{{serviceImports}}', serviceImports.join(', '))
-        .replace('{{modelImports}}', modelImports.join(', '))
-        .replace('{{inlineInterfaces}}', inlineInterfaces)
-        .replace(/{{kebab-case-name}}/g, resource.name)
-        .replace(/{{PascalCaseName}}/g, pascalCase(resource.name))
-        .replace('{{componentImports}}', [isEditable ? 'ReactiveFormsModule' : null, ...matModulesForComponentArray].filter(Boolean).join(', '))
-        .replace('{{serviceClassName}}', resource.serviceName)
-        .replace('{{snackBarInjection}}', (isEditable || itemActions.length > 0) ? `private readonly snackBar = inject(MatSnackBar);` : '')
-        .replace('{{relationServiceInjections}}', relationServiceInjections)
-        .replace('{{modelClassName}}', modelClassName)
-        .replace('{{isEditable}}', String(isEditable))
-        .replace('{{formDeclaration}}', formDeclaration)
-        .replace('{{compareById}}', compareById)
-        .replace('{{effectBlock}}', effectBlock)
-        .replace('{{constructorBlock}}', constructorBlock)
-        .replace('{{onSubmitBlock}}', onSubmitBlock)
-        .replace('{{helperMethods}}', helperMethods.join('\n\n    '));
+function addFormArrayHelperMethods(classDeclaration: ClassDeclaration, resource: Resource) {
+    resource.formProperties.filter(p => p.type === 'array_object').forEach(p => {
+        const singular = pascalCase(p.name).replace(/s$/, '');
+        const formControls = generateFormControlsTS(p.nestedProperties!, p.arrayItemModelName!);
+        classDeclaration.addGetAccessor({ name: p.name, returnType: 'FormArray', statements: `return this.form.get('${p.name}') as FormArray;` });
+        classDeclaration.addMethod({
+            name: `create${singular}`, returnType: 'FormGroup',
+            statements: writer => {
+                writer.write("return new FormGroup({").newLine().indent(() => {
+                    formControls.forEach((prop, i) => {
+                        writer.write(`${prop.name}: ${prop.initializer}`);
+                        if (i < formControls.length - 1) writer.write(',');
+                        writer.newLine();
+                    });
+                }).write("});");
+            }
+        });
+        classDeclaration.addMethod({ name: `add${singular}`, statements: `this.${p.name}.push(this.create${singular}());` });
+        classDeclaration.addMethod({ name: `remove${singular}`, parameters: [{ name: 'index', type: 'number' }], statements: `this.${p.name}.removeAt(index);` });
+    });
+    if (resource.formProperties.some(p => p.type === 'file')) {
+        classDeclaration.addMethod({ name: 'onFileSelected', parameters: [{ name: 'event', type: 'Event' }, { name: 'controlName', type: 'string' }], statements: `const file = (event.target as HTMLInputElement).files?.[0]; if (file) { this.form.get(controlName)!.setValue(file); }` });
+    }
+}
 
-    sourceFile.addStatements(finalContent);
-    sourceFile.fixMissingImports();
-    sourceFile.formatText();
-    sourceFile.saveSync();
+function addDecoratorAndImports(classDeclaration: ClassDeclaration, resource: Resource, compName: string): void {
+    const imports = new Set<string>(['CommonModule', 'MatButtonModule', 'MatIconModule']);
+    if (resource.isEditable) {
+        imports.add('ReactiveFormsModule');
+        resource.formProperties.forEach(p => {
+            if (p.inputType === 'select' || p.type === 'relationship') imports.add('MatSelectModule');
+            if (p.inputType === 'datepicker') imports.add('MatDatepickerModule');
+            if (p.inputType === 'radio-group') imports.add('MatRadioModule');
+            if (p.inputType === 'checkbox' || p.inputType === 'slide-toggle') imports.add('MatCheckboxModule');
+            if (p.inputType === 'slider') imports.add('MatSliderModule');
+            if (p.inputType === 'button-toggle-group') imports.add('MatButtonToggleModule');
+            if (p.inputType === 'chip-list') { imports.add('MatChipsModule'); imports.add('MatFormFieldModule'); }
+            if (['text', 'number', 'textarea', 'select', 'datepicker'].includes(p.inputType) || p.type === 'relationship') {
+                imports.add('MatFormFieldModule');
+                imports.add('MatInputModule');
+            }
+        });
+    }
+    classDeclaration.addDecorator({
+        name: 'Component',
+        arguments: [writer => {
+            writer.write("{").newLine().indent(() => {
+                writer.writeLine(`selector: 'app-${resource.name}-form',`);
+                writer.writeLine(`standalone: true,`);
+                writer.writeLine(`imports: [${Array.from(imports).join(', ')}],`);
+                writer.writeLine(`templateUrl: './${compName}.html',`);
+                writer.writeLine(`styleUrls: ['./${compName}.css']`);
+            }).write("}");
+        }]
+    });
 }

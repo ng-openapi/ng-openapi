@@ -3,9 +3,11 @@ import * as path from "path";
 import * as yaml from "js-yaml";
 import { GeneratorConfig, SwaggerDefinition, SwaggerSpec } from "../types";
 import { isUrl } from "../utils/functions/is-url";
+import { Project } from "ts-morph";
 
 export class SwaggerParser {
     private readonly spec: SwaggerSpec;
+    public readonly config: GeneratorConfig;
 
     public constructor(spec: SwaggerSpec, config: GeneratorConfig) {
         const isInputValid = config.validateInput?.(spec) ?? true;
@@ -13,18 +15,28 @@ export class SwaggerParser {
             throw new Error("Swagger spec is not valid. Check your `validateInput` condition.");
         }
         this.spec = spec;
+        this.config = config;
     }
 
-    static async create(swaggerPathOrUrl: string, config: GeneratorConfig): Promise<SwaggerParser> {
-        const swaggerContent = await SwaggerParser.loadContent(swaggerPathOrUrl);
+    static async create(swaggerPathOrUrl: string, config: GeneratorConfig, project?: Project): Promise<SwaggerParser> {
+        const swaggerContent = await SwaggerParser.loadContent(swaggerPathOrUrl, project);
         const spec = SwaggerParser.parseSpecContent(swaggerContent, swaggerPathOrUrl);
         return new SwaggerParser(spec, config);
     }
 
-    private static async loadContent(pathOrUrl: string): Promise<string> {
+    private static async loadContent(pathOrUrl: string, project?: Project): Promise<string> {
         if (isUrl(pathOrUrl)) {
             return await SwaggerParser.fetchUrlContent(pathOrUrl);
         } else {
+            // If a project is passed and has the file in-memory, use it.
+            if (project) {
+                const normalizedPath = path.normalize(pathOrUrl);
+                const sourceFile = project.getSourceFile(sf => sf.getFilePath().endsWith(normalizedPath));
+                if (sourceFile) {
+                    return sourceFile.getFullText();
+                }
+            }
+            // Otherwise, fall back to the real file system.
             return fs.readFileSync(pathOrUrl, "utf8");
         }
     }

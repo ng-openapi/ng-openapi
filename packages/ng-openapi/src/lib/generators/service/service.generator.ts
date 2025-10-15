@@ -94,7 +94,8 @@ export class ServiceGenerator {
 
         this.addServiceClass(sourceFile, controllerName, operations);
 
-        sourceFile.fixMissingImports().formatText();
+        sourceFile.fixMissingImports({}, { importModuleSpecifierPreference: 'relative' });
+        sourceFile.formatText();
         sourceFile.saveSync();
     }
 

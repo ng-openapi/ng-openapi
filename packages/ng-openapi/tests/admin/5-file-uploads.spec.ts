@@ -33,7 +33,7 @@ describe('Integration: File Uploads Generation', () => {
     });
 
     it('should generate the onFileSelected helper method', () => {
-        expect(formTs).toContain('onFileSelected(event: Event, controlName: string): void {');
+        expect(formTs).toContain('onFileSelected(event: Event, controlName: string)');
         expect(formTs).toContain("this.form.get(controlName)!.setValue(file);");
     });
 

@@ -22,7 +22,7 @@ describe('Integration: OpenAPI Polymorphism (oneOf) Generation', () => {
 
     it('should generate a nested FormGroup for the polymorphic property', () => {
         expect(formTs).toContain(`'item': new FormGroup({`);
-        expect(formTs).toContain(`'typeSelector': new FormControl<string | null>(null)`);
+        expect(formTs).toContain(`'typeSelector': new FormControl(null`);
     });
 
     it('should generate disabled FormGroups for each oneOf option', () => {

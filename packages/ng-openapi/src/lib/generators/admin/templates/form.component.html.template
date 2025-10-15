@@ -1,12 +1,27 @@
 <div class="container">
-  <h1>{{isEditMode() ? 'Edit' : 'Create'}} {{titleName}}</h1>
-  @if (form) {
-    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container">
-      {{formFieldsTemplate}}
-      <div class="action-buttons">
-        <button mat-stroked-button type="button" (click)="onCancel()">Cancel</button>
-        <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || form.pristine">Save</button>
-      </div>
-    </form>
-  }
+    @if(isEditable) {
+        <h1>{{isEditMode() ? 'Edit' : 'Create'}} {{TitleCaseName}}</h1>
+    } @else {
+        <h1>View {{TitleCaseName}}</h1>
+    }
+
+    @if(isEditable) {
+        @if (form) {
+            <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-container">
+                {{formFieldsEditableTemplate}}
+                <div class="action-buttons">
+                    <button mat-stroked-button type="button" (click)="onCancel()">Cancel</button>
+                    <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || form.pristine">Save</button>
+                </div>
+            </form>
+        }
+    } @else {
+        {{formFieldsReadOnlyTemplate}} <!-- Ensure this block is in the @else for isEditable -->
+        <div class="action-buttons">
+            <div class="item-actions">
+                {{itemActionButtons}}
+            </div>
+            <button mat-stroked-button type="button" (click)="onCancel()">Back to List</button>
+        </div>
+    }
 </div>

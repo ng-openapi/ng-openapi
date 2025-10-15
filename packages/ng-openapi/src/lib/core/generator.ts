@@ -1,3 +1,5 @@
+// packages/ng-openapi/src/lib/core/generator.ts
+
 import { ModuleKind, Project, ScriptTarget } from 'ts-morph';
 import { AdminGenerator, TypeGenerator } from '../generators';
 import {
@@ -17,76 +19,82 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { isUrl } from '@ng-openapi/shared/src/utils/functions/is-url';
 
-export function validateInput(inputPath: string): void { /* ... unchanged ... */ }
-
-export async function generateFromConfig(config: GeneratorConfig): Promise<void> {
-    validateInput(config.input);
+export async function generateFromConfig(config: GeneratorConfig, project?: Project): Promise<void> {
+    const inputPath = config.input; // Keep original for logging
+    if (!project && !isUrl(inputPath) && !fs.existsSync(inputPath)) {
+        throw new Error(`Input file not found at ${inputPath}`);
+    }
 
     const outputPath = config.output;
     const generateServices = config.options.generateServices ?? true;
-    const inputType = isUrl(config.input) ? "URL" : "file";
+    const inputType = isUrl(inputPath) ? "URL" : "file";
 
-    if (!fs.existsSync(outputPath)) {
+    if (!project && !fs.existsSync(outputPath)) {
         fs.mkdirSync(outputPath, { recursive: true });
     }
 
     try {
-        const project = new Project({
+        const activeProject = project || new Project({
             compilerOptions: {
                 declaration: true,
                 target: ScriptTarget.ES2022,
-                module: ModuleKind.Preserve,
+                module: ModuleKind.ESNext,
                 strict: true,
+                moduleResolution: 2, // Bundler
                 ...config.compilerOptions,
             },
         });
 
-        console.log(`📡 Processing OpenAPI specification from ${inputType}: ${config.input}`);
-        const swaggerParser = await SwaggerParser.create(config.input, config);
+        if (!project && !isUrl(inputPath)) {
+            activeProject.addSourceFileAtPath(inputPath);
+        }
 
-        const typeGenerator = new TypeGenerator(swaggerParser, project, config, outputPath);
+        console.log(`📡 Processing OpenAPI specification from ${inputType}: ${inputPath}`);
+        const swaggerParser = await SwaggerParser.create(inputPath, config, activeProject);
+
+        const typeGenerator = new TypeGenerator(swaggerParser, activeProject, config, outputPath);
         await typeGenerator.generate();
         console.log(`✅ TypeScript interfaces generated`);
 
         if (generateServices) {
-            const authTokensGenerator = new AuthTokensGenerator(project);
+            const authTokensGenerator = new AuthTokensGenerator(activeProject);
             authTokensGenerator.generate(outputPath);
 
-            const authInterceptorGenerator = new AuthInterceptorGenerator(swaggerParser, project);
+            const authInterceptorGenerator = new AuthInterceptorGenerator(swaggerParser, activeProject);
             authInterceptorGenerator.generate(outputPath);
 
-            const tokenGenerator = new TokenGenerator(project, config.clientName);
+            const tokenGenerator = new TokenGenerator(activeProject, config.clientName);
             tokenGenerator.generate(outputPath);
 
             if (config.options.dateType === "Date") {
-                const dateTransformer = new DateTransformerGenerator(project);
+                const dateTransformer = new DateTransformerGenerator(activeProject);
                 dateTransformer.generate(outputPath);
             }
 
-            const fileDownloadHelper = new FileDownloadGenerator(project);
+            const fileDownloadHelper = new FileDownloadGenerator(activeProject);
             fileDownloadHelper.generate(outputPath);
 
-            const httpParamsBuilderGenerator = new HttpParamsBuilderGenerator(project);
+            const httpParamsBuilderGenerator = new HttpParamsBuilderGenerator(activeProject);
             httpParamsBuilderGenerator.generate(outputPath);
 
-            const providerGenerator = new ProviderGenerator(project, config, swaggerParser);
+            const providerGenerator = new ProviderGenerator(activeProject, config, swaggerParser);
             providerGenerator.generate(outputPath);
 
-            const baseInterceptorGenerator = new BaseInterceptorGenerator(project, config.clientName);
+            const baseInterceptorGenerator = new BaseInterceptorGenerator(activeProject, config.clientName);
             baseInterceptorGenerator.generate(outputPath);
 
-            const serviceGenerator = new ServiceGenerator(swaggerParser, project, config);
+            const serviceGenerator = new ServiceGenerator(swaggerParser, activeProject, config);
             await serviceGenerator.generate(outputPath);
 
-            const indexGenerator = new ServiceIndexGenerator(project);
+            const indexGenerator = new ServiceIndexGenerator(activeProject);
             indexGenerator.generateIndex(outputPath);
 
             console.log(`✅ Angular services generated`);
 
-            project.resolveSourceFileDependencies();
+            activeProject.resolveSourceFileDependencies();
 
             if (config.options.admin) {
-                const adminGenerator = new AdminGenerator(swaggerParser, project, config);
+                const adminGenerator = new AdminGenerator(swaggerParser, activeProject, config);
                 await adminGenerator.generate(outputPath);
                 console.log(`✅ Angular admin components generated`);
             }
@@ -95,14 +103,18 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
         if (config.plugins?.length) {
             for (const plugin of config.plugins) {
                 const generatorClass = plugin as IPluginGeneratorClass;
-                const pluginGenerator = new generatorClass(swaggerParser, project, config);
+                const pluginGenerator = new generatorClass(swaggerParser, activeProject, config);
                 await pluginGenerator.generate(outputPath);
             }
             console.log(`✅ Plugins are generated`);
         }
 
-        const mainIndexGenerator = new MainIndexGenerator(project, config);
+        const mainIndexGenerator = new MainIndexGenerator(activeProject, config);
         mainIndexGenerator.generateMainIndex(outputPath);
+
+        if (!project) { // Only save if we created the project internally
+            await activeProject.save();
+        }
 
         console.log(`🎉 Generation completed successfully -> ${outputPath}`);
     } catch (error) {

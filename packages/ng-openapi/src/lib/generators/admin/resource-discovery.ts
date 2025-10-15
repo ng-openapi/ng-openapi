@@ -51,15 +51,14 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
     for (const [tag, operations] of tagMap.entries()) {
         const usedOps = new Set<PathInfo>();
 
-        const shortestPath = [...operations].sort((a,b) => a.path.length - b.path.length)[0]?.path;
+        const shortestPath = [...operations].sort((a, b) => a.path.length - b.path.length)[0]?.path;
         if (!shortestPath) continue;
         const resourcePath = shortestPath.split('/{')[0];
 
         const isCollectionPath = (p: PathInfo) => p.path === resourcePath;
         const isItemPath = (p: PathInfo) => p.path.startsWith(resourcePath + '/') && p.path.includes('{');
 
-        const listOpRawSchema = operations.find(p => p.method === 'GET' && isCollectionPath(p))?.responses?.['200']?.content?.['application/json']?.schema;
-        const listOp = listOpRawSchema?.type === 'array' ? operations.find(p => p.method === 'GET' && isCollectionPath(p)) : undefined;
+        const listOp = operations.find(p => p.method === 'GET' && isCollectionPath(p) && p.responses?.['200']?.content?.['application/json']?.schema?.type === 'array');
         if (listOp) usedOps.add(listOp);
 
         const createOp = operations.find(p => p.method === 'POST' && isCollectionPath(p) && findSchema(p, 'request'));
@@ -68,7 +67,7 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
         const readOp = operations.find(p => p.method === 'GET' && isItemPath(p));
         if (readOp) usedOps.add(readOp);
 
-        const updateOp = operations.find(p => p.method === 'PUT' && (isItemPath(p) || isCollectionPath(p)) && findSchema(p, 'request'));
+        const updateOp = operations.find(p => p.method === 'PUT' && isItemPath(p) && findSchema(p, 'request'));
         if (updateOp) usedOps.add(updateOp);
 
         const deleteOp = operations.find(p => p.method === 'DELETE' && isItemPath(p));
@@ -76,38 +75,36 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
 
         const getParamType = (op: PathInfo | undefined) => {
             const param = op?.parameters?.find(p => p.in === 'path');
-            if (!param) return 'string'; // Default fallback
-            // Use the shared utility to determine if it's a number or string
+            if (!param) return 'string';
             return getTypeScriptType(param.schema || param, parser.config) as 'string' | 'number';
         };
 
-        const listModelRef = findSchema(listOp, 'response')?.ref;
-        const readModelRef = findSchema(readOp, 'response')?.ref;
-        const createModelRef = findSchema(createOp, 'request')?.ref;
-        const modelRef = listModelRef ?? readModelRef ?? createModelRef;
-
+        const modelRef = findSchema(listOp, 'response')?.ref ?? findSchema(readOp, 'response')?.ref ?? findSchema(createOp, 'request')?.ref;
         if (!modelRef && !(listOp || createOp || readOp || updateOp || deleteOp || operations.some(op => op.summary))) continue;
 
         const modelName = modelRef ? pascalCase(modelRef.split('/').pop()!) : pascalCase(tag.replace(/s$/, ''));
         const createModelSchemaInfo = findSchema(createOp, 'request');
         const createModelName = createModelSchemaInfo?.ref ? pascalCase(createModelSchemaInfo.ref.split('/').pop()!) : modelName;
 
-        // A custom action MUST be a non-CRUD mutation with a summary. This is a robust definition.
         const actions: ResourceAction[] = operations.filter(p => {
-            if (usedOps.has(p)) return false; // Already used for standard CRUD
-            // Actions are mutations (POST/PUT/PATCH/DELETE) that are not standard CRUD ops.
-            if (p.method === 'POST' || p.method === 'PUT' || p.method === 'PATCH' || p.method === 'DELETE') {
+            if (usedOps.has(p)) return false;
+            if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(p.method)) {
                 return !!p.summary;
             }
-            return false; // Exclude all non-mutating methods (like GET) that aren't list/read.
-        }).map(p => ({
-            label: p.summary!,
-            methodName: getMethodName(p),
-            level: isItemPath(p) ? 'item' : 'collection',
-            idParamName: p.parameters?.find(param => param.in === 'path')?.name || 'id',
-            idParamType: getParamType(p),
-            parameters: p.parameters ?? []
-        }));
+            return false;
+        }).map(p => {
+            const pathParam = p.parameters?.find(param => param.in === 'path');
+            const idParamType = pathParam ? (getTypeScriptType(pathParam.schema || pathParam, parser.config) as 'string' | 'number') : 'string';
+
+            return {
+                label: p.summary!,
+                methodName: getMethodName(p),
+                level: isItemPath(p) ? 'item' : 'collection',
+                idParamName: pathParam?.name || 'id',
+                idParamType: idParamType,
+                parameters: p.parameters ?? []
+            };
+        });
 
         const singularTag = tag.replace(/s$/, '');
 
@@ -115,20 +112,16 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
             name: camelCase(singularTag),
             pluralName: plural(camelCase(singularTag)),
             titleName: titleCase(singularTag),
-            className: modelName,
             modelName, createModelName,
             createModelRef: createModelSchemaInfo?.ref || '',
             serviceName: `${pascalCase(tag)}Service`,
             isEditable: !!(createOp || updateOp),
             operations: {
                 list: listOp ? {
-                    methodName: getMethodName(listOp),
-                    idParamName: '', // Not applicable
-                    idParamType: 'string', // Not applicable
-                    parameters: listOp.parameters ?? [],
+                    methodName: getMethodName(listOp), idParamName: '', idParamType: 'string', parameters: listOp.parameters ?? [],
                     hasPagination: !!listOp.parameters?.some(p => ['page', 'pageSize'].includes(p.name)),
                     hasSorting: !!listOp.parameters?.some(p => ['sort', 'order'].includes(p.name)),
-                    filterParameters: listOp.parameters?.filter(p => p.in ==='query' && !['page', 'pageSize', 'sort', 'order'].includes(p.name.toLowerCase())).map(p => {
+                    filterParameters: listOp.parameters?.filter(p => p.in === 'query' && !['page', 'pageSize', 'sort', 'order'].includes(p.name.toLowerCase())).map(p => {
                         const schema = p.schema || p;
                         return { name: p.name, inputType: schema.enum ? 'select' : (schema.type === 'number' || schema.type === 'integer' ? 'number' : 'text'), enumValues: schema.enum };
                     })
@@ -142,7 +135,7 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
         };
 
         let schemaForColumns = findSchema(listOp, 'response')?.schema ?? findSchema(readOp, 'response')?.schema;
-        if(schemaForColumns) {
+        if (schemaForColumns) {
             const resolved = schemaForColumns.$ref ? parser.resolveReference(schemaForColumns.$ref) : schemaForColumns;
             if (resolved?.properties) {
                 resource.listColumns = Object.keys(resolved.properties).filter(key => {

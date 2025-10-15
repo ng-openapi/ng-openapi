@@ -44,13 +44,13 @@ describe('Integration: Form Structures Generation', () => {
     it('should generate helper methods for the FormArray', () => {
         expect(formTs).toContain('get milestones(): FormArray');
         expect(formTs).toContain('createMilestone(): FormGroup');
-        expect(formTs).toContain('addMilestone(): void');
-        expect(formTs).toContain('removeMilestone(index: number): void');
+        expect(formTs).toContain('addMilestone()');
+        expect(formTs).toContain('removeMilestone(index: number)');
     });
 
     it('should generate patch logic for the FormArray in edit mode', () => {
         expect(formTs).toContain('this.milestones.clear();');
-        expect(formTs).toContain('this.milestones.push(formGroup);');
+        expect(formTs).toContain('this.milestones.push(fg);');
     });
 
     it('should generate correct HTML for the FormArray', () => {

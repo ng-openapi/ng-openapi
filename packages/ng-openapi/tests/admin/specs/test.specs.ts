@@ -95,9 +95,13 @@ const fullE2ESpecObj = {
             post: { tags: ['Books'], requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateBook' } } } } }
         },
         '/books/{id}': {
-            get: { tags: ['Books'], parameters: [{ name: 'id', in: 'path' }] },
-            put: { tags: ['Books'], parameters: [{ name: 'id', in: 'path' }] },
-            delete: { tags: ['Books'], parameters: [{ name: 'id', in: 'path' }] }
+            get: { tags: ['Books'], parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }] },
+            put: {
+                tags: ['Books'],
+                parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+                requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateBook' } } } }
+            },
+            delete: { tags: ['Books'], parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }] }
         },
         '/authors': {
             get: { tags: ['Authors'], responses: { '200': { content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Author' } } } } } } }

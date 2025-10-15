@@ -27,7 +27,7 @@ describe('Integration: Advanced Validation Generation', () => {
     });
 
     it('should import CustomValidators in the form component', () => {
-        expect(formTs).toContain(`import { CustomValidators } from '../../helpers/custom-validators';`);
+        expect(formTs).toContain(`import { CustomValidators } from "../../helpers/custom-validators";`);
     });
 
     it('should apply built-in validators for numbers and arrays', () => {
