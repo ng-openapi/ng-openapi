@@ -1,5 +1,5 @@
 import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
-import { GeneratorConfig, getResponseType, getTypeScriptType, PathInfo } from "@ng-openapi/shared";
+import { camelCase, GeneratorConfig, getResponseType, getTypeScriptType, PathInfo } from "@ng-openapi/shared";
 
 export class HttpResourceMethodParamsGenerator {
     private config: GeneratorConfig;
@@ -38,7 +38,7 @@ export class HttpResourceMethodParamsGenerator {
             const paramType = getTypeScriptType(param.schema || param, this.config);
             const signalParamType = param.required ? `Signal<${paramType}>` : `Signal<${paramType} | undefined>`;
             params.push({
-                name: param.name,
+                name: camelCase(param.name),
                 type: `${signalParamType} | ${paramType}`,
                 hasQuestionToken: !param.required,
             });
@@ -50,7 +50,7 @@ export class HttpResourceMethodParamsGenerator {
             const paramType = getTypeScriptType(param.schema || param, this.config);
             const signalParamType = param.required ? `Signal<${paramType}>` : `Signal<${paramType} | undefined>`;
             params.push({
-                name: param.name,
+                name: camelCase(param.name),
                 type: `${signalParamType} | ${paramType}`,
                 hasQuestionToken: !param.required,
             });
