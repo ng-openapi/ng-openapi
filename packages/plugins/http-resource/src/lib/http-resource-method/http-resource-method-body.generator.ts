@@ -1,4 +1,10 @@
-import { GeneratorConfig, GetMethodGenerationContext, getResponseTypeFromResponse, PathInfo } from "@ng-openapi/shared";
+import {
+    camelCase,
+    GeneratorConfig,
+    GetMethodGenerationContext,
+    getResponseTypeFromResponse,
+    PathInfo,
+} from "@ng-openapi/shared";
 
 export class HttpResourceMethodBodyGenerator {
     private config: GeneratorConfig;
@@ -30,7 +36,7 @@ export class HttpResourceMethodBodyGenerator {
             context.pathParams.forEach((param) => {
                 urlExpression = urlExpression.replace(
                     `{${param.name}}`,
-                    `\${typeof ${param.name} === 'function' ? ${param.name}() : ${param.name}}`
+                    `\${typeof ${camelCase(param.name)} === 'function' ? ${camelCase(param.name)}() : ${camelCase(param.name)}}`
                 );
             });
         }
@@ -46,9 +52,9 @@ export class HttpResourceMethodBodyGenerator {
         const paramMappings = context.queryParams
             .map(
                 (param) =>
-                    `const ${param.name}Value = typeof ${param.name} === 'function' ? ${param.name}() : ${param.name};
-                if (${param.name}Value != null) {
-                    params = HttpParamsBuilder.addToHttpParams(params, ${param.name}Value, '${param.name}');
+                    `const ${camelCase(param.name)}Value = typeof ${camelCase(param.name)} === 'function' ? ${camelCase(param.name)}() : ${camelCase(param.name)};
+                if (${camelCase(param.name)}Value != null) {
+                    params = HttpParamsBuilder.addToHttpParams(params, ${camelCase(param.name)}Value, '${param.name}');
                 }`
             )
             .join("\n");
