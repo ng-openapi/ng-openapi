@@ -54,6 +54,18 @@ export class ServiceMethodParamsGenerator {
 
         const requestBody = operation.requestBody;
 
+        const formDataParams = operation.parameters?.filter(p => (p as any).in === 'formData') || [];
+
+        if (formDataParams.length > 0) {
+            formDataParams.forEach(param => {
+                params.push({
+                    name: param.name,
+                    type: getTypeScriptType(param, this.config), // Pass the whole param object for type resolution
+                    hasQuestionToken: !param.required,
+                });
+            });
+        }
+
         if (requestBody) {
             const formDataContent = requestBody.content?.[CONTENT_TYPES.MULTIPART];
             const urlEncodedContent = requestBody.content?.[CONTENT_TYPES.FORM_URLENCODED];
@@ -86,6 +98,16 @@ export class ServiceMethodParamsGenerator {
         // Query parameters
         const queryParams = operation.parameters?.filter((p) => p.in === "query") || [];
         queryParams.forEach((param) => {
+            params.push({
+                name: param.name,
+                type: getTypeScriptType(param.schema || param, this.config),
+                hasQuestionToken: !param.required,
+            });
+        });
+
+        // Header parameters (often missed, good to include)
+        const headerParams = operation.parameters?.filter((p) => p.in === 'header') || [];
+        headerParams.forEach((param) => {
             params.push({
                 name: param.name,
                 type: getTypeScriptType(param.schema || param, this.config),

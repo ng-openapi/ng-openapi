@@ -83,13 +83,13 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
 
             console.log(`✅ Angular services generated`);
 
-            // ##### THIS IS THE CRUCIAL MISSING BLOCK #####
+            project.resolveSourceFileDependencies();
+
             if (config.options.admin) {
                 const adminGenerator = new AdminGenerator(swaggerParser, project, config);
                 await adminGenerator.generate(outputPath);
                 console.log(`✅ Angular admin components generated`);
             }
-            // ##### END OF CRUCIAL MISSING BLOCK #####
         }
 
         if (config.plugins?.length) {

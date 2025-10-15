@@ -1,9 +1,44 @@
 import * as path from 'path';
 import { Project } from 'ts-morph';
-import { Resource } from '../admin.types';
+import { Resource, ResourceOperation, SwaggerParameter, ResourceAction } from '../admin.types';
 import { pascalCase, titleCase, camelCase } from "@ng-openapi/shared";
 import { generateFormControlsTS, generateFormFieldsHTML } from '../helpers/generation.helpers';
 import { getTemplate } from '../helpers/template.reader';
+
+function buildCrudServiceCallArgs(operation: ResourceOperation, context: { idVarName?: string, bodyVarName?: string }): string {
+    const idArg = context.idVarName ? `${context.idVarName} as ${operation.idParamType}` : '';
+    let bodyArg = '';
+
+    // Check if there is a body parameter
+    const hasBody = (operation.parameters ?? []).some(p => (p as any).in === 'body');
+    if (hasBody && context.bodyVarName) {
+        bodyArg = `, ${context.bodyVarName}`;
+    }
+
+    if (operation.methodName.startsWith('create')) return context.bodyVarName || '';
+
+    // For update, the order is typically id, then body.
+    if (operation.methodName.startsWith('update')) {
+        return `${idArg}${bodyArg}`;
+    }
+
+    // For read, it's just the id.
+    return idArg;
+}
+
+function buildActionServiceCall(action: ResourceAction, idVarName: string): string {
+    const args = (action.parameters ?? []).map(p => {
+        if (p.in === 'path') {
+            const castType = action.idParamType !== 'string' ? ` as ${action.idParamType}` : '';
+            return `${idVarName}${castType}`;
+        }
+        // For other parameters (formData, query, etc.), we don't have form controls for them yet,
+        // so we pass undefined to allow optional params to work.
+        return 'undefined';
+    }).join(', ');
+
+    return `this.svc.${action.methodName}(${args})`;
+}
 
 const MAT_MODULE_MAP = {
     'text': { module: 'MatFormFieldModule', path: '@angular/material/form-field' },
@@ -64,7 +99,10 @@ export function writeFormComponent(resource: Resource, project: Project, allReso
             }
         }
     });
-    requiredMatModules.set('MatInputModule', '@angular/material/input');
+
+    if (isEditable) {
+        requiredMatModules.set('MatInputModule', '@angular/material/input');
+    }
     requiredMatModules.set('MatButtonModule', '@angular/material/button');
     requiredMatModules.set('MatIconModule', '@angular/material/icon');
     const matImportStatements = Array.from(requiredMatModules.entries()).map(([module, path]) => `import { ${module} } from '${path}';`).join('\n');
@@ -83,16 +121,20 @@ export function writeFormComponent(resource: Resource, project: Project, allReso
     const relationServiceInjections = relationshipProps.map(p => `private readonly ${camelCase(p.relationResourceName! + 'Svc')} = inject(${p.relationServiceName});`).join('\n    ');
     const formControlFields = generateFormControlsTS(formProperties, modelForForm);
     const formDeclaration = isEditable ? `readonly form = new FormGroup({
-        ${formControlFields}
+    ${formControlFields}
     });` : 'readonly form = null as any;';
 
     const compareById = `compareById = (o1: { id: unknown }, o2: { id: unknown }): boolean => o1?.id === o2?.id;`;
 
     const helperMethods: string[] = [];
     if (itemActions.length > 0) {
-        const actionCases = itemActions.map(a => `case '${a.methodName}':
-                this.svc.${a.methodName}({ ${a.idParamName}: Number(id) }).subscribe(() => this.snackBar.open('${titleCase(a.label)} completed.', 'Dismiss', { duration: 3000 }));
-                break;`).join('\n');
+        const actionCases = itemActions.map(a => {
+            const serviceCall = buildActionServiceCall(a, 'id');
+            return `case '${a.methodName}':
+                ${serviceCall}.subscribe(() => this.snackBar.open('${titleCase(a.label)} completed.', 'Dismiss', { duration: 3000 }));
+                break;`;
+        }).join('\n            ');
+
         helperMethods.push(`onAction(actionName: string): void {
         const id = this.id(); if (!id) return;
         switch(actionName) {
@@ -122,6 +164,9 @@ remove${singularTitle}(index: number): void { this.${p.name}.removeAt(index); }`
     // --- Logic Blocks ---
     let effectBlock = '';
     if (resource.operations.read) {
+        const readOp = resource.operations.read;
+        const readArgs = buildCrudServiceCallArgs(readOp, { idVarName: 'id' });
+
         const formArrayPatchLogic = formArrayObjectProps.map(p => {
             const itemType = p.arrayItemModelName!;
             return `if (data.${p.name} && Array.isArray(data.${p.name})) {
@@ -135,7 +180,7 @@ remove${singularTitle}(index: number): void { this.${p.name}.removeAt(index); }`
         effectBlock = `private readonly formEffect = effect(() => {
         const id = this.id();
         const data = this.data();
-        if (id && !data) { this.svc.${resource.operations.read!.methodName}({ ${resource.operations.read!.idParamName}: Number(id) }).subscribe(data => this.data.set(data)); }
+        if (id && !data) { this.svc.${readOp.methodName}(${readArgs}).subscribe(data => this.data.set(data)); }
         else if (data) { this.form.patchValue(data); ${formArrayPatchLogic} }
         else if (!id) { this.form.reset(); }
         if (this.isViewMode()) { this.form.disable(); }
@@ -155,8 +200,13 @@ remove${singularTitle}(index: number): void { this.${p.name}.removeAt(index); }`
 
     let onSubmitBlock = '';
     if (isEditable) {
-        const updateCall = resource.operations.update ? `this.svc.${resource.operations.update.methodName}({ ${resource.operations.update.idParamName}: Number(this.id()), body: formValue })` : 'null';
-        const createCall = resource.operations.create ? `this.svc.${resource.operations.create.methodName}({ body: formValue })` : 'null';
+        const updateOp = resource.operations.update;
+        const createOp = resource.operations.create;
+        const updateArgs = updateOp ? buildCrudServiceCallArgs(updateOp, { idVarName: 'this.id()', bodyVarName: 'formValue' }) : '';
+        const createArgs = createOp ? buildCrudServiceCallArgs(createOp, { bodyVarName: 'formValue' }) : '';
+
+        const updateCall = updateOp ? `this.svc.${updateOp.methodName}(${updateArgs})` : 'null';
+        const createCall = createOp ? `this.svc.${createOp.methodName}(${createArgs})` : 'null';
         onSubmitBlock = `onSubmit(): void {
         this.form.markAllAsTouched(); if (this.form.invalid) { this.snackBar.open('Please correct the errors on the form.', 'Dismiss', { duration: 3000 }); return; }
         const formValue = this.form.getRawValue() as ${modelForForm};
@@ -173,7 +223,7 @@ remove${singularTitle}(index: number): void { this.${p.name}.removeAt(index); }`
     const finalContent = template
         .replace('{{angularCoreImports}}', Array.from(angularCoreImports).join(', '))
         .replace('{{rxjsImports}}', needsStartWith ? `import { startWith } from 'rxjs/operators';` : '')
-        .replace('{{reactiveFormsImports}}', isEditable ? `import { FormControl, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';` : '')
+        .replace('{{reactiveFormsImports}}', '') // This will be handled by fixMissingImports
         .replace('{{matChipInputEventImport}}', formArrayChipProps.length > 0 ? `import { MatChipInputEvent } from '@angular/material/chips';` : '')
         .replace('{{customValidatorsImport}}', usesCustomValidators ? `import { CustomValidators } from '../../helpers/custom-validators';` : '')
         .replace('{{materialImports}}', matImportStatements)
@@ -196,5 +246,7 @@ remove${singularTitle}(index: number): void { this.${p.name}.removeAt(index); }`
         .replace('{{helperMethods}}', helperMethods.join('\n\n    '));
 
     sourceFile.addStatements(finalContent);
+    sourceFile.fixMissingImports();
+    sourceFile.formatText();
     sourceFile.saveSync();
 }

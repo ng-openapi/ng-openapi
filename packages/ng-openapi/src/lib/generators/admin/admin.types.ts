@@ -54,12 +54,15 @@ export interface ResourceAction {
     label: string,
     methodName: string;
     idParamName: string;
+    idParamType: 'string' | 'number';
+    parameters: SwaggerParameter[];
 }
 
 export interface ResourceOperation {
     methodName: string;
     idParamName: string;
     idParamType: 'string' | 'number';
+    parameters: SwaggerParameter[];
 }
 
 export interface Resource {

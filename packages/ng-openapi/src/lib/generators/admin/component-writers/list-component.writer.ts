@@ -149,29 +149,43 @@ export function writeListComponent(resource: Resource, project: Project, adminDi
     }
 }` : '';
 
+        const deleteOp = resource.operations.delete;
+        let deleteArgs = '';
+        if (deleteOp) {
+            const idParam = (deleteOp.parameters ?? []).find(p => p.in === 'path');
+            const castType = deleteOp.idParamType !== 'string' ? ` as ${deleteOp.idParamType}` : '';
+
+            deleteArgs = (deleteOp.parameters ?? []).map(p => {
+                if (p.in === 'path') {
+                    return `id${castType}`;
+                }
+                return 'undefined'; // Handle other params if needed in the future
+            }).filter(p => p!== 'undefined').join(', ');
+        }
+
         const tsContext = {
-            tsImports: Array.from(tsImports).join(', '),
-            specialImports: specialImports.join('\n'),
-            materialImports: materialImportsStr,
-            serviceName: resource.serviceName,
-            modelName: resource.modelName || 'any',
-            pluralKebabName: resource.pluralName,
+            collectionActionMethodTs,
+            compName,
             componentClassName: `${resource.className}ListComponent`,
             componentImports: componentImports.join(', '),
-            compName,
+            deleteArgs, // << ADD THIS and remove the old deleteIdParamName property
+            deleteMethodName: resource.operations.delete?.methodName,
             displayedColumns: `[${resource.listColumns.map(c => `'${c}'`).join(", ")}, 'actions']`,
-            hasPagination: !!listOp?.hasPagination,
-            hasSorting: !!listOp?.hasSorting,
+            filterFormControls,
+            hasDeleteMethod: !!resource.operations.delete,
             hasFilters,
             hasNgAfterViewInit: !!listOp,
-            hasDeleteMethod: !!resource.operations.delete,
-            filterFormControls,
+            hasPagination: !!listOp?.hasPagination,
+            hasSorting: !!listOp?.hasSorting,
             implementsAfterViewInit: listOp ? 'implements AfterViewInit' : '',
             listMethodName: listOp?.methodName,
-            deleteMethodName: resource.operations.delete?.methodName,
-            deleteIdParamName: resource.operations.delete?.idParamName,
+            materialImports: materialImportsStr,
+            modelName: resource.modelName || 'any',
+            pluralKebabName: resource.pluralName,
+            serviceName: resource.serviceName,
+            specialImports: specialImports.join('\n'),
             titleName: resource.titleName,
-            collectionActionMethodTs,
+            tsImports: Array.from(tsImports).join(', '),
         };
         tsFile.addStatements(renderTemplate(getTemplate('list.component.ts.template'), tsContext));
     } else {

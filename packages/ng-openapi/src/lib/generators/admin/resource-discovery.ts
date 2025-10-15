@@ -1,4 +1,13 @@
-import { SwaggerParser, extractPaths, PathInfo, pascalCase, camelCase, titleCase, SwaggerDefinition } from "@ng-openapi/shared";
+import {
+    SwaggerParser,
+    extractPaths,
+    PathInfo,
+    pascalCase,
+    camelCase,
+    titleCase,
+    SwaggerDefinition,
+    getTypeScriptType,
+} from "@ng-openapi/shared";
 import { ResourceAction, Resource } from "./admin.types";
 import { plural } from "./admin.helpers";
 
@@ -65,6 +74,13 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
         const deleteOp = operations.find(p => p.method === 'DELETE' && isItemPath(p));
         if (deleteOp) usedOps.add(deleteOp);
 
+        const getParamType = (op: PathInfo | undefined) => {
+            const param = op?.parameters?.find(p => p.in === 'path');
+            if (!param) return 'string'; // Default fallback
+            // Use the shared utility to determine if it's a number or string
+            return getTypeScriptType(param.schema || param, parser.config) as 'string' | 'number';
+        };
+
         const listModelRef = findSchema(listOp, 'response')?.ref;
         const readModelRef = findSchema(readOp, 'response')?.ref;
         const createModelRef = findSchema(createOp, 'request')?.ref;
@@ -76,7 +92,6 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
         const createModelSchemaInfo = findSchema(createOp, 'request');
         const createModelName = createModelSchemaInfo?.ref ? pascalCase(createModelSchemaInfo.ref.split('/').pop()!) : modelName;
 
-        // --- THE FINAL FIX IS HERE ---
         // A custom action MUST be a non-CRUD mutation with a summary. This is a robust definition.
         const actions: ResourceAction[] = operations.filter(p => {
             if (usedOps.has(p)) return false; // Already used for standard CRUD
@@ -86,9 +101,12 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
             }
             return false; // Exclude all non-mutating methods (like GET) that aren't list/read.
         }).map(p => ({
-            label: p.summary!, methodName: getMethodName(p),
+            label: p.summary!,
+            methodName: getMethodName(p),
             level: isItemPath(p) ? 'item' : 'collection',
             idParamName: p.parameters?.find(param => param.in === 'path')?.name || 'id',
+            idParamType: getParamType(p),
+            parameters: p.parameters ?? []
         }));
 
         const singularTag = tag.replace(/s$/, '');
@@ -105,6 +123,9 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
             operations: {
                 list: listOp ? {
                     methodName: getMethodName(listOp),
+                    idParamName: '', // Not applicable
+                    idParamType: 'string', // Not applicable
+                    parameters: listOp.parameters ?? [],
                     hasPagination: !!listOp.parameters?.some(p => ['page', 'pageSize'].includes(p.name)),
                     hasSorting: !!listOp.parameters?.some(p => ['sort', 'order'].includes(p.name)),
                     filterParameters: listOp.parameters?.filter(p => p.in ==='query' && !['page', 'pageSize', 'sort', 'order'].includes(p.name.toLowerCase())).map(p => {
@@ -112,10 +133,10 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
                         return { name: p.name, inputType: schema.enum ? 'select' : (schema.type === 'number' || schema.type === 'integer' ? 'number' : 'text'), enumValues: schema.enum };
                     })
                 } : undefined,
-                create: createOp ? { methodName: getMethodName(createOp), idParamName: '', idParamType: 'string' } : undefined,
-                read: readOp ? { methodName: getMethodName(readOp), idParamName: readOp.parameters?.find(p=>p.in==='path')?.name || 'id', idParamType: 'number' } : undefined,
-                update: updateOp ? { methodName: getMethodName(updateOp), idParamName: updateOp.parameters?.find(p=>p.in==='path')?.name || 'id', idParamType: 'number' } : undefined,
-                delete: deleteOp ? { methodName: getMethodName(deleteOp), idParamName: deleteOp.parameters?.find(p=>p.in==='path')?.name || 'id', idParamType: 'number' } : undefined,
+                create: createOp ? { methodName: getMethodName(createOp), idParamName: '', idParamType: 'string', parameters: createOp.parameters ?? [] } : undefined,
+                read: readOp ? { methodName: getMethodName(readOp), idParamName: readOp.parameters?.find(p => p.in === 'path')?.name || 'id', idParamType: getParamType(readOp), parameters: readOp.parameters ?? [] } : undefined,
+                update: updateOp ? { methodName: getMethodName(updateOp), idParamName: updateOp.parameters?.find(p => p.in === 'path')?.name || 'id', idParamType: getParamType(updateOp), parameters: updateOp.parameters ?? [] } : undefined,
+                delete: deleteOp ? { methodName: getMethodName(deleteOp), idParamName: deleteOp.parameters?.find(p => p.in === 'path')?.name || 'id', idParamType: getParamType(deleteOp), parameters: deleteOp.parameters ?? [] } : undefined,
             },
             actions, formProperties: [], listColumns: [],
         };

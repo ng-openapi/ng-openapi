@@ -44,6 +44,8 @@ export class AdminGenerator {
     }
 
     async generate(outputRoot: string): Promise<void> {
+        this.project.resolveSourceFileDependencies();
+
         console.log("[ADMIN] Starting admin component generation...");
         this.allResources = discoverAdminResources(this.parser);
 

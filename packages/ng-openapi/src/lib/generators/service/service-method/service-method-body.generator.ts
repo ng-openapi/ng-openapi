@@ -28,7 +28,7 @@ export class ServiceMethodBodyGenerator {
             this.generateHeaders(context),
             this.generateMultipartFormData(operation, context),
             this.generateUrlEncodedFormData(operation, context),
-            this.generateRequestOptions(context),
+            this.generateRequestOptions(operation, context),
             this.generateHttpRequest(operation, context),
         ];
 
@@ -262,7 +262,7 @@ const formBody = new URLSearchParams();
 ${formBodyAppends}`;
     }
 
-    private generateRequestOptions(context: MethodGenerationContext): string {
+    private generateRequestOptions(operation: PathInfo, context: MethodGenerationContext): string {
         const options: string[] = [];
 
         options.push("observe: observe as any");
@@ -287,7 +287,7 @@ ${formBodyAppends}`;
         const formattedOptions = options.filter((opt) => opt && !opt.includes("undefined")).join(",\n  ");
 
         return `
-const requestOptions: any = {
+const requestOptions: Parameters<HttpClient["${operation.method.toLowerCase()}"]>[1] = {
   ${formattedOptions}
 };`;
     }

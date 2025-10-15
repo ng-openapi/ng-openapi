@@ -105,17 +105,15 @@ export class {{componentClassName}} {{implementsAfterViewInit}} {
   }
 
   @if (hasDeleteMethod) {
-  delete(id: number | string): void {
-    if (confirm('Are you sure?')) {
-      this.svc.{{deleteMethodName}}({ {{deleteIdParamName}}: id } as any).subscribe(() => {
-        @if (hasNgAfterViewInit) {
-        // Refresh data after delete
-        this.loadData().subscribe(data => this.data.set(data));
-        }
-        this.snackBar.open('{{titleName}} deleted.', 'OK', { duration: 3000 });
-      });
-    }
-  }
+      delete (id: number | string): void {
+          if(confirm('Are you sure?')) {
+              this.svc.{{ deleteMethodName }}({{ deleteArgs }}).subscribe(() => { // << THIS IS THE FIX
+                  // Refresh data after delete
+                  this.loadData().subscribe(data => this.data.set(data));
+                  this.snackBar.open('{{ titleName }} deleted.', 'OK', { duration: 3000 });
+              });
+          }
+      }
   }
 
   {{collectionActionMethodTs}}

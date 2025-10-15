@@ -110,7 +110,7 @@ export class ServiceGenerator {
             { namedImports: ["inject", "Injectable"], moduleSpecifier: "@angular/core" },
             { namedImports: ["Observable"], moduleSpecifier: "rxjs" },
             { namedImports: [basePathTokenName, clientContextTokenName, "RequestOptions"], moduleSpecifier: "../", },
-            { namedImports: ["HttpParamsBuilder"], moduleSpecifier: "../utils" }
+            { namedImports: ["HttpParamsBuilder"], moduleSpecifier: "../" }
         ]);
 
         const serviceClass = sourceFile.addClass({
