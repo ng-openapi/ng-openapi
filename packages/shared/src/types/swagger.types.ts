@@ -10,6 +10,11 @@ import {
     XML,
 } from "swagger-schema-official";
 
+export interface DiscriminatorObject {
+    propertyName: string;
+    mapping?: { [key: string]: string };
+}
+
 export interface Parameter {
     name: string;
     in: "query" | "path" | "header" | "cookie";
@@ -67,7 +72,7 @@ export interface SwaggerDefinition {
     allOf?: SwaggerDefinition[] | undefined;
     additionalProperties?: SwaggerDefinition | boolean | undefined;
     properties?: { [propertyName: string]: SwaggerDefinition } | undefined;
-    discriminator?: string | undefined;
+    discriminator?: DiscriminatorObject | undefined;
     readOnly?: boolean | undefined;
     nullable?: boolean | undefined;
     xml?: XML | undefined;

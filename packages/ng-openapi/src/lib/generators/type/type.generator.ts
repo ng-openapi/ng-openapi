@@ -23,6 +23,12 @@ export class TypeGenerator {
     private readonly generatedTypes = new Set<string>();
     private readonly config: GeneratorConfig;
 
+    /**
+     * Maps a schema name (e.g., 'Cat') to its discriminator information.
+     * This allows us to inject a literal type for the discriminator property.
+     */
+    private readonly discriminatorMap = new Map<string, { propertyName: string; literalValue: string }>();
+
     // Performance caches
     private readonly pascalCaseCache = new Map<string, string>();
     private readonly sanitizedNameCache = new Map<string, string>();
@@ -48,6 +54,9 @@ export class TypeGenerator {
                 return;
             }
 
+            // Pre-scan all schemas to find and map discriminators before generation
+            this.preprocessDiscriminators(definitions);
+
             // Phase 1: Collect all type structures in memory (no AST manipulation yet)
             this.collectAllTypeStructures(definitions);
 
@@ -62,6 +71,45 @@ export class TypeGenerator {
         } catch (error) {
             console.error("Error in generate():", error);
             throw new Error(`Failed to generate types: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+    }
+
+    /**
+     * Scans all definitions to find `discriminator` objects and populates a map
+     * that links sub-schemas to their required literal value.
+     */
+    private preprocessDiscriminators(definitions: Record<string, SwaggerDefinition>): void {
+        for (const schema of Object.values(definitions)) {
+            if (schema.discriminator && (schema.oneOf || schema.anyOf)) {
+                const { propertyName, mapping } = schema.discriminator;
+                const subSchemas = schema.oneOf || schema.anyOf;
+
+                for (const subSchemaRef of subSchemas!) {
+                    if (subSchemaRef.$ref) {
+                        const subSchemaName = subSchemaRef.$ref.split("/").pop()!;
+                        const pascalSubSchemaName = this.getCachedPascalCase(subSchemaName);
+
+                        let literalValue: string | undefined;
+
+                        // Find the literal value from the mapping, if it exists
+                        if (mapping) {
+                            for (const [key, value] of Object.entries(mapping)) {
+                                if (value.endsWith(`/${subSchemaName}`)) {
+                                    literalValue = key;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // If not found in mapping, use the schema name as the literal value
+                        if (!literalValue) {
+                            literalValue = subSchemaName;
+                        }
+
+                        this.discriminatorMap.set(pascalSubSchemaName, { propertyName, literalValue });
+                    }
+                }
+            }
         }
     }
 
@@ -156,8 +204,8 @@ export class TypeGenerator {
                     typeof value === "string"
                         ? `'${this.escapeString(value)}'`
                         : isNaN(value)
-                        ? `'${value}'`
-                        : `${value}`;
+                            ? `'${value}'`
+                            : `${value}`;
                 objectProperties.push(`${key}: ${val} as ${name}`);
                 return val;
             })
@@ -225,7 +273,7 @@ export class TypeGenerator {
     }
 
     private collectInterfaceStructure(name: string, definition: SwaggerDefinition): void {
-        const properties = this.buildInterfaceProperties(definition);
+        const properties = this.buildInterfaceProperties(definition, name);
 
         this.statements.push({
             kind: StructureKind.Interface,
@@ -237,12 +285,27 @@ export class TypeGenerator {
         });
     }
 
-    private buildInterfaceProperties(definition: SwaggerDefinition): any[] {
+    private buildInterfaceProperties(definition: SwaggerDefinition, interfaceName: string): any[] {
         if (!definition.properties) {
             return [];
         }
 
         return Object.entries(definition.properties).map(([propertyName, property]) => {
+            // Check if this is a discriminator property
+            const discInfo = this.discriminatorMap.get(interfaceName);
+            if (discInfo && propertyName === discInfo.propertyName) {
+                // This is the discriminant property. Override its type with a literal.
+                const sanitizedName = this.getCachedSanitizedName(propertyName);
+                return {
+                    name: sanitizedName,
+                    type: `'${this.escapeString(discInfo.literalValue)}'`, // e.g., "'Cat'"
+                    isReadonly: property.readOnly,
+                    // The spec requires discriminator properties to be required.
+                    hasQuestionToken: false,
+                    docs: property.description ? [property.description] : undefined,
+                };
+            }
+
             const isRequired = definition.required?.includes(propertyName) ?? false;
             const isReadOnly = property.readOnly;
             const propertyType = this.resolveSwaggerTypeCached(property);
