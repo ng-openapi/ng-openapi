@@ -131,10 +131,10 @@ export function generateFormFieldsHTML(properties: FormProperty[], isViewMode = 
             case 'checkbox':
                 return `<mat-checkbox formControlName="${p.name}" ${isRequired}>${label}</mat-checkbox>`;
             case 'chip-list':
-                const singularName = pascalCase(p.name).replace(/s$/, '');
+                { const singularName = pascalCase(p.name).replace(/s$/, '');
                 return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><mat-chip-grid #chipGrid${singularName}>
                 @for (item of ${p.name}.value; track item) {<mat-chip-row (removed)="remove${singularName}(item)">{{item}}<button matChipRemove><mat-icon>cancel</mat-icon></button></mat-chip-row>}
-                <input placeholder="New ${singularName}..." [matChipInputFor]="chipGrid${singularName}" (matChipInputTokenEnd)="add${singularName}($event)"/></mat-chip-grid></mat-form-field>`;
+                <input placeholder="New ${singularName}..." [matChipInputFor]="chipGrid${singularName}" (matChipInputTokenEnd)="add${singularName}($event)"/></mat-chip-grid></mat-form-field>`; }
             case 'datepicker':
                 return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><input matInput [matDatepicker]="picker${p.name}" formControlName="${p.name}" ${isRequired}><mat-datepicker-toggle matSuffix [for]="picker${p.name}"></mat-datepicker-toggle><mat-datepicker #picker${p.name}></mat-datepicker></mat-form-field>`;
             case 'select':
@@ -171,8 +171,11 @@ export function generateFormFieldsHTML(properties: FormProperty[], isViewMode = 
                 @for(option of ${camelCase(p.relationResourceName!)}Options$ | async; track option.id) {<mat-option [value]="option">{{ option.${p.relationDisplayField} }}</mat-option>}
                 </mat-select></mat-form-field>`;
         }
-        const inputType = p.inputType === 'textarea' ? 'textarea' : 'input';
         const typeAttr = p.inputType === 'textarea' ? '' : `type="${p.inputType || 'text'}"`;
-        return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label><${inputType} matInput formControlName="${p.name}" ${typeAttr} ${isRequired}></${inputType}></mat-form-field>`;
+        const tag = p.inputType === 'textarea'
+            ? `<textarea matInput formControlName="${p.name}" ${isRequired}></textarea>`
+            : `<input matInput formControlName="${p.name}" ${typeAttr} ${isRequired}>`;
+
+        return `<mat-form-field appearance="outline"><mat-label>${label}</mat-label>${tag}</mat-form-field>`;
     }).join('\n');
 }

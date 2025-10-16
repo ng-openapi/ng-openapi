@@ -37,7 +37,12 @@ describe('Integration: End-to-End Generation', () => {
         });
 
         it('list component should have correct imports and class structure', () => {
-            expect(listComponent.getImportDeclaration(imp => imp.getModuleSpecifierValue().endsWith('/services'))).toBeDefined();
+            const serviceImport = listComponent.getImportDeclaration(imp => {
+                return !!imp.getNamedImports().find(ni => ni.getName() === 'BooksService');
+            });
+            expect(serviceImport, "The import for BooksService should exist").toBeDefined();
+            expect(serviceImport!.getModuleSpecifierValue()).toContain('services');
+
             const svcProp = listClass.getProperty('svc');
             expect(svcProp, "'svc' property should be defined").toBeDefined();
             expect(svcProp!.getType().getText(svcProp)).toBe('BooksService');

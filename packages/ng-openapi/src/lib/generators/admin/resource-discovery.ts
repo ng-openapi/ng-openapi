@@ -23,10 +23,16 @@ function findSchema(op: PathInfo | undefined, type: 'request' | 'response'): { r
         const content = op.requestBody?.content;
         if (content) {
             const jsonSchema = content['application/json']?.schema;
-            if (jsonSchema) return { ref: jsonSchema.$ref || null, schema: jsonSchema, contentType: 'application/json' };
+            if (jsonSchema) return { ref: jsonSchema.$ref || null, schema: jsonSchema as SwaggerDefinition, contentType: 'application/json' };
+
             const multipartSchema = content['multipart/form-data']?.schema;
-            if (multipartSchema) return { ref: multipartSchema.$ref || null, schema: multipartSchema, contentType: 'multipart/form-data' };
+            if (multipartSchema) return { ref: multipartSchema.$ref || null, schema: multipartSchema as SwaggerDefinition, contentType: 'multipart/form-data' };
         }
+
+        // Fallback for Swagger 2.0: check for a parameter with in: "body"
+        const bodyParam = (op.parameters)?.find(p => (p as unknown as {in: string}).in === 'body');
+        if (bodyParam && bodyParam.schema)
+            return { ref: bodyParam.schema.$ref || null, schema: bodyParam.schema as SwaggerDefinition, contentType: 'application/json' };
     } else { // response
         const schema = op.responses?.['200']?.content?.['application/json']?.schema;
         if (schema) {
