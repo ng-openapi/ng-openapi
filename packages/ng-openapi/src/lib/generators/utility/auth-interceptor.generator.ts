@@ -61,7 +61,7 @@ export class AuthInterceptorGenerator {
     if (this.apiKey) {  
       authReq = authReq.clone({ setParams: { '${scheme.name}': this.apiKey } });  
     }`);
-            } else if (scheme.type === 'http' && scheme.scheme === 'bearer') {
+            } else if ((scheme.type === 'http' && scheme.scheme === 'bearer') || scheme.type === 'oauth2') {
                 const Authorization = '`Bearer ${token}`'
                 securityConfigs.push(`if (this.bearerToken) {  
       const token = typeof this.bearerToken === 'function' ? this.bearerToken() : this.bearerToken;  

@@ -38,7 +38,8 @@ export class ProviderGenerator {
         const securitySchemes = this.spec.components?.securitySchemes ?? (this.spec as any).securityDefinitions;
         const hasSecurity = securitySchemes && Object.keys(securitySchemes).length > 0;
         const hasApiKey = hasSecurity && Object.values(securitySchemes).some(s => s.type === 'apiKey');
-        const hasBearer = hasSecurity && Object.values(securitySchemes).some(s => s.type === 'http' && s.scheme === 'bearer');
+        // Treat 'oauth2' as a type of bearer token for configuration purposes.
+        const hasBearer = hasSecurity && Object.values(securitySchemes).some(s => (s.type === 'http' && s.scheme === 'bearer') || s.type === 'oauth2');
 
         // Add imports
         sourceFile.addImportDeclarations([
@@ -85,48 +86,49 @@ export class ProviderGenerator {
         if (hasSecurity) {
             securityProviders += `
     // Provide the AuthInterceptor
-    providers.push({
-        provide: HTTP_INTERCEPTORS,
-        useClass: AuthInterceptor,
+    providers.push({ 
+        provide: HTTP_INTERCEPTORS, 
+        useClass: AuthInterceptor, 
         multi: true
-    });
+    }); 
 `;
             if (hasApiKey) {
                 securityProviders += `
     // Provide the API key if present
-    if (config.apiKey) {
-        providers.push({ provide: API_KEY_TOKEN, useValue: config.apiKey });
-    }
+    if (config.apiKey) { 
+        providers.push({ provide: API_KEY_TOKEN, useValue: config.apiKey }); 
+    } 
 `;
             }
+            // This condition now correctly includes oauth2
             if (hasBearer) {
                 securityProviders += `
-    // Provide the Bearer token if present
-    if (config.bearerToken) {
-        providers.push({ provide: BEARER_TOKEN_TOKEN, useValue: config.bearerToken });
-    }
+    // Provide the Bearer/OAuth2 token if present
+    if (config.bearerToken) { 
+        providers.push({ provide: BEARER_TOKEN_TOKEN, useValue: config.bearerToken }); 
+    } 
 `;
             }
         }
 
         const functionBody = `
-const providers: Provider[] = [
-    { provide: ${basePathTokenName}, useValue: config.basePath },
-    { provide: HTTP_INTERCEPTORS, useClass: ${baseInterceptorClassName}, multi: true }
-];
+const providers: Provider[] = [ 
+    { provide: ${basePathTokenName}, useValue: config.basePath }, 
+    { provide: HTTP_INTERCEPTORS, useClass: ${baseInterceptorClassName}, multi: true } 
+]; 
 
-${securityProviders}
+${securityProviders} 
 
-const customInterceptors = config.interceptors?.map(InterceptorClass => new InterceptorClass()) || [];
+const customInterceptors = config.interceptors?.map(InterceptorClass => new InterceptorClass()) || []; 
 
-if (config.enableDateTransform !== false && ${this.config.options.dateType === "Date"}) {
-    customInterceptors.unshift(new DateInterceptor());
-}
+if (config.enableDateTransform !== false && ${this.config.options.dateType === "Date"}) { 
+    customInterceptors.unshift(new DateInterceptor()); 
+} 
 
-providers.push({
-    provide: ${interceptorsTokenName},
+providers.push({ 
+    provide: ${interceptorsTokenName}, 
     useValue: customInterceptors
-});
+}); 
 
 return makeEnvironmentProviders(providers);`;
 

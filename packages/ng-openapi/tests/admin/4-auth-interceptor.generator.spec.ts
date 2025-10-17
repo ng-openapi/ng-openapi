@@ -127,6 +127,44 @@ describe("AuthInterceptorGenerator", () => {
         );
     });
 
+    it("should generate an interceptor for an OAuth2 flow", () => {
+        const spec = createSpec({
+            OAuth2Auth: {
+                type: "oauth2",
+                flows: {
+                    implicit: {
+                        authorizationUrl: "https://example.com/api/oauth/dialog",
+                        scopes: {
+                            "write:pets": "modify pets in your account",
+                            "read:pets": "read your pets",
+                        },
+                    },
+                },
+            },
+        });
+        const parser = new SwaggerParser(spec, config);
+        const generator = new AuthInterceptorGenerator(parser, project);
+
+        generator.generate(outputDir);
+
+        const interceptorFile = project.getSourceFileOrThrow(
+            `${outputDir}/auth/auth.interceptor.ts`
+        );
+        const content = interceptorFile.getFullText();
+
+        expect(content).toContain(
+            "inject(BEARER_TOKEN_TOKEN, { optional: true })"
+        );
+        expect(content).toContain("if (this.bearerToken)");
+        expect(content).toContain(
+            "const token = typeof this.bearerToken === 'function' ? this.bearerToken() : this.bearerToken;"
+        );
+        const Authorization = '`Bearer ${token}`';
+        expect(content).toContain(
+            `authReq = authReq.clone({ setHeaders: { 'Authorization': ${Authorization} } });`
+        );
+    });
+
     it("should generate an interceptor with `else if` for multiple security schemes", () => {
         const spec = createSpec({
             ApiKeyAuth: { type: "apiKey", in: "header", name: "X-API-KEY" },
@@ -141,7 +179,9 @@ describe("AuthInterceptorGenerator", () => {
             `${outputDir}/auth/auth.interceptor.ts`
         );
         const method = interceptorFile
+
             .getClassOrThrow("AuthInterceptor")
+
             .getMethodOrThrow("intercept");
         const statements = method.getBodyText();
 
