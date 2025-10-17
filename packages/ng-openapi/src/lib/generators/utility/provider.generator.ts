@@ -1,27 +1,34 @@
-// packages/ng-openapi/src/lib/generators/utility/provider.generator.ts
-
-import { Project } from "ts-morph";
+import { Project, SourceFile } from "ts-morph";
 import * as path from "path";
 import {
     GeneratorConfig,
     getBasePathTokenName,
     getInterceptorsTokenName,
     PROVIDER_GENERATOR_HEADER_COMMENT,
+    SecurityScheme,
     SwaggerParser,
-    SwaggerSpec,
 } from "@ng-openapi/shared";
 import { AuthHelperGenerator } from "./auth-helper.generator";
+
+/**
+ * A simplified interface representing an OAuth flow object from the OpenAPI spec.
+ */
+interface OAuthFlow {
+    authorizationUrl?: string;
+    tokenUrl?: string;
+    scopes?: Record<string, string>;
+}
 
 export class ProviderGenerator {
     private project: Project;
     private config: GeneratorConfig;
-    private spec: SwaggerSpec;
+    private parser: SwaggerParser;
     private clientName: string;
 
     constructor(project: Project, config: GeneratorConfig, parser: SwaggerParser) {
         this.project = project;
         this.config = config;
-        this.spec = parser.getSpec();
+        this.parser = parser;
         this.clientName = config.clientName || "default";
     }
 
@@ -36,11 +43,12 @@ export class ProviderGenerator {
         const baseInterceptorClassName = `${this.capitalizeFirst(this.clientName)}BaseInterceptor`;
 
         // Check for security schemes
-        const securitySchemes = this.spec.components?.securitySchemes ?? (this.spec as any).securityDefinitions;
-        const hasSecurity = securitySchemes && Object.keys(securitySchemes).length > 0;
-        const hasApiKey = hasSecurity && Object.values(securitySchemes).some(s => s.type === 'apiKey');
-        const hasBearer = hasSecurity && Object.values(securitySchemes).some(s => (s.type === 'http' && s.scheme === 'bearer') || s.type === 'oauth2');
-        const oauthScheme = hasSecurity ? Object.values(securitySchemes).find((s: any) => s.type === 'oauth2') : undefined;
+        const securitySchemes = this.parser.getSecuritySchemes();
+        const schemes = Object.values(securitySchemes);
+        const hasSecurity = schemes.length > 0;
+        const hasApiKey = hasSecurity && schemes.some(s => s.type === 'apiKey');
+        const hasBearer = hasSecurity && schemes.some(s => (s.type === 'http' && s.scheme === 'bearer') || s.type === 'oauth2');
+        const oauthScheme = hasSecurity ? schemes.find((s): s is SecurityScheme & { type: 'oauth2'; flows: Record<string, OAuthFlow> } => s.type === 'oauth2') : undefined;
 
         // Add base imports
         sourceFile.addImportDeclarations([
@@ -53,11 +61,13 @@ export class ProviderGenerator {
         if (this.config.options.dateType === "Date") {
             sourceFile.addImportDeclaration({ namedImports: ["DateInterceptor"], moduleSpecifier: "./utils/date-transformer" });
         }
+
         if (hasSecurity && !oauthScheme) { // Auth imports for non-oauth setups
             sourceFile.addImportDeclaration({ namedImports: ["AuthInterceptor"], moduleSpecifier: "./auth/auth.interceptor" });
             if (hasApiKey) sourceFile.addImportDeclaration({ namedImports: ["API_KEY_TOKEN"], moduleSpecifier: "./auth/auth.tokens" });
             if (hasBearer) sourceFile.addImportDeclaration({ namedImports: ["BEARER_TOKEN_TOKEN"], moduleSpecifier: "./auth/auth.tokens" });
         }
+
         if (oauthScheme) {
             sourceFile.addImportDeclarations([
                 { namedImports: ["provideHttpClient", "withInterceptorsFromDi"], moduleSpecifier: "@angular/common/http" },
@@ -76,9 +86,10 @@ export class ProviderGenerator {
             properties: [
                 { name: "basePath", type: "string" },
                 { name: "enableDateTransform", type: "boolean", hasQuestionToken: true },
-                { name: "interceptors", type: "(new (...args: any[]) => HttpInterceptor)[]", hasQuestionToken: true },
+                { name: "interceptors", type: "(new (...args: never[]) => HttpInterceptor)[]", hasQuestionToken: true },
             ],
         });
+
         if (hasApiKey) configInterface.addProperty({ name: "apiKey", type: "string", hasQuestionToken: true });
         if (hasBearer && !oauthScheme) configInterface.addProperty({ name: "bearerToken", type: "string | (() => string)", hasQuestionToken: true });
 
@@ -95,7 +106,7 @@ export class ProviderGenerator {
         sourceFile.saveSync();
     }
 
-    private addMainProviderFunction(sourceFile: any, basePathTokenName: string, interceptorsTokenName: string, baseInterceptorClassName: string, hasSecurity: boolean, hasApiKey: boolean, hasBearer: boolean, hasOAuth: boolean): void {
+    private addMainProviderFunction(sourceFile: SourceFile, basePathTokenName: string, interceptorsTokenName: string, baseInterceptorClassName: string, hasSecurity: boolean, hasApiKey: boolean, hasBearer: boolean, hasOAuth: boolean): void {
         const functionName = `provide${this.capitalizeFirst(this.clientName)}Client`;
         const configTypeName = `${this.capitalizeFirst(this.clientName)}Config`;
 
@@ -103,18 +114,18 @@ export class ProviderGenerator {
         if (hasSecurity) {
             securityProviders += `
     // Provide the AuthInterceptor
-    providers.push({ 
-        provide: HTTP_INTERCEPTORS, 
-        useClass: AuthInterceptor, 
+    providers.push({
+        provide: HTTP_INTERCEPTORS,
+        useClass: AuthInterceptor,
         multi: true
-    }); 
+    });
 `;
             if (hasApiKey) {
                 securityProviders += `
     // Provide the API key if present
-    if (config.apiKey) { 
-        providers.push({ provide: API_KEY_TOKEN, useValue: config.apiKey }); 
-    } 
+    if (config.apiKey) {
+        providers.push({ provide: API_KEY_TOKEN, useValue: config.apiKey });
+    }
 `;
             }
 
@@ -130,31 +141,31 @@ export class ProviderGenerator {
             } else if (hasBearer) {
                 securityProviders += `
     // Provide the Bearer/OAuth2 token if present
-    if (config.bearerToken) { 
-        providers.push({ provide: BEARER_TOKEN_TOKEN, useValue: config.bearerToken }); 
-    } 
+    if (config.bearerToken) {
+        providers.push({ provide: BEARER_TOKEN_TOKEN, useValue: config.bearerToken });
+    }
 `;
             }
         }
 
         const functionBody = `
-const providers: Provider[] = [ 
-    { provide: ${basePathTokenName}, useValue: config.basePath }, 
-    { provide: HTTP_INTERCEPTORS, useClass: ${baseInterceptorClassName}, multi: true } 
-]; 
+const providers: Provider[] = [
+    { provide: ${basePathTokenName}, useValue: config.basePath },
+    { provide: HTTP_INTERCEPTORS, useClass: ${baseInterceptorClassName}, multi: true }
+];
 
-${securityProviders} 
+${securityProviders}
 
-const customInterceptors = config.interceptors?.map(InterceptorClass => new InterceptorClass()) || []; 
+const customInterceptors = config.interceptors?.map(InterceptorClass => new InterceptorClass()) || [];
 
-if (config.enableDateTransform !== false && ${this.config.options.dateType === "Date"}) { 
-    customInterceptors.unshift(new DateInterceptor()); 
-} 
+if (config.enableDateTransform !== false && ${this.config.options.dateType === "Date"}) {
+    customInterceptors.unshift(new DateInterceptor());
+}
 
-providers.push({ 
-    provide: ${interceptorsTokenName}, 
+providers.push({
+    provide: ${interceptorsTokenName},
     useValue: customInterceptors
-}); 
+});
 
 return makeEnvironmentProviders(providers);`;
 
@@ -167,12 +178,19 @@ return makeEnvironmentProviders(providers);`;
         });
     }
 
-    private addOAuthProviderFunction(sourceFile: any, oauthScheme: any): void {
+    private addOAuthProviderFunction(sourceFile: SourceFile, oauthScheme: SecurityScheme & { type: 'oauth2', flows: Record<string, OAuthFlow> }): void {
         const functionName = `provide${this.capitalizeFirst(this.clientName)}ClientWithOAuth`;
         const configTypeName = `${this.capitalizeFirst(this.clientName)}ClientOAuthConfg`;
 
         // Extract details from the FIRST flow found (prioritizing authorizationCode)
-        const flow = oauthScheme.flows?.authorizationCode || oauthScheme.flows?.implicit || Object.values(oauthScheme.flows)[0] as any;
+        const flow: OAuthFlow | undefined = oauthScheme.flows?.authorizationCode || oauthScheme.flows?.implicit || Object.values(oauthScheme.flows)[0];
+
+        if (!flow) {
+            // Cannot generate without a valid flow. Log a warning or error.
+            console.warn(`[Generator] Skipping OAuth provider generation for ${this.clientName}: No recognizable flow (authorizationCode, implicit) found.`);
+            return;
+        }
+
         const scopes = flow.scopes ? Object.keys(flow.scopes).join(' ') : '';
         // Derive issuer from authorizationUrl if possible
         const issuer = flow.authorizationUrl ? `'${new URL(flow.authorizationUrl).origin}'` : `'' // TODO: Add issuer URL`;

@@ -8,6 +8,16 @@ import * as path from "path";
 import * as packageJson from "../../package.json";
 import { generateFromConfig } from "./core";
 
+// --- ADDITION: Interface for command-line options ---
+interface CLIOptions {
+    config?: string;
+    input?: string;
+    output?: string;
+    typesOnly?: boolean;
+    dateType?: "string" | "Date";
+    admin?: boolean;
+}
+
 async function loadConfigFile(configPath: string): Promise<GeneratorConfig> {
     const resolvedPath = path.resolve(configPath);
     if (!fs.existsSync(resolvedPath)) { throw new Error(`Configuration file not found: ${resolvedPath}`); }
@@ -21,10 +31,10 @@ async function loadConfigFile(configPath: string): Promise<GeneratorConfig> {
         if (!isUrl(config.input) && !path.isAbsolute(config.input)) { config.input = path.resolve(configDir, config.input); }
         if (!path.isAbsolute(config.output)) { config.output = path.resolve(configDir, config.output); }
         return config;
-    } catch (error) { throw new Error(`Failed to load configuration file: ${error instanceof Error ? error.message : error}`); }
+    } catch (error) { throw new Error(`Failed to load configuration file: ${error instanceof Error ? error.message : String(error)}`); }
 }
 
-async function generateFromOptions(options: any): Promise<void> {
+async function generateFromOptions(options: CLIOptions): Promise<void> {
     const timestamp = new Date().getTime();
     try {
         if (options.config) {
@@ -78,9 +88,9 @@ addCommonOptions(program)
     .name("ng-openapi")
     .description("Generate Angular services and types from OpenAPI/Swagger specifications")
     .version(packageJson.version)
-    .action(async (options) => { await generateFromOptions(options); });
+    .action(async (options: CLIOptions) => { await generateFromOptions(options); });
 
 addCommonOptions(program.command("generate").alias("gen").description("Generate code"))
-    .action(async (options) => { await generateFromOptions(options); });
+    .action(async (options: CLIOptions) => { await generateFromOptions(options); });
 
 program.parse();

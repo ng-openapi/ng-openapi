@@ -38,13 +38,13 @@ export class HttpParamsBuilderGenerator {
                 scope: Scope.Public,
                 parameters: [
                     { name: "httpParams", type: "HttpParams" },
-                    { name: "value", type: "any" },
+                    { name: "value", type: "unknown" },
                     { name: "key", type: "string", hasQuestionToken: true },
                 ],
                 returnType: "HttpParams",
                 docs: ["Adds a value to HttpParams. Delegates to recursive handler for objects/arrays."],
                 statements: `const isDate = value instanceof Date;
-const isObject = typeof value === "object" && !isDate;
+const isObject = typeof value === "object" && value !== null && !isDate;
 
 if (isObject) {
     return this.addToHttpParamsRecursive(httpParams, value);
@@ -58,7 +58,7 @@ return this.addToHttpParamsRecursive(httpParams, value, key);`,
                 scope: Scope.Private,
                 parameters: [
                     { name: "httpParams", type: "HttpParams" },
-                    { name: "value", type: "any", hasQuestionToken: true },
+                    { name: "value", type: "unknown", hasQuestionToken: true },
                     { name: "key", type: "string", hasQuestionToken: true },
                 ],
                 returnType: "HttpParams",
@@ -75,10 +75,15 @@ if (value instanceof Date) {
 }
 
 if (typeof value === "object") {
-    return this.handleObject(httpParams, value, key);
+    return this.handleObject(httpParams, value as Record<string, unknown>, key);
 }
 
-return this.handlePrimitive(httpParams, value, key);`,
+if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return this.handlePrimitive(httpParams, value, key);
+}
+
+// Ignore other types like functions, symbols, etc.
+return httpParams;`,
             },
             {
                 name: "handleArray",
@@ -90,9 +95,9 @@ return this.handlePrimitive(httpParams, value, key);`,
                     { name: "key", type: "string", hasQuestionToken: true },
                 ],
                 returnType: "HttpParams",
-                statements: `arr.forEach((element) => {
+                statements: `for (const element of arr) {
     httpParams = this.addToHttpParamsRecursive(httpParams, element, key);
-});
+}
 return httpParams;`,
             },
             {
@@ -116,14 +121,14 @@ return httpParams.append(key, date.toISOString().substring(0, 10));`,
                 scope: Scope.Private,
                 parameters: [
                     { name: "httpParams", type: "HttpParams" },
-                    { name: "obj", type: "Record<string, any>" },
+                    { name: "obj", type: "Record<string, unknown>" },
                     { name: "key", type: "string", hasQuestionToken: true },
                 ],
                 returnType: "HttpParams",
-                statements: `Object.keys(obj).forEach((prop) => {
+                statements: `for (const prop of Object.keys(obj)) {
     const nestedKey = key ? \`\${key}.\${prop}\` : prop;
     httpParams = this.addToHttpParamsRecursive(httpParams, obj[prop], nestedKey);
-});
+}
 return httpParams;`,
             },
             {

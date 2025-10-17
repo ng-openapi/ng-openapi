@@ -1,21 +1,24 @@
+import { Parameter, RequestBody, SwaggerResponse } from "@ng-openapi/shared";
+
 export interface SwaggerParameter {
     name: string;
     in: 'query' | 'header' | 'path' | 'cookie' | 'body';
     description?: string;
     required?: boolean;
     type?: string;
-    schema?: any; // This remains flexible for Swagger 2.0/3.0 variations
+    schema?: Record<string, unknown>;
 }
 
+// --- MODIFICATION: Stricter typing for SwaggerPath ---
 export interface SwaggerPath {
     summary?: string;
     description?: string;
     operationId?: string;
-    parameters?: any[];
-    responses?: any;
-    requestBody?: any;
+    parameters?: Parameter[];
+    responses?: Record<string, SwaggerResponse>;
+    requestBody?: RequestBody;
     tags?: string[];
-    security?: any[];
+    security?: Record<string, string[]>[];
 }
 
 export interface PolymorphicOption {
@@ -30,7 +33,7 @@ export interface FormProperty {
     required: boolean;
     validators: string[];
     description?: string;
-    defaultValue?: any;
+    defaultValue?: unknown;
     minLength?: number;
     maxLength?: number;
     pattern?: string;
@@ -39,13 +42,13 @@ export interface FormProperty {
     max?: number;
     arrayItemModelName?: string;
     nestedProperties?: FormProperty[];
-    nestedObjectTypeName?: string; // e.g., 'PetCategory'
+    nestedObjectTypeName?: string;
     relationResourceName?: string;
-    relationDisplayField?: string,
-    relationValueField?: string,
-    relationServiceName?: string,
-    relationListMethodName?: string,
-    relationModelName?: string,
+    relationDisplayField?: string;
+    relationValueField?: string;
+    relationServiceName?: string;
+    relationListMethodName?: string;
+    relationModelName?: string;
     polymorphicOptions?: PolymorphicOption[];
 }
 
@@ -55,15 +58,14 @@ export interface ResourceAction {
     methodName: string;
     idParamName: string;
     idParamType: 'string' | 'number';
-    parameters: SwaggerParameter[];
+    parameters: Parameter[];
 }
 
 export interface ResourceOperation {
     methodName: string;
     idParamName: string;
     idParamType: 'string' | 'number';
-    parameters: SwaggerParameter[];
-    // --- MODIFICATION START ---
+    parameters: Parameter[];
     hasPagination?: boolean;
     hasSorting?: boolean;
     filterParameters?: {
@@ -71,17 +73,16 @@ export interface ResourceOperation {
         inputType: 'select' | 'number' | 'text';
         enumValues?: (string | number)[];
     }[];
-    // --- MODIFICATION END ---
 }
 
 export interface Resource {
-    name: string; // "pet"
-    pluralName: string; // "pets"
-    titleName: string; // "Pet"
-    modelName: string; // "Pet"
+    name: string;
+    pluralName: string;
+    titleName: string;
+    modelName: string;
     createModelName: string;
     createModelRef: string;
-    serviceName: string; // "PetService"
+    serviceName: string;
     isEditable: boolean;
     operations: {
         list?: ResourceOperation;
