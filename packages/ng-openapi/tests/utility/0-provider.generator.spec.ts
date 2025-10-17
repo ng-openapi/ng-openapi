@@ -27,7 +27,9 @@ describe("Utility: ProviderGenerator", () => {
         project = new Project({ useInMemoryFileSystem: true });
     });
 
-    it("should add bearerToken to config interface for OAuth2 scheme", () => {
+    // --- FIX START ---
+    // Renamed and corrected the test's expectation.
+    it("should NOT add bearerToken to the simple config interface when OAuth2 is used", () => {
         const spec = createProviderTestSpec({
             OAuth2Auth: {
                 type: "oauth2",
@@ -50,15 +52,11 @@ describe("Utility: ProviderGenerator", () => {
         const configInterface = providerFile.getInterfaceOrThrow("DefaultConfig");
         const bearerTokenProp = configInterface.getProperty("bearerToken");
 
-        expect(bearerTokenProp).toBeDefined();
-
-        // --- FIX START ---
-        // Verify the property is optional via hasQuestionToken() instead of a brittle string check
-        expect(bearerTokenProp?.hasQuestionToken()).toBe(true);
-        // Verify the base type without the ` | undefined` part
-        expect(bearerTokenProp?.getType().getNonNullableType().getText()).toBe("string | (() => string)");
-        // --- FIX END ---
+        // The bearerToken property should NOT be on the simple config interface,
+        // as the dedicated provide...WithOAuth function should be used instead.
+        expect(bearerTokenProp).toBeUndefined();
     });
+    // --- FIX END ---
 
     it("should add bearerToken to config interface for Bearer scheme", () => {
         const spec = createProviderTestSpec({
@@ -75,11 +73,8 @@ describe("Utility: ProviderGenerator", () => {
         const bearerTokenProp = configInterface.getProperty("bearerToken");
 
         expect(bearerTokenProp).toBeDefined();
-
-        // --- FIX START ---
         expect(bearerTokenProp?.hasQuestionToken()).toBe(true);
         expect(bearerTokenProp?.getType().getNonNullableType().getText()).toBe("string | (() => string)");
-        // --- FIX END ---
     });
 
     it("should NOT add bearerToken to config interface for only apiKey scheme", () => {

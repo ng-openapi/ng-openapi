@@ -55,11 +55,13 @@
   },
   "peerDependencies": {
     "@angular/core": ">=15",
-    "@angular/common": ">=15"
+    "@angular/common": ">=15",
+    "angular-oauth2-oidc": ">=15"
   },
   "peerDependenciesMeta": {
     "@angular/core": { "optional": false },
-    "@angular/common": { "optional": false }
+    "@angular/common": { "optional": false },
+    "angular-oauth2-oidc": { "optional": true }
   },
   "engines": { "node": ">=18.0.0", "npm": ">=8.0.0" },
   "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org/" }

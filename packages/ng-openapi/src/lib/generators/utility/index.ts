@@ -7,3 +7,4 @@ export * from "./base-interceptor.generator";
 export * from "./http-params-builder.generator";
 export * from "./auth-interceptor.generator";
 export * from "./auth-tokens.generator";
+export * from "./auth-helper.generator";

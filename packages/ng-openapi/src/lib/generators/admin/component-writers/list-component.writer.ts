@@ -5,9 +5,10 @@ import {
     PropertyDeclarationStructure,
     MethodDeclarationStructure,
     OptionalKind,
+    SourceFile,
 } from "ts-morph";
 import { titleCase, pascalCase, camelCase } from "@ng-openapi/shared";
-import { Resource } from '../admin.types';
+import { Resource, ResourceAction } from '../admin.types';
 import { plural } from '../admin.helpers';
 
 // A complete map of all possible Material modules used by the list component
@@ -42,7 +43,7 @@ export function writeListComponent(resource: Resource, project: Project, adminDi
 
     // Explicitly add service import
     const componentDir = path.dirname(sourceFile.getFilePath());
-    const servicePath = path.resolve(componentDir, `../../../services`/*/${camelCase(resource.pluralName)}.service*/);
+    const servicePath = path.resolve(componentDir, `../../../services`);
     const relativeServicePath = path.relative(componentDir, servicePath).replace(/\\/g, '/');
     sourceFile.addImportDeclaration({
         namedImports: [resource.serviceName],
@@ -92,7 +93,7 @@ function generateFullListComponent(classDeclaration: ClassDeclaration, resource:
     if (hasPagination) properties.push({ name: 'paginator', type: 'MatPaginator', hasExclamationToken: true, decorators: [{ name: 'ViewChild', arguments: ['MatPaginator'] }] });
     if (hasSorting) properties.push({ name: 'sorter', type: 'MatSort', hasExclamationToken: true, decorators: [{ name: 'ViewChild', arguments: ['MatSort'] }] });
     if (hasFilters) properties.push({ name: 'filterForm', isReadonly: true, initializer: writer => writer.write(`new FormGroup({ ${listOp.filterParameters!.map(f => `'${f.name}': new FormControl(null)`).join(', ')} })`) });
-    if (hasCollectionActions) properties.push({ name: 'collectionActions', isReadonly: true, initializer: writer => writer.write(`JSON.parse('${JSON.stringify(collectionActions)}')`) });
+    if (hasCollectionActions) properties.push({ name: 'collectionActions', isReadonly: true, type: 'readonly ResourceAction[]', initializer: writer => writer.write(JSON.stringify(collectionActions)) });
     classDeclaration.addProperties(properties);
 
     // --- Methods ---
@@ -102,7 +103,7 @@ function generateFullListComponent(classDeclaration: ClassDeclaration, resource:
     }
     if (hasCollectionActions) {
         const cases = collectionActions.map(a => `case '${a.methodName}': this.svc.${a.methodName}().subscribe({ next: () => { this.snackBar.open('Action successful.', 'OK', { duration: 3000 }); this.triggerLoadData(); }, error: (e: unknown) => this.snackBar.open('Action failed.', 'OK', { duration: 5000 }) }); break;`).join('\n');
-        methods.push({ name: 'executeCollectionAction', parameters: [{ name: 'action', type: 'any' }], statements: writer => writer.write(`if (!confirm(\`Are you sure you want to run: \${action.label}?\`)) return; switch(action.methodName) { ${cases} default: console.error('Unknown collection action:', action.methodName);}`) });
+        methods.push({ name: 'executeCollectionAction', parameters: [{ name: 'action', type: 'ResourceAction' }], statements: writer => writer.write(`if (!confirm(\`Are you sure you want to run: \${action.label}?\`)) return; switch(action.methodName) { ${cases} default: console.error('Unknown collection action:', action.methodName);}`) });
     }
     if (hasFilters) {
         methods.push({ name: 'resetFilters', statements: writer => writer.write(`this.filterForm.reset();`) });
@@ -130,7 +131,6 @@ function generateFullListComponent(classDeclaration: ClassDeclaration, resource:
     }
     if (hasCollectionActions) imports.add('MatMenuModule');
 
-    // Add explicit imports for all required modules
     addExplicitImports(sourceFile, Array.from(imports));
 
     classDeclaration.addDecorator({
@@ -151,19 +151,26 @@ function generateFullListComponent(classDeclaration: ClassDeclaration, resource:
 function generateActionShellComponent(classDeclaration: ClassDeclaration, resource: Resource): void {
     const collectionActions = resource.actions.filter(a => a.level === 'collection');
     const hasCollectionActions = collectionActions.length > 0;
+    const methods: OptionalKind<MethodDeclarationStructure>[] = [];
 
     if (hasCollectionActions) {
         classDeclaration.addProperty({ name: 'snackBar', isReadonly: true, scope: 'private', type: 'MatSnackBar', initializer: writer => writer.write('inject(MatSnackBar)') });
         classDeclaration.addProperty({ name: 'svc', isReadonly: true, scope: 'private', type: resource.serviceName, initializer: writer => writer.write(`inject(${resource.serviceName})`) });
-        classDeclaration.addProperty({ name: 'collectionActions', isReadonly: true, initializer: writer => writer.write(`JSON.parse('${JSON.stringify(collectionActions)}')`) });
+        classDeclaration.addProperty({ name: 'collectionActions', isReadonly: true, type: 'readonly ResourceAction[]', initializer: writer => writer.write(JSON.stringify(collectionActions)) });
         const cases = collectionActions.map(a => `case '${a.methodName}': this.svc.${a.methodName}().subscribe({ next: () => this.snackBar.open('Action successful.', 'OK', { duration: 3000 }), error: (e: unknown) => this.snackBar.open('Action failed.', 'OK', { duration: 5000 }) }); break;`).join('\n');
-        classDeclaration.addMethod({ name: 'executeCollectionAction', parameters: [{ name: 'action', type: 'any' }], statements: writer => writer.write(`if (!confirm(\`Are you sure you want to run: \${action.label}?\`)) return; switch(action.methodName) { ${cases} default: console.error('Unknown collection action:', action.methodName);}`) });
+        methods.push({ name: 'executeCollectionAction', parameters: [{ name: 'action', type: 'ResourceAction' }], statements: writer => writer.write(`if (!confirm(\`Are you sure you want to run: \${action.label}?\`)) return; switch(action.methodName) { ${cases} default: console.error('Unknown collection action:', action.methodName);}`) });
     }
+
+    // --- FIX IS HERE ---
+    // Add the collected methods to the class declaration.
+    if (methods.length > 0) {
+        classDeclaration.addMethods(methods);
+    }
+    // --- END FIX ---
 
     const imports: string[] = ['CommonModule', 'RouterModule', 'MatButtonModule', 'MatIconModule'];
     if (hasCollectionActions) imports.push('MatMenuModule');
 
-    // Add explicit imports
     addExplicitImports(classDeclaration.getSourceFile(), imports);
 
     classDeclaration.addDecorator({
@@ -178,15 +185,13 @@ function generateActionShellComponent(classDeclaration: ClassDeclaration, resour
     });
 }
 
-function addExplicitImports(sourceFile: any, modules: string[]) {
-    // Add core Angular imports that might be needed
+function addExplicitImports(sourceFile: SourceFile, modules: string[]) {
     sourceFile.addImportDeclaration({ moduleSpecifier: '@angular/common', namedImports: ['CommonModule'] });
     sourceFile.addImportDeclaration({ moduleSpecifier: '@angular/router', namedImports: ['RouterModule'] });
-    if(modules.includes('ReactiveFormsModule')) {
+    if (modules.includes('ReactiveFormsModule')) {
         sourceFile.addImportDeclaration({ moduleSpecifier: '@angular/forms', namedImports: ['ReactiveFormsModule', 'FormGroup', 'FormControl'] });
     }
 
-    // Add Material module imports
     for (const moduleName of modules) {
         if (MATERIAL_MODULE_MAP[moduleName]) {
             sourceFile.addImportDeclaration({

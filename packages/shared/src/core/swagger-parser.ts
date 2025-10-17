@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as yaml from "js-yaml";
-import { GeneratorConfig, SwaggerDefinition, SwaggerSpec } from "../types";
+import { GeneratorConfig, SecurityScheme, SwaggerDefinition, SwaggerSpec } from "../types";
 import { isUrl } from "../utils/functions/is-url";
 import { Project } from "ts-morph";
 
@@ -156,6 +156,13 @@ export class SwaggerParser {
         // Support both Swagger 2.0 (definitions) and OpenAPI 3.0 (components.schemas)
         return this.spec.definitions || this.spec.components?.schemas || {};
     }
+
+    // --- ADDITION START ---
+    getSecuritySchemes(): Record<string, SecurityScheme> {
+        // Support both Swagger 2.0 (securityDefinitions) and OpenAPI 3.0 (components.securitySchemes)
+        return this.spec.components?.securitySchemes || this.spec.securityDefinitions || {};
+    }
+    // --- ADDITION END ---
 
     getDefinition(name: string): SwaggerDefinition | undefined {
         const definitions = this.getDefinitions();

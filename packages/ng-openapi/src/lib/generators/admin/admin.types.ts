@@ -4,7 +4,7 @@ export interface SwaggerParameter {
     description?: string;
     required?: boolean;
     type?: string;
-    schema?: any;
+    schema?: any; // This remains flexible for Swagger 2.0/3.0 variations
 }
 
 export interface SwaggerPath {
@@ -63,6 +63,15 @@ export interface ResourceOperation {
     idParamName: string;
     idParamType: 'string' | 'number';
     parameters: SwaggerParameter[];
+    // --- MODIFICATION START ---
+    hasPagination?: boolean;
+    hasSorting?: boolean;
+    filterParameters?: {
+        name: string;
+        inputType: 'select' | 'number' | 'text';
+        enumValues?: (string | number)[];
+    }[];
+    // --- MODIFICATION END ---
 }
 
 export interface Resource {

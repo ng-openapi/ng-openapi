@@ -15,6 +15,27 @@ export interface DiscriminatorObject {
     mapping?: { [key: string]: string };
 }
 
+// --- ADDITION START ---
+/**
+ * Simplified representation of an OpenAPI 3 Security Scheme Object
+ * or a Swagger 2 Security Scheme Object.
+ */
+export interface SecurityScheme {
+    type: 'apiKey' | 'http' | 'oauth2' | 'openIdConnect';
+    description?: string;
+    // For apiKey
+    name?: string;
+    in?: 'query' | 'header' | 'cookie';
+    // For http
+    scheme?: string;
+    bearerFormat?: string;
+    // For oauth2
+    flows?: { [flowName: string]: any };
+    // For openIdConnect
+    openIdConnectUrl?: string;
+}
+// --- ADDITION END ---
+
 export interface Parameter {
     name: string;
     in: "query" | "path" | "header" | "cookie";
@@ -102,6 +123,7 @@ export interface SwaggerSpec {
     tags?: Tag[] | undefined;
     components?: {
         schemas?: Record<string, SwaggerDefinition>;
+        securitySchemes?: Record<string, SecurityScheme>;
     };
 }
 
