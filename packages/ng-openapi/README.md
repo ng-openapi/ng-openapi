@@ -23,6 +23,13 @@
 </p>
 <br/>
 
+## Features
+-   **Modern Angular Services**: Generates fully type-safe services using the latest Angular DI patterns (`inject()`).
+-   **Automatic Admin UI**: With the `--admin` flag, scaffold a complete, standalone Angular Material Admin UI for your RESTful resources in seconds.
+-   **Standalone First**: All generated code, including the Admin UI, uses standalone components, routes, and modern control flow (`@if`, `@for`).
+-   **Signal-Based**: The generated Admin UI components use Signals for efficient and modern state management.
+-   **Highly Configurable**: Customize everything from date types and enum styles to method names and headers.
+
 ## Installation
 
 ```bash
@@ -95,6 +102,7 @@ ng-openapi -i ./swagger.json -o ./src/api --date-type string
 - `-c, --config <path>` - Path to configuration file
 - `-i, --input <path>` - Path to Swagger/OpenAPI specification file
 - `-o, --output <path>` - Output directory (default: `./src/generated`)
+- `--admin` - Generate a modern Angular Material admin UI for RESTful resources.
 - `--types-only` - Generate only TypeScript interfaces
 - `--date-type <type>` - Date type to use: `string` or `Date` (default: `Date`)
 

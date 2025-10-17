@@ -1,30 +1,42 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as yaml from "js-yaml";
-import { GeneratorConfig, SwaggerDefinition, SwaggerSpec } from "../types";
+import { GeneratorConfig, SecurityScheme, SwaggerDefinition, SwaggerSpec } from "../types";
 import { isUrl } from "../utils/functions/is-url";
+import { Project } from "ts-morph";
 
 export class SwaggerParser {
     private readonly spec: SwaggerSpec;
+    public readonly config: GeneratorConfig;
 
-    private constructor(spec: SwaggerSpec, config: GeneratorConfig) {
+    public constructor(spec: SwaggerSpec, config: GeneratorConfig) {
         const isInputValid = config.validateInput?.(spec) ?? true;
         if (!isInputValid) {
             throw new Error("Swagger spec is not valid. Check your `validateInput` condition.");
         }
         this.spec = spec;
+        this.config = config;
     }
 
-    static async create(swaggerPathOrUrl: string, config: GeneratorConfig): Promise<SwaggerParser> {
-        const swaggerContent = await SwaggerParser.loadContent(swaggerPathOrUrl);
+    static async create(swaggerPathOrUrl: string, config: GeneratorConfig, project?: Project): Promise<SwaggerParser> {
+        const swaggerContent = await SwaggerParser.loadContent(swaggerPathOrUrl, project);
         const spec = SwaggerParser.parseSpecContent(swaggerContent, swaggerPathOrUrl);
         return new SwaggerParser(spec, config);
     }
 
-    private static async loadContent(pathOrUrl: string): Promise<string> {
+    private static async loadContent(pathOrUrl: string, project?: Project): Promise<string> {
         if (isUrl(pathOrUrl)) {
             return await SwaggerParser.fetchUrlContent(pathOrUrl);
         } else {
+            // If a project is passed and has the file in-memory, use it.
+            if (project) {
+                const normalizedPath = path.normalize(pathOrUrl);
+                const sourceFile = project.getSourceFile(sf => sf.getFilePath().endsWith(normalizedPath));
+                if (sourceFile) {
+                    return sourceFile.getFullText();
+                }
+            }
+            // Otherwise, fall back to the real file system.
             return fs.readFileSync(pathOrUrl, "utf8");
         }
     }
@@ -145,6 +157,13 @@ export class SwaggerParser {
         return this.spec.definitions || this.spec.components?.schemas || {};
     }
 
+    // --- ADDITION START ---
+    getSecuritySchemes(): Record<string, SecurityScheme> {
+        // Support both Swagger 2.0 (securityDefinitions) and OpenAPI 3.0 (components.securitySchemes)
+        return this.spec.components?.securitySchemes || this.spec.securityDefinitions || {};
+    }
+    // --- ADDITION END ---
+
     getDefinition(name: string): SwaggerDefinition | undefined {
         const definitions = this.getDefinitions();
         return definitions[name];
@@ -152,6 +171,11 @@ export class SwaggerParser {
 
     resolveReference(ref: string): SwaggerDefinition | undefined {
         // Handle $ref like "#/definitions/User" or "#/components/schemas/User"
+
+        // If 'ref' is already a resolved object (not a string), just return it.
+        if (typeof ref !== 'string') {
+            return ref;
+        }
         const parts = ref.split("/");
         const definitionName = parts[parts.length - 1];
         return this.getDefinition(definitionName);

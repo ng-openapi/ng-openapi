@@ -1,6 +1,5 @@
 import { Project } from "ts-morph";
-import * as fs from "fs";
-import * as path from "path";
+import * as path from "path"; // Keep path for basename manipulation
 import { pascalCase, SERVICE_INDEX_GENERATOR_HEADER_COMMENT } from "@ng-openapi/shared";
 
 export class ServiceIndexGenerator {
@@ -17,11 +16,20 @@ export class ServiceIndexGenerator {
 
         sourceFile.insertText(0, SERVICE_INDEX_GENERATOR_HEADER_COMMENT);
 
-        // get all service files
-        const serviceFiles = fs
-            .readdirSync(servicesDir)
-            .filter((file) => file.endsWith(".service.ts"))
-            .map((file) => file.replace(".service.ts", ""));
+        // ===== THE FIX IS HERE =====
+        // Get the directory from the project, which works for both in-memory and real file systems.
+        const servicesDirectory = this.project.getDirectory(servicesDir);
+        if (!servicesDirectory) {
+            // If the directory doesn't exist in the project, no services were generated.
+            sourceFile.saveSync();
+            return;
+        }
+
+        // Get all service files from the ts-morph project instead of the file system.
+        const serviceFiles = servicesDirectory.getSourceFiles()
+            .filter(sf => sf.getFilePath().endsWith('.service.ts'))
+            .map(sf => path.basename(sf.getFilePath()).replace('.service.ts', ''));
+        // ===========================
 
         // Add exports
         serviceFiles.forEach((serviceName) => {

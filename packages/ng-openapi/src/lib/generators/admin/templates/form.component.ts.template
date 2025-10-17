@@ -1,0 +1,15 @@
+/* eslint-disable */
+// Imports will be added by ts-morph
+
+{{inlineInterfaces}}
+
+@Component({
+  selector: 'app-{{kebab-case-name}}-form',
+  standalone: true,
+  imports: [ {{componentImports}} ],
+  templateUrl: './{{kebab-case-name}}-form.component.html',
+  styleUrls: ['./{{kebab-case-name}}-form.component.css']
+})
+export class {{PascalCaseName}}FormComponent {
+    {{classBody}}
+}

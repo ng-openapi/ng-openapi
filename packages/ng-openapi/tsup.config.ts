@@ -1,6 +1,7 @@
-import { defineConfig } from "tsup";
-import { copyFileSync, existsSync } from "fs";
+import { copyFileSync, existsSync, cpSync, mkdirSync } from "fs";
 import { join } from "path";
+
+import { defineConfig } from "tsup";
 
 export default defineConfig([
     {
@@ -9,61 +10,47 @@ export default defineConfig([
         dts: true,
         sourcemap: true,
         clean: true,
-        outDir: "../../dist/packages/ng-openapi",
+        outDir: join("..", "..", "dist", "packages", "ng-openapi"),
         external: [
-            "@angular/core",
-            "@angular/common",
-            "commander",
-            "ts-morph",
-            "ts-node",
-            "typescript",
-            "@types/swagger-schema-official",
-            "js-yaml",
-            "path",
-            "fs",
+            "@angular/core", "@angular/common", "commander", "ts-morph",
+            "ts-node", "typescript", "@types/swagger-schema-official", "js-yaml"
         ],
         onSuccess: async () => {
-            const distDir = "../../dist/packages/ng-openapi";
+            console.log("Library build successful. Copying static assets...");
+            const distDir = join("..", "..", "dist", "packages", "ng-openapi");
 
-            // Copy package.json
-            if (existsSync("package.json")) {
-                copyFileSync("package.json", join(distDir, "package.json"));
-            }
+            if (existsSync("package.json")) copyFileSync("package.json", join(distDir, "package.json"));
+            if (existsSync("README.md")) copyFileSync("README.md", join(distDir, "README.md"));
+            if (existsSync(join("..", "..", "LICENSE")))
+                copyFileSync(join("..", "..", "LICENSE"), join(distDir, "LICENSE"));
 
-            // Copy README.md
-            if (existsSync("README.md")) {
-                copyFileSync("README.md", join(distDir, "README.md"));
-            }
-
-            // Copy LICENSE from root
-            if (existsSync("../../LICENSE")) {
-                copyFileSync("../../LICENSE", join(distDir, "LICENSE"));
+            const sourceTemplateDir = join('src', 'lib', 'generators', 'admin', 'templates');
+            const destTemplateDir = join("..", "..", "dist", "packages", "templates");
+            if (existsSync(sourceTemplateDir)) {
+                if (!existsSync(destTemplateDir)) mkdirSync(destTemplateDir, { recursive: true });
+                cpSync(sourceTemplateDir, destTemplateDir, { recursive: true });
+                console.log(`✅ Admin templates successfully copied to: ${destTemplateDir}`);
+            } else {
+                console.error(`❌ CRITICAL: Source templates directory not found at: ${sourceTemplateDir}`);
             }
         },
     },
     {
-        entry: { cli: "src/lib/cli.ts" },
+        entry: {
+            cli: "src/lib/cli.ts"
+        },
         format: ["cjs"],
-        dts: false,
-        sourcemap: true,
-        clean: true,
+        clean: false,
         outDir: "../../dist/packages/ng-openapi",
+        external: [
+            "@angular/core", "@angular/common", "commander", "ts-morph",
+            "ts-node", "typescript", "@types/swagger-schema-official", "js-yaml"
+        ],
+        platform: 'node',
         outExtension() {
             return {
-                js: ".cjs",
+                js: '.cjs',
             };
         },
-        external: [
-            "@angular/core",
-            "@angular/common",
-            "commander",
-            "ts-morph",
-            "ts-node",
-            "typescript",
-            "@types/swagger-schema-official",
-            "js-yaml",
-        ],
-        platform: "node",
-        target: "node18",
     },
 ]);
