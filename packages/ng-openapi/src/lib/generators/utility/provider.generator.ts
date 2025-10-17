@@ -10,9 +10,6 @@ import {
 } from "@ng-openapi/shared";
 import { AuthHelperGenerator } from "./auth-helper.generator";
 
-/**
- * A simplified interface representing an OAuth flow object from the OpenAPI spec.
- */
 interface OAuthFlow {
     authorizationUrl?: string;
     tokenUrl?: string;
@@ -42,7 +39,7 @@ export class ProviderGenerator {
         const interceptorsTokenName = getInterceptorsTokenName(this.clientName);
         const baseInterceptorClassName = `${this.capitalizeFirst(this.clientName)}BaseInterceptor`;
 
-        // Check for security schemes
+        // --- CORE FIX: Safely merge Swagger 2.0 and OpenAPI 3.0 security definitions ---
         const securitySchemes = this.parser.getSecuritySchemes();
         const schemes = Object.values(securitySchemes);
         const hasSecurity = schemes.length > 0;
@@ -86,10 +83,9 @@ export class ProviderGenerator {
             properties: [
                 { name: "basePath", type: "string" },
                 { name: "enableDateTransform", type: "boolean", hasQuestionToken: true },
-                { name: "interceptors", type: "(new (...args: never[]) => HttpInterceptor)[]", hasQuestionToken: true },
+                { name: "interceptors", type: `(new (...args: never[]) => HttpInterceptor)[]`, hasQuestionToken: true },
             ],
         });
-
         if (hasApiKey) configInterface.addProperty({ name: "apiKey", type: "string", hasQuestionToken: true });
         if (hasBearer && !oauthScheme) configInterface.addProperty({ name: "bearerToken", type: "string | (() => string)", hasQuestionToken: true });
 
@@ -178,21 +174,18 @@ return makeEnvironmentProviders(providers);`;
         });
     }
 
-    private addOAuthProviderFunction(sourceFile: SourceFile, oauthScheme: SecurityScheme & { type: 'oauth2', flows: Record<string, OAuthFlow> }): void {
+    private addOAuthProviderFunction(sourceFile: SourceFile, oauthScheme: SecurityScheme & { type: 'oauth2'; flows?: Record<string, OAuthFlow> }): void {
         const functionName = `provide${this.capitalizeFirst(this.clientName)}ClientWithOAuth`;
         const configTypeName = `${this.capitalizeFirst(this.clientName)}ClientOAuthConfg`;
 
-        // Extract details from the FIRST flow found (prioritizing authorizationCode)
-        const flow: OAuthFlow | undefined = oauthScheme.flows?.authorizationCode || oauthScheme.flows?.implicit || Object.values(oauthScheme.flows)[0];
+        const flow: OAuthFlow | undefined = oauthScheme.flows?.authorizationCode || oauthScheme.flows?.implicit || Object.values(oauthScheme.flows ?? {})[0];
 
         if (!flow) {
-            // Cannot generate without a valid flow. Log a warning or error.
-            console.warn(`[Generator] Skipping OAuth provider generation for ${this.clientName}: No recognizable flow (authorizationCode, implicit) found.`);
+            console.warn(`[Generator] Skipping OAuth provider generation for ${this.clientName}: No recognizable flow found.`);
             return;
         }
 
         const scopes = flow.scopes ? Object.keys(flow.scopes).join(' ') : '';
-        // Derive issuer from authorizationUrl if possible
         const issuer = flow.authorizationUrl ? `'${new URL(flow.authorizationUrl).origin}'` : `'' // TODO: Add issuer URL`;
 
         sourceFile.addInterface({

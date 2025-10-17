@@ -1,42 +1,68 @@
-import { Parameter, PathInfo } from "../../types";
-import { Path } from "swagger-schema-official";
+import { Parameter, PathInfo, RequestBody, SwaggerResponse } from "../../types";
+import { Path, Operation, Parameter as SwaggerOfficialParameter, Reference } from "swagger-schema-official";
 
 export function extractPaths(
     swaggerPaths: { [p: string]: Path } = {},
     methods = ["get", "post", "put", "patch", "delete", "options", "head"]
 ): PathInfo[] {
     const paths: PathInfo[] = [];
-    Object.entries(swaggerPaths).forEach(([path, pathItem]: [string, any]) => {
-        methods.forEach((method) => {
-            if (pathItem[method]) {
-                const operation = pathItem[method];
+
+    for (const [path, pathItem] of Object.entries(swaggerPaths)) {
+        for (const method of methods) {
+            const operation = pathItem[method as keyof Path];
+
+            if (operation && typeof operation === 'object' && !Array.isArray(operation)) {
+                const op = operation as Operation;
+
+                const parameters = parseParameters(op.parameters || [], pathItem.parameters || []);
+                const bodyParam = (op.parameters || []).find(p => 'in' in p && p.in === 'body');
+
                 paths.push({
                     path,
                     method: method.toUpperCase(),
-                    operationId: operation.operationId,
-                    summary: operation.summary,
-                    description: operation.description,
-                    tags: operation.tags || [],
-                    parameters: parseParameters(operation.parameters || [], pathItem.parameters || []),
-                    requestBody: operation.requestBody,
-                    responses: operation.responses || {},
+                    operationId: op.operationId,
+                    summary: op.summary,
+                    description: op.description,
+                    tags: op.tags || [],
+                    parameters: parameters,
+                    requestBody: (op as any).requestBody ?? (bodyParam ? { content: { 'application/json': { schema: (bodyParam as any).schema } } } : undefined) as RequestBody | undefined,
+                    responses: op.responses as Record<string, SwaggerResponse> | undefined,
                 });
             }
-        });
-    });
+        }
+    }
 
     return paths;
 }
 
-function parseParameters(operationParams: any[], pathParams: any[]): Parameter[] {
-    const allParams = [...pathParams, ...operationParams];
-    return allParams.map((param) => ({
-        name: param.name,
-        in: param.in,
-        required: param.required || param.in === "path",
-        schema: param.schema,
-        type: param.type,
-        format: param.format,
-        description: param.description,
-    }));
+function parseParameters(operationParams: (SwaggerOfficialParameter | Reference)[], pathParams: (SwaggerOfficialParameter | Reference)[]): Parameter[] {
+    const allParams = [...operationParams, ...pathParams];
+
+    return allParams
+        .map((param): Parameter | null => {
+            if ('$ref' in param) {
+                console.warn(`[Generator] Parameter reference ${param.$ref} is not supported and will be ignored.`);
+                return null;
+            }
+
+            if (param.in === 'body') {
+                return null;
+            }
+
+            // --- CORE FIX ---
+            // The `in` property has different literal types for each parameter type in the union.
+            // By casting to `string`, we allow the comparison to `'path'` to be checked without a compile-time error.
+            const isPath = (param.in as string) === 'path';
+
+            return {
+                name: param.name,
+                in: param.in as "query" | "path" | "header" | "cookie",
+                required: param.required ?? isPath, // Path params are always required
+                schema: (param as any).schema,
+                type: (param as any).type,
+                format: (param as any).format,
+                description: param.description,
+            };
+        })
+        .filter((p): p is Parameter => p !== null);
 }

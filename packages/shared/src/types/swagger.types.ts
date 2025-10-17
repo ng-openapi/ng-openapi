@@ -21,7 +21,7 @@ export interface DiscriminatorObject {
  * or a Swagger 2 Security Scheme Object.
  */
 export interface SecurityScheme {
-    type: 'apiKey' | 'http' | 'oauth2' | 'openIdConnect';
+    type: 'apiKey' | 'basic' | 'http' | 'oauth2' | 'openIdConnect';
     description?: string;
     // For apiKey
     name?: string;
