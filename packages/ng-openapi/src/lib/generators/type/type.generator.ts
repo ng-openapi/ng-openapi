@@ -8,8 +8,10 @@ import {
 } from "@ng-openapi/shared";
 import {
     EnumMemberStructure,
+    IndexSignatureDeclarationStructure,
     OptionalKind,
     Project,
+    PropertySignatureStructure,
     SourceFile,
     StatementStructures,
     StructureKind,
@@ -285,7 +287,7 @@ export class TypeGenerator {
         });
     }
 
-    private buildInterfaceProperties(definition: SwaggerDefinition, interfaceName: string): any[] {
+    private buildInterfaceProperties(definition: SwaggerDefinition, interfaceName: string): OptionalKind<PropertySignatureStructure>[] {
         if (!definition.properties) {
             return [];
         }
@@ -321,7 +323,7 @@ export class TypeGenerator {
         });
     }
 
-    private buildIndexSignatures(definition: SwaggerDefinition): any[] {
+    private buildIndexSignatures(definition: SwaggerDefinition): OptionalKind<IndexSignatureDeclarationStructure>[] {
         if (!definition.properties && definition.additionalProperties === false) {
             return [
                 {

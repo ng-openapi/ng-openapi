@@ -9,17 +9,6 @@ export interface MethodGenerationContext {
     responseType: "json" | "blob" | "arraybuffer" | "text";
 }
 
-export interface TypeSchema {
-    type?: string;
-    format?: string;
-    $ref?: string;
-    items?: any;
-    nullable?: boolean;
-    enum?: Array<string | number>;
-
-    [key: string]: any;
-}
-
 export interface GetMethodGenerationContext {
     pathParams: Array<{ name: string; in: string }>;
     queryParams: Array<{ name: string; in: string }>;

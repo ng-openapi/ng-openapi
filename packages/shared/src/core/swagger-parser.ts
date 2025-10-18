@@ -4,6 +4,7 @@ import * as yaml from "js-yaml";
 import { GeneratorConfig, SecurityScheme, SwaggerDefinition, SwaggerSpec } from "../types";
 import { isUrl } from "../utils/functions/is-url";
 import { Project } from "ts-morph";
+import { Path } from "swagger-schema-official";
 
 export class SwaggerParser {
     private readonly spec: SwaggerSpec;
@@ -157,12 +158,10 @@ export class SwaggerParser {
         return this.spec.definitions || this.spec.components?.schemas || {};
     }
 
-    // --- ADDITION START ---
     getSecuritySchemes(): Record<string, SecurityScheme> {
         // Support both Swagger 2.0 (securityDefinitions) and OpenAPI 3.0 (components.securitySchemes)
         return this.spec.components?.securitySchemes || this.spec.securityDefinitions || {};
     }
-    // --- ADDITION END ---
 
     getDefinition(name: string): SwaggerDefinition | undefined {
         const definitions = this.getDefinitions();
@@ -189,7 +188,7 @@ export class SwaggerParser {
         return this.spec;
     }
 
-    getPaths(): Record<string, any> {
+    getPaths(): { [pathName: string]: Path } {
         return this.spec.paths || {};
     }
 

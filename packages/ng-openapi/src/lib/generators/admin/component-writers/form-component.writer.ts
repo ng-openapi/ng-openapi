@@ -86,7 +86,6 @@ export function writeFormComponent(resource: Resource, project: Project, allReso
     const formProperties = resource.formProperties ?? [];
     const itemActions = resource.actions.filter(a => a.level === 'item');
 
-    // --- HTML & CSS Generation ---
     let htmlContent: string;
     if (resource.isEditable) {
         const htmlFormFields = generateFormFieldsHTML(formProperties, false);
@@ -115,7 +114,6 @@ export function writeFormComponent(resource: Resource, project: Project, allReso
     project.createSourceFile(path.join(dir, `${compName}.html`), htmlContent, { overwrite: true }).saveSync();
     project.createSourceFile(path.join(dir, `${compName}.css`), "/* Add component styles here */", { overwrite: true }).saveSync();
 
-    // --- TypeScript Generation (Fully Programmatic) ---
     addCoreImports(sourceFile, resource);
     addManualServiceImports(sourceFile, resource, allResources);
     sourceFile.addStatements((resource.inlineInterfaces ?? []).map(i => i.definition));

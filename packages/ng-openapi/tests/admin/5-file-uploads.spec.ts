@@ -24,7 +24,6 @@ describe('Integration: File Uploads Generation', () => {
     it('should generate a file input control in the HTML', () => {
         expect(formHtml).toContain('<input type="file" class="hidden-file-input" #fileInputPhoto');
         expect(formHtml).toContain('<button mat-stroked-button type="button" (click)="fileInputPhoto.click()">');
-        // FIX: Update test to match new file name display logic
         expect(formHtml).toContain(`{{ form.get('photo')?.value?.name || "No file chosen" }}`);
     });
 

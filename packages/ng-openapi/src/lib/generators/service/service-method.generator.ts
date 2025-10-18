@@ -50,7 +50,7 @@ export class ServiceMethodGenerator {
     }
 
     generateReturnType(): string {
-        return "Observable<any>";
+        return "Observable<unknown>";
     }
 
     defaultNameGenerator(operation: PathInfo): string {

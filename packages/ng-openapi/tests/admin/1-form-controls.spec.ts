@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { Project } from 'ts-morph';
 import { AdminGenerator } from '../../src/lib/generators/admin/admin.generator';
-import { SwaggerParser } from '@ng-openapi/shared';
+import { GeneratorConfig, SwaggerParser } from '@ng-openapi/shared';
 import { basicControlsSpec, defaultValueSpec } from './specs/test.specs';
 
 describe('Integration: Form Controls Generation', () => {
@@ -12,10 +12,9 @@ describe('Integration: Form Controls Generation', () => {
 
         beforeAll(async () => {
             project = new Project({ useInMemoryFileSystem: true });
-            const config = { options: { admin: {} } } as any;
-            // The parser needs a JavaScript object, not a JSON string.
-            const parser = new SwaggerParser(JSON.parse(basicControlsSpec), config);
-            const generator = new AdminGenerator(parser, project, config);
+            const config: Partial<GeneratorConfig> = { options: { admin: true } };
+            const parser = new SwaggerParser(JSON.parse(basicControlsSpec), config as GeneratorConfig);
+            const generator = new AdminGenerator(parser, project, config as GeneratorConfig);
             await generator.generate('/output');
 
             formHtml = project.getSourceFileOrThrow('/output/admin/widgets/widget-form/widget-form.component.html').getFullText();
@@ -33,15 +32,14 @@ describe('Integration: Form Controls Generation', () => {
     });
 
     describe('Default Value Generation', () => {
-        // FIX: Declare the `project` variable in this scope.
         let project: Project;
         let formTs: string;
 
         beforeAll(async () => {
             project = new Project({ useInMemoryFileSystem: true });
-            const config = { options: { admin: {} } } as any;
-            const parser = new SwaggerParser(JSON.parse(defaultValueSpec), config);
-            const generator = new AdminGenerator(parser, project, config);
+            const config: Partial<GeneratorConfig> = { options: { admin: true } };
+            const parser = new SwaggerParser(JSON.parse(defaultValueSpec), config as GeneratorConfig);
+            const generator = new AdminGenerator(parser, project, config as GeneratorConfig);
             await generator.generate('/output');
             formTs = project.getSourceFileOrThrow('/output/admin/configs/config-form/config-form.component.ts').getFullText();
         });

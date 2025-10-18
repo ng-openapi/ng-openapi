@@ -29,7 +29,6 @@ describe('Integration: OpenAPI Polymorphism (oneOf) Generation', () => {
         // Test is now more robust against quote style changes.
         expect(formTs).toContain(`'Cat': new FormGroup({`);
 
-        // ===== THE FIX IS HERE =====
         // Update the test to expect the strongly-typed FormControl, not <any>.
         expect(formTs).toContain(`'name': new FormControl<Cat['name']>('', { validators: [Validators.required], nonNullable: true })`);
         expect(formTs).toContain(`'meowVolume': new FormControl<Cat['meowVolume'] | null>(null)`);

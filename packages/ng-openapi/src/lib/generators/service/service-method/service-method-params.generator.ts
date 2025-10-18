@@ -6,6 +6,7 @@ import {
     getTypeScriptType,
     isDataTypeInterface,
     PathInfo,
+    RequestBody,
     SwaggerDefinition,
     SwaggerParser,
 } from "@ng-openapi/shared";
@@ -153,7 +154,7 @@ export class ServiceMethodParamsGenerator {
         return `RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text', ${additionalTypeParameters.join(", ")}>`;
     }
 
-    private getRequestBodyType(requestBody: any): string {
+    private getRequestBodyType(requestBody: RequestBody): string {
         const content = requestBody.content || {};
         const jsonContent = content[CONTENT_TYPES.JSON];
 
@@ -164,16 +165,17 @@ export class ServiceMethodParamsGenerator {
         return "any";
     }
 
-    private convertObjectToSingleParams(schema?: SwaggerDefinition): OptionalKind<ParameterDeclarationStructure>[] {
+    private convertObjectToSingleParams(schema?: SwaggerDefinition | { $ref: string }): OptionalKind<ParameterDeclarationStructure>[] {
         const params: OptionalKind<ParameterDeclarationStructure>[] = [];
-        let resolvedSchema = schema;
+        let resolvedSchema: SwaggerDefinition | undefined;
 
-        if (schema?.$ref) {
+        if (schema && '$ref' in schema) {
             resolvedSchema = this.parser.resolveReference(schema.$ref);
+        } else {
+            resolvedSchema = schema;
         }
 
-        // For multipart/form-data, add individual parameters for each field
-        Object.entries(resolvedSchema?.properties ?? {}).forEach(([key, value]: [string, any]) => {
+        Object.entries(resolvedSchema?.properties ?? {}).forEach(([key, value]) => {
             params.push({
                 name: key,
                 type: getTypeScriptType(value, this.config, value.nullable),

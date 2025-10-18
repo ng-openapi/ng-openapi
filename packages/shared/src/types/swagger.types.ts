@@ -15,32 +15,29 @@ export interface DiscriminatorObject {
     mapping?: { [key: string]: string };
 }
 
-// --- ADDITION START ---
-/**
- * Simplified representation of an OpenAPI 3 Security Scheme Object
- * or a Swagger 2 Security Scheme Object.
- */
+export interface OAuthFlow {
+    authorizationUrl?: string;
+    tokenUrl?: string;
+    refreshUrl?: string;
+    scopes?: Record<string, string>;
+}
+
 export interface SecurityScheme {
     type: 'apiKey' | 'basic' | 'http' | 'oauth2' | 'openIdConnect';
     description?: string;
-    // For apiKey
     name?: string;
     in?: 'query' | 'header' | 'cookie';
-    // For http
     scheme?: string;
     bearerFormat?: string;
-    // For oauth2
-    flows?: { [flowName: string]: any };
-    // For openIdConnect
+    flows?: Record<string, OAuthFlow>;
     openIdConnectUrl?: string;
 }
-// --- ADDITION END ---
 
 export interface Parameter {
     name: string;
     in: "query" | "path" | "header" | "cookie";
     required?: boolean;
-    schema?: any;
+    schema?: SwaggerDefinition | { $ref: string };
     type?: string;
     format?: string;
     description?: string;
@@ -60,20 +57,20 @@ export interface PathInfo {
 
 export interface RequestBody {
     required?: boolean;
-    content?: Record<string, { schema?: SwaggerDefinition }>;
+    content?: Record<string, { schema?: SwaggerDefinition | { $ref: string } }>;
 }
 
 export interface SwaggerResponse {
     description?: string;
-    content?: Record<string, { schema?: any }>;
+    content?: Record<string, { schema?: SwaggerDefinition | { $ref: string } }>;
 }
 
 export interface SwaggerDefinition {
-    type?: ParameterType | undefined;
+    type?: ParameterType | "object" | "null" | (ParameterType | "object" | "null")[] | undefined;
     format?: string | undefined;
     title?: string | undefined;
     description?: string | undefined;
-    default?: any;
+    default?: unknown;
     multipleOf?: number | undefined;
     maximum?: number | undefined;
     exclusiveMaximum?: boolean | undefined;
@@ -87,7 +84,7 @@ export interface SwaggerDefinition {
     uniqueItems?: boolean | undefined;
     maxProperties?: number | undefined;
     minProperties?: number | undefined;
-    enum?: any[] | undefined;
+    enum?: (string | number)[] | undefined;
     items?: SwaggerDefinition | SwaggerDefinition[] | undefined;
     $ref?: string | undefined;
     allOf?: SwaggerDefinition[] | undefined;
@@ -98,11 +95,13 @@ export interface SwaggerDefinition {
     nullable?: boolean | undefined;
     xml?: XML | undefined;
     externalDocs?: ExternalDocs | undefined;
-    example?: any;
+    example?: unknown;
     required?: string[] | undefined;
     oneOf?: SwaggerDefinition[];
     anyOf?: SwaggerDefinition[];
 }
+
+export type TypeSchema = SwaggerDefinition;
 
 export interface SwaggerSpec {
     openapi: string;

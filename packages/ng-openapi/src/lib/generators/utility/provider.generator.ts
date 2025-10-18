@@ -39,7 +39,6 @@ export class ProviderGenerator {
         const interceptorsTokenName = getInterceptorsTokenName(this.clientName);
         const baseInterceptorClassName = `${this.capitalizeFirst(this.clientName)}BaseInterceptor`;
 
-        // --- CORE FIX: Safely merge Swagger 2.0 and OpenAPI 3.0 security definitions ---
         const securitySchemes = this.parser.getSecuritySchemes();
         const schemes = Object.values(securitySchemes);
         const hasSecurity = schemes.length > 0;

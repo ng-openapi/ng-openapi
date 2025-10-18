@@ -1,20 +1,20 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { Project, SourceFile, ClassDeclaration } from 'ts-morph'; // Import ts-morph classes
+import { Project, SourceFile, ClassDeclaration } from 'ts-morph';
 import { AdminGenerator } from '../../src/lib/generators/admin/admin.generator';
-import { SwaggerParser } from '@ng-openapi/shared';
+import { GeneratorConfig, SwaggerParser } from '@ng-openapi/shared';
 import { paginationAndSortSpec } from './specs/test.specs';
 
 describe('Integration: Pagination and Sorting Generation', () => {
     let project: Project;
     let listHtml: string;
-    let listComponentFile: SourceFile; // Use SourceFile object
-    let listComponentClass: ClassDeclaration; // Use ClassDeclaration object
+    let listComponentFile: SourceFile;
+    let listComponentClass: ClassDeclaration;
 
     beforeAll(async () => {
         project = new Project({ useInMemoryFileSystem: true });
-        const config = { options: { admin: {} } } as any;
-        const parser = new SwaggerParser(JSON.parse(paginationAndSortSpec), config);
-        const generator = new AdminGenerator(parser, project, config);
+        const config: Partial<GeneratorConfig> = { options: { admin: true } } as any;
+        const parser = new SwaggerParser(JSON.parse(paginationAndSortSpec), config as GeneratorConfig);
+        const generator = new AdminGenerator(parser, project, config as GeneratorConfig);
         await generator.generate('/output');
 
         listHtml = project.getSourceFileOrThrow('/output/admin/items/items-list/items-list.component.html').getFullText();
@@ -62,10 +62,10 @@ describe('Integration: Pagination and Sorting Generation', () => {
         const method = listComponentClass.getMethodOrThrow('loadData');
         const bodyText = method.getBodyText();
 
-        expect(bodyText).toContain("params.page = this.paginator.pageIndex;");
-        expect(bodyText).toContain("params.pageSize = this.paginator.pageSize;");
-        expect(bodyText).toContain("params.sort = this.sorter.active;");
-        expect(bodyText).toContain("params.order = this.sorter.direction;");
+        expect(bodyText).toContain("params['page'] = this.paginator.pageIndex;");
+        expect(bodyText).toContain("params['pageSize'] = this.paginator.pageSize;");
+        expect(bodyText).toContain("params['sort'] = this.sorter.active;");
+        expect(bodyText).toContain("params['order'] = this.sorter.direction;");
         expect(bodyText).toContain("return this.svc.listItems(params as any, 'response')");
     });
 

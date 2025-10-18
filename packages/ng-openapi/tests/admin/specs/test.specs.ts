@@ -234,7 +234,6 @@ const advancedValidationSpecObj = {
                 required: ['quantity'],
                 properties: {
                     quantity: { type: 'integer', minimum: 1, maximum: 100 },
-                    // FIX: Correctly define exclusiveMinimum/Maximum as boolean flags modifying minimum/maximum.
                     price: { type: 'number', minimum: 0, exclusiveMinimum: true, maximum: 1000, exclusiveMaximum: true },
                     step: { type: 'number', multipleOf: 5 },
                     tags: { type: 'array', items: { type: 'string' }, minItems: 2, maxItems: 5 },

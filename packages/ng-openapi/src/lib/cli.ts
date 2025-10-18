@@ -8,7 +8,6 @@ import * as path from "path";
 import * as packageJson from "../../package.json";
 import { generateFromConfig } from "./core";
 
-// --- ADDITION: Interface for command-line options ---
 interface CLIOptions {
     config?: string;
     input?: string;

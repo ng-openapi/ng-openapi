@@ -27,7 +27,6 @@ describe("Utility: ProviderGenerator", () => {
         project = new Project({ useInMemoryFileSystem: true });
     });
 
-    // --- FIX START ---
     // Renamed and corrected the test's expectation.
     it("should NOT add bearerToken to the simple config interface when OAuth2 is used", () => {
         const spec = createProviderTestSpec({
@@ -56,7 +55,6 @@ describe("Utility: ProviderGenerator", () => {
         // as the dedicated provide...WithOAuth function should be used instead.
         expect(bearerTokenProp).toBeUndefined();
     });
-    // --- FIX END ---
 
     it("should add bearerToken to config interface for Bearer scheme", () => {
         const spec = createProviderTestSpec({

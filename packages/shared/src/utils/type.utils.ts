@@ -1,4 +1,4 @@
-import { GeneratorConfig, TypeSchema } from "../types";
+import { GeneratorConfig, SwaggerDefinition } from "../types";
 import { pascalCase } from "./string.utils";
 
 /**
@@ -10,23 +10,27 @@ import { pascalCase } from "./string.utils";
  * @param context - Whether this is for type generation or service generation
  */
 export function getTypeScriptType(
-    schemaOrType: TypeSchema | string | undefined,
+    schemaOrType: SwaggerDefinition | SwaggerDefinition[] | string | undefined,
     config: GeneratorConfig,
     formatOrNullable?: string | boolean,
     isNullable?: boolean,
     context: "type" | "service" = "type"
 ): string {
     // Handle the two different call signatures
-    let schema: TypeSchema;
+    let schema: SwaggerDefinition;
     let nullable: boolean | undefined;
 
     if (typeof schemaOrType === "string" || schemaOrType === undefined) {
         // Called with separate parameters (old mapSwaggerTypeToTypeScript style)
         schema = {
-            type: schemaOrType,
+            type: schemaOrType as SwaggerDefinition['type'], // Fix: Use type assertion
             format: typeof formatOrNullable === "string" ? formatOrNullable : undefined,
         };
         nullable = typeof formatOrNullable === "boolean" ? formatOrNullable : isNullable;
+    } else if (Array.isArray(schemaOrType)) {
+        // Handle array of schemas, typically from 'items' with multiple types
+        const types = schemaOrType.map(s => getTypeScriptType(s, config, undefined, undefined, context));
+        return `(${types.join(' | ')})`;
     } else {
         // Called with schema object (current getTypeScriptType style)
         schema = schemaOrType;
@@ -70,23 +74,11 @@ export function getTypeScriptType(
             if (schema.format === "binary") {
                 // Use Blob for type generation (interfaces)
                 // Use File for service parameters (uploads)
-                // Use Blob for service responses (downloads)
                 const binaryType = context === "type" ? "Blob" : "File";
                 return nullableType(binaryType, nullable);
             }
 
             // Other string formats
-            if (
-                schema.format === "uuid" ||
-                schema.format === "email" ||
-                schema.format === "uri" ||
-                schema.format === "hostname" ||
-                schema.format === "ipv4" ||
-                schema.format === "ipv6"
-            ) {
-                return nullableType("string", nullable);
-            }
-
             return nullableType("string", nullable);
 
         case "number":
@@ -105,7 +97,7 @@ export function getTypeScriptType(
 
         default:
             if (Array.isArray(schema.type)) {
-                const types = schema.type.map((t) => getTypeScriptType(t, config, undefined, undefined, context));
+                const types = schema.type.map((t) => getTypeScriptType(t as string, config, undefined, undefined, context));
                 return nullableType(types.join(" | "), nullable);
             }
             return nullableType("any", nullable);

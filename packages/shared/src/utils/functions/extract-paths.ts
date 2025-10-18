@@ -49,7 +49,6 @@ function parseParameters(operationParams: (SwaggerOfficialParameter | Reference)
                 return null;
             }
 
-            // --- CORE FIX ---
             // The `in` property has different literal types for each parameter type in the union.
             // By casting to `string`, we allow the comparison to `'path'` to be checked without a compile-time error.
             const isPath = (param.in as string) === 'path';
@@ -58,9 +57,9 @@ function parseParameters(operationParams: (SwaggerOfficialParameter | Reference)
                 name: param.name,
                 in: param.in as "query" | "path" | "header" | "cookie",
                 required: param.required ?? isPath, // Path params are always required
-                schema: (param as any).schema,
-                type: (param as any).type,
-                format: (param as any).format,
+                schema: (param as Parameter).schema,
+                type: (param as Parameter).type,
+                format: (param as Parameter).format,
                 description: param.description,
             };
         })

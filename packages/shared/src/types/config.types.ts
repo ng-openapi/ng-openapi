@@ -1,7 +1,7 @@
 import { ModuleKind, ScriptTarget } from "ts-morph";
 import { HttpInterceptor } from "@angular/common/http";
 import { SwaggerSpec } from "./swagger.types";
-import { IPluginGenerator } from "./plugin.types";
+import { IPluginGenerator, IPluginGeneratorClass } from "./plugin.types";
 
 export interface GeneratorConfigOptions {
     dateType: "string" | "Date";
@@ -31,7 +31,7 @@ export interface GeneratorConfig {
         module?: ModuleKind;
         strict?: boolean;
     };
-    plugins?: (new (...args: any) => IPluginGenerator)[];
+    plugins?: IPluginGeneratorClass[];
 }
 
 // Multi-client configuration for providers

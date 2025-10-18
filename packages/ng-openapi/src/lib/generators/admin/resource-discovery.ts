@@ -19,27 +19,36 @@ function getMethodName(op: PathInfo): string {
 
 function findSchema(op: PathInfo | undefined, type: 'request' | 'response'): { ref: string | null; schema: SwaggerDefinition; contentType?: string; } | null {
     if (!op) return null;
+
     if (type === 'request') {
+        // This block handles modern OpenAPI 3.0 requestBody definitions.
         const content = op.requestBody?.content;
         if (content) {
-            const jsonSchema = content['application/json']?.schema;
-            if (jsonSchema) return { ref: jsonSchema.$ref || null, schema: jsonSchema as SwaggerDefinition, contentType: 'application/json' };
-
-            const multipartSchema = content['multipart/form-data']?.schema;
-            if (multipartSchema) return { ref: multipartSchema.$ref || null, schema: multipartSchema as SwaggerDefinition, contentType: 'multipart/form-data' };
+            for (const contentType in content) {
+                // Find the first content type that has a schema
+                if (content[contentType]?.schema) {
+                    const schema = content[contentType]!.schema!;
+                    return {
+                        ref: ('$ref' in schema) ? schema.$ref : null,
+                        schema: schema as SwaggerDefinition,
+                        contentType
+                    };
+                }
+            }
         }
 
-        // Fallback for Swagger 2.0: check for a parameter with in: "body"
-        const bodyParam = (op.parameters)?.find(p => (p as unknown as {in: string}).in === 'body');
+        // This block handles legacy Swagger 2.0 "in: body" parameters.
+        const bodyParam = (op.parameters)?.find(p => (p as { in?: string }).in === 'body');
         if (bodyParam && bodyParam.schema)
-            return { ref: bodyParam.schema.$ref || null, schema: bodyParam.schema as SwaggerDefinition, contentType: 'application/json' };
+            return { ref: (bodyParam.schema as { $ref: string }).$ref || null, schema: bodyParam.schema as SwaggerDefinition, contentType: 'application/json' };
+
     } else { // response
         const schema = op.responses?.['200']?.content?.['application/json']?.schema;
         if (schema) {
-            if (schema.type === 'array' && schema.items) {
-                return { ref: (schema.items as any).$ref || null, schema: schema.items as SwaggerDefinition };
+            if (schema.type === 'array' && schema.items && !Array.isArray(schema.items)) {
+                return { ref: schema.items.$ref || null, schema: schema.items as SwaggerDefinition };
             }
-            return { ref: schema.$ref || null, schema };
+            return { ref: schema.$ref || null, schema: schema as SwaggerDefinition };
         }
     }
     return null;
@@ -73,7 +82,7 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
         const readOp = operations.find(p => p.method === 'GET' && isItemPath(p));
         if (readOp) usedOps.add(readOp);
 
-        const updateOp = operations.find(p => p.method === 'PUT' && isItemPath(p) && findSchema(p, 'request'));
+        const updateOp = operations.find(p => (p.method === 'PUT' || p.method === 'PATCH') && isItemPath(p) && findSchema(p, 'request'));
         if (updateOp) usedOps.add(updateOp);
 
         const deleteOp = operations.find(p => p.method === 'DELETE' && isItemPath(p));
@@ -129,7 +138,7 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
                     hasSorting: !!listOp.parameters?.some(p => ['sort', 'order'].includes(p.name)),
                     filterParameters: listOp.parameters?.filter(p => p.in === 'query' && !['page', 'pageSize', 'sort', 'order'].includes(p.name.toLowerCase())).map(p => {
                         const schema = p.schema || p;
-                        return { name: p.name, inputType: schema.enum ? 'select' : (schema.type === 'number' || schema.type === 'integer' ? 'number' : 'text'), enumValues: schema.enum };
+                        return { name: p.name, inputType: 'enum' in schema && schema.enum ? 'select' : (schema.type === 'number' || schema.type === 'integer' ? 'number' : 'text'), enumValues: 'enum' in schema ? schema.enum : undefined };
                     })
                 } : undefined,
                 create: createOp ? { methodName: getMethodName(createOp), idParamName: '', idParamType: 'string', parameters: createOp.parameters ?? [] } : undefined,
@@ -142,11 +151,11 @@ export function discoverAdminResources(parser: SwaggerParser): Resource[] {
 
         let schemaForColumns = findSchema(listOp, 'response')?.schema ?? findSchema(readOp, 'response')?.schema;
         if (schemaForColumns) {
-            const resolved = schemaForColumns.$ref ? parser.resolveReference(schemaForColumns.$ref) : schemaForColumns;
+            const resolved = '$ref' in schemaForColumns ? parser.resolveReference(schemaForColumns.$ref) : schemaForColumns;
             if (resolved?.properties) {
                 resource.listColumns = Object.keys(resolved.properties).filter(key => {
                     const prop = resolved.properties![key];
-                    return !prop.$ref && (!prop.type || ['string', 'number', 'integer', 'boolean'].includes(prop.type as string));
+                    return !('$ref' in prop) && (!prop.type || ['string', 'number', 'integer', 'boolean'].includes(prop.type as string));
                 });
             }
         }

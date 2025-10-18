@@ -9,7 +9,6 @@ export interface SwaggerParameter {
     schema?: Record<string, unknown>;
 }
 
-// --- MODIFICATION: Stricter typing for SwaggerPath ---
 export interface SwaggerPath {
     summary?: string;
     description?: string;
@@ -54,7 +53,7 @@ export interface FormProperty {
 
 export interface ResourceAction {
     level: 'collection' | 'item';
-    label: string,
+    label: string;
     methodName: string;
     idParamName: string;
     idParamType: 'string' | 'number';

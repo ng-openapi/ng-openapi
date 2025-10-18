@@ -16,7 +16,6 @@ export class ServiceIndexGenerator {
 
         sourceFile.insertText(0, SERVICE_INDEX_GENERATOR_HEADER_COMMENT);
 
-        // ===== THE FIX IS HERE =====
         // Get the directory from the project, which works for both in-memory and real file systems.
         const servicesDirectory = this.project.getDirectory(servicesDir);
         if (!servicesDirectory) {

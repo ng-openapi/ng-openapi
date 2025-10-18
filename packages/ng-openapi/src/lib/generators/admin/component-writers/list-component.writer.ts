@@ -7,7 +7,7 @@ import {
     OptionalKind,
     SourceFile,
 } from "ts-morph";
-import { titleCase, pascalCase, camelCase } from "@ng-openapi/shared";
+import { titleCase, pascalCase } from "@ng-openapi/shared";
 import { Resource, ResourceAction } from '../admin.types';
 import { plural } from '../admin.helpers';
 
@@ -81,7 +81,6 @@ function generateFullListComponent(classDeclaration: ClassDeclaration, resource:
     const collectionActions = resource.actions.filter(a => a.level === 'collection');
     const hasCollectionActions = collectionActions.length > 0;
 
-    // --- Properties ---
     const properties: OptionalKind<PropertyDeclarationStructure>[] = [
         { name: 'snackBar', isReadonly: true, scope: 'private', type: 'MatSnackBar', initializer: writer => writer.write('inject(MatSnackBar)') },
         { name: 'svc', isReadonly: true, scope: 'private', type: resource.serviceName, initializer: writer => writer.write(`inject(${resource.serviceName})`) },
@@ -96,7 +95,6 @@ function generateFullListComponent(classDeclaration: ClassDeclaration, resource:
     if (hasCollectionActions) properties.push({ name: 'collectionActions', isReadonly: true, type: 'readonly ResourceAction[]', initializer: writer => writer.write(JSON.stringify(collectionActions)) });
     classDeclaration.addProperties(properties);
 
-    // --- Methods ---
     const methods: OptionalKind<MethodDeclarationStructure>[] = [];
     if (resource.operations.delete) {
         methods.push({ name: 'delete', parameters: [{ name: 'id', type: resource.operations.delete.idParamType }], statements: writer => writer.write(`if (confirm('Are you sure?')) { this.svc.${resource.operations.delete!.methodName}(id).subscribe(() => { this.triggerLoadData(); this.snackBar.open('${resource.titleName} deleted.', 'OK', { duration: 3000 }); }); }`) });
@@ -109,10 +107,35 @@ function generateFullListComponent(classDeclaration: ClassDeclaration, resource:
         methods.push({ name: 'resetFilters', statements: writer => writer.write(`this.filterForm.reset();`) });
     }
 
-    const params = hasFilters ? `const params: any = this.filterForm.getRawValue();` : `const params: any = {};`;
-    const paginationParams = hasPagination ? `if(this.paginator) { params.page = this.paginator.pageIndex; params.pageSize = this.paginator.pageSize; }` : ``;
-    const sortingParams = hasSorting ? `if(this.sorter) { params.sort = this.sorter.active; params.order = this.sorter.direction; }` : ``;
-    methods.push({ name: 'loadData', returnType: `Observable<HttpResponse<${resource.modelName}[]>>`, statements: writer => writer.write(`this.isLoading.set(true); ${params} ${paginationParams} ${sortingParams} return this.svc.${listOp.methodName}(params as any, 'response').pipe( finalize(() => this.isLoading.set(false)) );`) });
+    const loadDataBody: string[] = [
+        'this.isLoading.set(true);',
+        `const params: Record<string, string | number | boolean | null> = ${hasFilters ? 'this.filterForm.getRawValue()' : '{}'};`
+    ];
+
+    if (hasPagination) {
+        loadDataBody.push(
+            `if (this.paginator) {`,
+            `  params['page'] = this.paginator.pageIndex;`,
+            `  params['pageSize'] = this.paginator.pageSize;`,
+            `}`
+        );
+    }
+    if (hasSorting) {
+        loadDataBody.push(
+            `if (this.sorter && this.sorter.active && this.sorter.direction) {`,
+            `  params['sort'] = this.sorter.active;`,
+            `  params['order'] = this.sorter.direction;`,
+            `}`
+        );
+    }
+    loadDataBody.push(`return this.svc.${listOp.methodName}(params as any, 'response').pipe( finalize(() => this.isLoading.set(false)) );`);
+
+    methods.push({
+        name: 'loadData',
+        returnType: `Observable<HttpResponse<${resource.modelName}[]>>`,
+        statements: loadDataBody.join('\n')
+    });
+
     methods.push({ name: 'triggerLoadData', statements: writer => writer.write(`this.loadData().subscribe(res => { this.data.set(res.body || []); this.totalItems.set(Number(res.headers.get('X-Total-Count') ?? 0)); });`) });
 
     const events = [hasSorting ? 'this.sorter.sortChange' : null, hasPagination ? 'this.paginator.page' : null, hasFilters ? 'this.filterForm.valueChanges.pipe(debounceTime(300))' : null].filter((e): e is string => !!e);
@@ -120,7 +143,6 @@ function generateFullListComponent(classDeclaration: ClassDeclaration, resource:
     classDeclaration.addMethods(methods);
     classDeclaration.addImplements('AfterViewInit');
 
-    // --- Decorator and Imports ---
     const sourceFile = classDeclaration.getSourceFile();
     const imports = new Set<string>(['CommonModule', 'RouterModule', 'MatButtonModule', 'MatIconModule', 'MatProgressSpinnerModule', 'MatTableModule', 'MatTooltipModule']);
     if (hasPagination) imports.add('MatPaginatorModule');
@@ -161,12 +183,9 @@ function generateActionShellComponent(classDeclaration: ClassDeclaration, resour
         methods.push({ name: 'executeCollectionAction', parameters: [{ name: 'action', type: 'ResourceAction' }], statements: writer => writer.write(`if (!confirm(\`Are you sure you want to run: \${action.label}?\`)) return; switch(action.methodName) { ${cases} default: console.error('Unknown collection action:', action.methodName);}`) });
     }
 
-    // --- FIX IS HERE ---
-    // Add the collected methods to the class declaration.
     if (methods.length > 0) {
         classDeclaration.addMethods(methods);
     }
-    // --- END FIX ---
 
     const imports: string[] = ['CommonModule', 'RouterModule', 'MatButtonModule', 'MatIconModule'];
     if (hasCollectionActions) imports.push('MatMenuModule');

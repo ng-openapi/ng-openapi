@@ -56,7 +56,6 @@ describe('Integration: Form Structures Generation', () => {
     it('should generate correct HTML for the FormArray', () => {
         expect(formHtml).toContain('formArrayName="milestones"');
         expect(formHtml).toContain('(click)="addMilestone()"');
-        // FIX: Update test to expect the correct method signature in the template
         expect(formHtml).toContain('(click)="removeMilestone(i)"');
     });
 });

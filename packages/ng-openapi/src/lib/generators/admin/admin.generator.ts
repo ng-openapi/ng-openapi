@@ -139,7 +139,7 @@ export class AdminGenerator {
                 const nestedProperties = this.processSchemaToFormProperties(subSchema, interfaceName, resource);
                 resource.inlineInterfaces!.push({ name: interfaceName, definition: `export interface ${interfaceName} ${generateInterfaceDefinition(nestedProperties)}` });
                 properties.push({ name: propName, type: 'object', nestedProperties, nestedObjectTypeName: interfaceName, inputType: '', required: isRequired, validators });
-            } else if (prop.type === 'array' && prop.items?.$ref) {
+            } else if (prop.type === 'array' && prop.items && !Array.isArray(prop.items) && prop.items.$ref) {
                 const arrayItemSchema = this.parser.resolveReference(prop.items.$ref);
                 if (arrayItemSchema) {
                     const itemModelName = prop.items.$ref.split('/').pop()!;

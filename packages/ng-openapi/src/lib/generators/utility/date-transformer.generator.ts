@@ -45,10 +45,10 @@ export class DateTransformerGenerator {
         sourceFile.addFunction({
             name: "transformDates",
             isExported: true,
-            parameters: [{ name: "obj", type: "any" }],
-            returnType: "any",
+            parameters: [{ name: "obj", type: "unknown" }],
+            returnType: "unknown",
             statements: `
-    if (obj === null || obj === undefined || typeof obj !== 'object') {
+    if (obj === null || typeof obj !== 'object') {
         return obj;
     }
 
@@ -59,42 +59,33 @@ export class DateTransformerGenerator {
     if (Array.isArray(obj)) {
         return obj.map(item => transformDates(item));
     }
-
-    if (typeof obj === 'object') {
-        const transformed: any = {};
-        for (const key of Object.keys(obj)) {
-            const value = obj[key];
-            if (typeof value === 'string' && ISO_DATE_REGEX.test(value)) {
-                transformed[key] = new Date(value);
-            } else {
-                transformed[key] = transformDates(value);
-            }
+    
+    const transformed: { [key: string]: unknown } = {};
+    for (const key of Object.keys(obj)) {
+        const value = (obj as Record<string, unknown>)[key];
+        if (typeof value === 'string' && ISO_DATE_REGEX.test(value)) {
+            transformed[key] = new Date(value);
+        } else {
+            transformed[key] = transformDates(value);
         }
-        return transformed;
     }
-
-    return obj;`,
+    return transformed;`,
         });
 
         // Add interceptor class
         sourceFile.addClass({
             name: "DateInterceptor",
             isExported: true,
-            decorators: [
-                {
-                    name: "Injectable",
-                    arguments: [],
-                },
-            ],
+            decorators: [ { name: "Injectable", arguments: [], }, ],
             implements: ["HttpInterceptor"],
             methods: [
                 {
                     name: "intercept",
                     parameters: [
-                        { name: "req", type: "HttpRequest<any>" },
+                        { name: "req", type: "HttpRequest<unknown>" },
                         { name: "next", type: "HttpHandler" },
                     ],
-                    returnType: "Observable<HttpEvent<any>>",
+                    returnType: "Observable<HttpEvent<unknown>>",
                     statements: `
     return next.handle(req).pipe(
         map(event => {

@@ -74,10 +74,10 @@ export class AuthInterceptorGenerator {
         interceptorClass.addMethod({
             name: "intercept",
             parameters: [
-                { name: "req", type: "HttpRequest<any>" },
+                { name: "req", type: "HttpRequest<unknown>" },
                 { name: "next", type: "HttpHandler" },
             ],
-            returnType: "Observable<HttpEvent<any>>",
+            returnType: "Observable<HttpEvent<unknown>>",
             statements: statements,
         });
 
