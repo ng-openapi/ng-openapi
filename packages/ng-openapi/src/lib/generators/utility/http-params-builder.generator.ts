@@ -44,7 +44,8 @@ export class HttpParamsBuilderGenerator {
                 returnType: "HttpParams",
                 docs: ["Adds a value to HttpParams. Delegates to recursive handler for objects/arrays."],
                 statements: `const isDate = value instanceof Date;
-const isObject = typeof value === "object" && !isDate;
+const isArray = Array.isArray(value);
+const isObject = typeof value === "object" && !isDate && !isArray;
 
 if (isObject) {
     return this.addToHttpParamsRecursive(httpParams, value);
