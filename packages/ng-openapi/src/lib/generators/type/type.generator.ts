@@ -92,8 +92,17 @@ export class TypeGenerator {
             this.collectCompositeTypeStructure(interfaceName, definition);
         } else if (definition.items) {
             this.collectArrayTypeStructure(interfaceName, definition);
-        } else {
+        } else if (definition.properties) {
             this.collectInterfaceStructure(interfaceName, definition);
+        } else {
+            const propertyType = this.resolveSwaggerTypeCached(definition);
+            this.statements.push({
+                kind: StructureKind.TypeAlias,
+                name: interfaceName,
+                isExported: true,
+                docs: definition.description ? [definition.description] : undefined,
+                type: propertyType
+            });
         }
     }
 
