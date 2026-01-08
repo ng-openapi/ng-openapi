@@ -1,5 +1,5 @@
 import { GeneratorConfig, TypeSchema } from "../types";
-import { pascalCase } from "./string.utils";
+import { pascalCaseForEnums } from "./string.utils";
 
 /**
  * Convert OpenAPI/Swagger types to TypeScript types
@@ -40,7 +40,7 @@ export function getTypeScriptType(
     // Handle references
     if (schema.$ref) {
         const refName = schema.$ref.split("/").pop();
-        return nullableType(pascalCase(refName!), nullable);
+        return nullableType(pascalCaseForEnums(refName!), nullable);
     }
 
     // Handle arrays

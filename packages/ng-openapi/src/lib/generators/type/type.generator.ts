@@ -2,6 +2,7 @@ import {
     EnumValueObject,
     GeneratorConfig,
     pascalCase,
+    pascalCaseForEnums,
     SwaggerDefinition,
     SwaggerParser,
     TYPE_GENERATOR_HEADER_COMMENT,
@@ -501,7 +502,7 @@ export class TypeGenerator {
     // Cached helper methods
     private getCachedPascalCase(str: string) {
         if (!this.pascalCaseCache.has(str)) {
-            this.pascalCaseCache.set(str, this.pascalCaseForEnums(str));
+            this.pascalCaseCache.set(str, pascalCaseForEnums(str));
         }
         return this.pascalCaseCache.get(str) as string;
     }
@@ -548,13 +549,6 @@ export class TypeGenerator {
 
     private nullableType(type: string, isNullable?: boolean): string {
         return type + (isNullable ? " | null" : "");
-    }
-
-    private pascalCaseForEnums(str: string): string {
-        return str
-            .replace(/[^a-zA-Z0-9]/g, "_")
-            .replace(/(?:^|_)([a-z])/g, (_, char) => char.toUpperCase())
-            .replace(/^([0-9])/, "_$1");
     }
 
     private sanitizePropertyName(name: string): string {
