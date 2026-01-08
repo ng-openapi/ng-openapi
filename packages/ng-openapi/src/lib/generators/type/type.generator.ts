@@ -46,7 +46,6 @@ export class TypeGenerator {
             const definitions = this.parser.getDefinitions();
             if (!definitions || Object.keys(definitions).length === 0) {
                 console.warn("No definitions found in swagger file");
-                return;
             }
 
             // Phase 1: Collect all type structures in memory (no AST manipulation yet)
