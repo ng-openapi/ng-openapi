@@ -248,7 +248,7 @@ export default defineConfig({
                 const url = item.url;
 
                 // Get last git commit date for the file
-                const filePath = path.join("docs", url || "index.md");
+                const filePath = path.join("docs", url ? `${url}.md` : "index.md");
                 let lastmod;
 
                 try {
