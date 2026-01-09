@@ -1,4 +1,6 @@
 import { defineConfig } from "vitepress";
+import { execSync } from "child_process";
+import * as path from "path";
 import packageJson from "../../packages/ng-openapi/package.json";
 
 export default defineConfig({
@@ -44,10 +46,14 @@ export default defineConfig({
                 },
                 softwareVersion: packageJson.version,
                 datePublished: "2024-01-01",
+                dateModified: new Date().toISOString(),
+                inLanguage: "en-US",
                 keywords: "Angular, OpenAPI, TypeScript, Code Generator, Swagger",
             }),
         ],
     ],
+
+    lastUpdated: true,
 
     themeConfig: {
         logo: "https://raw.githubusercontent.com/ng-openapi/ng-openapi/HEAD/docs/public/ng-openapi-logo.svg",
@@ -216,6 +222,14 @@ export default defineConfig({
                 'Released under the MIT License.<br/>This site is powered by <a href="https://www.netlify.com" target="_blank" rel="noopener noreferrer">Netlify</a>',
             copyright: "Copyright © 2025 Tareq Jami",
         },
+
+        lastUpdated: {
+            text: "Updated at",
+            formatOptions: {
+                dateStyle: "full",
+                timeStyle: "medium",
+            },
+        },
     },
 
     markdown: {
@@ -231,26 +245,37 @@ export default defineConfig({
         hostname: "https://ng-openapi.dev",
         transformItems: (items) => {
             return items.map((item) => {
-                console.log(item.url);
                 const url = item.url;
+
+                // Get last git commit date for the file
+                const filePath = path.join("docs", url || "index.md");
+                let lastmod;
+
+                try {
+                    const gitDate = execSync(`git log -1 --format=%cI "${filePath}"`, { encoding: "utf-8" }).trim();
+                    lastmod = gitDate || new Date().toISOString();
+                } catch {
+                    lastmod = new Date().toISOString();
+                }
+
                 // Homepage
                 if (url === "") {
-                    return { ...item, priority: 1.0, changefreq: "weekly" };
+                    return { ...item, priority: 1.0, changefreq: "weekly", lastmod };
                 }
                 // Getting started
                 else if (url.includes("getting-started/")) {
-                    return { ...item, priority: 0.9, changefreq: "weekly" };
+                    return { ...item, priority: 0.9, changefreq: "weekly", lastmod };
                 }
                 // Guides
                 else if (url.includes("guide/")) {
-                    return { ...item, priority: 0.8, changefreq: "weekly" };
+                    return { ...item, priority: 0.8, changefreq: "weekly", lastmod };
                 }
                 // API docs
                 else if (url.includes("api/")) {
-                    return { ...item, priority: 0.7, changefreq: "monthly" };
+                    return { ...item, priority: 0.7, changefreq: "monthly", lastmod };
                 }
                 // Default
-                return { ...item, priority: 0.6, changefreq: "monthly" };
+                return { ...item, priority: 0.6, changefreq: "monthly", lastmod };
             });
         },
     },
