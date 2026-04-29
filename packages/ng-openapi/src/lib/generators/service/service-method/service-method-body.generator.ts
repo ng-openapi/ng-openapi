@@ -301,9 +301,15 @@ const requestOptions: any = {
         }
 
         const methodsWithBody = ["post", "put", "patch"];
+        const shouldUseDeleteWithBody = httpMethod === "delete" && !!bodyParam;
         const parseResponse = this.config.options.validation?.response
             ? `.pipe(map(response => options?.parse?.(response) ?? response))`
             : "";
+
+        if (shouldUseDeleteWithBody) {
+            return `
+return this.httpClient.request('delete', url, { ...requestOptions, body: ${bodyParam} })${parseResponse};`;
+        }
 
         if (methodsWithBody.includes(httpMethod)) {
             return `
