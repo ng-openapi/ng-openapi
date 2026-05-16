@@ -68,7 +68,7 @@ export default defineConfig({
             {
                 text: `v${packageJson.version}`,
                 items: [
-                    { text: "Changelog", link: "/migration/changelog" },
+                    { text: "Changelog", link: "/changelog/" },
                     { text: "NPM", link: "https://www.npmjs.com/package/ng-openapi" },
                 ],
             },
@@ -97,6 +97,17 @@ export default defineConfig({
                         { text: "File Download", link: "/guide/file-download" },
                         { text: "Date Handling", link: "/guide/date-handling" },
                         { text: "Code Generation", link: "/guide/generated-code" },
+                    ],
+                },
+            ],
+            "/changelog/": [
+                {
+                    text: "Changelog",
+                    items: [
+                        { text: "Overview", link: "/changelog/" },
+                        { text: "ng-openapi", link: "/changelog/ng-openapi" },
+                        { text: "@ng-openapi/http-resource", link: "/changelog/http-resource" },
+                        { text: "@ng-openapi/zod", link: "/changelog/zod" },
                     ],
                 },
             ],
