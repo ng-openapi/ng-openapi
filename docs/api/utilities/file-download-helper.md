@@ -80,11 +80,12 @@ export function extractFilenameFromContentDisposition(contentDisposition: string
     const filename = filenameMatch[1];
     if (filename.includes("''")) {
       const parts = filename.split("''");
-      if (parts.length === 2) {
+      const encoded = parts.length === 2 ? parts[1] : undefined;
+      if (encoded) {
         try {
-          return decodeURIComponent(parts[1]);
+          return decodeURIComponent(encoded);
         } catch {
-          return parts[1];
+          return encoded;
         }
       }
     }
