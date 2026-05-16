@@ -1,0 +1,5 @@
+{
+  "packages/ng-openapi": "0.2.18",
+  "packages/plugins/http-resource": "0.0.30",
+  "packages/plugins/zod": "0.0.8"
+}

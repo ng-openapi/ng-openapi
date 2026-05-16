@@ -1,0 +1,154 @@
+name: Publish to NPM
+
+on:
+  push:
+    tags:
+      - 'ng-openapi-v*'
+      - 'http-resource-v*'
+      - 'zod-v*'
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to publish'
+        required: true
+        type: choice
+        options:
+          - ng-openapi
+          - http-resource
+          - zod
+      dry_run:
+        description: 'Dry run (build only, do not publish)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish single package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve package metadata from tag or input
+        id: pkg
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            PKG="${{ github.event.inputs.package }}"
+            TAG_VERSION=""
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+            case "$TAG" in
+              ng-openapi-v*)
+                PKG="ng-openapi"
+                TAG_VERSION="${TAG#ng-openapi-v}"
+                ;;
+              http-resource-v*)
+                PKG="http-resource"
+                TAG_VERSION="${TAG#http-resource-v}"
+                ;;
+              zod-v*)
+                PKG="zod"
+                TAG_VERSION="${TAG#zod-v}"
+                ;;
+              *)
+                echo "::error::Unrecognized tag: $TAG"
+                exit 1
+                ;;
+            esac
+          fi
+
+          case "$PKG" in
+            ng-openapi)
+              SRC_DIR="packages/ng-openapi"
+              DIST_DIR="dist/packages/ng-openapi"
+              NX_TARGET="ng-openapi:build"
+              NPM_NAME="ng-openapi"
+              ;;
+            http-resource)
+              SRC_DIR="packages/plugins/http-resource"
+              DIST_DIR="dist/packages/plugins/http-resource"
+              NX_TARGET="http-resource:build"
+              NPM_NAME="@ng-openapi/http-resource"
+              ;;
+            zod)
+              SRC_DIR="packages/plugins/zod"
+              DIST_DIR="dist/packages/plugins/zod"
+              NX_TARGET="zod:build"
+              NPM_NAME="@ng-openapi/zod"
+              ;;
+          esac
+
+          {
+            echo "pkg=$PKG"
+            echo "src_dir=$SRC_DIR"
+            echo "dist_dir=$DIST_DIR"
+            echo "nx_target=$NX_TARGET"
+            echo "npm_name=$NPM_NAME"
+            echo "tag_version=$TAG_VERSION"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Package: $PKG ($NPM_NAME)"
+          echo "Tag version: ${TAG_VERSION:-<workflow_dispatch>}"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Verify package.json version matches tag
+        if: github.event_name == 'push'
+        run: |
+          PKG_VERSION=$(node -p "require('./${{ steps.pkg.outputs.src_dir }}/package.json').version")
+          TAG_VERSION="${{ steps.pkg.outputs.tag_version }}"
+          if [[ "$PKG_VERSION" != "$TAG_VERSION" ]]; then
+            echo "::error::package.json version ($PKG_VERSION) does not match tag version ($TAG_VERSION)"
+            exit 1
+          fi
+          echo "✅ Version $PKG_VERSION matches tag"
+
+      - name: Build
+        run: |
+          echo "🔨 Building ${{ steps.pkg.outputs.npm_name }}..."
+          npx nx run ${{ steps.pkg.outputs.nx_target }}
+
+      - name: Copy source package.json into dist
+        run: |
+          cp ${{ steps.pkg.outputs.src_dir }}/package.json ${{ steps.pkg.outputs.dist_dir }}/package.json
+          echo "📦 dist package.json:"
+          cat ${{ steps.pkg.outputs.dist_dir }}/package.json
+
+      - name: Publish to NPM
+        if: github.event.inputs.dry_run != 'true'
+        working-directory: ${{ steps.pkg.outputs.dist_dir }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "📦 Publishing ${{ steps.pkg.outputs.npm_name }}@$VERSION"
+          npm publish --tag latest --access public
+          echo "✅ Published ${{ steps.pkg.outputs.npm_name }}@$VERSION"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Summary
+        run: |
+          VERSION=$(node -p "require('./${{ steps.pkg.outputs.src_dir }}/package.json').version")
+          {
+            echo "## 📦 ${{ steps.pkg.outputs.npm_name }}"
+            echo ""
+            echo "- **Version**: \`$VERSION\`"
+            echo "- **Trigger**: ${{ github.event_name }}"
+            if [[ "${{ github.event.inputs.dry_run }}" == "true" ]]; then
+              echo "- **Dry run**: ✅ no publish"
+            else
+              echo "- **NPM**: https://www.npmjs.com/package/${{ steps.pkg.outputs.npm_name }}/v/$VERSION"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

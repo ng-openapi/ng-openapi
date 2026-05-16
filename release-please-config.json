@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "include-v-in-tag": true,
+  "include-component-in-tag": true,
+  "separator": "-",
+  "changelog-sections": [
+    { "type": "feat", "section": "Features" },
+    { "type": "fix", "section": "Bug Fixes" },
+    { "type": "perf", "section": "Performance" },
+    { "type": "deps", "section": "Dependencies" },
+    { "type": "revert", "section": "Reverts" },
+    { "type": "docs", "section": "Documentation", "hidden": true },
+    { "type": "style", "section": "Styles", "hidden": true },
+    { "type": "chore", "section": "Misc", "hidden": true },
+    { "type": "refactor", "section": "Code Refactoring", "hidden": true },
+    { "type": "test", "section": "Tests", "hidden": true },
+    { "type": "build", "section": "Build System", "hidden": true },
+    { "type": "ci", "section": "CI", "hidden": true }
+  ],
+  "packages": {
+    "packages/ng-openapi": {
+      "release-type": "node",
+      "package-name": "ng-openapi",
+      "component": "ng-openapi",
+      "changelog-path": "CHANGELOG.md"
+    },
+    "packages/plugins/http-resource": {
+      "release-type": "node",
+      "package-name": "@ng-openapi/http-resource",
+      "component": "http-resource",
+      "changelog-path": "CHANGELOG.md"
+    },
+    "packages/plugins/zod": {
+      "release-type": "node",
+      "package-name": "@ng-openapi/zod",
+      "component": "zod",
+      "changelog-path": "CHANGELOG.md"
+    }
+  }
+}
