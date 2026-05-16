@@ -3,6 +3,8 @@
   "include-v-in-tag": true,
   "include-component-in-tag": true,
   "separator": "-",
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": true,
   "changelog-sections": [
     { "type": "feat", "section": "Features" },
     { "type": "fix", "section": "Bug Fixes" },
