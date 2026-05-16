@@ -118,7 +118,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Build ng-openapi
         if: needs.detect-changes.outputs.publish-ng-openapi == 'true'
