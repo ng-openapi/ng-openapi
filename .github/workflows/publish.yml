@@ -21,6 +21,11 @@ on:
         required: false
         default: ''
         type: string
+      pr_number:
+        description: 'PR number to comment on with install info after a successful prerelease publish. Ignored unless prerelease_tag is also set.'
+        required: false
+        default: ''
+        type: string
       dry_run:
         description: 'Dry run (build only, do not publish)'
         required: false
@@ -30,6 +35,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  pull-requests: write
 
 jobs:
   publish:
@@ -151,6 +157,43 @@ jobs:
           echo "✅ Published ${{ steps.pkg.outputs.npm_name }}@$VERSION"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Only runs on successful prerelease publishes that were dispatched
+      # with a pr_number. Triggered from release.yml's per-PR flow.
+      - name: Comment on PR with prerelease install info
+        if: |
+          github.event.inputs.pr_number != '' &&
+          github.event.inputs.prerelease_tag != '' &&
+          github.event.inputs.dry_run != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = parseInt('${{ github.event.inputs.pr_number }}', 10);
+            const tag = '${{ github.event.inputs.prerelease_tag }}';
+            const npmName = '${{ steps.pkg.outputs.npm_name }}';
+            const pkg = '${{ steps.pkg.outputs.pkg }}';
+            const saveDev = pkg === 'ng-openapi' ? ' --save-dev' : '';
+            const sha = context.sha.substring(0, 7);
+            const releasePrUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/pulls?q=is%3Apr+is%3Aopen+label%3A%22autorelease%3A+pending%22`;
+
+            const body = [
+              `### 📦 \`${npmName}\` prerelease published`,
+              ``,
+              `**NPM dist-tag**: \`${tag}\``,
+              ``,
+              '```bash',
+              `npm install ${npmName}@${tag}${saveDev}`,
+              '```',
+              ``,
+              `> Built from commit \`${sha}\`. The actual release will happen when the [Release PR](${releasePrUrl}) is merged.`,
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });
 
       - name: Summary
         run: |

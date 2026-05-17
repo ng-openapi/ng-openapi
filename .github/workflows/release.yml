@@ -106,7 +106,6 @@ jobs:
       )
     permissions:
       actions: write
-      pull-requests: write
       contents: read
     steps:
       - name: Compute prerelease tag
@@ -121,61 +120,49 @@ jobs:
           echo "prerelease_tag=$PRERELEASE_TAG" >> "$GITHUB_OUTPUT"
           echo "Prerelease tag: $PRERELEASE_TAG"
 
-      # Build, version bump and `npm publish` are delegated to publish.yml.
-      # Passing `prerelease_tag` switches that workflow into prerelease mode:
-      # it bumps the version with this preid (no commit) and publishes under
-      # this dist-tag instead of `latest`.
+      # Build, version bump, npm publish, and the success PR comment are all
+      # delegated to publish.yml. Passing `prerelease_tag` switches that
+      # workflow into prerelease mode (bumps the version with this preid and
+      # publishes under this dist-tag instead of `latest`). Passing `pr_number`
+      # tells publish.yml to comment on the PR with install instructions once
+      # the publish succeeds — so the comment never appears unless the publish
+      # actually worked. `--ref` makes publish.yml check out the PR branch
+      # rather than the default branch.
       - name: Trigger publish.yml for ng-openapi
         if: needs.detect-changes.outputs.publish-ng-openapi == 'true'
-        run: gh workflow run publish.yml -f package=ng-openapi -f prerelease_tag=${{ steps.tag.outputs.prerelease_tag }}
+        run: |
+          gh workflow run publish.yml \
+            --ref "${{ github.head_ref }}" \
+            -f package=ng-openapi \
+            -f prerelease_tag=${{ steps.tag.outputs.prerelease_tag }} \
+            -f pr_number=${{ github.event.number }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
 
       - name: Trigger publish.yml for http-resource
         if: needs.detect-changes.outputs.publish-http-resource == 'true'
-        run: gh workflow run publish.yml -f package=http-resource -f prerelease_tag=${{ steps.tag.outputs.prerelease_tag }}
+        run: |
+          gh workflow run publish.yml \
+            --ref "${{ github.head_ref }}" \
+            -f package=http-resource \
+            -f prerelease_tag=${{ steps.tag.outputs.prerelease_tag }} \
+            -f pr_number=${{ github.event.number }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
 
       - name: Trigger publish.yml for zod
         if: needs.detect-changes.outputs.publish-zod == 'true'
-        run: gh workflow run publish.yml -f package=zod -f prerelease_tag=${{ steps.tag.outputs.prerelease_tag }}
+        run: |
+          gh workflow run publish.yml \
+            --ref "${{ github.head_ref }}" \
+            -f package=zod \
+            -f prerelease_tag=${{ steps.tag.outputs.prerelease_tag }} \
+            -f pr_number=${{ github.event.number }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-
-      - name: Comment on PR with prerelease info
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const publishNgOpenapi = '${{ needs.detect-changes.outputs.publish-ng-openapi }}' === 'true';
-            const publishHttpResource = '${{ needs.detect-changes.outputs.publish-http-resource }}' === 'true';
-            const publishZod = '${{ needs.detect-changes.outputs.publish-zod }}' === 'true';
-            const tag = '${{ steps.tag.outputs.prerelease_tag }}';
-            const runsUrl = `https://github.com/${{ github.repository }}/actions/workflows/publish.yml`;
-
-            let comment = `## 🚀 PR Prerelease Triggered\n\n**NPM dist-tag**: \`${tag}\`\n\nPublishing is handled by [publish.yml](${runsUrl}). Once it finishes, install with:\n\n`;
-
-            if (publishNgOpenapi) {
-              comment += `### 📦 ng-openapi\n\`\`\`bash\nnpm install ng-openapi@${tag} --save-dev\n\`\`\`\n\n`;
-            }
-            if (publishHttpResource) {
-              comment += `### 📦 @ng-openapi/http-resource\n\`\`\`bash\nnpm install @ng-openapi/http-resource@${tag}\n\`\`\`\n\n`;
-            }
-            if (publishZod) {
-              comment += `### 📦 @ng-openapi/zod\n\`\`\`bash\nnpm install @ng-openapi/zod@${tag}\n\`\`\`\n\n`;
-            }
-
-            comment += `> These prereleases are unique to commit \`${{ github.event.pull_request.head.sha }}\`. The actual release will happen when the [Release PR](https://github.com/${{ github.repository }}/pulls?q=is%3Apr+is%3Aopen+label%3A%22autorelease%3A+pending%22) is merged.`;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
 
   notify-skipped:
     runs-on: ubuntu-latest
