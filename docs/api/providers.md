@@ -9,13 +9,14 @@ The `provideNgOpenapi` function sets up the OpenAPI client in your Angular appli
 ## Usage
 
 ```typescript
-import { provideNgOpenapi } from "ng-openapi";
-import { provideHttpClient } from "@angular/common/http";
+import { provideNgOpenapi } from "./client/providers";
+import { provideHttpClient, withInterceptors } from "@angular/common/http";
 import { ApplicationConfig } from "@angular/core";
+import { defaultBaseInterceptor } from "./client/utils/base-interceptor";
 
 export const appConfig: ApplicationConfig = {
     providers: [
-        provideHttpClient(),
+        provideHttpClient(withInterceptors([defaultBaseInterceptor])),
         provideNgOpenapi({
             basePath: "https://api.example.com",
         }),
@@ -33,11 +34,13 @@ The base URL for your API. This is prepended to all API requests.
 
 ### `interceptors`
 
-**Type:** `HttpInterceptor[]` | **Default:** `[]`
+**Type:** `HttpInterceptor` classes | **Default:** `[]`
 
 Apply client specific interceptors. This is not going to replace the global interceptors configured in your application, but will be applied to requests made by the provided client.
 
 Interceptors can be re-used across different clients.
+
+The generated scoped interceptor is also available as a class for DI-based registration. Standalone applications should prefer the generated functional interceptor with `withInterceptors([...])`; DI-based setups can use `withInterceptorsFromDi()`.
 
 ### `enableDateTransform`
 

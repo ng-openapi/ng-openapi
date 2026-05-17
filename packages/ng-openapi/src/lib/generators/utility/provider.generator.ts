@@ -27,6 +27,7 @@ export class ProviderGenerator {
         const basePathTokenName = getBasePathTokenName(this.clientName);
         const interceptorsTokenName = getInterceptorsTokenName(this.clientName);
         const baseInterceptorClassName = `${this.capitalizeFirst(this.clientName)}BaseInterceptor`;
+        const baseInterceptorFunctionName = `${this.lowercaseFirst(this.clientName)}BaseInterceptor`;
 
         // Add imports
         sourceFile.addImportDeclarations([
@@ -83,7 +84,13 @@ export class ProviderGenerator {
         });
 
         // Add main provider function
-        this.addMainProviderFunction(sourceFile, basePathTokenName, interceptorsTokenName, baseInterceptorClassName);
+        this.addMainProviderFunction(
+            sourceFile,
+            basePathTokenName,
+            interceptorsTokenName,
+            baseInterceptorClassName,
+            baseInterceptorFunctionName,
+        );
 
         sourceFile.formatText();
         sourceFile.saveSync();
@@ -94,6 +101,7 @@ export class ProviderGenerator {
         basePathTokenName: string,
         interceptorsTokenName: string,
         baseInterceptorClassName: string,
+        baseInterceptorFunctionName: string,
     ): void {
         const hasDateInterceptor = this.config.options.dateType === "Date";
         const functionName = `provide${this.capitalizeFirst(this.clientName)}Client`;
@@ -160,10 +168,13 @@ return makeEnvironmentProviders(providers);`;
                 "@example",
                 "```typescript",
                 "// In your app.config.ts",
+                "import { provideHttpClient, withInterceptors } from '@angular/common/http';",
                 `import { ${functionName} } from './api/providers';`,
+                `import { ${baseInterceptorFunctionName} } from './api/utils/base-interceptor';`,
                 "",
                 "export const appConfig: ApplicationConfig = {",
                 "  providers: [",
+                `    provideHttpClient(withInterceptors([${baseInterceptorFunctionName}])),`,
                 `    ${functionName}({`,
                 "      basePath: 'https://api.example.com',",
                 "      interceptors: [AuthInterceptor, LoggingInterceptor] // Classes, not instances",
@@ -206,5 +217,9 @@ return makeEnvironmentProviders(providers);`;
 
     private capitalizeFirst(str: string): string {
         return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    private lowercaseFirst(str: string): string {
+        return str.charAt(0).toLowerCase() + str.slice(1);
     }
 }
