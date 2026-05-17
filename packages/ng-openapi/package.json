@@ -65,7 +65,7 @@
     "commander": "^14.0.0",
     "ts-morph": "^26.0.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3",
+    "typescript": "^5.9.3",
     "@types/swagger-schema-official": "^2.0.25",
     "js-yaml": "^4.1.0"
   },
