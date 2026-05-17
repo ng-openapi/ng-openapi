@@ -101,7 +101,7 @@ export class TypeGenerator {
                 name: interfaceName,
                 isExported: true,
                 docs: definition.description ? [definition.description] : undefined,
-                type: propertyType
+                type: propertyType,
             });
         }
     }
@@ -167,8 +167,8 @@ export class TypeGenerator {
                     typeof value === "string"
                         ? `'${this.escapeString(value)}'`
                         : isNaN(value)
-                        ? `'${value}'`
-                        : `${value}`;
+                          ? `'${value}'`
+                          : `${value}`;
                 objectProperties.push(`${key}: ${val} as ${name}`);
                 return val;
             })
@@ -351,7 +351,9 @@ export class TypeGenerator {
             return (
                 schema.oneOf
                     .map((def) => this.resolveSwaggerTypeCached(def))
-                    .filter((type, index, array) => type !== "any" && type !== "unknown" && array.indexOf(type) === index)
+                    .filter(
+                        (type, index, array) => type !== "any" && type !== "unknown" && array.indexOf(type) === index,
+                    )
                     .join(" | ") || "unknown"
             );
         }

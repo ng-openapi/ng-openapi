@@ -9,6 +9,7 @@ Generate Angular services and TypeScript types from your OpenAPI specification.
 ## Step 1: Prepare Your OpenAPI Specification
 
 You need an OpenAPI/Swagger specification file:
+
 - JSON file (`swagger.json`, `openapi.json`)
 - Yaml file (`swagger.yml`, `openapi.yaml`)
 
@@ -25,15 +26,15 @@ ng-openapi -i ./swagger.json -o ./src/api
 Create `openapi.config.ts`:
 
 ```typescript
-import { GeneratorConfig } from 'ng-openapi';
+import { GeneratorConfig } from "ng-openapi";
 
 const config: GeneratorConfig = {
-  input: './swagger.json',
-  output: './src/client',
-  options: {
-    dateType: 'Date',
-    enumStyle: 'enum'
-  }
+    input: "./swagger.json",
+    output: "./src/client",
+    options: {
+        dateType: "Date",
+        enumStyle: "enum",
+    },
 };
 
 export default config;
@@ -50,31 +51,31 @@ ng-openapi -c openapi.config.ts
 Add the provider to your `app.config.ts`:
 
 ```typescript
-import { ApplicationConfig } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
-import { provideNgOpenapi } from './api/providers';
+import { ApplicationConfig } from "@angular/core";
+import { provideHttpClient } from "@angular/common/http";
+import { provideNgOpenapi } from "./api/providers";
 
 export const appConfig: ApplicationConfig = {
-  providers: [
-    provideHttpClient(),
-    provideNgOpenapi({
-      basePath: 'https://api.example.com'
-    })
-  ]
+    providers: [
+        provideHttpClient(),
+        provideNgOpenapi({
+            basePath: "https://api.example.com",
+        }),
+    ],
 };
 ```
 
 ## Step 4: Use Generated Services
 
 ```typescript
-import { inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { PetsService } from './api/services';
-import { Pet } from './api/models';
+import { inject } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { PetsService } from "./api/services";
+import { Pet } from "./api/models";
 
 export class PetsComponent {
-  private readonly petsService = inject(PetsService);
-  readonly pets = toSignal(this.petsService.listPets());
+    private readonly petsService = inject(PetsService);
+    readonly pets = toSignal(this.petsService.listPets());
 }
 ```
 

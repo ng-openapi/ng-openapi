@@ -79,7 +79,7 @@ export class ServiceMethodBodyGenerator {
     }
 
     private createGenerationContext(
-        operation: PathInfo
+        operation: PathInfo,
     ): MethodGenerationContext & { isUrlEncoded: boolean; urlEncodedFields: string[] } {
         return {
             pathParams: operation.parameters?.filter((p) => p.in === "path") || [],
@@ -115,7 +115,7 @@ export class ServiceMethodBodyGenerator {
                 (param) =>
                     `if (${camelCase(param.name)} != null) {
   params = HttpParamsBuilder.addToHttpParams(params, ${camelCase(param.name)}, '${param.name}');
-}`
+}`,
             )
             .join("\n");
 
@@ -143,7 +143,7 @@ ${Object.entries(this.config.options.customHeaders || {})
         ([key, value]) =>
             `if (!headers.has('${key}')) {
   headers = headers.set('${key}', '${value}');
-}`
+}`,
     )
     .join("\n")}`;
         }

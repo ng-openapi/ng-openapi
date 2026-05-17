@@ -31,8 +31,8 @@ The generator expects the description to be a JSON string of `EnumValueObject[]`
 
 ```typescript
 interface EnumValueObject {
-  Name: string;
-  Value: number;
+    Name: string;
+    Value: number;
 }
 ```
 
@@ -40,20 +40,21 @@ interface EnumValueObject {
 
 ```json
 {
-  "Status": {
-    "enum": [0, 1],
-    "type": "integer",
-    "description": "[{\"Name\":\"Active\",\"Value\":0},{\"Name\":\"InActive\",\"Value\":1}]",
-    "format": "int32"
-  }
+    "Status": {
+        "enum": [0, 1],
+        "type": "integer",
+        "description": "[{\"Name\":\"Active\",\"Value\":0},{\"Name\":\"InActive\",\"Value\":1}]",
+        "format": "int32"
+    }
 }
 ```
 
 Generated enum:
+
 ```typescript
 enum Status {
-  Active = 0,
-  Inactive = 1
+    Active = 0,
+    Inactive = 1,
 }
 ```
 

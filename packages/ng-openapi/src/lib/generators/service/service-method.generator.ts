@@ -40,7 +40,7 @@ export class ServiceMethodGenerator {
         if (this.config.options.customizeMethodName) {
             if (operation.operationId == null) {
                 throw new Error(
-                    `Operation ID is required for method name customization of operation: (${operation.method}) ${operation.path}`
+                    `Operation ID is required for method name customization of operation: (${operation.method}) ${operation.path}`,
                 );
             }
             return this.config.options.customizeMethodName(operation.operationId);

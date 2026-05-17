@@ -38,7 +38,7 @@ export class HttpResourceGenerator implements IPluginGenerator {
             throw new Error(
                 `Invalid or unsupported specification format. ` +
                     `Expected OpenAPI 3.x or Swagger 2.x. ` +
-                    `${versionInfo ? `Found: ${versionInfo.type} ${versionInfo.version}` : "No version info found"}`
+                    `${versionInfo ? `Found: ${versionInfo.type} ${versionInfo.version}` : "No version info found"}`,
             );
         }
 
@@ -59,7 +59,7 @@ export class HttpResourceGenerator implements IPluginGenerator {
         await Promise.all(
             Object.entries(controllerGroups).map(([resourceName, operations]) => {
                 this.generateServiceFile(resourceName, operations, outputDir);
-            })
+            }),
         );
 
         this.indexGenerator.generateIndex(outputRoot);
@@ -182,7 +182,7 @@ return context.set(this.clientContextToken, '${this.config.clientName || "defaul
 
         if (hasDuplicateFunctionNames(serviceClass.getMethods())) {
             throw new Error(
-                `Duplicate method names found in service class ${className}. Please ensure unique method names for each operation.`
+                `Duplicate method names found in service class ${className}. Please ensure unique method names for each operation.`,
             );
         }
     }

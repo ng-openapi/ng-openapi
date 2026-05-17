@@ -37,4 +37,5 @@ export default config;
 - **boolean**: `true` to proceed with generation, `false` to stop generation
 
 ## Notes
+
 - Useful for remote URLs where specification content may vary, especially in development or local environments

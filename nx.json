@@ -1,27 +1,23 @@
 {
-  "extends": "nx/presets/npm.json",
-  "$schema": "./node_modules/nx/schemas/nx-schema.json",
-  "defaultBase": "master",
-  "nxCloudId": "687430d7011c6a6c64494347",
-  "namedInputs": {
-    "sharedGlobals": [
-      "{workspaceRoot}/.github/workflows/ci.yml"
-    ],
-    "default": [
-      "sharedGlobals"
+    "extends": "nx/presets/npm.json",
+    "$schema": "./node_modules/nx/schemas/nx-schema.json",
+    "defaultBase": "master",
+    "nxCloudId": "687430d7011c6a6c64494347",
+    "namedInputs": {
+        "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"],
+        "default": ["sharedGlobals"]
+    },
+    "release": {
+        "version": {
+            "preVersionCommand": "npx nx run-many -t build"
+        }
+    },
+    "plugins": [
+        {
+            "plugin": "@nx/eslint/plugin",
+            "options": {
+                "targetName": "lint"
+            }
+        }
     ]
-  },
-  "release": {
-    "version": {
-      "preVersionCommand": "npx nx run-many -t build"
-    }
-  },
-  "plugins": [
-    {
-      "plugin": "@nx/eslint/plugin",
-      "options": {
-        "targetName": "lint"
-      }
-    }
-  ]
 }

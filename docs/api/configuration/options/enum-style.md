@@ -27,23 +27,25 @@ export default config;
 ## Supported Options
 
 ### `'enum'` (Default)
+
 Generates TypeScript `enum` types for enumerations.
 
 ```typescript
 // Example enum with integer values
 enum Status {
-  _0 = 0,
-  _1 = 1
+    _0 = 0,
+    _1 = 1,
 }
 
 // Example enum with string values
 enum Status {
-  Active = 'active',
-  Inactive = 'inactive'
+    Active = "active",
+    Inactive = "inactive",
 }
 ```
 
 ### `'union'`
+
 Not supported yet, but will generate union types for enumerations in the future.
 
 ## Notes

@@ -64,13 +64,13 @@ Use configuration file for advanced options:
 ```typescript
 // openapi.config.ts
 const config: GeneratorConfig = {
-  input: './swagger.json',
-  output: './src/api',
-  options: {
-    dateType: 'Date',
-    customHeaders: { 'X-API-Key': 'key' },
-    responseTypeMapping: { 'application/pdf': 'blob' }
-  }
+    input: "./swagger.json",
+    output: "./src/api",
+    options: {
+        dateType: "Date",
+        customHeaders: { "X-API-Key": "key" },
+        responseTypeMapping: { "application/pdf": "blob" },
+    },
 };
 ```
 
@@ -84,10 +84,10 @@ ng-openapi -c openapi.config.ts
 
 ```json
 {
-  "scripts": {
-    "generate": "ng-openapi -c openapi.config.ts",
-    "build": "npm run generate && ng build"
-  }
+    "scripts": {
+        "generate": "ng-openapi -c openapi.config.ts",
+        "build": "npm run generate && ng build"
+    }
 }
 ```
 
@@ -95,11 +95,11 @@ ng-openapi -c openapi.config.ts
 
 ```json
 {
-  "scripts": {
-    "generate:users": "ng-openapi -i users-api.json -o ./src/api/users",
-    "generate:orders": "ng-openapi -i orders-api.json -o ./src/api/orders",
-    "generate:all": "npm run generate:users && npm run generate:orders"
-  }
+    "scripts": {
+        "generate:users": "ng-openapi -i users-api.json -o ./src/api/users",
+        "generate:orders": "ng-openapi -i orders-api.json -o ./src/api/orders",
+        "generate:all": "npm run generate:users && npm run generate:orders"
+    }
 }
 ```
 

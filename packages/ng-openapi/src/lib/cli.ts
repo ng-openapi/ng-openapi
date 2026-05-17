@@ -95,7 +95,7 @@ async function generateFromOptions(options: any): Promise<void> {
 program
     .name("ng-openapi")
     .description(
-        "Generate Angular services and types from OpenAPI/Swagger specifications (JSON, YAML, YML) from files or URLs"
+        "Generate Angular services and types from OpenAPI/Swagger specifications (JSON, YAML, YML) from files or URLs",
     )
     .version(packageJson.version)
     .option("-c, --config <path>", "Path to configuration file")

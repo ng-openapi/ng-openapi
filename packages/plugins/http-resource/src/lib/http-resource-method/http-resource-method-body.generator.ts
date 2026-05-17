@@ -36,7 +36,7 @@ export class HttpResourceMethodBodyGenerator {
             context.pathParams.forEach((param) => {
                 urlExpression = urlExpression.replace(
                     `{${param.name}}`,
-                    `\${typeof ${camelCase(param.name)} === 'function' ? ${camelCase(param.name)}() : ${camelCase(param.name)}}`
+                    `\${typeof ${camelCase(param.name)} === 'function' ? ${camelCase(param.name)}() : ${camelCase(param.name)}}`,
                 );
             });
         }
@@ -55,7 +55,7 @@ export class HttpResourceMethodBodyGenerator {
                     `const ${camelCase(param.name)}Value = typeof ${camelCase(param.name)} === 'function' ? ${camelCase(param.name)}() : ${camelCase(param.name)};
                 if (${camelCase(param.name)}Value != null) {
                     params = HttpParamsBuilder.addToHttpParams(params, ${camelCase(param.name)}Value, '${param.name}');
-                }`
+                }`,
             )
             .join("\n");
 
@@ -86,7 +86,7 @@ ${Object.entries(this.config.options.customHeaders || {})
         ([key, value]) =>
             `if (!headers.has('${key}')) {
   headers = headers.set('${key}', '${value}');
-}`
+}`,
     )
     .join("\n")}`;
         }

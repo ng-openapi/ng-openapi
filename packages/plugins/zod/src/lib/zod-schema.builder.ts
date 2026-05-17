@@ -16,7 +16,7 @@ export class ZodSchemaBuilder {
     async buildSchema(
         schema: SwaggerDefinition | { $ref: string },
         name: string,
-        buildOptions: BuildOptions = {}
+        buildOptions: BuildOptions = {},
     ): Promise<string> {
         if (isReferenceObject(schema)) {
             const resolved = this.parser.resolveReference(schema.$ref);
@@ -178,7 +178,7 @@ export class ZodSchemaBuilder {
     private async buildArraySchema(
         schema: SwaggerDefinition,
         name: string,
-        buildOptions: BuildOptions
+        buildOptions: BuildOptions,
     ): Promise<string> {
         if (!schema.items) {
             return "z.array(z.any())";
@@ -205,12 +205,12 @@ export class ZodSchemaBuilder {
     private async buildObjectSchema(
         schema: SwaggerDefinition,
         name: string,
-        buildOptions: BuildOptions
+        buildOptions: BuildOptions,
     ): Promise<string> {
         // Handle allOf, oneOf, anyOf
         if (schema.allOf) {
             const schemas = await Promise.all(
-                schema.allOf.map((s) => this.buildSchema(s, name, { ...buildOptions, required: true }))
+                schema.allOf.map((s) => this.buildSchema(s, name, { ...buildOptions, required: true })),
             );
             if (schemas.length === 1) {
                 return schemas[0];
@@ -224,8 +224,8 @@ export class ZodSchemaBuilder {
         if (schema.oneOf || schema.anyOf) {
             const schemas = await Promise.all(
                 (schema.oneOf || schema.anyOf || []).map((s) =>
-                    this.buildSchema(s, name, { ...buildOptions, required: true })
-                )
+                    this.buildSchema(s, name, { ...buildOptions, required: true }),
+                ),
             );
             if (schemas.length === 1) {
                 return schemas[0];
@@ -254,7 +254,7 @@ export class ZodSchemaBuilder {
                 const propZodSchema = await this.buildSchema(
                     propSchema as SwaggerDefinition | { $ref: string },
                     `${name}${pascalCase(propName)}`,
-                    { ...buildOptions, required: isRequired }
+                    { ...buildOptions, required: isRequired },
                 );
                 properties.push(`  "${propName}": ${propZodSchema}`);
             }
@@ -308,7 +308,7 @@ export class ZodSchemaBuilder {
         }
         if (Array.isArray(defaultValue)) {
             const items = defaultValue.map((item) =>
-                typeof item === "string" ? `'${this.escapeString(item)}'` : String(item)
+                typeof item === "string" ? `'${this.escapeString(item)}'` : String(item),
             );
             return `[${items.join(", ")}]`;
         }

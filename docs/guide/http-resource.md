@@ -28,21 +28,20 @@ Add the plugin to your OpenAPI configuration:
 
 ```typescript
 // openapi.config.ts
-import { GeneratorConfig } from 'ng-openapi';
-import { HttpResourcePlugin } from '@ng-openapi/http-resource';
+import { GeneratorConfig } from "ng-openapi";
+import { HttpResourcePlugin } from "@ng-openapi/http-resource";
 
 export default {
-  input: './swagger.json',
-  output: './src/api',
-  clientName: 'MyApi',
-  plugins: [HttpResourcePlugin],
-  options: {
-    dateType: 'Date',
-    enumStyle: 'enum'
-  }
+    input: "./swagger.json",
+    output: "./src/api",
+    clientName: "MyApi",
+    plugins: [HttpResourcePlugin],
+    options: {
+        dateType: "Date",
+        enumStyle: "enum",
+    },
 } as GeneratorConfig;
 ```
-
 
 ## Generation
 
@@ -71,15 +70,15 @@ Configure the provider in your application:
 
 ```typescript
 // app.config.ts
-import { ApplicationConfig } from '@angular/core';
-import { provideMyApiClient } from './api/providers';
+import { ApplicationConfig } from "@angular/core";
+import { provideMyApiClient } from "./api/providers";
 
 export const appConfig: ApplicationConfig = {
-  providers: [
-    provideMyApiClient({
-      basePath: 'https://api.example.com'
-    })
-  ]
+    providers: [
+        provideMyApiClient({
+            basePath: "https://api.example.com",
+        }),
+    ],
 };
 ```
 
@@ -88,29 +87,29 @@ export const appConfig: ApplicationConfig = {
 Inject and use the generated resources in your components:
 
 ```typescript
-import { Component, inject } from '@angular/core';
-import { UsersResource } from './api/resources';
+import { Component, inject } from "@angular/core";
+import { UsersResource } from "./api/resources";
 
 @Component({
-  selector: 'app-users',
-  template: `
-    <div>
-      @if (users.isLoading()) {
-        <p>Loading users...</p>
-      } @else if (users.error()) {
-        <p>Error: {{ users.error()?.message }}</p>
-      } @else {
-        @for (user of users.value(); track user.id) {
-          <div>{{ user.name }}</div>
-        }
-      }
-    </div>
-  `
+    selector: "app-users",
+    template: `
+        <div>
+            @if (users.isLoading()) {
+                <p>Loading users...</p>
+            } @else if (users.error()) {
+                <p>Error: {{ users.error()?.message }}</p>
+            } @else {
+                @for (user of users.value(); track user.id) {
+                    <div>{{ user.name }}</div>
+                }
+            }
+        </div>
+    `,
 })
 export class UsersComponent {
-  private readonly usersResource = inject(UsersResource);
-  
-  readonly users = this.usersResource.getUsers();
+    private readonly usersResource = inject(UsersResource);
+
+    readonly users = this.usersResource.getUsers();
 }
 ```
 
@@ -120,15 +119,15 @@ Use Signals for reactive parameter binding:
 
 ```typescript
 export class UserDetailComponent {
-  private readonly usersResource = inject(UsersResource);
-  private readonly userId = signal(1);
-  
-  // Automatically refetches when userId changes
-  readonly user = this.usersResource.getUserById(this.userId);
-  
-  updateUser(newId: number) {
-    this.userId.set(newId); // Triggers automatic refetch
-  }
+    private readonly usersResource = inject(UsersResource);
+    private readonly userId = signal(1);
+
+    // Automatically refetches when userId changes
+    readonly user = this.usersResource.getUserById(this.userId);
+
+    updateUser(newId: number) {
+        this.userId.set(newId); // Triggers automatic refetch
+    }
 }
 ```
 
@@ -138,11 +137,9 @@ Provide fallback values while data is loading:
 
 ```typescript
 export class UsersComponent {
-  private readonly usersResource = inject(UsersResource);
-  
-  readonly users = this.usersResource.getUsers(
-    { defaultValue: [] }
-  );
+    private readonly usersResource = inject(UsersResource);
+
+    readonly users = this.usersResource.getUsers({ defaultValue: [] });
 }
 ```
 
@@ -152,32 +149,32 @@ Pass both static and reactive query parameters:
 
 ```typescript
 export class SearchComponent {
-  private readonly usersResource = inject(UsersResource);
-  private readonly searchTerm = signal('');
-  private readonly pageSize = signal(10);
-  
-  readonly searchResults = this.usersResource.searchUsers(
-    this.searchTerm,    // reactive search term
-    this.pageSize,      // reactive page size
-    'active'            // static status filter
-  );
-  
-  updateSearch(term: string) {
-    this.searchTerm.set(term);
-  }
+    private readonly usersResource = inject(UsersResource);
+    private readonly searchTerm = signal("");
+    private readonly pageSize = signal(10);
+
+    readonly searchResults = this.usersResource.searchUsers(
+        this.searchTerm, // reactive search term
+        this.pageSize, // reactive page size
+        "active", // static status filter
+    );
+
+    updateSearch(term: string) {
+        this.searchTerm.set(term);
+    }
 }
 ```
 
 ## Resource vs Service Comparison
 
-| Feature | HTTP Resource | Traditional Service |
-|---------|---------------|-------------------|
-| **Loading State** | ✅ Built-in `isLoading()` | ❌ Manual state management |
-| **Error Handling** | ✅ Built-in `error()` | ❌ Manual error handling |
-| **Reactivity** | ✅ Signal-based | ❌ Observable-based |
-| **Parameter Binding** | ✅ Signal or static | ❌ Manual subscription |
-| **Request Deduplication** | ✅ Automatic | ❌ Manual implementation |
-| **Maturity** | ⚠️ Experimental | ✅ Stable |
+| Feature                   | HTTP Resource             | Traditional Service        |
+| ------------------------- | ------------------------- | -------------------------- |
+| **Loading State**         | ✅ Built-in `isLoading()` | ❌ Manual state management |
+| **Error Handling**        | ✅ Built-in `error()`     | ❌ Manual error handling   |
+| **Reactivity**            | ✅ Signal-based           | ❌ Observable-based        |
+| **Parameter Binding**     | ✅ Signal or static       | ❌ Manual subscription     |
+| **Request Deduplication** | ✅ Automatic              | ❌ Manual implementation   |
+| **Maturity**              | ⚠️ Experimental           | ✅ Stable                  |
 
 ## Limitations
 

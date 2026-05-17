@@ -15,16 +15,19 @@ ng-openapi [command] [options]
 ## Commands
 
 ### Direct Generation
+
 ```bash
 ng-openapi -i swagger.json -o ./src/api
 ```
 
 ### Configuration File
+
 ```bash
 ng-openapi -c openapi.config.ts
 ```
 
 ### Generate Subcommand
+
 ```bash
 ng-openapi generate -i swagger.json -o ./src/api
 ng-openapi gen -c openapi.config.ts  # Short alias
@@ -34,30 +37,30 @@ ng-openapi gen -c openapi.config.ts  # Short alias
 
 ### Required Options
 
-| Option | Alias | Description | Example |
-|--------|-------|-------------|---------|
-| `--config` | `-c` | Path to configuration file | `-c openapi.config.ts` |
-| `--input` | `-i` | Path to OpenAPI specification | `-i swagger.json` |
+| Option     | Alias | Description                   | Example                |
+| ---------- | ----- | ----------------------------- | ---------------------- |
+| `--config` | `-c`  | Path to configuration file    | `-c openapi.config.ts` |
+| `--input`  | `-i`  | Path to OpenAPI specification | `-i swagger.json`      |
 
 ### Output Options
 
-| Option | Alias | Description | Default | Example |
-|--------|-------|-------------|---------|---------|
-| `--output` | `-o` | Output directory | `./src/generated` | `-o ./src/api` |
+| Option     | Alias | Description      | Default           | Example        |
+| ---------- | ----- | ---------------- | ----------------- | -------------- |
+| `--output` | `-o`  | Output directory | `./src/generated` | `-o ./src/api` |
 
 ### Generation Options
 
-| Option | Description | Default | Example |
-|--------|-------------|---------|---------|
-| `--types-only` | Generate only TypeScript interfaces | `false` | `--types-only` |
-| `--date-type` | Date type to use | `Date` | `--date-type string` |
+| Option         | Description                         | Default | Example              |
+| -------------- | ----------------------------------- | ------- | -------------------- |
+| `--types-only` | Generate only TypeScript interfaces | `false` | `--types-only`       |
+| `--date-type`  | Date type to use                    | `Date`  | `--date-type string` |
 
 ### Help and Version
 
-| Option | Description |
-|--------|-------------|
-| `--help` | Show help information |
-| `--version` | Show version number |
+| Option      | Description           |
+| ----------- | --------------------- |
+| `--help`    | Show help information |
+| `--version` | Show version number   |
 
 ## Examples
 

@@ -44,3 +44,7 @@ Thumbs.db
 .github/instructions/nx.instructions.md
 
 docs/.vitepress/cache/deps
+
+.claude/worktrees
+.nx/polygraph
+.nx/self-healing

@@ -11,19 +11,15 @@ A simple [RxJS operator ↗️](https://rxjs.dev/guide/operators) for handling f
 Import and use the `downloadFileOperator` with any Observable that emits Blob data:
 
 ```typescript
-import { Component, inject } from '@angular/core';
-import { downloadFileOperator } from './api/utils/file-download';
+import { Component, inject } from "@angular/core";
+import { downloadFileOperator } from "./api/utils/file-download";
 
 export class ReportComponent {
-  private readonly reportService = inject(ReportService);
+    private readonly reportService = inject(ReportService);
 
-  downloadReport() {
-    this.reportService.getReportById(123)
-      .pipe(
-        downloadFileOperator('report.pdf')
-      )
-      .subscribe();
-  }
+    downloadReport() {
+        this.reportService.getReportById(123).pipe(downloadFileOperator("report.pdf")).subscribe();
+    }
 }
 ```
 
@@ -35,64 +31,66 @@ import { Observable } from "rxjs";
 import { tap } from "rxjs/operators";
 
 export function downloadFile(blob: Blob, filename: string, mimeType?: string): void {
+    // Create a temporary URL for the blob
+    const url = window.URL.createObjectURL(blob);
 
-  // Create a temporary URL for the blob
-  const url = window.URL.createObjectURL(blob);
+    // Create a temporary anchor element and trigger download
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
 
-  // Create a temporary anchor element and trigger download
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
+    // Append to body, click, and remove
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-  // Append to body, click, and remove
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-
-  // Clean up the URL
-  window.URL.revokeObjectURL(url);
+    // Clean up the URL
+    window.URL.revokeObjectURL(url);
 }
 
-export function downloadFileOperator<T extends Blob>(filename: string | ((blob: T) => string), mimeType?: string): (source: Observable<T>) => Observable<T> {
-
-  return (source: Observable<T>) => {
-    return source.pipe(
-      tap((blob: T) => {
-        const actualFilename = typeof filename === 'function' ? filename(blob) : filename;
-        downloadFile(blob, actualFilename, mimeType);
-      })
-    );
-  };
+export function downloadFileOperator<T extends Blob>(
+    filename: string | ((blob: T) => string),
+    mimeType?: string,
+): (source: Observable<T>) => Observable<T> {
+    return (source: Observable<T>) => {
+        return source.pipe(
+            tap((blob: T) => {
+                const actualFilename = typeof filename === "function" ? filename(blob) : filename;
+                downloadFile(blob, actualFilename, mimeType);
+            }),
+        );
+    };
 }
 
-export function extractFilenameFromContentDisposition(contentDisposition: string | null, fallbackFilename: string = "download"): string {
-
-  if (!contentDisposition) {
-    return fallbackFilename;
-  }
-
-  // Try to extract filename from Content-Disposition header
-  // Supports both "filename=" and "filename*=" formats
-  const filenameMatch = contentDisposition.match(/filename\*?=['"]?([^'"\n;]+)['"]?/i);
-
-  if (filenameMatch && filenameMatch[1]) {
-    // Decode if it's RFC 5987 encoded (filename*=UTF-8''...)
-    const filename = filenameMatch[1];
-    if (filename.includes("''")) {
-      const parts = filename.split("''");
-      const encoded = parts.length === 2 ? parts[1] : undefined;
-      if (encoded) {
-        try {
-          return decodeURIComponent(encoded);
-        } catch {
-          return encoded;
-        }
-      }
+export function extractFilenameFromContentDisposition(
+    contentDisposition: string | null,
+    fallbackFilename: string = "download",
+): string {
+    if (!contentDisposition) {
+        return fallbackFilename;
     }
-    return filename;
-  }
 
-  return fallbackFilename;
+    // Try to extract filename from Content-Disposition header
+    // Supports both "filename=" and "filename*=" formats
+    const filenameMatch = contentDisposition.match(/filename\*?=['"]?([^'"\n;]+)['"]?/i);
+
+    if (filenameMatch && filenameMatch[1]) {
+        // Decode if it's RFC 5987 encoded (filename*=UTF-8''...)
+        const filename = filenameMatch[1];
+        if (filename.includes("''")) {
+            const parts = filename.split("''");
+            const encoded = parts.length === 2 ? parts[1] : undefined;
+            if (encoded) {
+                try {
+                    return decodeURIComponent(encoded);
+                } catch {
+                    return encoded;
+                }
+            }
+        }
+        return filename;
+    }
+
+    return fallbackFilename;
 }
-
 ```
