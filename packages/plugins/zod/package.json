@@ -1,84 +1,84 @@
 {
-  "name": "@ng-openapi/zod",
-  "version": "0.0.9",
-  "description": "Zod validation plugin for ng-openapi - Generate Zod schemas from OpenAPI specifications",
-  "keywords": [
-    "angular",
-    "ng-openapi",
-    "plugin",
-    "zod",
-    "validation",
-    "schema",
-    "typescript",
-    "openapi"
-  ],
-  "author": {
-    "name": "Tareq Jami",
-    "email": "info@jami-it.de",
-    "url": "http://tareqjami.de"
-  },
-  "license": "MIT",
-  "homepage": "https://ng-openapi.dev/guide/zod",
-  "bugs": {
-    "url": "https://github.com/ng-openapi/ng-openapi/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ng-openapi/ng-openapi.git",
-    "directory": "packages/plugins/zod"
-  },
-  "funding": {
-    "type": "github",
-    "url": "https://github.com/sponsors/ng-openapi"
-  },
-  "type": "module",
-  "main": "./index.js",
-  "module": "./index.js",
-  "types": "./index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./index.d.ts",
-      "import": "./index.js",
-      "require": "./index.cjs"
-    }
-  },
-  "files": [
-    "index.js",
-    "index.cjs",
-    "index.d.ts",
-    "lib/**/*.js",
-    "lib/**/*.cjs",
-    "lib/**/*.d.ts",
-    "README.md",
-    "LICENSE",
-    "CHANGELOG.md"
-  ],
-  "scripts": {
-    "prepublishOnly": "echo 'Build the package using: npm run build:zod from workspace root'",
-    "build": "tsup"
-  },
-  "peerDependencies": {
-    "ng-openapi": ">=0.2",
-    "ts-morph": "*",
-    "zod": ">=4"
-  },
-  "peerDependenciesMeta": {
-    "ng-openapi": {
-      "optional": false
+    "name": "@ng-openapi/zod",
+    "version": "0.0.9",
+    "description": "Zod validation plugin for ng-openapi - Generate Zod schemas from OpenAPI specifications",
+    "keywords": [
+        "angular",
+        "ng-openapi",
+        "plugin",
+        "zod",
+        "validation",
+        "schema",
+        "typescript",
+        "openapi"
+    ],
+    "author": {
+        "name": "Tareq Jami",
+        "email": "info@jami-it.de",
+        "url": "http://tareqjami.de"
     },
-    "ts-morph": {
-      "optional": false
+    "license": "MIT",
+    "homepage": "https://ng-openapi.dev/guide/zod",
+    "bugs": {
+        "url": "https://github.com/ng-openapi/ng-openapi/issues"
     },
-    "zod": {
-      "optional": false
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ng-openapi/ng-openapi.git",
+        "directory": "packages/plugins/zod"
+    },
+    "funding": {
+        "type": "github",
+        "url": "https://github.com/sponsors/ng-openapi"
+    },
+    "type": "module",
+    "main": "./index.js",
+    "module": "./index.js",
+    "types": "./index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./index.d.ts",
+            "import": "./index.js",
+            "require": "./index.cjs"
+        }
+    },
+    "files": [
+        "index.js",
+        "index.cjs",
+        "index.d.ts",
+        "lib/**/*.js",
+        "lib/**/*.cjs",
+        "lib/**/*.d.ts",
+        "README.md",
+        "LICENSE",
+        "CHANGELOG.md"
+    ],
+    "scripts": {
+        "prepublishOnly": "echo 'Build the package using: npm run build:zod from workspace root'",
+        "build": "tsup"
+    },
+    "peerDependencies": {
+        "ng-openapi": ">=0.2",
+        "ts-morph": "*",
+        "zod": ">=4"
+    },
+    "peerDependenciesMeta": {
+        "ng-openapi": {
+            "optional": false
+        },
+        "ts-morph": {
+            "optional": false
+        },
+        "zod": {
+            "optional": false
+        }
+    },
+    "engines": {
+        "node": ">=20.0.0",
+        "npm": ">=8.0.0"
+    },
+    "publishConfig": {
+        "access": "public",
+        "registry": "https://registry.npmjs.org/"
     }
-  },
-  "engines": {
-    "node": ">=20.0.0",
-    "npm": ">=8.0.0"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  }
 }

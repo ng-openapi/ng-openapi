@@ -33,6 +33,6 @@ export default config;
 
 ```typescript
 type ResponseTypeMapping = {
-  [contentType: string]: "json" | "blob" | "arraybuffer" | "text";
+    [contentType: string]: "json" | "blob" | "arraybuffer" | "text";
 };
 ```

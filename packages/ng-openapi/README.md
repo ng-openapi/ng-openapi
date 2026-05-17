@@ -4,7 +4,6 @@
   <p align="center">💪 Made with ❤️ by Angular Devs for Angular Devs</p>
 </div>
 
-
 <p align="center">
   <a href="https://stackblitz.com/@Mr-Jami/collections/ng-openapi-examples">⚡Examples</a>
   <span>&nbsp;•&nbsp;</span>
@@ -38,30 +37,30 @@ yarn add ng-openapi --dev
 Create a configuration file (e.g., `openapi.config.ts`):
 
 ```typescript
-import { GeneratorConfig } from 'ng-openapi';
+import { GeneratorConfig } from "ng-openapi";
 
 const config: GeneratorConfig = {
-  input: './swagger.json',
-  output: './src/api',
-  options: {
-    dateType: 'Date',
-    enumStyle: 'enum',
-    generateEnumBasedOnDescription: true,
-    generateServices: true,
-    customHeaders: {
-      'X-Requested-With': 'XMLHttpRequest',
-      'Accept': 'application/json'
+    input: "./swagger.json",
+    output: "./src/api",
+    options: {
+        dateType: "Date",
+        enumStyle: "enum",
+        generateEnumBasedOnDescription: true,
+        generateServices: true,
+        customHeaders: {
+            "X-Requested-With": "XMLHttpRequest",
+            Accept: "application/json",
+        },
+        responseTypeMapping: {
+            "application/pdf": "blob",
+            "application/zip": "blob",
+            "text/csv": "text",
+        },
+        customizeMethodName: (operationId) => {
+            const parts = operationId.split("_");
+            return parts[parts.length - 1] || operationId;
+        },
     },
-    responseTypeMapping: {
-      'application/pdf': 'blob',
-      'application/zip': 'blob',
-      'text/csv': 'text'
-    },
-    customizeMethodName: (operationId) => {
-      const parts = operationId.split('_');
-      return parts[parts.length - 1] || operationId;
-    }
-  }
 };
 
 export default config;
@@ -142,17 +141,17 @@ The simplest way to integrate ng-openapi is using the provider function:
 
 ```typescript
 // In your app.config.ts
-import { ApplicationConfig } from '@angular/core';
-import { provideNgOpenapi } from './api/providers';
+import { ApplicationConfig } from "@angular/core";
+import { provideNgOpenapi } from "./api/providers";
 
 export const appConfig: ApplicationConfig = {
-  providers: [
-    // One-line setup with automatic interceptor configuration
-    provideNgOpenapi({
-      basePath: 'https://api.example.com'
-    }),
-    // other providers...
-  ]
+    providers: [
+        // One-line setup with automatic interceptor configuration
+        provideNgOpenapi({
+            basePath: "https://api.example.com",
+        }),
+        // other providers...
+    ],
 };
 ```
 
@@ -166,50 +165,46 @@ That's it! This automatically configures:
 ```typescript
 // Disable date transformation
 provideNgOpenapi({
-  basePath: 'https://api.example.com',
-  enableDateTransform: false
+    basePath: "https://api.example.com",
+    enableDateTransform: false,
 });
 
 // Async configuration
 provideNgOpenapiAsync({
-  basePath: () => import('./config').then(c => c.apiConfig.baseUrl)
+    basePath: () => import("./config").then((c) => c.apiConfig.baseUrl),
 });
 ```
 
 ## Using Generated Services
 
 ```typescript
-import { Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { UserService } from './api/services';
-import { User } from './api/models';
+import { Component, inject } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { UserService } from "./api/services";
+import { User } from "./api/models";
 
 @Component({
-  selector: 'app-users',
-  template: `...`
+    selector: "app-users",
+    template: `...`,
 })
 export class UsersComponent {
-  private readonly userService = inject(UserService);
-  readonly users = toSignal(this.userService.getUsers());
+    private readonly userService = inject(UserService);
+    readonly users = toSignal(this.userService.getUsers());
 }
 ```
 
 ## File Download Example
 
 ```typescript
-import { Component, inject } from '@angular/core';
-import { downloadFileOperator } from './api/utils/file-download';
+import { Component, inject } from "@angular/core";
+import { downloadFileOperator } from "./api/utils/file-download";
 
 export class ReportComponent {
-  private readonly reportService = inject(ReportService);
+    private readonly reportService = inject(ReportService);
 
-  downloadReport() {
-    this.reportService.getReport('pdf', { reportId: 123 })
-      .pipe(
-        downloadFileOperator('report.pdf')
-      )
-      .subscribe();
-  }
+    downloadReport() {
+        this.reportService.getReport("pdf", { reportId: 123 }).pipe(downloadFileOperator("report.pdf")).subscribe();
+    }
 }
 ```
 
@@ -219,8 +214,8 @@ Add these scripts to your `package.json`:
 
 ```json
 {
-  "scripts": {
-    "generate:api": "ng-openapi -c openapi.config.ts"
-  }
+    "scripts": {
+        "generate:api": "ng-openapi -c openapi.config.ts"
+    }
 }
 ```

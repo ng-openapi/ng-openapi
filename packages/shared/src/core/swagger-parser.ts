@@ -113,7 +113,7 @@ export class SwaggerParser {
             throw new Error(
                 `Failed to parse ${format.toUpperCase()} content from: ${pathOrUrl}. Error: ${
                     error instanceof Error ? error.message : error
-                }`
+                }`,
             );
         }
     }

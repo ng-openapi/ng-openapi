@@ -1,5 +1,5 @@
 {
-  "packages/ng-openapi": "0.2.19",
-  "packages/plugins/http-resource": "0.0.31",
-  "packages/plugins/zod": "0.0.9"
+    "packages/ng-openapi": "0.2.19",
+    "packages/plugins/http-resource": "0.0.31",
+    "packages/plugins/zod": "0.0.9"
 }

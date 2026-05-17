@@ -15,14 +15,19 @@ ng-openapi is a modern Angular-first OpenAPI client generator that creates type-
 While several OpenAPI generators exist, ng-openapi addresses the gaps that Angular developers face daily:
 
 ### 🚀 **Modern Angular Support**
+
 Uses Angular's latest features like the `inject()` function and the new `HttpResource` API, keeping your generated code up-to-date with current Angular best practices.
 
 ### 🎯 **Smart Enum Handling**
+
 Instead of generating unreadable integer enums or forcing string enums, ng-openapi gives you the ability to preserve your backend enum structure, giving you the exact same enums you use in your API.
 
 ### 🔧 **Customizable Function Names**
+
 Instead of using the `operationId` as the function name, ng-openapi allows you to customize the function names for better readability and maintainability.
+
 ### 🌐 **Multi-Client Architecture**
+
 Built-in support for multiple API clients with the ability to apply different HTTP interceptors to each client independently.
 
 ## Quick Example
@@ -57,6 +62,7 @@ export const appConfig: ApplicationConfig = {
 
 ng-openapi’s mission is to remain the #1 Angular client generation library.
 If you’d like to support this journey, feel free to sponsor me with a coffee — after all, we all know a developer’s fuel is coffee 😄
+
 <div style="display: flex; gap: 12px; margin: 20px 0; flex-wrap: wrap;">
   <a href="https://github.com/sponsors/ng-openapi" target="_blank" style="display: inline-flex; align-items: center; padding: 8px 16px; background: #24292f; color: white; border-radius: 6px; text-decoration: none; font-weight: 500;">
     <svg style="margin-right: 8px;" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">

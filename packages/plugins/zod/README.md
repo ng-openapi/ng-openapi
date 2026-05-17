@@ -36,14 +36,14 @@ npm install @ng-openapi/zod ng-openapi --save-dev
 
 ```typescript
 // openapi.config.ts
-import { GeneratorConfig } from 'ng-openapi';
-import { HttpResourcePlugin } from '@ng-openapi/zod';
+import { GeneratorConfig } from "ng-openapi";
+import { HttpResourcePlugin } from "@ng-openapi/zod";
 
 export default {
-  input: './swagger.json',
-  output: './src/api',
-  clientName: 'NgOpenApi',
-  plugins: [HttpResourcePlugin],
+    input: "./swagger.json",
+    output: "./src/api",
+    clientName: "NgOpenApi",
+    plugins: [HttpResourcePlugin],
 } as GeneratorConfig;
 ```
 
@@ -57,45 +57,45 @@ ng-openapi -c openapi.config.ts
 
 ```typescript
 // app.config.ts
-import { ApplicationConfig } from '@angular/core';
-import { provideDefaultClient } from './api/providers';
+import { ApplicationConfig } from "@angular/core";
+import { provideDefaultClient } from "./api/providers";
 
 export const appConfig: ApplicationConfig = {
-  providers: [
-    provideNgOpenApiClient({
-      basePath: 'https://api.example.com'
-    })
-  ]
+    providers: [
+        provideNgOpenApiClient({
+            basePath: "https://api.example.com",
+        }),
+    ],
 };
 ```
 
 ### 4. Use Generated Resources
 
 ```typescript
-import { Component, inject } from '@angular/core';
-import { UsersResource } from './api/resources';
+import { Component, inject } from "@angular/core";
+import { UsersResource } from "./api/resources";
 
 @Component({
-  selector: 'app-users',
-  template: `
-    <div>
-      @if (users.isLoading()) {
-        <p>Loading...</p>
-      }
-      @if (users.error()) {
-        <p>Error: {{ users.error() }}</p>
-      }
-      @for (user of users.value(); track user.id) {
-        <div>{{ user.name }}</div>
-      }
-    </div>
-  `
+    selector: "app-users",
+    template: `
+        <div>
+            @if (users.isLoading()) {
+                <p>Loading...</p>
+            }
+            @if (users.error()) {
+                <p>Error: {{ users.error() }}</p>
+            }
+            @for (user of users.value(); track user.id) {
+                <div>{{ user.name }}</div>
+            }
+        </div>
+    `,
 })
 export class UsersComponent {
-  private readonly usersResource = inject(UsersResource);
-  
-  // Automatic caching and reactive updates
-  readonly users = this.usersResource.getUsers();
+    private readonly usersResource = inject(UsersResource);
+
+    // Automatic caching and reactive updates
+    readonly users = this.usersResource.getUsers();
 }
 ```
 

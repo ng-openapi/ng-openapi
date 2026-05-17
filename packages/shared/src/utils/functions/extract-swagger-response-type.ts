@@ -3,7 +3,7 @@ import { getTypeScriptType } from "../type.utils";
 
 export function getResponseTypeFromResponse(
     response: SwaggerResponse,
-    responseTypeMapping?: { [p: string]: "json" | "blob" | "arraybuffer" | "text" }
+    responseTypeMapping?: { [p: string]: "json" | "blob" | "arraybuffer" | "text" },
 ): "json" | "blob" | "arraybuffer" | "text" {
     const content = response.content || {};
 

@@ -11,20 +11,16 @@ Use the built-in file download utilities with generated services.
 ### downloadFileOperator
 
 ```typescript
-import { Component, inject } from '@angular/core';
-import { downloadFileOperator } from './client/utils/file-download';
-import { ReportsService } from './client/services';
+import { Component, inject } from "@angular/core";
+import { downloadFileOperator } from "./client/utils/file-download";
+import { ReportsService } from "./client/services";
 
 export class ReportsComponent {
-  private readonly reportsService = inject(ReportsService);
+    private readonly reportsService = inject(ReportsService);
 
-  downloadReport(reportId: number) {
-    this.reportsService.getReportPdf(reportId)
-      .pipe(
-        downloadFileOperator('report.pdf')
-      )
-      .subscribe();
-  }
+    downloadReport(reportId: number) {
+        this.reportsService.getReportPdf(reportId).pipe(downloadFileOperator("report.pdf")).subscribe();
+    }
 }
 ```
 
@@ -60,28 +56,27 @@ downloadReport(reportId: number) {
 ### extractFilenameFromContentDisposition
 
 ```typescript
-import { HttpClient, HttpResponse } from '@angular/common/http';
-import { extractFilenameFromContentDisposition, downloadFile } from './client/utils/file-download';
+import { HttpClient, HttpResponse } from "@angular/common/http";
+import { extractFilenameFromContentDisposition, downloadFile } from "./client/utils/file-download";
 
 export class FilesService {
-  private readonly http = inject(HttpClient);
+    private readonly http = inject(HttpClient);
 
-  downloadWithHeaders(url: string) {
-    this.http.get(url, { 
-      responseType: 'blob',
-      observe: 'response'
-    }).subscribe((response: HttpResponse<Blob>) => {
-      const contentDisposition = response.headers.get('Content-Disposition');
-      const filename = extractFilenameFromContentDisposition(
-        contentDisposition,
-        'download.pdf'
-      );
-      
-      if (response.body) {
-        downloadFile(response.body, filename);
-      }
-    });
-  }
+    downloadWithHeaders(url: string) {
+        this.http
+            .get(url, {
+                responseType: "blob",
+                observe: "response",
+            })
+            .subscribe((response: HttpResponse<Blob>) => {
+                const contentDisposition = response.headers.get("Content-Disposition");
+                const filename = extractFilenameFromContentDisposition(contentDisposition, "download.pdf");
+
+                if (response.body) {
+                    downloadFile(response.body, filename);
+                }
+            });
+    }
 }
 ```
 
@@ -90,11 +85,11 @@ export class FilesService {
 ### downloadFile
 
 ```typescript
-import { downloadFile } from './client/utils/file-download';
+import { downloadFile } from "./client/utils/file-download";
 
 // Direct usage without operator
-this.reportsService.getReportPdf(reportId).subscribe(blob => {
-  downloadFile(blob, 'report.pdf');
+this.reportsService.getReportPdf(reportId).subscribe((blob) => {
+    downloadFile(blob, "report.pdf");
 });
 ```
 
@@ -105,12 +100,12 @@ Configure blob responses in your OpenAPI config:
 ```typescript
 // openapi.config.ts
 const config: GeneratorConfig = {
-  options: {
-    responseTypeMapping: {
-      'application/pdf': 'blob',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'blob'
-    }
-  }
+    options: {
+        responseTypeMapping: {
+            "application/pdf": "blob",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "blob",
+        },
+    },
 };
 ```
 

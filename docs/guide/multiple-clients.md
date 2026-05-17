@@ -16,16 +16,16 @@ Create separate configuration files for each API:
 
 ```typescript
 // users-api.config.ts
-import { GeneratorConfig } from 'ng-openapi';
+import { GeneratorConfig } from "ng-openapi";
 
 const config: GeneratorConfig = {
-  clientName: 'Users',
-  input: './users-swagger.json',
-  output: './src/api/users',
-  options: {
-    dateType: 'Date',
-    enumStyle: 'enum'
-  }
+    clientName: "Users",
+    input: "./users-swagger.json",
+    output: "./src/api/users",
+    options: {
+        dateType: "Date",
+        enumStyle: "enum",
+    },
 };
 
 export default config;
@@ -33,16 +33,16 @@ export default config;
 
 ```typescript
 // orders-api.config.ts
-import { GeneratorConfig } from 'ng-openapi';
+import { GeneratorConfig } from "ng-openapi";
 
 const config: GeneratorConfig = {
-  clientName: 'Orders',
-  input: './orders-swagger.json',
-  output: './src/api/orders',
-  options: {
-    dateType: 'Date',
-    enumStyle: 'enum'
-  }
+    clientName: "Orders",
+    input: "./orders-swagger.json",
+    output: "./src/api/orders",
+    options: {
+        dateType: "Date",
+        enumStyle: "enum",
+    },
 };
 
 export default config;
@@ -61,21 +61,21 @@ Each client generates its own provider function based on the `clientName`:
 
 ```typescript
 // app.config.ts
-import { ApplicationConfig } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
-import { provideUsersClient } from './api/users/providers';
-import { provideOrdersClient } from './api/orders/providers';
+import { ApplicationConfig } from "@angular/core";
+import { provideHttpClient } from "@angular/common/http";
+import { provideUsersClient } from "./api/users/providers";
+import { provideOrdersClient } from "./api/orders/providers";
 
 export const appConfig: ApplicationConfig = {
-  providers: [
-    provideHttpClient(),
-    provideUsersClient({
-      basePath: 'https://users-api.example.com'
-    }),
-    provideOrdersClient({
-      basePath: 'https://orders-api.example.com'
-    })
-  ]
+    providers: [
+        provideHttpClient(),
+        provideUsersClient({
+            basePath: "https://users-api.example.com",
+        }),
+        provideOrdersClient({
+            basePath: "https://orders-api.example.com",
+        }),
+    ],
 };
 ```
 
@@ -85,31 +85,31 @@ Apply different interceptors to each client:
 
 ```typescript
 // auth.interceptor.ts
-import { HttpInterceptor, HttpRequest, HttpHandler } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { HttpInterceptor, HttpRequest, HttpHandler } from "@angular/common/http";
+import { Injectable } from "@angular/core";
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-  intercept(req: HttpRequest<any>, next: HttpHandler) {
-    const authReq = req.clone({
-      headers: req.headers.set('Authorization', 'Bearer token')
-    });
-    return next.handle(authReq);
-  }
+    intercept(req: HttpRequest<any>, next: HttpHandler) {
+        const authReq = req.clone({
+            headers: req.headers.set("Authorization", "Bearer token"),
+        });
+        return next.handle(authReq);
+    }
 }
 ```
 
 ```typescript
 // logging.interceptor.ts
-import { HttpInterceptor, HttpRequest, HttpHandler } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { HttpInterceptor, HttpRequest, HttpHandler } from "@angular/common/http";
+import { Injectable } from "@angular/core";
 
 @Injectable()
 export class LoggingInterceptor implements HttpInterceptor {
-  intercept(req: HttpRequest<any>, next: HttpHandler) {
-    console.log('Request:', req.url);
-    return next.handle(req);
-  }
+    intercept(req: HttpRequest<any>, next: HttpHandler) {
+        console.log("Request:", req.url);
+        return next.handle(req);
+    }
 }
 ```
 
@@ -117,17 +117,17 @@ Configure interceptors per client:
 
 ```typescript
 export const appConfig: ApplicationConfig = {
-  providers: [
-    provideHttpClient(),
-    provideUsersClient({
-      basePath: 'https://users-api.example.com',
-      interceptors: [AuthInterceptor] // Only for users API
-    }),
-    provideOrdersClient({
-      basePath: 'https://orders-api.example.com',
-      interceptors: [AuthInterceptor, LoggingInterceptor] // Both interceptors
-    })
-  ]
+    providers: [
+        provideHttpClient(),
+        provideUsersClient({
+            basePath: "https://users-api.example.com",
+            interceptors: [AuthInterceptor], // Only for users API
+        }),
+        provideOrdersClient({
+            basePath: "https://orders-api.example.com",
+            interceptors: [AuthInterceptor, LoggingInterceptor], // Both interceptors
+        }),
+    ],
 };
 ```
 
@@ -136,26 +136,26 @@ export const appConfig: ApplicationConfig = {
 Import and use services from different clients:
 
 ```typescript
-import { Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { UsersService } from './api/users/services';
-import { OrdersService } from './api/orders/services';
+import { Component, inject } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { UsersService } from "./api/users/services";
+import { OrdersService } from "./api/orders/services";
 
 @Component({
-  selector: 'app-dashboard',
-  template: `
-    <div>
-      <h2>Users: {{ users()?.length ?? 0 }}</h2>
-      <h2>Orders: {{ orders()?.length ?? 0 }}</h2>
-    </div>
-  `
+    selector: "app-dashboard",
+    template: `
+        <div>
+            <h2>Users: {{ users()?.length ?? 0 }}</h2>
+            <h2>Orders: {{ orders()?.length ?? 0 }}</h2>
+        </div>
+    `,
 })
 export class DashboardComponent {
-  private readonly usersService = inject(UsersService);
-  private readonly ordersService = inject(OrdersService);
+    private readonly usersService = inject(UsersService);
+    private readonly ordersService = inject(OrdersService);
 
-  readonly users = toSignal(this.usersService.getUsers());
-  readonly orders = toSignal(this.ordersService.getOrders());
+    readonly users = toSignal(this.usersService.getUsers());
+    readonly orders = toSignal(this.ordersService.getOrders());
 }
 ```
 
@@ -199,11 +199,11 @@ Organize generation scripts for multiple clients:
 
 ```json
 {
-  "scripts": {
-    "generate:users": "ng-openapi -c users-api.config.ts",
-    "generate:orders": "ng-openapi -c orders-api.config.ts",
-    "generate:all": "npm run generate:users && npm run generate:orders"
-  }
+    "scripts": {
+        "generate:users": "ng-openapi -c users-api.config.ts",
+        "generate:orders": "ng-openapi -c orders-api.config.ts",
+        "generate:all": "npm run generate:users && npm run generate:orders"
+    }
 }
 ```
 
@@ -214,9 +214,9 @@ Organize generation scripts for multiple clients:
 Use descriptive client names that reflect the API purpose:
 
 ```typescript
-clientName: 'Users'     // generates provideUsersClient
-clientName: 'Orders'    // generates provideOrdersClient
-clientName: 'Payments'  // generates providePaymentsClient
+clientName: "Users"; // generates provideUsersClient
+clientName: "Orders"; // generates provideOrdersClient
+clientName: "Payments"; // generates providePaymentsClient
 ```
 
 ### Directory Organization
@@ -233,17 +233,17 @@ ng-openapi -c orders-api.config.ts   # outputs to ./src/api/orders
 Use environment-specific configurations:
 
 ```typescript
-import { environment } from '../environments/environment';
+import { environment } from "../environments/environment";
 
 export const appConfig: ApplicationConfig = {
-  providers: [
-    provideUsersClient({
-      basePath: environment.usersApiUrl
-    }),
-    provideOrdersClient({
-      basePath: environment.ordersApiUrl
-    })
-  ]
+    providers: [
+        provideUsersClient({
+            basePath: environment.usersApiUrl,
+        }),
+        provideOrdersClient({
+            basePath: environment.ordersApiUrl,
+        }),
+    ],
 };
 ```
 

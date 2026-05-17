@@ -4,7 +4,6 @@ about: Report something that isn't working
 title: "[BUG]"
 labels: bug
 assignees: Mr-Jami
-
 ---
 
 **Describe the bug**
@@ -12,6 +11,7 @@ A clear and concise description of what the bug is.
 
 **To Reproduce**
 Steps to reproduce the behavior:
+
 1. Go to '...'
 2. Click on '...'
 3. See error
@@ -23,6 +23,7 @@ What should happen instead?
 (If applicable)
 
 **Environment:**
+
 - Angular Version:
 - ng-openapi Version:
 

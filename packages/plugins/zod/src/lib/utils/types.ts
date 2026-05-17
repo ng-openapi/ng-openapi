@@ -2,21 +2,21 @@ export interface ZodPluginOptions {
     strict?:
         | boolean
         | {
-        param?: boolean;
-        query?: boolean;
-        header?: boolean;
-        body?: boolean;
-        response?: boolean;
-    };
+              param?: boolean;
+              query?: boolean;
+              header?: boolean;
+              body?: boolean;
+              response?: boolean;
+          };
     coerce?:
         | boolean
         | {
-        param?: boolean;
-        query?: boolean;
-        header?: boolean;
-        body?: boolean;
-        response?: boolean;
-    };
+              param?: boolean;
+              query?: boolean;
+              header?: boolean;
+              body?: boolean;
+              response?: boolean;
+          };
     generate?: {
         param?: boolean;
         query?: boolean;

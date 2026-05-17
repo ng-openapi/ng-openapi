@@ -9,6 +9,7 @@ A collection of Angular utilities to enhance your development experience with co
 ## Available Utilities
 
 ### [Date Transformer](utilities/date-transformer.md)
+
 An Angular [HTTP Interceptor ↗️](https://angular.dev/guide/http/interceptors) that automatically converts date strings from API responses into JavaScript `Date` objects.
 
 ```typescript
@@ -19,14 +20,11 @@ An Angular [HTTP Interceptor ↗️](https://angular.dev/guide/http/interceptors
 ```
 
 ### [File Download Helper](utilities/file-download-helper.md)
+
 A simple [RxJS operator ↗️](https://rxjs.dev/guide/operators) for handling file downloads in Angular applications.
 
 ```typescript
-this.reportService.getReportById(123)
-  .pipe(
-    downloadFileOperator('report.pdf')
-  )
-  .subscribe();
+this.reportService.getReportById(123).pipe(downloadFileOperator("report.pdf")).subscribe();
 ```
 
 ## Usage

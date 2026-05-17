@@ -1,257 +1,257 @@
 name: PR Prerelease
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches:
-      - main
+    pull_request:
+        types: [opened, synchronize, reopened]
+        branches:
+            - main
 
 permissions:
-  contents: read
-  pull-requests: write
-  issues: write
-  id-token: write
+    contents: read
+    pull-requests: write
+    issues: write
+    id-token: write
 
 jobs:
-  detect-changes:
-    runs-on: ubuntu-latest
-    outputs:
-      publish-ng-openapi: ${{ steps.determine-publish.outputs.publish-ng-openapi }}
-      publish-http-resource: ${{ steps.determine-publish.outputs.publish-http-resource }}
-      publish-zod: ${{ steps.determine-publish.outputs.publish-zod }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    detect-changes:
+        runs-on: ubuntu-latest
+        outputs:
+            publish-ng-openapi: ${{ steps.determine-publish.outputs.publish-ng-openapi }}
+            publish-http-resource: ${{ steps.determine-publish.outputs.publish-http-resource }}
+            publish-zod: ${{ steps.determine-publish.outputs.publish-zod }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-      - name: Detect changes
-        uses: dorny/paths-filter@v3
-        id: changes
-        with:
-          filters: |
-            ng-openapi:
-              - 'packages/ng-openapi/**'
-            http-resource:
-              - 'packages/plugins/http-resource/**'
-            zod:
-              - 'packages/plugins/zod/**'
-            shared:
-              - 'packages/shared/**'
+            - name: Detect changes
+              uses: dorny/paths-filter@v3
+              id: changes
+              with:
+                  filters: |
+                      ng-openapi:
+                        - 'packages/ng-openapi/**'
+                      http-resource:
+                        - 'packages/plugins/http-resource/**'
+                      zod:
+                        - 'packages/plugins/zod/**'
+                      shared:
+                        - 'packages/shared/**'
 
-      - name: Determine what to publish
-        id: determine-publish
-        run: |
-          PUBLISH_NG_OPENAPI="false"
-          PUBLISH_HTTP_RESOURCE="false"
-          PUBLISH_ZOD="false"
+            - name: Determine what to publish
+              id: determine-publish
+              run: |
+                  PUBLISH_NG_OPENAPI="false"
+                  PUBLISH_HTTP_RESOURCE="false"
+                  PUBLISH_ZOD="false"
 
-          if [[ "${{ steps.changes.outputs.shared }}" == "true" ]]; then
-            echo "📦 Changes in packages/shared -> publishing all packages"
-            PUBLISH_NG_OPENAPI="true"
-            PUBLISH_HTTP_RESOURCE="true"
-            PUBLISH_ZOD="true"
-          fi
+                  if [[ "${{ steps.changes.outputs.shared }}" == "true" ]]; then
+                    echo "📦 Changes in packages/shared -> publishing all packages"
+                    PUBLISH_NG_OPENAPI="true"
+                    PUBLISH_HTTP_RESOURCE="true"
+                    PUBLISH_ZOD="true"
+                  fi
 
-          if [[ "${{ steps.changes.outputs.ng-openapi }}" == "true" ]]; then
-            PUBLISH_NG_OPENAPI="true"
-          fi
-          if [[ "${{ steps.changes.outputs.http-resource }}" == "true" ]]; then
-            PUBLISH_HTTP_RESOURCE="true"
-          fi
-          if [[ "${{ steps.changes.outputs.zod }}" == "true" ]]; then
-            PUBLISH_ZOD="true"
-          fi
+                  if [[ "${{ steps.changes.outputs.ng-openapi }}" == "true" ]]; then
+                    PUBLISH_NG_OPENAPI="true"
+                  fi
+                  if [[ "${{ steps.changes.outputs.http-resource }}" == "true" ]]; then
+                    PUBLISH_HTTP_RESOURCE="true"
+                  fi
+                  if [[ "${{ steps.changes.outputs.zod }}" == "true" ]]; then
+                    PUBLISH_ZOD="true"
+                  fi
 
-          {
-            echo "publish-ng-openapi=$PUBLISH_NG_OPENAPI"
-            echo "publish-http-resource=$PUBLISH_HTTP_RESOURCE"
-            echo "publish-zod=$PUBLISH_ZOD"
-          } >> "$GITHUB_OUTPUT"
+                  {
+                    echo "publish-ng-openapi=$PUBLISH_NG_OPENAPI"
+                    echo "publish-http-resource=$PUBLISH_HTTP_RESOURCE"
+                    echo "publish-zod=$PUBLISH_ZOD"
+                  } >> "$GITHUB_OUTPUT"
 
-  check-permissions:
-    runs-on: ubuntu-latest
-    outputs:
-      is-maintainer: ${{ steps.check.outputs.is-maintainer }}
-    steps:
-      - name: Check if PR author is maintainer
-        id: check
-        uses: actions/github-script@v7
-        with:
-          script: |
-            try {
-              const { data: permission } = await github.rest.repos.getCollaboratorPermissionLevel({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                username: context.payload.pull_request.user.login
-              });
-              const isMaintainer = ['admin', 'maintain', 'write'].includes(permission.permission);
-              core.setOutput('is-maintainer', isMaintainer);
-              console.log(`User ${context.payload.pull_request.user.login}: ${permission.permission} (maintainer=${isMaintainer})`);
-              return isMaintainer;
-            } catch (error) {
-              console.error('Error checking permissions:', error);
-              core.setOutput('is-maintainer', false);
-              return false;
-            }
+    check-permissions:
+        runs-on: ubuntu-latest
+        outputs:
+            is-maintainer: ${{ steps.check.outputs.is-maintainer }}
+        steps:
+            - name: Check if PR author is maintainer
+              id: check
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      try {
+                        const { data: permission } = await github.rest.repos.getCollaboratorPermissionLevel({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          username: context.payload.pull_request.user.login
+                        });
+                        const isMaintainer = ['admin', 'maintain', 'write'].includes(permission.permission);
+                        core.setOutput('is-maintainer', isMaintainer);
+                        console.log(`User ${context.payload.pull_request.user.login}: ${permission.permission} (maintainer=${isMaintainer})`);
+                        return isMaintainer;
+                      } catch (error) {
+                        console.error('Error checking permissions:', error);
+                        core.setOutput('is-maintainer', false);
+                        return false;
+                      }
 
-  prerelease:
-    runs-on: ubuntu-latest
-    needs: [detect-changes, check-permissions]
-    if: |
-      needs.check-permissions.outputs.is-maintainer == 'true' && (
-        needs.detect-changes.outputs.publish-ng-openapi == 'true' ||
-        needs.detect-changes.outputs.publish-http-resource == 'true' ||
-        needs.detect-changes.outputs.publish-zod == 'true'
-      )
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    prerelease:
+        runs-on: ubuntu-latest
+        needs: [detect-changes, check-permissions]
+        if: |
+            needs.check-permissions.outputs.is-maintainer == 'true' && (
+              needs.detect-changes.outputs.publish-ng-openapi == 'true' ||
+              needs.detect-changes.outputs.publish-http-resource == 'true' ||
+              needs.detect-changes.outputs.publish-zod == 'true'
+            )
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 24
+                  cache: "npm"
+                  registry-url: "https://registry.npmjs.org"
 
-      - name: Install dependencies
-        run: npm ci
+            - name: Install dependencies
+              run: npm ci
 
-      - name: Build ng-openapi
-        if: needs.detect-changes.outputs.publish-ng-openapi == 'true'
-        run: npx nx run ng-openapi:build
+            - name: Build ng-openapi
+              if: needs.detect-changes.outputs.publish-ng-openapi == 'true'
+              run: npx nx run ng-openapi:build
 
-      - name: Build http-resource
-        if: needs.detect-changes.outputs.publish-http-resource == 'true'
-        run: npx nx run http-resource:build
+            - name: Build http-resource
+              if: needs.detect-changes.outputs.publish-http-resource == 'true'
+              run: npx nx run http-resource:build
 
-      - name: Build zod
-        if: needs.detect-changes.outputs.publish-zod == 'true'
-        run: npx nx run zod:build
+            - name: Build zod
+              if: needs.detect-changes.outputs.publish-zod == 'true'
+              run: npx nx run zod:build
 
-      - name: Compute prerelease tag
-        id: tag
-        run: |
-          BRANCH_NAME="${{ github.head_ref }}"
-          PR_NUMBER="${{ github.event.number }}"
-          SHORT_SHA="${{ github.event.pull_request.head.sha }}"
-          SHORT_SHA=${SHORT_SHA:0:7}
-          SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
-          PRERELEASE_TAG="pr-${PR_NUMBER}-${SANITIZED_BRANCH}-${SHORT_SHA}"
-          echo "prerelease_tag=$PRERELEASE_TAG" >> "$GITHUB_OUTPUT"
-          echo "Prerelease tag: $PRERELEASE_TAG"
+            - name: Compute prerelease tag
+              id: tag
+              run: |
+                  BRANCH_NAME="${{ github.head_ref }}"
+                  PR_NUMBER="${{ github.event.number }}"
+                  SHORT_SHA="${{ github.event.pull_request.head.sha }}"
+                  SHORT_SHA=${SHORT_SHA:0:7}
+                  SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+                  PRERELEASE_TAG="pr-${PR_NUMBER}-${SANITIZED_BRANCH}-${SHORT_SHA}"
+                  echo "prerelease_tag=$PRERELEASE_TAG" >> "$GITHUB_OUTPUT"
+                  echo "Prerelease tag: $PRERELEASE_TAG"
 
-      - name: Bump ng-openapi version
-        id: version-ng-openapi
-        if: needs.detect-changes.outputs.publish-ng-openapi == 'true'
-        working-directory: packages/ng-openapi
-        run: |
-          npm version prerelease --preid="${{ steps.tag.outputs.prerelease_tag }}" --no-git-tag-version
-          NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+            - name: Bump ng-openapi version
+              id: version-ng-openapi
+              if: needs.detect-changes.outputs.publish-ng-openapi == 'true'
+              working-directory: packages/ng-openapi
+              run: |
+                  npm version prerelease --preid="${{ steps.tag.outputs.prerelease_tag }}" --no-git-tag-version
+                  NEW_VERSION=$(node -p "require('./package.json').version")
+                  echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Bump http-resource version
-        id: version-http-resource
-        if: needs.detect-changes.outputs.publish-http-resource == 'true'
-        working-directory: packages/plugins/http-resource
-        run: |
-          npm version prerelease --preid="${{ steps.tag.outputs.prerelease_tag }}" --no-git-tag-version
-          NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+            - name: Bump http-resource version
+              id: version-http-resource
+              if: needs.detect-changes.outputs.publish-http-resource == 'true'
+              working-directory: packages/plugins/http-resource
+              run: |
+                  npm version prerelease --preid="${{ steps.tag.outputs.prerelease_tag }}" --no-git-tag-version
+                  NEW_VERSION=$(node -p "require('./package.json').version")
+                  echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Bump zod version
-        id: version-zod
-        if: needs.detect-changes.outputs.publish-zod == 'true'
-        working-directory: packages/plugins/zod
-        run: |
-          npm version prerelease --preid="${{ steps.tag.outputs.prerelease_tag }}" --no-git-tag-version
-          NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+            - name: Bump zod version
+              id: version-zod
+              if: needs.detect-changes.outputs.publish-zod == 'true'
+              working-directory: packages/plugins/zod
+              run: |
+                  npm version prerelease --preid="${{ steps.tag.outputs.prerelease_tag }}" --no-git-tag-version
+                  NEW_VERSION=$(node -p "require('./package.json').version")
+                  echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Copy updated package.json files to dist
-        run: |
-          if [[ "${{ needs.detect-changes.outputs.publish-ng-openapi }}" == "true" ]]; then
-            cp packages/ng-openapi/package.json dist/packages/ng-openapi/package.json
-          fi
-          if [[ "${{ needs.detect-changes.outputs.publish-http-resource }}" == "true" ]]; then
-            cp packages/plugins/http-resource/package.json dist/packages/plugins/http-resource/package.json
-          fi
-          if [[ "${{ needs.detect-changes.outputs.publish-zod }}" == "true" ]]; then
-            cp packages/plugins/zod/package.json dist/packages/plugins/zod/package.json
-          fi
+            - name: Copy updated package.json files to dist
+              run: |
+                  if [[ "${{ needs.detect-changes.outputs.publish-ng-openapi }}" == "true" ]]; then
+                    cp packages/ng-openapi/package.json dist/packages/ng-openapi/package.json
+                  fi
+                  if [[ "${{ needs.detect-changes.outputs.publish-http-resource }}" == "true" ]]; then
+                    cp packages/plugins/http-resource/package.json dist/packages/plugins/http-resource/package.json
+                  fi
+                  if [[ "${{ needs.detect-changes.outputs.publish-zod }}" == "true" ]]; then
+                    cp packages/plugins/zod/package.json dist/packages/plugins/zod/package.json
+                  fi
 
-      - name: Publish ng-openapi
-        if: needs.detect-changes.outputs.publish-ng-openapi == 'true'
-        working-directory: dist/packages/ng-openapi
-        run: npm publish --tag ${{ steps.tag.outputs.prerelease_tag }} --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+            - name: Publish ng-openapi
+              if: needs.detect-changes.outputs.publish-ng-openapi == 'true'
+              working-directory: dist/packages/ng-openapi
+              run: npm publish --tag ${{ steps.tag.outputs.prerelease_tag }} --access public
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish http-resource
-        if: needs.detect-changes.outputs.publish-http-resource == 'true'
-        working-directory: dist/packages/plugins/http-resource
-        run: npm publish --tag ${{ steps.tag.outputs.prerelease_tag }} --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+            - name: Publish http-resource
+              if: needs.detect-changes.outputs.publish-http-resource == 'true'
+              working-directory: dist/packages/plugins/http-resource
+              run: npm publish --tag ${{ steps.tag.outputs.prerelease_tag }} --access public
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish zod
-        if: needs.detect-changes.outputs.publish-zod == 'true'
-        working-directory: dist/packages/plugins/zod
-        run: npm publish --tag ${{ steps.tag.outputs.prerelease_tag }} --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+            - name: Publish zod
+              if: needs.detect-changes.outputs.publish-zod == 'true'
+              working-directory: dist/packages/plugins/zod
+              run: npm publish --tag ${{ steps.tag.outputs.prerelease_tag }} --access public
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Comment on PR with prerelease info
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const publishNgOpenapi = '${{ needs.detect-changes.outputs.publish-ng-openapi }}' === 'true';
-            const publishHttpResource = '${{ needs.detect-changes.outputs.publish-http-resource }}' === 'true';
-            const publishZod = '${{ needs.detect-changes.outputs.publish-zod }}' === 'true';
-            const tag = '${{ steps.tag.outputs.prerelease_tag }}';
+            - name: Comment on PR with prerelease info
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const publishNgOpenapi = '${{ needs.detect-changes.outputs.publish-ng-openapi }}' === 'true';
+                      const publishHttpResource = '${{ needs.detect-changes.outputs.publish-http-resource }}' === 'true';
+                      const publishZod = '${{ needs.detect-changes.outputs.publish-zod }}' === 'true';
+                      const tag = '${{ steps.tag.outputs.prerelease_tag }}';
 
-            let comment = `## 🚀 PR Prerelease Published\n\n**NPM tag**: \`${tag}\`\n\n`;
+                      let comment = `## 🚀 PR Prerelease Published\n\n**NPM tag**: \`${tag}\`\n\n`;
 
-            if (publishNgOpenapi) {
-              comment += `### 📦 ng-openapi\n\`\`\`bash\nnpm install ng-openapi@${{ steps.version-ng-openapi.outputs.version }} --save-dev\n\`\`\`\n\n`;
-            }
-            if (publishHttpResource) {
-              comment += `### 📦 @ng-openapi/http-resource\n\`\`\`bash\nnpm install @ng-openapi/http-resource@${{ steps.version-http-resource.outputs.version }}\n\`\`\`\n\n`;
-            }
-            if (publishZod) {
-              comment += `### 📦 @ng-openapi/zod\n\`\`\`bash\nnpm install @ng-openapi/zod@${{ steps.version-zod.outputs.version }}\n\`\`\`\n\n`;
-            }
+                      if (publishNgOpenapi) {
+                        comment += `### 📦 ng-openapi\n\`\`\`bash\nnpm install ng-openapi@${{ steps.version-ng-openapi.outputs.version }} --save-dev\n\`\`\`\n\n`;
+                      }
+                      if (publishHttpResource) {
+                        comment += `### 📦 @ng-openapi/http-resource\n\`\`\`bash\nnpm install @ng-openapi/http-resource@${{ steps.version-http-resource.outputs.version }}\n\`\`\`\n\n`;
+                      }
+                      if (publishZod) {
+                        comment += `### 📦 @ng-openapi/zod\n\`\`\`bash\nnpm install @ng-openapi/zod@${{ steps.version-zod.outputs.version }}\n\`\`\`\n\n`;
+                      }
 
-            comment += `> These prereleases are unique to commit \`${{ github.event.pull_request.head.sha }}\`. The actual release will happen when the [Release PR](https://github.com/${{ github.repository }}/pulls?q=is%3Apr+is%3Aopen+label%3A%22autorelease%3A+pending%22) is merged.`;
+                      comment += `> These prereleases are unique to commit \`${{ github.event.pull_request.head.sha }}\`. The actual release will happen when the [Release PR](https://github.com/${{ github.repository }}/pulls?q=is%3Apr+is%3Aopen+label%3A%22autorelease%3A+pending%22) is merged.`;
 
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
+                      github.rest.issues.createComment({
+                        issue_number: context.issue.number,
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        body: comment
+                      });
 
-  notify-skipped:
-    runs-on: ubuntu-latest
-    needs: [detect-changes, check-permissions]
-    if: |
-      needs.check-permissions.outputs.is-maintainer != 'true' && (
-        needs.detect-changes.outputs.publish-ng-openapi == 'true' ||
-        needs.detect-changes.outputs.publish-http-resource == 'true' ||
-        needs.detect-changes.outputs.publish-zod == 'true'
-      )
-    steps:
-      - name: Comment on PR if not maintainer
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const comment = `## ⚠️ PR Prerelease Skipped\n\nThis PR was not published to NPM because the author does not have maintainer permissions. Only repository maintainers (with write, maintain, or admin access) can trigger automatic PR prereleases.`;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
+    notify-skipped:
+        runs-on: ubuntu-latest
+        needs: [detect-changes, check-permissions]
+        if: |
+            needs.check-permissions.outputs.is-maintainer != 'true' && (
+              needs.detect-changes.outputs.publish-ng-openapi == 'true' ||
+              needs.detect-changes.outputs.publish-http-resource == 'true' ||
+              needs.detect-changes.outputs.publish-zod == 'true'
+            )
+        steps:
+            - name: Comment on PR if not maintainer
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const comment = `## ⚠️ PR Prerelease Skipped\n\nThis PR was not published to NPM because the author does not have maintainer permissions. Only repository maintainers (with write, maintain, or admin access) can trigger automatic PR prereleases.`;
+                      github.rest.issues.createComment({
+                        issue_number: context.issue.number,
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        body: comment
+                      });

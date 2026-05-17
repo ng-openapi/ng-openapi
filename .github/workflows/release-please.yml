@@ -1,76 +1,76 @@
 name: Release Please
 
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+    push:
+        branches: [main]
+    workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+    contents: write
+    pull-requests: write
 
 jobs:
-  release-please:
-    name: Open / update release PR
-    runs-on: ubuntu-latest
-    outputs:
-      ng-openapi-released: ${{ steps.rp.outputs['ng-openapi--release_created'] }}
-      http-resource-released: ${{ steps.rp.outputs['http-resource--release_created'] }}
-      zod-released: ${{ steps.rp.outputs['zod--release_created'] }}
-    steps:
-      - uses: googleapis/release-please-action@v4
-        id: rp
-        with:
-          target-branch: main
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
+    release-please:
+        name: Open / update release PR
+        runs-on: ubuntu-latest
+        outputs:
+            ng-openapi-released: ${{ steps.rp.outputs['ng-openapi--release_created'] }}
+            http-resource-released: ${{ steps.rp.outputs['http-resource--release_created'] }}
+            zod-released: ${{ steps.rp.outputs['zod--release_created'] }}
+        steps:
+            - uses: googleapis/release-please-action@v4
+              id: rp
+              with:
+                  target-branch: main
+                  config-file: release-please-config.json
+                  manifest-file: .release-please-manifest.json
 
-  # The jobs below auto-trigger publish.yml for each package that got a release
-  # in this run. We use `gh workflow run` (workflow_dispatch) rather than the
-  # tag-push trigger because tag pushes from the default GITHUB_TOKEN cannot
-  # start new workflows (GitHub's anti-recursion rule). workflow_dispatch and
-  # repository_dispatch are the two exceptions.
-  publish-ng-openapi:
-    name: Publish ng-openapi
-    needs: release-please
-    if: needs.release-please.outputs.ng-openapi-released == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-      contents: read
-    steps:
-      - name: Trigger publish.yml
-        run: gh workflow run publish.yml -f package=ng-openapi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
+    # The jobs below auto-trigger publish.yml for each package that got a release
+    # in this run. We use `gh workflow run` (workflow_dispatch) rather than the
+    # tag-push trigger because tag pushes from the default GITHUB_TOKEN cannot
+    # start new workflows (GitHub's anti-recursion rule). workflow_dispatch and
+    # repository_dispatch are the two exceptions.
+    publish-ng-openapi:
+        name: Publish ng-openapi
+        needs: release-please
+        if: needs.release-please.outputs.ng-openapi-released == 'true'
+        runs-on: ubuntu-latest
+        permissions:
+            actions: write
+            contents: read
+        steps:
+            - name: Trigger publish.yml
+              run: gh workflow run publish.yml -f package=ng-openapi
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  GH_REPO: ${{ github.repository }}
 
-  publish-http-resource:
-    name: Publish @ng-openapi/http-resource
-    needs: release-please
-    if: needs.release-please.outputs.http-resource-released == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-      contents: read
-    steps:
-      - name: Trigger publish.yml
-        run: gh workflow run publish.yml -f package=http-resource
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
+    publish-http-resource:
+        name: Publish @ng-openapi/http-resource
+        needs: release-please
+        if: needs.release-please.outputs.http-resource-released == 'true'
+        runs-on: ubuntu-latest
+        permissions:
+            actions: write
+            contents: read
+        steps:
+            - name: Trigger publish.yml
+              run: gh workflow run publish.yml -f package=http-resource
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  GH_REPO: ${{ github.repository }}
 
-  publish-zod:
-    name: Publish @ng-openapi/zod
-    needs: release-please
-    if: needs.release-please.outputs.zod-released == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-      contents: read
-    steps:
-      - name: Trigger publish.yml
-        run: gh workflow run publish.yml -f package=zod
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
+    publish-zod:
+        name: Publish @ng-openapi/zod
+        needs: release-please
+        if: needs.release-please.outputs.zod-released == 'true'
+        runs-on: ubuntu-latest
+        permissions:
+            actions: write
+            contents: read
+        steps:
+            - name: Trigger publish.yml
+              run: gh workflow run publish.yml -f package=zod
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  GH_REPO: ${{ github.repository }}

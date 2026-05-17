@@ -3,8 +3,8 @@ title: Plugins
 ---
 
 # `plugins`
-**Type:** `IPluginGenerator[]` | **Default: `undefined`**
 
+**Type:** `IPluginGenerator[]` | **Default: `undefined`**
 
 ## Usage
 
@@ -21,8 +21,10 @@ export default {
 ```
 
 ## Available Plugins
+
 - [HttpResourcePlugin](./plugins/http-resource.md)
 - [ZodPlugin](./plugins/zod.md) (Beta)
 
 ## Notes
+
 - This might become a public API in the future, allowing third-party plugins to be added

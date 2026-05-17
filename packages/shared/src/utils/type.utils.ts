@@ -14,7 +14,7 @@ export function getTypeScriptType(
     config: GeneratorConfig,
     formatOrNullable?: string | boolean,
     isNullable?: boolean,
-    context: "type" | "service" = "type"
+    context: "type" | "service" = "type",
 ): string {
     // Handle the two different call signatures
     let schema: TypeSchema;

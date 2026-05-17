@@ -93,7 +93,7 @@ export class ProviderGenerator {
         sourceFile: any,
         basePathTokenName: string,
         interceptorsTokenName: string,
-        baseInterceptorClassName: string
+        baseInterceptorClassName: string,
     ): void {
         const hasDateInterceptor = this.config.options.dateType === "Date";
         const functionName = `provide${this.capitalizeFirst(this.clientName)}Client`;

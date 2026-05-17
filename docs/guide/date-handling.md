@@ -13,9 +13,9 @@ Work with automatic date transformation features in ng-openapi.
 ```typescript
 // openapi.config.ts
 const config: GeneratorConfig = {
-  options: {
-    dateType: 'Date' // Enables automatic transformation
-  }
+    options: {
+        dateType: "Date", // Enables automatic transformation
+    },
 };
 ```
 
@@ -24,10 +24,10 @@ const config: GeneratorConfig = {
 ```typescript
 // Generated interface with Date type
 interface User {
-  id: number;
-  name: string;
-  createdAt: Date; // Automatically transformed from ISO string
-  updatedAt: Date;
+    id: number;
+    name: string;
+    createdAt: Date; // Automatically transformed from ISO string
+    updatedAt: Date;
 }
 ```
 
@@ -35,15 +35,15 @@ interface User {
 
 ```typescript
 export class UsersComponent {
-  private readonly usersService = inject(UsersService);
+    private readonly usersService = inject(UsersService);
 
-  loadUser(id: number) {
-    this.usersService.getUserById(id).subscribe(user => {
-      // createdAt is already a Date object
-      console.log(user.createdAt.getFullYear());
-      console.log(user.createdAt.toLocaleDateString());
-    });
-  }
+    loadUser(id: number) {
+        this.usersService.getUserById(id).subscribe((user) => {
+            // createdAt is already a Date object
+            console.log(user.createdAt.getFullYear());
+            console.log(user.createdAt.toLocaleDateString());
+        });
+    }
 }
 ```
 
@@ -54,9 +54,9 @@ export class UsersComponent {
 ```typescript
 // openapi.config.ts
 const config: GeneratorConfig = {
-  options: {
-    dateType: 'string' // No transformation
-  }
+    options: {
+        dateType: "string", // No transformation
+    },
 };
 ```
 
@@ -65,10 +65,10 @@ const config: GeneratorConfig = {
 ```typescript
 // Generated interface with string type
 interface User {
-  id: number;
-  name: string;
-  createdAt: string; // ISO string format
-  updatedAt: string;
+    id: number;
+    name: string;
+    createdAt: string; // ISO string format
+    updatedAt: string;
 }
 ```
 
@@ -76,13 +76,13 @@ interface User {
 
 ```typescript
 export class UsersComponent {
-  loadUser(id: number) {
-    this.usersService.getUserById(id).subscribe(user => {
-      // Convert manually when needed
-      const createdDate = new Date(user.createdAt);
-      console.log(createdDate.getFullYear());
-    });
-  }
+    loadUser(id: number) {
+        this.usersService.getUserById(id).subscribe((user) => {
+            // Convert manually when needed
+            const createdDate = new Date(user.createdAt);
+            console.log(createdDate.getFullYear());
+        });
+    }
 }
 ```
 
@@ -93,21 +93,19 @@ export class UsersComponent {
 ```typescript
 // Disable in provider
 provideNgOpenapi({
-  basePath: 'https://api.example.com',
-  enableDateTransform: false
-})
+    basePath: "https://api.example.com",
+    enableDateTransform: false,
+});
 ```
 
 ### Manual Setup
 
 ```typescript
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { DateInterceptor } from './client/utils/date-transformer';
+import { provideHttpClient, withInterceptors } from "@angular/common/http";
+import { DateInterceptor } from "./client/utils/date-transformer";
 
 export const appConfig: ApplicationConfig = {
-  providers: [
-    provideHttpClient(withInterceptors([DateInterceptor]))
-  ]
+    providers: [provideHttpClient(withInterceptors([DateInterceptor]))],
 };
 ```
 
@@ -120,6 +118,7 @@ export const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$
 ```
 
 Matches formats like:
+
 - `2024-01-15T10:30:00Z`
 - `2024-01-15T10:30:00.123Z`
 - `2024-01-15T10:30:00`

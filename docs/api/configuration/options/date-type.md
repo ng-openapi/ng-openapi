@@ -27,24 +27,26 @@ export default config;
 ## Supported Options
 
 ### `'Date'` (Default)
+
 Generates date objects with [automatic transformation](../../utilities/date-transformer.md) for date and datetime fields.
 
 ```typescript
 interface Event {
-  id: number;
-  name: string;
-  date: Date; // Automatically transformed to Date object
+    id: number;
+    name: string;
+    date: Date; // Automatically transformed to Date object
 }
 ```
 
 ### `'string'`
+
 Generates string types for date and datetime fields without any transformation.
 
 ```typescript
 interface Event {
-  id: number;
-  name: string;
-  date: string; // No transformation, just a string
+    id: number;
+    name: string;
+    date: string; // No transformation, just a string
 }
 ```
 

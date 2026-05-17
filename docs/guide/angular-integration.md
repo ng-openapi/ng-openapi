@@ -11,47 +11,47 @@ Configure ng-openapi providers and services in your Angular application.
 ### Configure Providers
 
 ```typescript
-import { ApplicationConfig } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
-import { provideNgOpenapi } from './client/providers';
+import { ApplicationConfig } from "@angular/core";
+import { provideHttpClient } from "@angular/common/http";
+import { provideNgOpenapi } from "./client/providers";
 
 export const appConfig: ApplicationConfig = {
-  providers: [
-    provideHttpClient(),
-    provideNgOpenapi({
-      basePath: 'https://api.example.com'
-    })
-  ]
+    providers: [
+        provideHttpClient(),
+        provideNgOpenapi({
+            basePath: "https://api.example.com",
+        }),
+    ],
 };
 ```
 
 ### Inject Services
 
 ```typescript
-import { Component, inject } from '@angular/core';
-import { UsersService } from './client/services';
+import { Component, inject } from "@angular/core";
+import { UsersService } from "./client/services";
 
 @Component({
-  selector: 'app-users',
-  template: `<!-- template -->`
+    selector: "app-users",
+    template: `<!-- template -->`,
 })
 export class UsersComponent {
-  private readonly usersService = inject(UsersService);
+    private readonly usersService = inject(UsersService);
 }
 ```
 
 ## Environment Configuration
 
 ```typescript
-import { provideNgOpenapi } from './client/providers';
-import { environment } from './environments/environment';
+import { provideNgOpenapi } from "./client/providers";
+import { environment } from "./environments/environment";
 
 export const appConfig: ApplicationConfig = {
-  providers: [
-    provideNgOpenapi({
-      basePath: environment.apiUrl
-    })
-  ]
+    providers: [
+        provideNgOpenapi({
+            basePath: environment.apiUrl,
+        }),
+    ],
 };
 ```
 
@@ -59,20 +59,18 @@ export const appConfig: ApplicationConfig = {
 
 ```typescript
 provideNgOpenapi({
-  basePath: 'https://api.example.com',
-  enableDateTransform: false
-})
+    basePath: "https://api.example.com",
+    enableDateTransform: false,
+});
 ```
 
 ## Manual Configuration
 
 ```typescript
-import { BASE_PATH } from './client/tokens';
+import { BASE_PATH } from "./client/tokens";
 
 export const appConfig: ApplicationConfig = {
-  providers: [
-    { provide: BASE_PATH, useValue: 'https://api.example.com' }
-  ]
+    providers: [{ provide: BASE_PATH, useValue: "https://api.example.com" }],
 };
 ```
 

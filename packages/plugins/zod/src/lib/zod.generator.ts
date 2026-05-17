@@ -38,7 +38,7 @@ export class ZodGenerator implements IPluginGenerator {
             throw new Error(
                 `Invalid or unsupported specification format. ` +
                     `Expected OpenAPI 3.x or Swagger 2.x. ` +
-                    `${versionInfo ? `Found: ${versionInfo.type} ${versionInfo.version}` : "No version info found"}`
+                    `${versionInfo ? `Found: ${versionInfo.type} ${versionInfo.version}` : "No version info found"}`,
             );
         }
 
@@ -60,7 +60,7 @@ export class ZodGenerator implements IPluginGenerator {
         await Promise.all(
             Object.entries(controllerGroups).map(([validatorName, operations]) => {
                 return this.generateValidatorFile(validatorName, operations, outputDir);
-            })
+            }),
         );
 
         this.indexGenerator.generateIndex(outputRoot);
@@ -171,7 +171,7 @@ export class ZodGenerator implements IPluginGenerator {
             const validator = await this.schemaGenerator.generateParametersValidator(
                 pathParams,
                 operationName,
-                "Params"
+                "Params",
             );
             if (validator) {
                 statements.push(validator);
@@ -183,7 +183,7 @@ export class ZodGenerator implements IPluginGenerator {
             const validator = await this.schemaGenerator.generateParametersValidator(
                 queryParams,
                 operationName,
-                "QueryParams"
+                "QueryParams",
             );
             if (validator) {
                 statements.push(validator);
@@ -195,7 +195,7 @@ export class ZodGenerator implements IPluginGenerator {
             const validator = await this.schemaGenerator.generateParametersValidator(
                 headerParams,
                 operationName,
-                "Headers"
+                "Headers",
             );
             if (validator) {
                 statements.push(validator);

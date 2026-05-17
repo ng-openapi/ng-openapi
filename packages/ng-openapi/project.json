@@ -1,33 +1,29 @@
 {
-  "name": "ng-openapi",
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "packages/ng-openapi/src",
-  "projectType": "library",
-  "release": {
-    "version": {
-      "manifestRootsToUpdate": [
-        "dist/{projectRoot}"
-      ],
-      "currentVersionResolver": "git-tag",
-      "fallbackCurrentVersionResolver": "disk"
-    }
-  },
-  "tags": [],
-  "targets": {
-    "nx-release-publish": {
-      "options": {
-        "packageRoot": "dist/{projectRoot}"
-      }
+    "name": "ng-openapi",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "sourceRoot": "packages/ng-openapi/src",
+    "projectType": "library",
+    "release": {
+        "version": {
+            "manifestRootsToUpdate": ["dist/{projectRoot}"],
+            "currentVersionResolver": "git-tag",
+            "fallbackCurrentVersionResolver": "disk"
+        }
     },
-    "build": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "npx tsup",
-        "cwd": "packages/ng-openapi"
-      },
-      "outputs": [
-        "{workspaceRoot}/dist/packages/ng-openapi"
-      ]
+    "tags": [],
+    "targets": {
+        "nx-release-publish": {
+            "options": {
+                "packageRoot": "dist/{projectRoot}"
+            }
+        },
+        "build": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npx tsup",
+                "cwd": "packages/ng-openapi"
+            },
+            "outputs": ["{workspaceRoot}/dist/packages/ng-openapi"]
+        }
     }
-  }
 }

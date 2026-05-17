@@ -40,7 +40,7 @@ export class HttpResourceMethodGenerator {
         if (this.config.options.customizeMethodName) {
             if (operation.operationId == null) {
                 throw new Error(
-                    `Operation ID is required for method name customization of operation: (${operation.method}) ${operation.path}`
+                    `Operation ID is required for method name customization of operation: (${operation.method}) ${operation.path}`,
                 );
             }
             return this.config.options.customizeMethodName(operation.operationId);
@@ -75,7 +75,7 @@ export class HttpResourceMethodGenerator {
     }
 
     generateMethodOverload(
-        methodParams: OptionalKind<ParameterDeclarationStructure>[]
+        methodParams: OptionalKind<ParameterDeclarationStructure>[],
     ): OptionalKind<MethodDeclarationOverloadStructure>[] {
         const _methodParams = structuredClone(methodParams);
         const params = _methodParams.slice(0, -2).map((p) => {

@@ -12,12 +12,12 @@ Integrate ng-openapi into your development.
 
 ```json
 {
-  "scripts": {
-    "generate:client": "ng-openapi -c openapi.config.ts",
-    "dev": "npm run generate:client && ng serve",
-    "build": "npm run generate:client && ng build",
-    "generate:watch": "nodemon --watch swagger.json --exec 'npm run generate:client'"
-  }
+    "scripts": {
+        "generate:client": "ng-openapi -c openapi.config.ts",
+        "dev": "npm run generate:client && ng serve",
+        "build": "npm run generate:client && ng build",
+        "generate:watch": "nodemon --watch swagger.json --exec 'npm run generate:client'"
+    }
 }
 ```
 
@@ -25,10 +25,10 @@ Integrate ng-openapi into your development.
 
 ```json
 {
-  "scripts": {
-    "prebuild": "npm run generate:client",
-    "build": "ng build"
-  }
+    "scripts": {
+        "prebuild": "npm run generate:client",
+        "build": "ng build"
+    }
 }
 ```
 
@@ -44,14 +44,15 @@ ng-openapi -c openapi.config.ts
 
 ```json
 {
-  "scripts": {
-    "fetch:spec": "curl https://api.example.com/swagger.json > swagger.json",
-    "generate:client": "npm run fetch:spec && ng-openapi -c openapi.config.ts"
-  }
+    "scripts": {
+        "fetch:spec": "curl https://api.example.com/swagger.json > swagger.json",
+        "generate:client": "npm run fetch:spec && ng-openapi -c openapi.config.ts"
+    }
 }
 ```
 
 ### Generated Code Structure
+
 ```
 src/client/
 ├── models/

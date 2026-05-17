@@ -1,50 +1,50 @@
 name: Semantic PR title
 
 on:
-  pull_request_target:
-    types:
-      - opened
-      - edited
-      - synchronize
-      - reopened
+    pull_request_target:
+        types:
+            - opened
+            - edited
+            - synchronize
+            - reopened
 
 permissions:
-  pull-requests: write
-  issues: write
-  contents: read
-  statuses: write
+    pull-requests: write
+    issues: write
+    contents: read
+    statuses: write
 
 jobs:
-  validate:
-    name: Validate PR title is conventional
-    runs-on: ubuntu-latest
-    steps:
-      - uses: amannn/action-semantic-pull-request@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          # Keep this list aligned with `changelog-sections` in release-please-config.json.
-          types: |
-            feat
-            fix
-            perf
-            deps
-            revert
-            docs
-            refactor
-            test
-            build
-            ci
-            chore
-            style
-          # Scope is optional but must be lowercase if present. Adjust as the
-          # project grows; an empty list allows any scope.
-          requireScope: false
-          # Subject must start lowercase (matches commit-style); enforces
-          # "fix: handle undefined" not "Fix: Handle undefined".
-          subjectPattern: ^(?![A-Z]).+$
-          subjectPatternError: |
-            The subject "{subject}" should start lowercase. Example:
-              fix(file-download.generator): handle undefined under strict typings
-          # Re-uses the comment slot rather than spamming new ones on every edit.
-          wip: true
+    validate:
+        name: Validate PR title is conventional
+        runs-on: ubuntu-latest
+        steps:
+            - uses: amannn/action-semantic-pull-request@v5
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  # Keep this list aligned with `changelog-sections` in release-please-config.json.
+                  types: |
+                      feat
+                      fix
+                      perf
+                      deps
+                      revert
+                      docs
+                      refactor
+                      test
+                      build
+                      ci
+                      chore
+                      style
+                  # Scope is optional but must be lowercase if present. Adjust as the
+                  # project grows; an empty list allows any scope.
+                  requireScope: false
+                  # Subject must start lowercase (matches commit-style); enforces
+                  # "fix: handle undefined" not "Fix: Handle undefined".
+                  subjectPattern: ^(?![A-Z]).+$
+                  subjectPatternError: |
+                      The subject "{subject}" should start lowercase. Example:
+                        fix(file-download.generator): handle undefined under strict typings
+                  # Re-uses the comment slot rather than spamming new ones on every edit.
+                  wip: true

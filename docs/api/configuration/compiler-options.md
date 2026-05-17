@@ -31,10 +31,10 @@ export default config;
 
 ```typescript
 type CompilerOptions = {
-  declaration?: boolean;
-  target?: ScriptTarget;
-  module?: ModuleKind;
-  strict?: boolean;
+    declaration?: boolean;
+    target?: ScriptTarget;
+    module?: ModuleKind;
+    strict?: boolean;
 };
 ```
 

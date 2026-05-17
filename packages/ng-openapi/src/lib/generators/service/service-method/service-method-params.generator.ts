@@ -97,7 +97,7 @@ export class ServiceMethodParamsGenerator {
     }
 
     addOptionsParameter(
-        params: OptionalKind<ParameterDeclarationStructure>[]
+        params: OptionalKind<ParameterDeclarationStructure>[],
     ): OptionalKind<ParameterDeclarationStructure>[] {
         return [
             {

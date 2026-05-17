@@ -19,6 +19,7 @@ Configure ng-openapi providers and services in your Angular application.
 ## Features
 
 ### [HTTP Resource Plugin](./http-resource.md)
+
 Generate Angular services using the experimental `httpResource` API.
 
 ### [Multiple Clients](./multiple-clients.md)

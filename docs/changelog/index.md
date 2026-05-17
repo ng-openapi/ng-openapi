@@ -11,6 +11,7 @@ and is released automatically by
 [release-please](https://github.com/googleapis/release-please).
 
 Versions stay on `0.x` until the first major release. Under that policy:
+
 - Breaking changes bump the **minor** version (e.g. `0.2.18 → 0.3.0`).
 - New features and bug fixes bump the **patch** version (e.g. `0.2.18 → 0.2.19`).
 

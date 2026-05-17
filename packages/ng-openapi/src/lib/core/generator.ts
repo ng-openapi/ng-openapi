@@ -1,5 +1,5 @@
-import { ModuleKind, Project, ScriptTarget } from 'ts-morph';
-import { TypeGenerator } from '../generators';
+import { ModuleKind, Project, ScriptTarget } from "ts-morph";
+import { TypeGenerator } from "../generators";
 import {
     BaseInterceptorGenerator,
     DateTransformerGenerator,
@@ -7,13 +7,13 @@ import {
     HttpParamsBuilderGenerator,
     MainIndexGenerator,
     ProviderGenerator,
-    TokenGenerator
-} from '../generators/utility';
-import { ServiceGenerator, ServiceIndexGenerator } from '../generators/service';
-import { GeneratorConfig, IPluginGeneratorClass, SwaggerParser } from '@ng-openapi/shared';
-import * as fs from 'fs';
-import * as path from 'path';
-import { isUrl } from '@ng-openapi/shared/src/utils/functions/is-url';
+    TokenGenerator,
+} from "../generators/utility";
+import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
+import { GeneratorConfig, IPluginGeneratorClass, SwaggerParser } from "@ng-openapi/shared";
+import * as fs from "fs";
+import * as path from "path";
+import { isUrl } from "@ng-openapi/shared/src/utils/functions/is-url";
 
 /**
  * Validates input (file or URL)
@@ -33,7 +33,7 @@ export function validateInput(inputPath: string): void {
 
     if (!supportedExtensions.includes(extension)) {
         throw new Error(
-            `Failed to parse ${extension || "specification"}. Supported formats are .json, .yaml, and .yml.`
+            `Failed to parse ${extension || "specification"}. Supported formats are .json, .yaml, and .yml.`,
         );
     }
 }
@@ -136,7 +136,7 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
             // Provide helpful hints for common URL-related errors
             if (error.message.includes("fetch") || error.message.includes("Failed to fetch")) {
                 console.error(
-                    "💡 Tip: Make sure the URL is accessible and returns a valid OpenAPI/Swagger specification"
+                    "💡 Tip: Make sure the URL is accessible and returns a valid OpenAPI/Swagger specification",
                 );
                 console.error("💡 Alternative: Download the specification file locally and use the file path instead");
             }

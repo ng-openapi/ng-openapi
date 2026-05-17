@@ -40,7 +40,7 @@ export class ZodSchemaGenerator {
                     required: param.required || false,
                     coerce: this.shouldCoerce(param.in as "path" | "query" | "header"),
                     strict: this.isStrict(param.in as "path" | "query" | "header"),
-                }
+                },
             );
 
             properties[param.name] = zodSchema;
