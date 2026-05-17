@@ -16,6 +16,11 @@ on:
           - ng-openapi
           - http-resource
           - zod
+      prerelease_tag:
+        description: 'Prerelease dist-tag. When set, bumps the package version with this preid and publishes under this dist-tag instead of "latest".'
+        required: false
+        default: ''
+        type: string
       dry_run:
         description: 'Dry run (build only, do not publish)'
         required: false
@@ -121,6 +126,14 @@ jobs:
           echo "🔨 Building ${{ steps.pkg.outputs.npm_name }}..."
           npx nx run ${{ steps.pkg.outputs.nx_target }}
 
+      - name: Bump prerelease version
+        if: github.event.inputs.prerelease_tag != ''
+        working-directory: ${{ steps.pkg.outputs.src_dir }}
+        run: |
+          npm version prerelease --preid="${{ github.event.inputs.prerelease_tag }}" --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "🔖 Bumped to prerelease version: $NEW_VERSION"
+
       - name: Copy source package.json into dist
         run: |
           cp ${{ steps.pkg.outputs.src_dir }}/package.json ${{ steps.pkg.outputs.dist_dir }}/package.json
@@ -132,8 +145,9 @@ jobs:
         working-directory: ${{ steps.pkg.outputs.dist_dir }}
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          echo "📦 Publishing ${{ steps.pkg.outputs.npm_name }}@$VERSION"
-          npm publish --tag latest --access public
+          DIST_TAG="${{ github.event.inputs.prerelease_tag != '' && github.event.inputs.prerelease_tag || 'latest' }}"
+          echo "📦 Publishing ${{ steps.pkg.outputs.npm_name }}@$VERSION with dist-tag '$DIST_TAG'"
+          npm publish --tag "$DIST_TAG" --access public
           echo "✅ Published ${{ steps.pkg.outputs.npm_name }}@$VERSION"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

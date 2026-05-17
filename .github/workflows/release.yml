@@ -104,34 +104,11 @@ jobs:
         needs.detect-changes.outputs.publish-http-resource == 'true' ||
         needs.detect-changes.outputs.publish-zod == 'true'
       )
+    permissions:
+      actions: write
+      pull-requests: write
+      contents: read
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build ng-openapi
-        if: needs.detect-changes.outputs.publish-ng-openapi == 'true'
-        run: npx nx run ng-openapi:build
-
-      - name: Build http-resource
-        if: needs.detect-changes.outputs.publish-http-resource == 'true'
-        run: npx nx run http-resource:build
-
-      - name: Build zod
-        if: needs.detect-changes.outputs.publish-zod == 'true'
-        run: npx nx run zod:build
-
       - name: Compute prerelease tag
         id: tag
         run: |
@@ -144,65 +121,30 @@ jobs:
           echo "prerelease_tag=$PRERELEASE_TAG" >> "$GITHUB_OUTPUT"
           echo "Prerelease tag: $PRERELEASE_TAG"
 
-      - name: Bump ng-openapi version
-        id: version-ng-openapi
+      # Build, version bump and `npm publish` are delegated to publish.yml.
+      # Passing `prerelease_tag` switches that workflow into prerelease mode:
+      # it bumps the version with this preid (no commit) and publishes under
+      # this dist-tag instead of `latest`.
+      - name: Trigger publish.yml for ng-openapi
         if: needs.detect-changes.outputs.publish-ng-openapi == 'true'
-        working-directory: packages/ng-openapi
-        run: |
-          npm version prerelease --preid="${{ steps.tag.outputs.prerelease_tag }}" --no-git-tag-version
-          NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+        run: gh workflow run publish.yml -f package=ng-openapi -f prerelease_tag=${{ steps.tag.outputs.prerelease_tag }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
 
-      - name: Bump http-resource version
-        id: version-http-resource
+      - name: Trigger publish.yml for http-resource
         if: needs.detect-changes.outputs.publish-http-resource == 'true'
-        working-directory: packages/plugins/http-resource
-        run: |
-          npm version prerelease --preid="${{ steps.tag.outputs.prerelease_tag }}" --no-git-tag-version
-          NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+        run: gh workflow run publish.yml -f package=http-resource -f prerelease_tag=${{ steps.tag.outputs.prerelease_tag }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
 
-      - name: Bump zod version
-        id: version-zod
+      - name: Trigger publish.yml for zod
         if: needs.detect-changes.outputs.publish-zod == 'true'
-        working-directory: packages/plugins/zod
-        run: |
-          npm version prerelease --preid="${{ steps.tag.outputs.prerelease_tag }}" --no-git-tag-version
-          NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Copy updated package.json files to dist
-        run: |
-          if [[ "${{ needs.detect-changes.outputs.publish-ng-openapi }}" == "true" ]]; then
-            cp packages/ng-openapi/package.json dist/packages/ng-openapi/package.json
-          fi
-          if [[ "${{ needs.detect-changes.outputs.publish-http-resource }}" == "true" ]]; then
-            cp packages/plugins/http-resource/package.json dist/packages/plugins/http-resource/package.json
-          fi
-          if [[ "${{ needs.detect-changes.outputs.publish-zod }}" == "true" ]]; then
-            cp packages/plugins/zod/package.json dist/packages/plugins/zod/package.json
-          fi
-
-      - name: Publish ng-openapi
-        if: needs.detect-changes.outputs.publish-ng-openapi == 'true'
-        working-directory: dist/packages/ng-openapi
-        run: npm publish --tag ${{ steps.tag.outputs.prerelease_tag }} --access public
+        run: gh workflow run publish.yml -f package=zod -f prerelease_tag=${{ steps.tag.outputs.prerelease_tag }}
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish http-resource
-        if: needs.detect-changes.outputs.publish-http-resource == 'true'
-        working-directory: dist/packages/plugins/http-resource
-        run: npm publish --tag ${{ steps.tag.outputs.prerelease_tag }} --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish zod
-        if: needs.detect-changes.outputs.publish-zod == 'true'
-        working-directory: dist/packages/plugins/zod
-        run: npm publish --tag ${{ steps.tag.outputs.prerelease_tag }} --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
 
       - name: Comment on PR with prerelease info
         uses: actions/github-script@v7
@@ -212,17 +154,18 @@ jobs:
             const publishHttpResource = '${{ needs.detect-changes.outputs.publish-http-resource }}' === 'true';
             const publishZod = '${{ needs.detect-changes.outputs.publish-zod }}' === 'true';
             const tag = '${{ steps.tag.outputs.prerelease_tag }}';
+            const runsUrl = `https://github.com/${{ github.repository }}/actions/workflows/publish.yml`;
 
-            let comment = `## 🚀 PR Prerelease Published\n\n**NPM tag**: \`${tag}\`\n\n`;
+            let comment = `## 🚀 PR Prerelease Triggered\n\n**NPM dist-tag**: \`${tag}\`\n\nPublishing is handled by [publish.yml](${runsUrl}). Once it finishes, install with:\n\n`;
 
             if (publishNgOpenapi) {
-              comment += `### 📦 ng-openapi\n\`\`\`bash\nnpm install ng-openapi@${{ steps.version-ng-openapi.outputs.version }} --save-dev\n\`\`\`\n\n`;
+              comment += `### 📦 ng-openapi\n\`\`\`bash\nnpm install ng-openapi@${tag} --save-dev\n\`\`\`\n\n`;
             }
             if (publishHttpResource) {
-              comment += `### 📦 @ng-openapi/http-resource\n\`\`\`bash\nnpm install @ng-openapi/http-resource@${{ steps.version-http-resource.outputs.version }}\n\`\`\`\n\n`;
+              comment += `### 📦 @ng-openapi/http-resource\n\`\`\`bash\nnpm install @ng-openapi/http-resource@${tag}\n\`\`\`\n\n`;
             }
             if (publishZod) {
-              comment += `### 📦 @ng-openapi/zod\n\`\`\`bash\nnpm install @ng-openapi/zod@${{ steps.version-zod.outputs.version }}\n\`\`\`\n\n`;
+              comment += `### 📦 @ng-openapi/zod\n\`\`\`bash\nnpm install @ng-openapi/zod@${tag}\n\`\`\`\n\n`;
             }
 
             comment += `> These prereleases are unique to commit \`${{ github.event.pull_request.head.sha }}\`. The actual release will happen when the [Release PR](https://github.com/${{ github.repository }}/pulls?q=is%3Apr+is%3Aopen+label%3A%22autorelease%3A+pending%22) is merged.`;
