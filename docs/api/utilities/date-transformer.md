@@ -14,29 +14,37 @@ The interceptor will be applied automatically to your HTTP client, if you are us
 
 ### Manual Setup
 
-If you chose to configure the OpenAPI client [manually](../providers.md#manual-configuration) or want to add the Date Transformer interceptor separately, you can do so by applying the `DateInterceptor` to your HTTP client in your `app.config.ts`.
+If you chose to configure the OpenAPI client [manually](../providers.md#manual-configuration) or want to add the Date Transformer interceptor separately, you can do so by applying the functional `dateInterceptor` to your HTTP client in your `app.config.ts`.
 
 ```typescript
 import { ApplicationConfig } from "@angular/core";
 import { provideHttpClient, withInterceptors } from "@angular/common/http";
-import { DateInterceptor } from "./client/utils/date-transformer";
+import { dateInterceptor } from "./client/utils/date-transformer";
 
 export const appConfig: ApplicationConfig = {
     providers: [
-        provideHttpClient(withInterceptors([DateInterceptor])),
+        provideHttpClient(withInterceptors([dateInterceptor])),
         { provide: BASE_PATH, useValue: "https://api.example.com" },
     ],
 };
 ```
 
+The generated `DateInterceptor` class is still exported for class-based registration with `HTTP_INTERCEPTORS` and `withInterceptorsFromDi()`.
+
 ## Example Date Transformer
 
 ```typescript
 // client/utils/date-transformer.ts
-import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest, HttpResponse } from "@angular/common/http";
+import {
+    HttpEvent,
+    HttpHandler,
+    HttpInterceptor,
+    HttpInterceptorFn,
+    HttpRequest,
+    HttpResponse,
+} from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable } from "rxjs";
-import { map } from "rxjs/operators";
+import { Observable, map } from "rxjs";
 
 export const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
 
@@ -69,17 +77,19 @@ export function transformDates(obj: any): any {
     return obj;
 }
 
+function transformDateResponse(event: HttpEvent<any>): HttpEvent<any> {
+    if (event instanceof HttpResponse && event.body) {
+        return event.clone({ body: transformDates(event.body) });
+    }
+    return event;
+}
+
+export const dateInterceptor: HttpInterceptorFn = (req, next) => next(req).pipe(map(transformDateResponse));
+
 @Injectable()
 export class DateInterceptor implements HttpInterceptor {
     intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-        return next.handle(req).pipe(
-            map((event) => {
-                if (event instanceof HttpResponse && event.body) {
-                    return event.clone({ body: transformDates(event.body) });
-                }
-                return event;
-            }),
-        );
+        return next.handle(req).pipe(map(transformDateResponse));
     }
 }
 ```

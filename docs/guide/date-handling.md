@@ -102,10 +102,10 @@ provideNgOpenapi({
 
 ```typescript
 import { provideHttpClient, withInterceptors } from "@angular/common/http";
-import { DateInterceptor } from "./client/utils/date-transformer";
+import { dateInterceptor } from "./client/utils/date-transformer";
 
 export const appConfig: ApplicationConfig = {
-    providers: [provideHttpClient(withInterceptors([DateInterceptor]))],
+    providers: [provideHttpClient(withInterceptors([dateInterceptor]))],
 };
 ```
 
