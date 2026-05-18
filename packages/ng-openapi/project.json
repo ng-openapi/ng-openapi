@@ -24,6 +24,13 @@
                 "cwd": "packages/ng-openapi"
             },
             "outputs": ["{workspaceRoot}/dist/packages/ng-openapi"]
+        },
+        "test": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npx vitest run packages/ng-openapi",
+                "cwd": "{workspaceRoot}"
+            }
         }
     }
 }

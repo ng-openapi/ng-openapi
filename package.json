@@ -30,12 +30,16 @@
         "release:beta": "npm run version:beta && npm run publish:beta",
         "release:alpha": "npm run version:alpha && npm run publish:beta",
         "// Testing and validation": "",
+        "test": "vitest run",
+        "test:watch": "vitest",
         "test:install": "npm pack dist/packages/ng-openapi && npm install -g ng-openapi-*.tgz",
         "test:uninstall": "npm uninstall -g ng-openapi && rm -f ng-openapi-*.tgz",
         "validate:package": "cd dist/packages/ng-openapi && npm pack && tar -tzf *.tgz"
     },
     "private": true,
     "devDependencies": {
+        "@angular/common": "^21.2.13",
+        "@angular/core": "^21.2.13",
         "@eslint/js": "^9.8.0",
         "@nx/eslint": "22.7.2",
         "@nx/eslint-plugin": "22.7.2",
@@ -46,18 +50,22 @@
         "@swc/helpers": "~0.5.21",
         "@types/js-yaml": "^4.0.9",
         "@types/node": "^22.0.0",
+        "@vitest/coverage-v8": "^4.1.6",
         "eslint": "^9.8.0",
         "eslint-config-prettier": "^10.0.0",
         "jsonc-eslint-parser": "^2.1.0",
         "nx": "22.7.2",
         "prettier": "^3.0.0",
+        "rxjs": "^7.8.0",
         "swc-loader": "^0.2.7",
         "tslib": "^2.3.0",
         "tsup": "^8.5.0",
         "typescript": "~5.9.3",
         "typescript-eslint": "^8.29.0",
         "verdaccio": "^6.0.5",
-        "vitepress": "^1.6.3"
+        "vitepress": "^1.6.3",
+        "vitest": "^4.1.6",
+        "zod": "^4.4.3"
     },
     "workspaces": [
         "packages/*"

@@ -1,0 +1,10 @@
+{
+    "name": "@ng-openapi/testing",
+    "version": "0.0.0",
+    "description": "Internal test utilities for ng-openapi packages. Not published.",
+    "private": true,
+    "type": "module",
+    "main": "./src/index.ts",
+    "module": "./src/index.ts",
+    "types": "./src/index.ts"
+}
