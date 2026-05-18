@@ -30,6 +30,8 @@
         "release:beta": "npm run version:beta && npm run publish:beta",
         "release:alpha": "npm run version:alpha && npm run publish:beta",
         "// Testing and validation": "",
+        "test": "vitest run",
+        "test:watch": "vitest",
         "test:install": "npm pack dist/packages/ng-openapi && npm install -g ng-openapi-*.tgz",
         "test:uninstall": "npm uninstall -g ng-openapi && rm -f ng-openapi-*.tgz",
         "validate:package": "cd dist/packages/ng-openapi && npm pack && tar -tzf *.tgz"
@@ -46,6 +48,7 @@
         "@swc/helpers": "~0.5.21",
         "@types/js-yaml": "^4.0.9",
         "@types/node": "^22.0.0",
+        "@vitest/coverage-v8": "^4.1.6",
         "eslint": "^9.8.0",
         "eslint-config-prettier": "^10.0.0",
         "jsonc-eslint-parser": "^2.1.0",
@@ -57,7 +60,9 @@
         "typescript": "~5.9.3",
         "typescript-eslint": "^8.29.0",
         "verdaccio": "^6.0.5",
-        "vitepress": "^1.6.3"
+        "vitepress": "^1.6.3",
+        "vitest": "^4.1.6",
+        "zod": "^4.4.3"
     },
     "workspaces": [
         "packages/*"
