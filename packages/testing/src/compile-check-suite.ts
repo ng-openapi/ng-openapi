@@ -1,5 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { ModuleKind, ModuleResolutionKind, Project, ScriptTarget } from "ts-morph";
 import { afterAll, describe, expect, it } from "vitest";
@@ -16,6 +15,8 @@ type ConfigBuilder = (input: string, output: string) => GeneratorConfig;
 export function registerCompileCheckSuite(suiteName: string, buildConfig: ConfigBuilder): void {
     describe(suiteName, () => {
         const tempDirs: string[] = [];
+        const tmpRoot = join(process.cwd(), "node_modules", ".cache", "ng-openapi-tests");
+        mkdirSync(tmpRoot, { recursive: true });
 
         afterAll(() => {
             for (const dir of tempDirs) {
@@ -33,7 +34,7 @@ export function registerCompileCheckSuite(suiteName: string, buildConfig: Config
             it.skipIf(!specUrl)(
                 `generates compilable code from ${label} spec`,
                 async () => {
-                    const outputDir = mkdtempSync(join(tmpdir(), "ng-openapi-test-"));
+                    const outputDir = mkdtempSync(join(tmpRoot, "out-"));
                     tempDirs.push(outputDir);
 
                     await generateFromConfig(buildConfig(specUrl as string, outputDir));
