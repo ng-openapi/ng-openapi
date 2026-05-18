@@ -42,8 +42,7 @@ export function registerCompileCheckSuite(suiteName: string, buildConfig: Config
                     const project = new Project({
                         compilerOptions: {
                             target: ScriptTarget.ES2022,
-                            module: ModuleKind.ESNext,
-                            moduleResolution: ModuleResolutionKind.Bundler,
+                            module: ModuleKind.Preserve,
                             strict: true,
                             skipLibCheck: true,
                             lib: ["lib.es2022.d.ts", "lib.dom.d.ts"],
