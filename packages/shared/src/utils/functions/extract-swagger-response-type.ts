@@ -34,18 +34,10 @@ export function getResponseTypeFromResponse(
             continue;
         }
 
-        // Check schema format for binary indication
-        if (schema?.format === "binary" || schema?.format === "byte") {
-            responseTypes.push({
-                type: "blob",
-                priority: 2,
-                contentType,
-            });
-            continue;
-        }
+        const inferredType = inferResponseTypeFromContentType(contentType);
 
-        // Check if schema type indicates binary
-        if (schema?.type === "string" && (schema?.format === "binary" || schema?.format === "byte")) {
+        // Check schema format for binary indication
+        if (inferredType !== "text" && (schema?.format === "binary" || schema?.format === "byte")) {
             responseTypes.push({
                 type: "blob",
                 priority: 2,
@@ -56,7 +48,6 @@ export function getResponseTypeFromResponse(
 
         // Check if this is a primitive type in JSON format
         const isPrimitive = isPrimitiveType(schema);
-        const inferredType = inferResponseTypeFromContentType(contentType);
 
         let priority = 3; // default priority
         let finalType = inferredType;
