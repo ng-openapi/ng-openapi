@@ -114,13 +114,14 @@ export const appConfig: ApplicationConfig = {
 The date transformer uses this regex to identify date strings:
 
 ```typescript
-export const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
+export const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?$/;
 ```
 
 Matches formats like:
 
 - `2024-01-15T10:30:00Z`
 - `2024-01-15T10:30:00.123Z`
+- `2024-01-15T10:30:00.04` (any number of fractional-second digits)
 - `2024-01-15T10:30:00`
 
 ## Resources
