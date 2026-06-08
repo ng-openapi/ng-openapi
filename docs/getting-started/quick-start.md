@@ -52,12 +52,13 @@ Add the provider to your `app.config.ts`:
 
 ```typescript
 import { ApplicationConfig } from "@angular/core";
-import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClient, withInterceptors } from "@angular/common/http";
 import { provideNgOpenapi } from "./api/providers";
+import { defaultBaseInterceptor } from "./api/utils/base-interceptor";
 
 export const appConfig: ApplicationConfig = {
     providers: [
-        provideHttpClient(),
+        provideHttpClient(withInterceptors([defaultBaseInterceptor])),
         provideNgOpenapi({
             basePath: "https://api.example.com",
         }),

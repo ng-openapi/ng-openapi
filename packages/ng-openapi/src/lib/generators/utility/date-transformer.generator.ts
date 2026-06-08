@@ -16,7 +16,14 @@ export class DateTransformerGenerator {
 
         sourceFile.addImportDeclarations([
             {
-                namedImports: ["HttpEvent", "HttpHandler", "HttpInterceptor", "HttpRequest", "HttpResponse"],
+                namedImports: [
+                    "HttpEvent",
+                    "HttpHandler",
+                    "HttpInterceptor",
+                    "HttpInterceptorFn",
+                    "HttpRequest",
+                    "HttpResponse",
+                ],
                 moduleSpecifier: "@angular/common/http",
             },
             {
@@ -76,6 +83,29 @@ export class DateTransformerGenerator {
     return obj;`,
         });
 
+        sourceFile.addFunction({
+            name: "transformDateResponse",
+            parameters: [{ name: "event", type: "HttpEvent<any>" }],
+            returnType: "HttpEvent<any>",
+            statements: `
+    if (event instanceof HttpResponse && event.body) {
+        return event.clone({ body: transformDates(event.body) });
+    }
+    return event;`,
+        });
+
+        sourceFile.addVariableStatement({
+            isExported: true,
+            declarationKind: VariableDeclarationKind.Const,
+            declarations: [
+                {
+                    name: "dateInterceptor",
+                    type: "HttpInterceptorFn",
+                    initializer: `(req, next) => next(req).pipe(map(transformDateResponse))`,
+                },
+            ],
+        });
+
         // Add interceptor class
         sourceFile.addClass({
             name: "DateInterceptor",
@@ -96,14 +126,7 @@ export class DateTransformerGenerator {
                     ],
                     returnType: "Observable<HttpEvent<any>>",
                     statements: `
-    return next.handle(req).pipe(
-        map(event => {
-            if (event instanceof HttpResponse && event.body) {
-                return event.clone({ body: transformDates(event.body) });
-            }
-            return event;
-        })
-    );`,
+    return next.handle(req).pipe(map(transformDateResponse));`,
                 },
             ],
         });

@@ -62,13 +62,15 @@ Each client generates its own provider function based on the `clientName`:
 ```typescript
 // app.config.ts
 import { ApplicationConfig } from "@angular/core";
-import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClient, withInterceptors } from "@angular/common/http";
 import { provideUsersClient } from "./api/users/providers";
 import { provideOrdersClient } from "./api/orders/providers";
+import { usersBaseInterceptor } from "./api/users/utils/base-interceptor";
+import { ordersBaseInterceptor } from "./api/orders/utils/base-interceptor";
 
 export const appConfig: ApplicationConfig = {
     providers: [
-        provideHttpClient(),
+        provideHttpClient(withInterceptors([usersBaseInterceptor, ordersBaseInterceptor])),
         provideUsersClient({
             basePath: "https://users-api.example.com",
         }),
@@ -118,7 +120,7 @@ Configure interceptors per client:
 ```typescript
 export const appConfig: ApplicationConfig = {
     providers: [
-        provideHttpClient(),
+        provideHttpClient(withInterceptors([usersBaseInterceptor, ordersBaseInterceptor])),
         provideUsersClient({
             basePath: "https://users-api.example.com",
             interceptors: [AuthInterceptor], // Only for users API

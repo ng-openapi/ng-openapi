@@ -1,4 +1,4 @@
-import { Project, Scope } from "ts-morph";
+import { Project, Scope, VariableDeclarationKind } from "ts-morph";
 import * as path from "path";
 import {
     BASE_INTERCEPTOR_HEADER_COMMENT,
@@ -25,10 +25,18 @@ export class BaseInterceptorGenerator {
 
         const interceptorsTokenName = getInterceptorsTokenName(this.#clientName);
         const clientContextTokenName = getClientContextTokenName(this.#clientName);
+        const baseInterceptorFunctionName = `${this.lowercaseFirst(this.#clientName)}BaseInterceptor`;
 
         sourceFile.addImportDeclarations([
             {
-                namedImports: ["HttpContextToken", "HttpEvent", "HttpHandler", "HttpInterceptor", "HttpRequest"],
+                namedImports: [
+                    "HttpContextToken",
+                    "HttpEvent",
+                    "HttpHandler",
+                    "HttpInterceptor",
+                    "HttpInterceptorFn",
+                    "HttpRequest",
+                ],
                 moduleSpecifier: "@angular/common/http",
             },
             {
@@ -44,6 +52,50 @@ export class BaseInterceptorGenerator {
                 moduleSpecifier: "../tokens",
             },
         ]);
+
+        sourceFile.addFunction({
+            name: "interceptClientRequest",
+            parameters: [
+                { name: "req", type: "HttpRequest<any>" },
+                { name: "next", type: "HttpHandler" },
+                { name: "httpInterceptors", type: "HttpInterceptor[]" },
+                { name: "clientContextToken", type: "HttpContextToken<string>" },
+            ],
+            returnType: "Observable<HttpEvent<any>>",
+            statements: `
+    // Check if this request belongs to this client using HttpContext
+    if (!req.context.has(clientContextToken)) {
+      // This request doesn't belong to this client, pass it through
+      return next.handle(req);
+    }
+
+    // Apply client-specific interceptors in reverse order
+    const handler = httpInterceptors.reduceRight(
+      (next, interceptor) => ({
+        handle: (request: HttpRequest<any>) => interceptor.intercept(request, next)
+      }),
+      next
+    );
+
+    return handler.handle(req);`,
+        });
+
+        sourceFile.addVariableStatement({
+            isExported: true,
+            declarationKind: VariableDeclarationKind.Const,
+            declarations: [
+                {
+                    name: baseInterceptorFunctionName,
+                    type: "HttpInterceptorFn",
+                    initializer: `(req, next) => interceptClientRequest(
+  req,
+  { handle: next },
+  inject(${interceptorsTokenName}),
+  ${clientContextTokenName}
+)`,
+                },
+            ],
+        });
 
         sourceFile.addClass({
             name: `${this.capitalizeFirst(this.#clientName)}BaseInterceptor`,
@@ -80,23 +132,7 @@ export class BaseInterceptorGenerator {
                     ],
                     returnType: "Observable<HttpEvent<any>>",
                     statements: `
-    // Check if this request belongs to this client using HttpContext
-    if (!req.context.has(this.clientContextToken)) {
-      // This request doesn't belong to this client, pass it through
-      return next.handle(req);
-    }
-
-    // Apply client-specific interceptors in reverse order
-    let handler = next;
-
-    handler = this.httpInterceptors.reduceRight(
-      (next, interceptor) => ({
-        handle: (request: HttpRequest<any>) => interceptor.intercept(request, next)
-      }),
-      handler
-    );
-
-    return handler.handle(req);`,
+    return interceptClientRequest(req, next, this.httpInterceptors, this.clientContextToken);`,
                 },
             ],
         });
@@ -107,5 +143,9 @@ export class BaseInterceptorGenerator {
 
     private capitalizeFirst(str: string): string {
         return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    private lowercaseFirst(str: string): string {
+        return str.charAt(0).toLowerCase() + str.slice(1);
     }
 }

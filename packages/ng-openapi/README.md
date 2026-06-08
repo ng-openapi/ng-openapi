@@ -142,11 +142,13 @@ The simplest way to integrate ng-openapi is using the provider function:
 ```typescript
 // In your app.config.ts
 import { ApplicationConfig } from "@angular/core";
+import { provideHttpClient, withInterceptors } from "@angular/common/http";
 import { provideNgOpenapi } from "./api/providers";
+import { defaultBaseInterceptor } from "./api/utils/base-interceptor";
 
 export const appConfig: ApplicationConfig = {
     providers: [
-        // One-line setup with automatic interceptor configuration
+        provideHttpClient(withInterceptors([defaultBaseInterceptor])),
         provideNgOpenapi({
             basePath: "https://api.example.com",
         }),
