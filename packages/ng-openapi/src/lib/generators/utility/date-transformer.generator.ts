@@ -1,4 +1,4 @@
-import { Project, VariableDeclarationKind } from "ts-morph";
+import { Project, Scope, VariableDeclarationKind } from "ts-morph";
 import * as path from "path";
 
 export class DateTransformerGenerator {
@@ -29,14 +29,17 @@ export class DateTransformerGenerator {
             },
         ]);
 
-        // Add ISO date regex constant
+        // Add ISO date regex constant.
+        // Matches a full RFC 3339 / ISO 8601 date-time: optional fractional seconds
+        // of any length and an optional 'Z' or numeric timezone offset (±hh:mm or
+        // ±hhmm).
         sourceFile.addVariableStatement({
             isExported: true,
             declarationKind: VariableDeclarationKind.Const,
             declarations: [
                 {
                     name: "ISO_DATE_REGEX",
-                    initializer: "/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z?$/",
+                    initializer: "/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:?\\d{2})?$/",
                 },
             ],
         });
@@ -45,7 +48,10 @@ export class DateTransformerGenerator {
         sourceFile.addFunction({
             name: "transformDates",
             isExported: true,
-            parameters: [{ name: "obj", type: "any" }],
+            parameters: [
+                { name: "obj", type: "any" },
+                { name: "dateRegex", type: "RegExp", initializer: "ISO_DATE_REGEX" },
+            ],
             returnType: "any",
             statements: `
     if (obj === null || obj === undefined || typeof obj !== 'object') {
@@ -57,17 +63,17 @@ export class DateTransformerGenerator {
     }
 
     if (Array.isArray(obj)) {
-        return obj.map(item => transformDates(item));
+        return obj.map(item => transformDates(item, dateRegex));
     }
 
     if (typeof obj === 'object') {
         const transformed: any = {};
         for (const key of Object.keys(obj)) {
             const value = obj[key];
-            if (typeof value === 'string' && ISO_DATE_REGEX.test(value)) {
+            if (typeof value === 'string' && dateRegex.test(value)) {
                 transformed[key] = new Date(value);
             } else {
-                transformed[key] = transformDates(value);
+                transformed[key] = transformDates(value, dateRegex);
             }
         }
         return transformed;
@@ -87,6 +93,22 @@ export class DateTransformerGenerator {
                 },
             ],
             implements: ["HttpInterceptor"],
+            ctors: [
+                {
+                    docs: [
+                        "@param dateRegex Optional override for the pattern used to detect ISO date strings.",
+                    ],
+                    parameters: [
+                        {
+                            name: "dateRegex",
+                            type: "RegExp",
+                            scope: Scope.Private,
+                            isReadonly: true,
+                            initializer: "ISO_DATE_REGEX",
+                        },
+                    ],
+                },
+            ],
             methods: [
                 {
                     name: "intercept",
@@ -99,7 +121,7 @@ export class DateTransformerGenerator {
     return next.handle(req).pipe(
         map(event => {
             if (event instanceof HttpResponse && event.body) {
-                return event.clone({ body: transformDates(event.body) });
+                return event.clone({ body: transformDates(event.body, this.dateRegex) });
             }
             return event;
         })

@@ -1,4 +1,4 @@
-import { Project } from "ts-morph";
+import { OptionalKind, Project, PropertySignatureStructure } from "ts-morph";
 import * as path from "path";
 import {
     GeneratorConfig,
@@ -57,29 +57,43 @@ export class ProviderGenerator {
         }
 
         // Add config interface
+        const configProperties: OptionalKind<PropertySignatureStructure>[] = [
+            {
+                name: "basePath",
+                type: "string",
+                docs: ["Base API URL"],
+            },
+            {
+                name: "enableDateTransform",
+                type: "boolean",
+                hasQuestionToken: true,
+                docs: ["Enable automatic date transformation (default: true)"],
+            },
+            {
+                name: "interceptors",
+                type: "(new (...args: HttpInterceptor[]) => HttpInterceptor)[]",
+                hasQuestionToken: true,
+                docs: ["Array of HTTP interceptor classes to apply to this client"],
+            },
+        ];
+
+        if (this.config.options.dateType === "Date") {
+            configProperties.push({
+                name: "dateTransformRegex",
+                type: "RegExp",
+                hasQuestionToken: true,
+                docs: [
+                    "Override the pattern used to detect ISO date strings during date transformation.",
+                    "Defaults to the generated ISO_DATE_REGEX.",
+                ],
+            });
+        }
+
         sourceFile.addInterface({
             name: `${this.capitalizeFirst(this.clientName)}Config`,
             isExported: true,
             docs: [`Configuration options for ${this.clientName} client`],
-            properties: [
-                {
-                    name: "basePath",
-                    type: "string",
-                    docs: ["Base API URL"],
-                },
-                {
-                    name: "enableDateTransform",
-                    type: "boolean",
-                    hasQuestionToken: true,
-                    docs: ["Enable automatic date transformation (default: true)"],
-                },
-                {
-                    name: "interceptors",
-                    type: "(new (...args: HttpInterceptor[]) => HttpInterceptor)[]",
-                    hasQuestionToken: true,
-                    docs: ["Array of HTTP interceptor classes to apply to this client"],
-                },
-            ],
+            properties: configProperties,
         });
 
         // Add main provider function
@@ -122,7 +136,7 @@ if (config.interceptors && config.interceptors.length > 0) {
         hasDateInterceptor
             ? `// Add date interceptor if enabled (default: true)
     if (config.enableDateTransform !== false) {
-        interceptorInstances.unshift(new DateInterceptor());
+        interceptorInstances.unshift(new DateInterceptor(config.dateTransformRegex));
     }`
             : `// Date transformation not available (dateType: 'string' was used in generation)`
     }
@@ -137,7 +151,7 @@ if (config.interceptors && config.interceptors.length > 0) {
     // Only date interceptor enabled
     providers.push({
         provide: ${interceptorsTokenName},
-        useValue: [new DateInterceptor()]
+        useValue: [new DateInterceptor(config.dateTransformRegex)]
     });
 }`
                 : ``
