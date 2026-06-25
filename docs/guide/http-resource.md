@@ -4,11 +4,7 @@ title: HTTP Resource Plugin
 
 # HTTP Resource Plugin
 
-Generate Angular services using the experimental `httpResource` API for automatic caching, state management, and reactive data loading.
-
-:::warning Experimental Feature
-`httpResource` is still experimental in Angular. Use with caution in production environments.
-:::
+Generate Angular services using the `httpResource` API for automatic caching, state management, and reactive data loading.
 
 ## Overview
 
@@ -174,11 +170,10 @@ export class SearchComponent {
 | **Reactivity**            | ✅ Signal-based           | ❌ Observable-based        |
 | **Parameter Binding**     | ✅ Signal or static       | ❌ Manual subscription     |
 | **Request Deduplication** | ✅ Automatic              | ❌ Manual implementation   |
-| **Maturity**              | ⚠️ Experimental           | ✅ Stable                  |
+| **Maturity**              | ✅ Stable                 | ✅ Stable                  |
 
 ## Limitations
 
-- **Experimental API**: Subject to change in future Angular versions
 - **GET Requests Only**: Currently optimized for "GET" requests (see [Angular Docs ↗️](https://angular.dev/guide/http/http-resource))
 
 ## Resources
