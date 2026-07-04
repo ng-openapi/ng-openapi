@@ -175,6 +175,10 @@ export default defineConfig({
                                             text: "Response Type Mapping",
                                             link: "/api/configuration/options/response-type-mapping",
                                         },
+                                        {
+                                            text: "Use Single Request Parameter",
+                                            link: "/api/configuration/options/use-single-request-parameter",
+                                        },
                                     ],
                                     collapsed: true,
                                 },

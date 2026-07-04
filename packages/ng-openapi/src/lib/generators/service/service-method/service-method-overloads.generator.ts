@@ -7,6 +7,7 @@ import {
     SwaggerParser,
 } from "@ng-openapi/shared";
 import { ServiceMethodParamsGenerator } from "./service-method-params.generator";
+import { RequestObjectEntry, ServiceMethodRequestObjectGenerator } from "./service-method-request-object.generator";
 
 export class ServiceMethodOverloadsGenerator {
     private config: GeneratorConfig;
@@ -18,7 +19,10 @@ export class ServiceMethodOverloadsGenerator {
         this.paramsGenerator = new ServiceMethodParamsGenerator(config, parser);
     }
 
-    generateMethodOverloads(operation: PathInfo): OptionalKind<MethodDeclarationOverloadStructure>[] {
+    generateMethodOverloads(
+        operation: PathInfo,
+        requestObject?: RequestObjectEntry,
+    ): OptionalKind<MethodDeclarationOverloadStructure>[] {
         const observeTypes: ("body" | "response" | "events")[] = ["body", "response", "events"];
         const overloads: OptionalKind<MethodDeclarationOverloadStructure>[] = [];
 
@@ -26,7 +30,7 @@ export class ServiceMethodOverloadsGenerator {
         const responseType = this.determineResponseTypeForOperation(operation);
 
         observeTypes.forEach((observe) => {
-            const overload = this.generateMethodOverload(operation, observe, responseType);
+            const overload = this.generateMethodOverload(operation, observe, responseType, requestObject);
             if (overload) {
                 overloads.push(overload);
             }
@@ -38,14 +42,28 @@ export class ServiceMethodOverloadsGenerator {
         operation: PathInfo,
         observe: "body" | "response" | "events",
         responseType: "json" | "blob" | "arraybuffer" | "text",
+        requestObject?: RequestObjectEntry,
     ): OptionalKind<MethodDeclarationOverloadStructure> {
         this.responseDataType = this.generateOverloadResponseType(operation);
-        const params = this.generateOverloadParameters(operation, observe, responseType);
+        const params = requestObject
+            ? this.generateSingleRequestOverloadParameters(requestObject, observe, responseType)
+            : this.generateOverloadParameters(operation, observe, responseType);
         const returnType = this.generateOverloadReturnType(observe);
         return {
             parameters: params,
             returnType: returnType,
         };
+    }
+
+    generateSingleRequestOverloadParameters(
+        requestObject: RequestObjectEntry,
+        observe: "body" | "response" | "events",
+        responseType: "json" | "arraybuffer" | "blob" | "text",
+    ): OptionalKind<ParameterDeclarationStructure>[] {
+        return [
+            ServiceMethodRequestObjectGenerator.toRequestParameter(requestObject),
+            ...this.addOverloadOptionsParameter(requestObject.parameters, observe, responseType),
+        ];
     }
 
     generateOverloadParameters(
@@ -57,19 +75,7 @@ export class ServiceMethodOverloadsGenerator {
         const optionsParam = this.addOverloadOptionsParameter(params, observe, responseType);
 
         // Combine all parameters
-        const combined = [...params, ...optionsParam];
-
-        const seen = new Set<string>();
-        const uniqueParams: OptionalKind<ParameterDeclarationStructure>[] = [];
-
-        for (const param of combined) {
-            if (!seen.has(param.name)) {
-                seen.add(param.name);
-                uniqueParams.push(param);
-            }
-        }
-
-        return uniqueParams;
+        return ServiceMethodRequestObjectGenerator.dedupe([...params, ...optionsParam]);
     }
 
     addOverloadOptionsParameter(
