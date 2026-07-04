@@ -1,8 +1,10 @@
-import { ClassDeclaration } from "ts-morph";
+import { ClassDeclaration, OptionalKind, ParameterDeclarationStructure } from "ts-morph";
 import {
+    RequestObjectEntry,
     ServiceMethodBodyGenerator,
     ServiceMethodOverloadsGenerator,
     ServiceMethodParamsGenerator,
+    ServiceMethodRequestObjectGenerator,
 } from "./service-method";
 import { camelCase, GeneratorConfig, pascalCase, PathInfo, SwaggerParser } from "@ng-openapi/shared";
 
@@ -19,12 +21,17 @@ export class ServiceMethodGenerator {
         this.paramsGenerator = new ServiceMethodParamsGenerator(config, parser);
     }
 
-    addServiceMethod(serviceClass: ClassDeclaration, operation: PathInfo): void {
+    addServiceMethod(serviceClass: ClassDeclaration, operation: PathInfo, requestObject?: RequestObjectEntry): void {
         const methodName = this.generateMethodName(operation);
-        const parameters = this.paramsGenerator.generateMethodParameters(operation);
+        const parameters = requestObject
+            ? this.generateSingleRequestParameters(requestObject)
+            : this.paramsGenerator.generateMethodParameters(operation);
         const returnType = this.generateReturnType();
-        const methodBody = this.bodyGenerator.generateMethodBody(operation);
-        const methodOverLoads = this.overloadsGenerator.generateMethodOverloads(operation);
+        let methodBody = this.bodyGenerator.generateMethodBody(operation);
+        if (requestObject) {
+            methodBody = `${ServiceMethodRequestObjectGenerator.toDestructureStatement(requestObject)}\n${methodBody}`;
+        }
+        const methodOverLoads = this.overloadsGenerator.generateMethodOverloads(operation, requestObject);
 
         serviceClass.addMethod({
             name: methodName,
@@ -34,6 +41,13 @@ export class ServiceMethodGenerator {
             overloads: methodOverLoads,
             docs: operation.description ? [operation.description] : undefined,
         });
+    }
+
+    generateSingleRequestParameters(requestObject: RequestObjectEntry): OptionalKind<ParameterDeclarationStructure>[] {
+        return [
+            ServiceMethodRequestObjectGenerator.toRequestParameter(requestObject),
+            ...this.paramsGenerator.addOptionsParameter(requestObject.parameters),
+        ];
     }
 
     generateMethodName(operation: PathInfo): string {
