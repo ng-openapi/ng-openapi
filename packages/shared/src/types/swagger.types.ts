@@ -42,6 +42,17 @@ export interface SwaggerResponse {
     content?: Record<string, { schema?: any }>;
 }
 
+export interface OpenApiSecurityScheme {
+    type?: "apiKey" | "http" | "oauth2" | "openIdConnect";
+    description?: string;
+    name?: string;
+    in?: "query" | "header" | "cookie";
+    scheme?: string;
+    bearerFormat?: string;
+    flows?: Record<string, any>;
+    openIdConnectUrl?: string;
+}
+
 export interface SwaggerDefinition {
     type?: ParameterType | undefined;
     format?: string | undefined;
@@ -97,6 +108,7 @@ export interface SwaggerSpec {
     tags?: Tag[] | undefined;
     components?: {
         schemas?: Record<string, SwaggerDefinition>;
+        securitySchemes?: Record<string, OpenApiSecurityScheme | Security>;
     };
 }
 
