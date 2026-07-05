@@ -380,8 +380,8 @@
     "semantic_hash": ""
   },
   "packages/shared/src/core/index.ts": {
-    "mtime": 1783289203.579682,
-    "ast_hash": "2c214942549d94b822e35bd222204c3e",
+    "mtime": 1783268526.0663214,
+    "ast_hash": "4f60b813fd0125ae06b162cfa440ddc8",
     "semantic_hash": ""
   },
   "packages/shared/src/core/swagger-parser.ts": {
@@ -390,8 +390,8 @@
     "semantic_hash": ""
   },
   "packages/shared/src/index.ts": {
-    "mtime": 1783289211.197843,
-    "ast_hash": "108a9f75edb05ca002bbbd174f85551a",
+    "mtime": 1783286374.715673,
+    "ast_hash": "71acfe0542ded20cfcd0ad9fb0fac891",
     "semantic_hash": ""
   },
   "packages/shared/src/types/config.types.ts": {
@@ -415,8 +415,8 @@
     "semantic_hash": ""
   },
   "packages/shared/src/types/swagger.types.ts": {
-    "mtime": 1783288909.760798,
-    "ast_hash": "45427303d4370f6f101b328d50f0b664",
+    "mtime": 1783286799.8815818,
+    "ast_hash": "b9c728eb9d6033eab788586514c8f8f2",
     "semantic_hash": ""
   },
   "packages/shared/src/utils/content-types.constants.ts": {
@@ -920,8 +920,8 @@
     "semantic_hash": ""
   },
   "packages/testing/fixtures/specs/openapi-3.1.json": {
-    "mtime": 1783288971.6786282,
-    "ast_hash": "1d601c33e0f46bf80c5e1fb1dc1a66ad",
+    "mtime": 1783248474.7244303,
+    "ast_hash": "a4aba6b98da0f5e2a4378664f25835e0",
     "semantic_hash": ""
   },
   "packages/testing/fixtures/specs/swagger-2.0.json": {
@@ -1120,8 +1120,8 @@
     "semantic_hash": ""
   },
   "packages/shared/src/core/normalize.ts": {
-    "mtime": 1783289068.7474563,
-    "ast_hash": "81134a26f8701ddc3aecc30c5cceaf3e",
+    "mtime": 1783276669.1771262,
+    "ast_hash": "58b086f1d392a72a872a2c2f25dc43bb",
     "semantic_hash": ""
   },
   "packages/shared/src/core/spec-format.ts": {
@@ -1150,8 +1150,8 @@
     "semantic_hash": ""
   },
   "packages/shared/tests/normalize.test.ts": {
-    "mtime": 1783289222.3646033,
-    "ast_hash": "8b2c39cba063e659eb7a2d65984fde95",
+    "mtime": 1783276694.5080793,
+    "ast_hash": "3cd496d161e9f40a44b45e3cd22447e3",
     "semantic_hash": ""
   },
   "packages/shared/tests/spec-format.test.ts": {
@@ -1267,16 +1267,6 @@
   "ARCHITECTURE.md": {
     "mtime": 1783287025.3951735,
     "ast_hash": "d3b9ed9ca1fd024b8dab4394bc5b0431",
-    "semantic_hash": ""
-  },
-  "packages/ng-openapi/tests/perf-benchmark.test.ts": {
-    "mtime": 1783289247.8986752,
-    "ast_hash": "49dda75c8c8f5fb98f21df830c5e7bcd",
-    "semantic_hash": ""
-  },
-  "packages/ng-openapi/tests/type-resolver-property.test.ts": {
-    "mtime": 1783289213.5506356,
-    "ast_hash": "46ef06b94f4db8d6f616b3e6862e2e31",
     "semantic_hash": ""
   }
 }
