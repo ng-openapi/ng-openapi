@@ -67,14 +67,27 @@ export function normalizeSchema(schema: SwaggerDefinition): SwaggerDefinition {
     }
 
     if (normalized.const !== undefined && !normalized.enum) {
-        normalized.enum = [normalized.const as string | number];
-        // A bare `const` carries its type implicitly — make it explicit so
-        // schema-typed consumers (zod plugin) don't fall back to `any`.
         const constType = typeof normalized.const;
-        if (normalized.type === undefined && (constType === "string" || constType === "number" || constType === "boolean")) {
-            normalized.type = constType as typeof schema.type;
+        if (constType === "string" || constType === "number") {
+            normalized.enum = [normalized.const as string | number];
+            // A bare `const` carries its type implicitly — make it explicit so
+            // schema-typed consumers (zod plugin) don't fall back to `any`.
+            if (normalized.type === undefined) {
+                normalized.type = constType as typeof schema.type;
+            }
+            delete normalized.const;
+        } else if (constType === "boolean") {
+            // Not folded into enum: a boolean enum member would emit invalid
+            // TS for enum-style definitions. Plain boolean is safe everywhere.
+            if (normalized.type === undefined) {
+                normalized.type = "boolean" as typeof schema.type;
+            }
+            delete normalized.const;
         }
-        delete normalized.const;
+        // Object/array/null consts are left untouched: folding them into enum
+        // would render String(value) garbage like "[object Object]" as a type.
+        // Generators ignore the unknown keyword and fall back to their untyped
+        // rendering, exactly as before 3.1 support.
     }
 
     if (normalized.properties) {

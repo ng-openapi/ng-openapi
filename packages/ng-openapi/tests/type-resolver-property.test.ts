@@ -59,8 +59,20 @@ function randomSchema(depth: number): SwaggerDefinition {
                     ? [pick(STRING_VALUES), pick(STRING_VALUES)]
                     : [Math.floor(random() * 100), pick(STRING_VALUES)],
         }),
-        // 3.1 const
-        () => ({ const: random() < 0.5 ? pick(STRING_VALUES) : Math.floor(random() * 100) }),
+        // 3.1 const — including the non-primitive values the normalizer must
+        // refuse to fold (they'd otherwise render "[object Object]" as a type)
+        () =>
+            ({
+                const: pick([
+                    pick(STRING_VALUES),
+                    Math.floor(random() * 100),
+                    true,
+                    false,
+                    null,
+                    { kind: "object-const" },
+                    [1, 2, 3],
+                ] as const),
+            }) as SwaggerDefinition,
         // $ref into the predeclared pool
         () => ({ $ref: `#/components/schemas/${pick(REF_POOL)}` }),
     ];

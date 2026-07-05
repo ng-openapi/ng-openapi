@@ -133,14 +133,36 @@ describe("normalizeSchema (OpenAPI 3.1 constructs)", () => {
         expect(normalizeSchema({ type: ["null"] as unknown as string }).type).toBe("null");
     });
 
-    it("converts const to a single-value enum", () => {
+    it("converts string/number const to a single-value enum", () => {
         expect(normalizeSchema({ type: "string", const: "active" })).toMatchObject({
             type: "string",
             enum: ["active"],
         });
         expect(normalizeSchema({ type: "string", const: "active" }).const).toBeUndefined();
+        expect(normalizeSchema({ const: 7 })).toMatchObject({ type: "number", enum: [7] });
         // An existing enum wins over const
         expect(normalizeSchema({ const: "x", enum: ["a"] }).enum).toEqual(["a"]);
+    });
+
+    it("types boolean const as plain boolean instead of an enum", () => {
+        const normalized = normalizeSchema({ const: true });
+        expect(normalized.type).toBe("boolean");
+        expect(normalized.enum).toBeUndefined();
+        expect(normalized.const).toBeUndefined();
+    });
+
+    it("leaves non-primitive consts untouched", () => {
+        const objectConst = normalizeSchema({ const: { kind: "a" } });
+        expect(objectConst.enum).toBeUndefined();
+        expect(objectConst.const).toEqual({ kind: "a" });
+
+        const arrayConst = normalizeSchema({ const: [1, 2] });
+        expect(arrayConst.enum).toBeUndefined();
+        expect(arrayConst.const).toEqual([1, 2]);
+
+        const nullConst = normalizeSchema({ const: null });
+        expect(nullConst.enum).toBeUndefined();
+        expect(nullConst.const).toBeNull();
     });
 
     it("recurses into properties, items, compositions and additionalProperties", () => {
