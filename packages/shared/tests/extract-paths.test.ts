@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractPaths } from "@ng-openapi/shared";
+import { extractPaths } from "../src";
 
 describe("extractPaths", () => {
     it("extracts one PathInfo per method, method uppercased", () => {

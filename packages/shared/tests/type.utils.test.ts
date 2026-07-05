@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { escapeString, GeneratorConfig, getTypeScriptType, nullableType } from "@ng-openapi/shared";
+import { escapeString, GeneratorConfig, getTypeScriptType, nullableType } from "../src";
 
 const makeConfig = (dateType: "string" | "Date" = "string"): GeneratorConfig => ({
     input: "spec.json",
@@ -35,6 +35,10 @@ describe("getTypeScriptType", () => {
 
     it("maps arrays without items to Array<unknown>", () => {
         expect(getTypeScriptType({ type: "array" }, config)).toBe("Array<unknown>");
+    });
+
+    it("maps tuple-style items arrays to Array<any> (long-standing fall-through)", () => {
+        expect(getTypeScriptType({ type: "array", items: [{ type: "string" }] }, config)).toBe("Array<any>");
     });
 
     it("wraps nullable arrays in parentheses", () => {

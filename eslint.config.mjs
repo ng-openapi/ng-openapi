@@ -28,7 +28,38 @@ export default [
     {
         files: ["**/*.ts", "**/*.tsx", "**/*.cts", "**/*.mts", "**/*.js", "**/*.jsx", "**/*.cjs", "**/*.mjs"],
         // Override or add rules here
-        rules: {},
+        rules: {
+            // Package internals must be reached through the public barrel; deep
+            // imports bypass the curated API (REFACTORING_PLAN.md phase 1.2/1.3).
+            "no-restricted-imports": [
+                "error",
+                {
+                    patterns: [
+                        {
+                            // `**` is required: a single `*` only matches one path
+                            // segment, silently missing nested deep imports like
+                            // @ng-openapi/shared/src/utils/functions/is-url.
+                            group: [
+                                "@ng-openapi/shared/**",
+                                "ng-openapi/**",
+                                "@ng-openapi/testing/**",
+                                "@ng-openapi/http-resource/**",
+                                "@ng-openapi/zod/**",
+                            ],
+                            message: "Import from the package's public barrel instead of internal paths.",
+                        },
+                    ],
+                },
+            ],
+        },
+    },
+    {
+        files: ["**/*.ts", "**/*.tsx"],
+        rules: {
+            // Ratchet: warn now, error once phases 1-3 remove the remaining `any`s
+            // (REFACTORING_PLAN.md phase 4.3).
+            "@typescript-eslint/no-explicit-any": "warn",
+        },
     },
     {
         // Test files and the internal testing lib are not part of any production build,

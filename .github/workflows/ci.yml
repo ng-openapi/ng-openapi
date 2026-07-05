@@ -55,6 +55,9 @@ jobs:
           done
           exit $missing
 
+      - name: Typecheck (tsc --noEmit, all packages)
+        run: npm run typecheck
+
       - name: Run tests (unit + golden + compile-check) with coverage
         run: npm run test:coverage
 

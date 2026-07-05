@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
-import { GeneratorConfig, SwaggerParser } from "@ng-openapi/shared";
+import { GeneratorConfig, SwaggerParser } from "../src";
 
 const config: GeneratorConfig = {
     input: "spec.json",
@@ -107,6 +107,25 @@ describe("SwaggerParser.create from URLs", () => {
         stubFetch(async () => new Response("   ", { status: 200 }));
         await expect(SwaggerParser.create("https://example.com/spec.json", config)).rejects.toThrow(
             /Empty response/,
+        );
+    });
+
+    it("reports a timeout when fetch aborts via AbortSignal.timeout", async () => {
+        // AbortSignal.timeout() rejects with a DOMException named "TimeoutError"
+        stubFetch(async () => {
+            throw Object.assign(new Error("The operation was aborted due to timeout"), { name: "TimeoutError" });
+        });
+        await expect(SwaggerParser.create("https://example.com/spec.json", config)).rejects.toThrow(
+            /Request timeout \(30s\)/,
+        );
+    });
+
+    it("reports a timeout for manual AbortError aborts", async () => {
+        stubFetch(async () => {
+            throw Object.assign(new Error("This operation was aborted"), { name: "AbortError" });
+        });
+        await expect(SwaggerParser.create("https://example.com/spec.json", config)).rejects.toThrow(
+            /Request timeout \(30s\)/,
         );
     });
 });

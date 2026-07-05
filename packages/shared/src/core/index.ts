@@ -1,1 +1,1 @@
-export * from "./swagger-parser";
+export { SwaggerParser } from "./swagger-parser";

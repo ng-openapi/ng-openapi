@@ -5,7 +5,7 @@ import {
     getResponseTypeFromResponse,
     inferResponseTypeFromContentType,
     isPrimitiveType,
-} from "@ng-openapi/shared";
+} from "../src";
 
 const config: GeneratorConfig = {
     input: "spec.json",

@@ -10,10 +10,9 @@ import {
     TokenGenerator,
 } from "../generators/utility";
 import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
-import { GeneratorConfig, IPluginGeneratorClass, SwaggerParser } from "@ng-openapi/shared";
+import { GeneratorConfig, isUrl, SwaggerParser } from "@ng-openapi/shared";
 import * as fs from "fs";
 import * as path from "path";
-import { isUrl } from "@ng-openapi/shared/src/utils/functions/is-url";
 
 /**
  * Validates input (file or URL)
@@ -112,8 +111,7 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
 
         if (config.plugins?.length) {
             for (const plugin of config.plugins) {
-                const generatorClass = plugin as IPluginGeneratorClass;
-                const pluginGenerator = new generatorClass(swaggerParser, project, config);
+                const pluginGenerator = new plugin(swaggerParser, project, config);
                 await pluginGenerator.generate(outputPath);
             }
             console.log(`✅ Plugins are generated`);

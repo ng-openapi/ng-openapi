@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-// Deep import because is-url.ts is missing from the functions barrel — the same
-// gap that forces generator.ts to deep-import it. Phase 1.2 of the refactoring
-// plan exports it properly; switch this to "@ng-openapi/shared" then.
-import { isUrl } from "@ng-openapi/shared/src/utils/functions/is-url";
+import { isUrl } from "../src";
 
 describe("isUrl", () => {
     it("accepts http and https URLs", () => {

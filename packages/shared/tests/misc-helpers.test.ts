@@ -7,7 +7,7 @@ import {
     getInterceptorsTokenName,
     hasDuplicateFunctionNames,
     isDataTypeInterface,
-} from "@ng-openapi/shared";
+} from "../src";
 
 describe("token names", () => {
     it("defaults to the DEFAULT client suffix", () => {

@@ -36,7 +36,10 @@ export class ServiceMethodParamsGenerator {
         pathParams.forEach((param) => {
             params.push({
                 name: camelCase(param.name),
-                type: getTypeScriptType(param.schema || param, this.config),
+                // Swagger 2.0 puts type/format/enum on the parameter itself; the
+                // spread (vs passing param directly) is needed because Parameter
+                // lacks TypeSchema's index signature — a fresh literal satisfies it.
+                type: getTypeScriptType(param.schema || { ...param }, this.config),
                 hasQuestionToken: !param.required,
             });
         });
@@ -77,7 +80,7 @@ export class ServiceMethodParamsGenerator {
         queryParams.forEach((param) => {
             params.push({
                 name: camelCase(param.name),
-                type: getTypeScriptType(param.schema || param, this.config),
+                type: getTypeScriptType(param.schema || { ...param }, this.config),
                 hasQuestionToken: !param.required,
             });
         });

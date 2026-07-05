@@ -1,4 +1,4 @@
-import { GeneratorConfig, SwaggerResponse } from "../../types";
+import { GeneratorConfig, SwaggerDefinition, SwaggerResponse } from "../../types";
 import { getTypeScriptType } from "../type.utils";
 
 export function getResponseTypeFromResponse(
@@ -84,12 +84,12 @@ export function getResponseTypeFromResponse(
     return responseTypes[0]?.type || "json";
 }
 
-export function isPrimitiveType(schema: any): boolean {
+export function isPrimitiveType(schema: SwaggerDefinition | undefined): boolean {
     if (!schema) return false;
 
     // Direct primitive types
     const primitiveTypes = ["string", "number", "integer", "boolean"];
-    if (primitiveTypes.includes(schema.type)) {
+    if (schema.type && primitiveTypes.includes(schema.type)) {
         return true;
     }
 
