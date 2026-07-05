@@ -35,12 +35,14 @@ ng-openapi gen -c openapi.config.ts  # Short alias
 
 ## Options
 
-### Required Options
+### Source Options (one required)
 
-| Option     | Alias | Description                   | Example                |
-| ---------- | ----- | ----------------------------- | ---------------------- |
-| `--config` | `-c`  | Path to configuration file    | `-c openapi.config.ts` |
-| `--input`  | `-i`  | Path to OpenAPI specification | `-i swagger.json`      |
+Provide either a configuration file or a spec directly:
+
+| Option     | Alias | Description                          | Example                |
+| ---------- | ----- | ------------------------------------ | ---------------------- |
+| `--config` | `-c`  | Path to configuration file           | `-c openapi.config.ts` |
+| `--input`  | `-i`  | Path or URL to OpenAPI specification | `-i swagger.json`      |
 
 ### Output Options
 

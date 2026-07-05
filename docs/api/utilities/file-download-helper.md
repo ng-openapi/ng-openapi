@@ -23,7 +23,7 @@ export class ReportComponent {
 }
 ```
 
-## Example Date Transformer
+## Generated Source
 
 ```typescript
 // client/utils/file-download.ts

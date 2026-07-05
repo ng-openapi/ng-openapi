@@ -46,7 +46,15 @@ enum Status {
 
 ### `'union'`
 
-Not supported yet, but will generate union types for enumerations in the future.
+Generates a literal-union type alias plus a same-named `const` object, so values can be both type-checked and referenced like enum members.
+
+```typescript
+export type Status = 'active' | 'inactive';
+export const Status = {
+    Active: 'active' as Status,
+    Inactive: 'inactive' as Status,
+};
+```
 
 ## Notes
 

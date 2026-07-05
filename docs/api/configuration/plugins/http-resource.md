@@ -4,24 +4,19 @@ title: Http Resource Plugin
 
 # `HttpResourcePlugin`
 
-The HTTP Resource plugin generates Angular services using the experimental `httpResource` API for automatic caching, state management, and reactive data loading.
-
-:::warning Experimental Feature
-`httpResource` is still experimental in Angular. Use with caution in production environments.
+The HTTP Resource plugin generates Angular services using the `httpResource` API for automatic caching, state management, and reactive data loading.
 
 [Learn more in Angular Docs ↗️](https://angular.dev/guide/http/http-resource)
-:::
 
 ## Usage
 
 ```typescript
 // openapi.config.ts
 import { GeneratorConfig } from 'ng-openapi';
+import { HttpResourcePlugin } from '@ng-openapi/http-resource';
 
 export default {
-  options: {
-    plugins: [HttpResourcePlugin],
-  },
+  plugins: [HttpResourcePlugin], // top-level, not inside `options`
   ... // other configurations
 } as GeneratorConfig;
 ```

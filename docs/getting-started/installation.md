@@ -38,3 +38,7 @@ npm install -g ng-openapi
 ```bash
 ng-openapi --version
 ```
+
+## Next Step
+
+Continue with the [Quick Start](./quick-start.md) to generate your first client.

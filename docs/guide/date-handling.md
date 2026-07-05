@@ -92,7 +92,7 @@ export class UsersComponent {
 
 ```typescript
 // Disable in provider
-provideNgOpenapi({
+provideDefaultClient({
     basePath: "https://api.example.com",
     enableDateTransform: false,
 });
@@ -100,35 +100,23 @@ provideNgOpenapi({
 
 ### Manual Setup
 
+`DateInterceptor` is class-based, so it is registered through the `HTTP_INTERCEPTORS` multi-provider (`withInterceptors` only accepts functional interceptors):
+
 ```typescript
-import { provideHttpClient, withInterceptors } from "@angular/common/http";
+import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from "@angular/common/http";
 import { DateInterceptor } from "./client/utils/date-transformer";
 
 export const appConfig: ApplicationConfig = {
-    providers: [provideHttpClient(withInterceptors([DateInterceptor]))],
+    providers: [
+        provideHttpClient(withInterceptorsFromDi()),
+        { provide: HTTP_INTERCEPTORS, useClass: DateInterceptor, multi: true },
+    ],
 };
 ```
 
-## ISO Date Regex
+## Which Strings Are Detected as Dates?
 
-The date transformer uses this regex to identify date strings:
-
-```typescript
-export const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/;
-```
-
-Matches formats like:
-
-- `2024-01-15T10:30:00Z`
-- `2024-01-15T10:30:00.123Z`
-- `2024-01-15T10:30:00.04` (any number of fractional-second digits)
-- `2024-01-15T10:30:00.7559265+02:00` (numeric timezone offset, `±hh:mm`)
-- `2024-01-15T10:30:00+0200` (offset without colon, `±hhmm`)
-- `2024-01-15T10:30:00`
-
-The pattern is intentionally strict — it only matches full ISO 8601 date-times so
-that ordinary strings (a bare year like `"2024"`, a numeric ID, etc.) are never
-accidentally converted to `Date` objects.
+The interceptor only converts strings matching a strict full ISO 8601 date-time pattern (`ISO_DATE_REGEX`), so bare years or numeric IDs are never accidentally turned into `Date` objects. The exact pattern and all recognized formats are documented in the [Date Transformer reference](../api/utilities/date-transformer.md#recognized-formats).
 
 ### Custom Date Regex
 
@@ -136,10 +124,10 @@ If your API returns a format the default pattern doesn't cover, pass your own
 regex via the provider — no need to copy `date-transformer.ts`:
 
 ```typescript
-provideNgOpenapi({
+provideDefaultClient({
     basePath: "https://api.example.com",
     // Use any pattern you like; it overrides ISO_DATE_REGEX
-    dateTransformRegex: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/,
+    dateTransformRegex: /your-custom-pattern/,
 });
 ```
 
@@ -153,5 +141,6 @@ transformDates(responseBody, /your-custom-regex/);
 
 ## Resources
 
+- [Date Transformer reference](../api/utilities/date-transformer.md) — recognized formats, generated source, manual setup
 - [JavaScript Date ↗️](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date)
 - [Angular HTTP Interceptors ↗️](https://angular.dev/guide/http/interceptors)

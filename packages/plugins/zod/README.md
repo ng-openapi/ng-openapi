@@ -22,12 +22,16 @@
 
 ## What is Zod Plugin?
 
-tbd.
+The Zod plugin generates [Zod](https://zod.dev) schemas from your OpenAPI specification, so you can validate API
+requests and responses at runtime. For every operation it emits schemas for the request body, query parameters, and
+each response status, along with the inferred TypeScript types.
+
+> Requires Zod v4 or later — Zod v3 is not supported.
 
 ## Installation
 
 ```bash
-npm install @ng-openapi/zod ng-openapi --save-dev
+npm install @ng-openapi/zod zod ng-openapi --save-dev
 ```
 
 ## Quick Start
@@ -37,17 +41,23 @@ npm install @ng-openapi/zod ng-openapi --save-dev
 ```typescript
 // openapi.config.ts
 import { GeneratorConfig } from "ng-openapi";
-import { HttpResourcePlugin } from "@ng-openapi/zod";
+import { ZodPlugin } from "@ng-openapi/zod";
 
 export default {
     input: "./swagger.json",
     output: "./src/api",
-    clientName: "NgOpenApi",
-    plugins: [HttpResourcePlugin],
+    plugins: [ZodPlugin],
+    options: {
+        dateType: "Date",
+        enumStyle: "enum",
+        validation: {
+            response: true, // adds the `parse` hook to generated service methods
+        },
+    },
 } as GeneratorConfig;
 ```
 
-### 2. Generate Resources
+### 2. Generate Schemas
 
 ```bash
 ng-openapi -c openapi.config.ts
@@ -58,44 +68,40 @@ ng-openapi -c openapi.config.ts
 ```typescript
 // app.config.ts
 import { ApplicationConfig } from "@angular/core";
+import { provideHttpClient } from "@angular/common/http";
 import { provideDefaultClient } from "./api/providers";
 
 export const appConfig: ApplicationConfig = {
     providers: [
-        provideNgOpenApiClient({
+        provideHttpClient(),
+        provideDefaultClient({
             basePath: "https://api.example.com",
         }),
     ],
 };
 ```
 
-### 4. Use Generated Resources
+### 4. Use Generated Schemas
 
 ```typescript
 import { Component, inject } from "@angular/core";
-import { UsersResource } from "./api/resources";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { OrdersService } from "./api/services";
+import { getOrderById200Response } from "./api/validators";
 
 @Component({
-    selector: "app-users",
-    template: `
-        <div>
-            @if (users.isLoading()) {
-                <p>Loading...</p>
-            }
-            @if (users.error()) {
-                <p>Error: {{ users.error() }}</p>
-            }
-            @for (user of users.value(); track user.id) {
-                <div>{{ user.name }}</div>
-            }
-        </div>
-    `,
+    selector: "app-order",
+    template: `...`,
 })
-export class UsersComponent {
-    private readonly usersResource = inject(UsersResource);
+export class OrderComponent {
+    private readonly ordersService = inject(OrdersService);
 
-    // Automatic caching and reactive updates
-    readonly users = this.usersResource.getUsers();
+    // Validate the response at runtime via the `parse` option
+    readonly order = toSignal(
+        this.ordersService.getOrderById(1, undefined, {
+            parse: getOrderById200Response.parse,
+        }),
+    );
 }
 ```
 
@@ -103,16 +109,35 @@ export class UsersComponent {
 
 ```
 src/api/
-├── models/           # TypeScript interfaces
-├── resources/        # HTTP Resource services
-│   ├── index.ts      # Resource exports
-│   └── *.resource.ts # Generated resources
-├── services/         # Traditional HttpClient services
-├── providers.ts      # Provider functions
-└── index.ts         # Main exports
+├── models/               # TypeScript interfaces
+├── services/             # HttpClient services
+├── validators/           # Zod schemas
+│   ├── index.ts          # Schema exports
+│   └── *.validator.ts    # Schemas per controller/tag
+├── providers.ts          # Provider functions
+└── index.ts              # Main exports
+```
+
+Each `*.validator.ts` file contains the Zod schemas and inferred types for one controller:
+
+```typescript
+import { z } from "zod";
+
+export const listOrdersQueryParams = z.object({
+    page: z.number().int().optional(),
+    status: z.enum(["pending", "in-progress", "shipped", "cancelled"]).optional(),
+});
+export type ListOrdersQueryParams = z.infer<typeof listOrdersQueryParams>;
+
+export const listOrders200ResponseItem = z.object({
+    id: z.string().uuid(),
+    status: z.enum(["pending", "in-progress", "shipped", "cancelled"]),
+    total: z.number(),
+});
 ```
 
 ## Documentation
 
-- 📖 [Full Documentation](https://ng-openapi.dev/plugins/zod)
+- 📖 [Full Documentation](https://ng-openapi.dev/api/configuration/plugins/zod)
+- ✅ [Schema Validation Guide](https://ng-openapi.dev/guide/schema-validation)
 - 🚀 [Live Examples](https://stackblitz.com/@Mr-Jami/collections/ng-openapi-examples)

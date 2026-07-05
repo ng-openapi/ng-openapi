@@ -86,17 +86,27 @@ export default defineConfig({
             ],
             "/guide/": [
                 {
-                    text: "User Guide",
-                    link: "guide/guides",
+                    text: "Setup",
                     items: [
+                        { text: "Overview", link: "/guide/guides" },
                         { text: "CLI Usage", link: "/guide/cli-usage" },
                         { text: "Angular Integration", link: "/guide/angular-integration" },
-                        { text: "Http Resource", link: "/guide/http-resource" },
+                        { text: "Generated Output", link: "/guide/generated-code" },
+                    ],
+                },
+                {
+                    text: "Features",
+                    items: [
                         { text: "Multiple Clients", link: "/guide/multiple-clients" },
-                        { text: "Schema Validation", link: "/guide/schema-validation" },
-                        { text: "File Download", link: "/guide/file-download" },
                         { text: "Date Handling", link: "/guide/date-handling" },
-                        { text: "Code Generation", link: "/guide/generated-code" },
+                        { text: "File Downloads", link: "/guide/file-download" },
+                        { text: "Schema Validation", link: "/guide/schema-validation" },
+                    ],
+                },
+                {
+                    text: "Plugins",
+                    items: [
+                        { text: "HTTP Resource", link: "/guide/http-resource" },
                         { text: "Plugin Authoring", link: "/guide/plugin-authoring" },
                     ],
                 },
@@ -203,7 +213,7 @@ export default defineConfig({
                                     collapsed: true,
                                 },
                             ],
-                            collapsed: true,
+                            collapsed: false,
                         },
                         { text: "Providers", link: "/api/providers" },
                         {

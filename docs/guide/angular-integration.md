@@ -13,12 +13,12 @@ Configure ng-openapi providers and services in your Angular application.
 ```typescript
 import { ApplicationConfig } from "@angular/core";
 import { provideHttpClient } from "@angular/common/http";
-import { provideNgOpenapi } from "./client/providers";
+import { provideDefaultClient } from "./client/providers";
 
 export const appConfig: ApplicationConfig = {
     providers: [
         provideHttpClient(),
-        provideNgOpenapi({
+        provideDefaultClient({
             basePath: "https://api.example.com",
         }),
     ],
@@ -43,12 +43,12 @@ export class UsersComponent {
 ## Environment Configuration
 
 ```typescript
-import { provideNgOpenapi } from "./client/providers";
+import { provideDefaultClient } from "./client/providers";
 import { environment } from "./environments/environment";
 
 export const appConfig: ApplicationConfig = {
     providers: [
-        provideNgOpenapi({
+        provideDefaultClient({
             basePath: environment.apiUrl,
         }),
     ],
@@ -58,7 +58,7 @@ export const appConfig: ApplicationConfig = {
 ## Disable Date Transformation
 
 ```typescript
-provideNgOpenapi({
+provideDefaultClient({
     basePath: "https://api.example.com",
     enableDateTransform: false,
 });

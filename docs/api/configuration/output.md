@@ -27,16 +27,15 @@ After generation, you'll have:
 
 ```
 src/client/
-├── models/
-│   └── index.ts          # TypeScript interfaces
-├── services/
-│   ├── index.ts          # Service exports
-│   └── pets.service.ts   # Generated service
-├── tokens/
-│   └── index.ts          # Injection tokens
-├── utils/
-│   ├── date-transformer.ts
-│   └── file-download.ts
-├── providers.ts          # Provider functions
+├── models/               # TypeScript interfaces, enums
+├── services/             # One Angular service per controller
+├── tokens/               # Injection tokens
+├── utils/                # Date transformer, download helpers, …
+├── providers.ts          # Provider setup function
 └── index.ts              # Main exports
 ```
+
+## Notes
+
+- The directory is created if it doesn't exist; generated files are overwritten on every run
+- See [Generated Output](../../guide/generated-code.md) for a file-by-file tour

@@ -11,14 +11,17 @@ title: Plugins
 ```typescript
 // openapi.config.ts
 import { GeneratorConfig } from 'ng-openapi';
+import { HttpResourcePlugin } from '@ng-openapi/http-resource';
 
 export default {
-  options: {
-    plugins: [HttpResourcePlugin],
-  },
+  plugins: [HttpResourcePlugin],
   ... // other configurations
 } as GeneratorConfig;
 ```
+
+::: warning
+`plugins` is a **top-level** configuration property, not part of `options`. A `plugins` array placed inside `options` is silently ignored.
+:::
 
 ## Available Plugins
 
