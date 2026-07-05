@@ -1,4 +1,5 @@
 ---
+description: "HttpResourcePlugin: generate signal-based httpResource services from your OpenAPI spec."
 title: Http Resource Plugin
 ---
 

@@ -1,3 +1,6 @@
+// Typed config-file helper (user-facing, re-exported by ng-openapi)
+export { defineConfig } from "./define-config";
+
 // Header comments stamped onto generated files
 export {
     BASE_INTERCEPTOR_HEADER_COMMENT,

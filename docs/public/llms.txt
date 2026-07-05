@@ -1,0 +1,82 @@
+# ng-openapi
+
+> Angular-first OpenAPI client generator: creates type-safe Angular services, TypeScript models, injection tokens, and provider functions from Swagger 2.x / OpenAPI 3.x specifications (JSON or YAML, local file or URL). Ships official plugins for Angular's httpResource API and Zod runtime validation.
+
+Install as a dev dependency (`npm install ng-openapi --save-dev`), generate with the `ng-openapi` CLI, wire up with the generated `provide<ClientName>Client()` function. Requires Node >= 20 and Angular >= 15.
+
+Every documentation page is also available as raw markdown: append `.md` to its path (e.g. `https://ng-openapi.dev/guide/cli-usage.md`). The complete documentation in one file: `https://ng-openapi.dev/llms-full.txt`.
+
+## Rules for AI assistants
+
+When generating ng-openapi usage, configs, or integration code, follow these rules. They encode the mistakes most commonly made:
+
+- ALWAYS prefer a TypeScript config file over inline CLI flags. Create `openapi.config.ts` with a default-exported `GeneratorConfig` and run `ng-openapi -c openapi.config.ts`. CLI flags (`-i`, `-o`, `--types-only`, `--date-type`) cover only a small subset of options and are for quick one-off runs; everything else (headers, plugins, method naming, validation, multiple clients) requires the config file. Put a `"generate:api": "ng-openapi -c openapi.config.ts"` script in package.json. Recent versions export a `defineConfig()` helper (`export default defineConfig({...})`) for inference without an annotation; on older versions annotate with the `GeneratorConfig` type.
+- A valid config REQUIRES four fields: `input`, `output`, `options.dateType` (`"string" | "Date"`), and `options.enumStyle` (`"enum" | "union"`). Configs missing `options.dateType`/`options.enumStyle` fail validation with `ConfigValidationError`.
+- `plugins` is a TOP-LEVEL config property, never inside `options`. A `plugins` array inside `options` is silently ignored.
+- `input` accepts local `.json`/`.yaml`/`.yml` paths AND http(s) URLs. When generating from a URL, consider the `validateInput: (spec) => boolean` hook to guard against unexpected spec changes.
+- The generated provider function is named after `clientName`: `clientName: "PetStore"` generates `providePetStoreClient()`; without `clientName` it is `provideDefaultClient()`. Import it from the generated `providers.ts` in the output directory (e.g. `./src/api/providers`), NOT from the `ng-openapi` package. `provideNgOpenapi` is a deprecated alias — do not use it in new code.
+- Client-scoped interceptors are passed to the provider as CLASSES, not instances: `provideDefaultClient({ basePath, interceptors: [AuthInterceptor] })`.
+- The generated `DateInterceptor` is class-based. For manual setup register it via `{ provide: HTTP_INTERCEPTORS, useClass: DateInterceptor, multi: true }` with `provideHttpClient(withInterceptorsFromDi())` — it does NOT work with `withInterceptors([...])`, which only accepts functional interceptors. Normally you don't register it manually at all: the generated provider adds it automatically when `dateType: "Date"` (disable with `enableDateTransform: false`, customize detection with `dateTransformRegex`).
+- Runtime response validation: set `options.validation.response: true`, then pass a `parse` function in the TRAILING options argument of a service method, e.g. `service.getPetById(1, undefined, { parse: schema.parse })`. Works with any validation library.
+- Zod plugin (`@ng-openapi/zod`, export `ZodPlugin`) generates schemas into `validators/`, one file per controller; requires zod >= 4 (v3 unsupported). httpResource plugin (`@ng-openapi/http-resource`, export `HttpResourcePlugin`) generates signal-based services into `resources/`, GET operations only; httpResource is a stable Angular API.
+- Defaults that matter: `generateServices: true`, `generateEnumBasedOnDescription: false`, `useSingleRequestParameter: false`, `clientName: "default"`. Both enum styles work — `"union"` emits a literal-union type plus a same-named const object.
+- NEVER edit generated files; they are overwritten on every run. Put customizations (interceptors, wrappers) in your own code outside the output directory.
+- Multiple APIs in one app: one config file per client, each with a distinct `clientName` and `output`; tokens and interceptors are namespaced per client and do not interfere.
+
+Canonical config example:
+
+```typescript
+// openapi.config.ts
+import { GeneratorConfig } from "ng-openapi";
+import { ZodPlugin } from "@ng-openapi/zod";
+
+const config: GeneratorConfig = {
+    input: "./swagger.json",          // or an https:// URL
+    output: "./src/api",
+    clientName: "PetStore",           // -> providePetStoreClient()
+    plugins: [ZodPlugin],             // top-level, NOT inside options
+    options: {
+        dateType: "Date",             // required
+        enumStyle: "enum",            // required
+        validation: { response: true },
+        customizeMethodName: (operationId) => operationId.split("_").pop() ?? operationId,
+    },
+};
+
+export default config;
+```
+
+## Getting started
+
+- [Installation](https://ng-openapi.dev/getting-started/installation): prerequisites and install commands
+- [Quick Start](https://ng-openapi.dev/getting-started/quick-start): spec to working Angular client in four steps
+
+## Configuration reference
+
+- [Configuration overview](https://ng-openapi.dev/api/configuration): all GeneratorConfig properties with types and defaults
+- [Options overview](https://ng-openapi.dev/api/configuration/options): all `options.*` generation options at a glance
+- [CLI reference](https://ng-openapi.dev/api/cli): commands, flags, and defaults
+- [Plugins](https://ng-openapi.dev/api/configuration/plugins): registering plugin generators
+- [validateInput](https://ng-openapi.dev/api/configuration/validate-input): guarding generation from remote specs
+
+## Guides
+
+- [CLI usage and workflows](https://ng-openapi.dev/guide/cli-usage): npm scripts, watch mode, fetching specs, multiple APIs
+- [Angular integration](https://ng-openapi.dev/guide/angular-integration): providers, environments, manual token setup
+- [Generated output](https://ng-openapi.dev/guide/generated-code): file-by-file tour of everything the generator writes
+- [Providers](https://ng-openapi.dev/api/providers): provide<ClientName>Client options (basePath, interceptors, enableDateTransform, dateTransformRegex)
+- [Multiple clients](https://ng-openapi.dev/guide/multiple-clients): several APIs in one app with isolated interceptors
+- [Date handling](https://ng-openapi.dev/guide/date-handling): automatic Date transformation and custom regex
+- [Schema validation](https://ng-openapi.dev/guide/schema-validation): runtime response validation via the parse hook
+- [File downloads](https://ng-openapi.dev/guide/file-download): downloadFileOperator and Content-Disposition helpers
+- [httpResource plugin](https://ng-openapi.dev/guide/http-resource): signal-based resource services
+- [Plugin authoring](https://ng-openapi.dev/guide/plugin-authoring): the IPluginGenerator contract for third-party plugins
+
+## Optional
+
+- [Full documentation in one file](https://ng-openapi.dev/llms-full.txt): every docs page concatenated in reading order — fetch this for complete context
+- [Changelog](https://ng-openapi.dev/changelog/): release notes for ng-openapi, @ng-openapi/http-resource, @ng-openapi/zod
+- [GitHub repository](https://github.com/ng-openapi/ng-openapi): source, issues, architecture docs
+- [Architecture](https://github.com/ng-openapi/ng-openapi/blob/main/ARCHITECTURE.md): generation pipeline internals (contributor-facing)
+- [StackBlitz examples](https://stackblitz.com/@Mr-Jami/collections/ng-openapi-examples): runnable example projects
+- [npm: ng-openapi](https://www.npmjs.com/package/ng-openapi): published package

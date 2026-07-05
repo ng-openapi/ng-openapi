@@ -1,4 +1,5 @@
 ---
+description: "Generate a type-safe Angular API client from an OpenAPI spec in four steps."
 title: Quick Start
 ---
 

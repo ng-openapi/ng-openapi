@@ -232,6 +232,13 @@ Add these scripts to your `package.json`:
 }
 ```
 
+## Using AI Assistants?
+
+Point your AI coding assistant (Claude Code, Cursor, Copilot, …) at
+<https://ng-openapi.dev/llms.txt> — it contains usage rules that prevent the
+most common integration mistakes, plus links into the full documentation
+(<https://ng-openapi.dev/llms-full.txt> for everything in one file).
+
 ## Contributing
 
 Contributions are welcome — see [CONTRIBUTING.md](https://github.com/ng-openapi/ng-openapi/blob/main/CONTRIBUTING.md)

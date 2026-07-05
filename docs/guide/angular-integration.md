@@ -1,4 +1,5 @@
 ---
+description: "Wire generated ng-openapi clients into your Angular app with providers, environments, and tokens."
 title: Angular Integration
 ---
 

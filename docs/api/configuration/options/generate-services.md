@@ -1,4 +1,5 @@
 ---
+description: "generateServices: set false to generate TypeScript models only."
 title: Generate Services
 ---
 

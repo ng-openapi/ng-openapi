@@ -1,4 +1,5 @@
 ---
+description: "Write your own ng-openapi generator plugin against the documented plugin contract."
 title: Plugin Authoring
 ---
 

@@ -1,4 +1,5 @@
 ---
+description: "Generated provider functions: basePath, client-scoped interceptors, and date transform options."
 title: Providers
 ---
 

@@ -1,4 +1,5 @@
 ---
+description: "Registering plugin generators like HttpResourcePlugin and ZodPlugin (top-level plugins array)."
 title: Plugins
 ---
 

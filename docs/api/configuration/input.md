@@ -1,4 +1,5 @@
 ---
+description: "The input property: local JSON/YAML spec files or http(s) URLs."
 title: Input
 ---
 

@@ -1,4 +1,5 @@
 ---
+description: "dateType: type date fields as Date or string, with automatic response transformation."
 title: Date Type
 ---
 

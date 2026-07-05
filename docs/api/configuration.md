@@ -1,4 +1,5 @@
 ---
+description: "Complete GeneratorConfig reference with types and defaults for every property."
 title: Configuration
 ---
 
@@ -7,6 +8,24 @@ title: Configuration
 Extensive configuration options to customize the generated output to match your needs.
 
 ## Usage
+
+The `defineConfig` helper gives you full autocomplete and inline type errors without a manual annotation:
+
+```typescript
+// openapi.config.ts
+import { defineConfig } from "ng-openapi";
+
+export default defineConfig({
+    input: "./swagger.json",
+    output: "./src/api",
+    options: {
+        dateType: "Date",
+        enumStyle: "enum",
+    },
+});
+```
+
+Annotating a plain object with the `GeneratorConfig` type works identically (and is the way to go on ng-openapi versions that don't ship `defineConfig` yet):
 
 ```typescript
 // openapi.config.ts

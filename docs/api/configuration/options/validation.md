@@ -1,4 +1,5 @@
 ---
+description: "validation.response: add a parse hook to service methods for runtime response validation."
 title: Validation
 ---
 

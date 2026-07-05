@@ -1,3 +1,6 @@
 # Redirect all other domains to ng-openapi.dev
 https://ng-openapi.com/* https://ng-openapi.dev/:splat 301!
 https://ng-openapi.netlify.app/* https://ng-openapi.dev/:splat 301!
+
+# Common misspelling of the llms.txt standard (https://llmstxt.org/)
+/llm.txt /llms.txt 301

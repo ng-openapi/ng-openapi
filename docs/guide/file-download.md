@@ -1,4 +1,5 @@
 ---
+description: "Download files from generated services with the built-in RxJS download helpers."
 title: File Downloads
 ---
 

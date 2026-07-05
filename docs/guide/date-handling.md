@@ -1,4 +1,5 @@
 ---
+description: "Automatic conversion of ISO date strings to Date objects in ng-openapi, and how to customize it."
 title: Date Handling
 ---
 

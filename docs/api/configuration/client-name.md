@@ -1,4 +1,5 @@
 ---
+description: "The clientName property: naming providers and tokens for multi-client setups."
 title: Client Name
 ---
 

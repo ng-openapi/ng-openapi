@@ -1,4 +1,5 @@
 ---
+description: "TypeScript compiler settings ng-openapi uses during code generation."
 title: Compiler Options
 ---
 

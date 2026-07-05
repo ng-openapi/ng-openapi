@@ -1,4 +1,5 @@
 ---
+description: "Angular-first OpenAPI client generator: type-safe services, models, and validation schemas from your OpenAPI specification."
 layout: home
 
 hero:

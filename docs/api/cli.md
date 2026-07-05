@@ -1,4 +1,5 @@
 ---
+description: "Complete ng-openapi CLI reference: commands, flags, and defaults."
 title: CLI
 ---
 

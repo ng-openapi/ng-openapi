@@ -1,4 +1,5 @@
 ---
+description: "The output property: where ng-openapi writes generated files."
 title: Output
 ---
 

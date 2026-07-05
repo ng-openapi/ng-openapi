@@ -1,4 +1,5 @@
 ---
+description: "Overview of all ng-openapi guides: setup, features, and plugins."
 title: Guides
 ---
 

@@ -1,4 +1,5 @@
 ---
+description: "downloadFile, downloadFileOperator, and Content-Disposition filename extraction."
 title: File Download Helper
 ---
 

@@ -1,4 +1,5 @@
 ---
+description: "ZodPlugin: generate Zod schemas from your OpenAPI spec for runtime validation."
 title: Zod Plugin
 ---
 

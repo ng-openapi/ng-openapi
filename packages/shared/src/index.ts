@@ -79,6 +79,9 @@ export {
     screamingSnakeCase,
 } from "./utils";
 
+// Typed config-file helper (user-facing)
+export { defineConfig } from "./config";
+
 // Generated-file header comments
 export {
     BASE_INTERCEPTOR_HEADER_COMMENT,

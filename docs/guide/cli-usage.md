@@ -1,4 +1,5 @@
 ---
+description: "Everyday ng-openapi CLI workflows: npm scripts, watch mode, fetching specs, and multiple APIs."
 title: CLI Usage
 ---
 

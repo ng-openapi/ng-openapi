@@ -1,4 +1,5 @@
 ---
+description: "Generate signal-based Angular services using the httpResource API with the ng-openapi plugin."
 title: HTTP Resource Plugin
 ---
 

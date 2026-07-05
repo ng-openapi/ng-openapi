@@ -1,4 +1,5 @@
 ---
+description: "enumStyle: generate TypeScript enums or literal-union types."
 title: Enum Style
 ---
 

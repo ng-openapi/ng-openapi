@@ -1,4 +1,5 @@
 ---
+description: "The generated DateInterceptor: recognized date formats, custom regex, and manual setup."
 title: Date Transformer
 ---
 

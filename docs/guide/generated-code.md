@@ -1,4 +1,5 @@
 ---
+description: "File-by-file tour of everything ng-openapi writes into your output directory."
 title: Generated Output
 ---
 

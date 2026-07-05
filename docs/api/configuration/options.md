@@ -1,4 +1,5 @@
 ---
+description: "All options.* generation options at a glance, with types and defaults."
 title: Options
 ---
 
