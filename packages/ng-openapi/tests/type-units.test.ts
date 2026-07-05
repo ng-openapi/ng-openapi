@@ -130,6 +130,29 @@ describe("EnumBuilder", () => {
         expect(constant).toMatchObject({ kind: StructureKind.VariableStatement });
     });
 
+    it("warns when a JSON-looking description fails to parse, stays quiet on prose", () => {
+        const config: TypeGenOptions = {
+            options: { dateType: "string", enumStyle: "enum", generateEnumBasedOnDescription: true },
+        };
+        const warnings: string[] = [];
+        const builder = new EnumBuilder(config, (message) => warnings.push(message));
+
+        // Trailing comma → intended-but-malformed JSON payload
+        builder.build("Kind", {
+            enum: [1, 2],
+            description: '[{"Name":"First","Value":1},]',
+        } as SwaggerDefinition);
+        expect(warnings).toHaveLength(1);
+        expect(warnings[0]).toContain('Enum "Kind"');
+
+        // Prose descriptions are expected to fail JSON.parse silently
+        builder.build("Other", {
+            enum: [1, 2],
+            description: "Plain human-readable description",
+        } as SwaggerDefinition);
+        expect(warnings).toHaveLength(1);
+    });
+
     it("uses description-encoded members when generateEnumBasedOnDescription is set", () => {
         const config: TypeGenOptions = {
             options: { dateType: "string", enumStyle: "enum", generateEnumBasedOnDescription: true },

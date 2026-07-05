@@ -112,8 +112,9 @@ async function generateFromOptions(options: any): Promise<void> {
             await runGeneration(config);
         } else {
             console.error("Error: Either --config or --input option is required");
-            program.help();
-            process.exit(1);
+            // help({ error: true }) prints to stderr and exits non-zero;
+            // plain help() would exit 0 before a process.exit(1) could run
+            program.help({ error: true });
         }
 
         console.log("✨ Generation completed successfully!");
@@ -125,11 +126,12 @@ async function generateFromOptions(options: any): Promise<void> {
             console.error("💡 Tip: Make sure the URL is accessible and returns a valid OpenAPI/Swagger specification");
             console.error("💡 Alternative: Download the specification file locally and use the file path instead");
         }
-        process.exit(1);
+        // exitCode instead of process.exit(): lets the event loop drain (no
+        // truncated piped output) and can't be short-circuited by refactors
+        process.exitCode = 1;
     } finally {
         const duration = (new Date().getTime() - timestamp) / 1000;
         console.log(`⏱️  Duration: ${duration.toFixed(2)} seconds`);
-        process.exit(0);
     }
 }
 

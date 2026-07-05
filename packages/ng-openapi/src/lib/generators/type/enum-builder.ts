@@ -21,9 +21,11 @@ export function toEnumKey(value: string | number): string {
  */
 export class EnumBuilder {
     private readonly config: TypeGenOptions;
+    private readonly onWarning?: (message: string) => void;
 
-    constructor(config: TypeGenOptions) {
+    constructor(config: TypeGenOptions, onWarning?: (message: string) => void) {
         this.config = config;
+        this.onWarning = onWarning;
     }
 
     build(name: string, definition: SwaggerDefinition): StatementStructures[] {
@@ -59,7 +61,7 @@ export class EnumBuilder {
                 members,
             });
         } else {
-            const members = this.buildEnumMembers(definition);
+            const members = this.buildEnumMembers(name, definition);
 
             statements.push({
                 kind: StructureKind.Enum,
@@ -114,7 +116,7 @@ export class EnumBuilder {
         return statements;
     }
 
-    private buildEnumMembers(definition: SwaggerDefinition) {
+    private buildEnumMembers(name: string, definition: SwaggerDefinition) {
         if (definition.description && this.config.options.generateEnumBasedOnDescription) {
             try {
                 const enumValueObjects = JSON.parse(definition.description) as EnumValueObject[];
@@ -123,7 +125,13 @@ export class EnumBuilder {
                     value: obj.Value,
                 }));
             } catch {
-                // Fall through to default handling
+                // Prose descriptions are expected to land here silently; only a
+                // description that looks like the JSON payload warrants a warning
+                if (/^\s*[[{]/.test(definition.description)) {
+                    this.onWarning?.(
+                        `Enum "${name}": description looks like JSON (generateEnumBasedOnDescription) but could not be used — falling back to raw enum values`,
+                    );
+                }
             }
         }
 

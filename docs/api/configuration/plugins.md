@@ -4,7 +4,7 @@ title: Plugins
 
 # `plugins`
 
-**Type:** `IPluginGenerator[]` | **Default: `undefined`**
+**Type:** `IPluginGeneratorClass[]` | **Default: `undefined`**
 
 ## Usage
 

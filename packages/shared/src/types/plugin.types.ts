@@ -5,9 +5,9 @@ import type { GeneratorConfig } from "./config.types";
 /**
  * Everything a plugin generator receives from the orchestrator.
  *
- * Plugins get the same narrow inputs as the core generators: the version-free
- * NormalizedSpec (never the raw spec or the parser) and the shared ts-morph
- * Project they must emit through so the orchestrator can track written files.
+ * Plugins consume the version-free NormalizedSpec — never the raw spec or the
+ * SwaggerParser — and emit through the shared ts-morph Project so the
+ * orchestrator can track written files.
  */
 export interface PluginGeneratorContext {
     /** Version-free spec model; $refs resolved, per-operation fields precomputed. */
