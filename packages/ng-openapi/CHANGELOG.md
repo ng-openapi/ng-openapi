@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.22](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.2.21...ng-openapi-v0.2.22) (2026-07-05)
+
+
+### Bug Fixes
+
+* **ng-openapi:** avoid fixMissingImports crash in request-params generation ([#94](https://github.com/ng-openapi/ng-openapi/issues/94)) ([8a30358](https://github.com/ng-openapi/ng-openapi/commit/8a303581158eb86e709e6b1489b3542e9a88da74))
+
 ## [0.2.21](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.2.20...ng-openapi-v0.2.21) (2026-07-05)
 
 
