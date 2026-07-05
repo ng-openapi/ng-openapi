@@ -25,6 +25,11 @@ npm run test:watch     # watch mode
 npm run test:coverage  # run with coverage (packages/shared is the main target)
 ```
 
+Test files conventionally live in each package's `tests/` directory. Co-located
+`src/**/*.test.ts` / `src/**/*.spec.ts` files also work — vitest picks them up and
+lint applies the relaxed test-file rules (e.g. `no-explicit-any` is a warning there,
+not an error) to the same patterns.
+
 ### Unit tests
 
 Fast, network-free tests for `@ng-openapi/shared` (string/type utils, response-type

@@ -22,6 +22,9 @@
             "inputs": ["default", "^default", "{workspaceRoot}/eslint.config.mjs"]
         },
         "test": {
+            // Cache + env inputs apply to local `nx test` runs only: CI runs
+            // `npm run test:coverage` (plain vitest) for the aggregated
+            // coverage report and bypasses this cache (see ci.yml).
             "cache": true,
             "inputs": [
                 "default",

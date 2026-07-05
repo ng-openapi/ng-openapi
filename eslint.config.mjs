@@ -104,8 +104,15 @@ export default [
         // consume the packages' PUBLIC barrels ("ng-openapi", "@ng-openapi/shared")
         // instead of relative paths — that self-import is allowed here. Patterns use
         // a leading `**/` so they match whether ESLint runs from the workspace root
-        // or from a package subdirectory (e.g. `nx lint`).
-        files: ["**/tests/**/*.ts", "**/testing/src/**/*.ts"],
+        // or from a package subdirectory (e.g. `nx lint`). The co-located patterns
+        // mirror the root vitest.config.ts `include` — anything vitest treats as a
+        // test gets test-file lint rules, wherever it lives.
+        files: [
+            "**/tests/**/*.ts",
+            "**/testing/src/**/*.ts",
+            "**/src/**/*.test.ts",
+            "**/src/**/*.spec.ts",
+        ],
         rules: {
             "@nx/enforce-module-boundaries": [
                 "error",
