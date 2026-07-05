@@ -10,7 +10,7 @@
             "fallbackCurrentVersionResolver": "disk"
         }
     },
-    "tags": ["plugin", "zod"],
+    "tags": ["scope:plugin"],
     "targets": {
         "nx-release-publish": {
             "options": {
@@ -24,6 +24,19 @@
                 "cwd": "packages/plugins/zod"
             },
             "outputs": ["{workspaceRoot}/dist/packages/plugins/zod"]
+        },
+        "typecheck": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npx tsc -p {projectRoot}/tsconfig.lib.json --noEmit"
+            }
+        },
+        "test": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npx vitest run packages/plugins/zod",
+                "cwd": "{workspaceRoot}"
+            }
         }
     }
 }

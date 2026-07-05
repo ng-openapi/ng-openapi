@@ -1,4 +1,4 @@
-import { OptionalKind, Project, PropertySignatureStructure } from "ts-morph";
+import { OptionalKind, Project, PropertySignatureStructure, SourceFile } from "ts-morph";
 import * as path from "path";
 import {
     GeneratorConfig,
@@ -104,7 +104,7 @@ export class ProviderGenerator {
     }
 
     private addMainProviderFunction(
-        sourceFile: any,
+        sourceFile: SourceFile,
         basePathTokenName: string,
         interceptorsTokenName: string,
         baseInterceptorClassName: string,

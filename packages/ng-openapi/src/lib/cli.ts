@@ -91,7 +91,16 @@ async function loadConfigFile(configPath: string): Promise<GeneratorConfig> {
     }
 }
 
-async function generateFromOptions(options: any): Promise<void> {
+interface CliOptions {
+    config?: string;
+    input?: string;
+    output?: string;
+    typesOnly?: boolean;
+    /** Free-form from the flag; validateGeneratorConfig rejects invalid values with a clear message. */
+    dateType?: string;
+}
+
+async function generateFromOptions(options: CliOptions): Promise<void> {
     const timestamp = new Date().getTime();
     try {
         if (options.config) {
@@ -102,7 +111,9 @@ async function generateFromOptions(options: any): Promise<void> {
                 input: options.input, // Can now be a URL or file path
                 output: options.output || "./src/generated",
                 options: {
-                    dateType: options.dateType || "Date",
+                    // Passed through unchecked on purpose: validateGeneratorConfig
+                    // rejects anything but "string" | "Date" with an actionable error
+                    dateType: (options.dateType || "Date") as GeneratorConfig["options"]["dateType"],
                     enumStyle: "enum",
                     generateEnumBasedOnDescription: true,
                     generateServices: !options.typesOnly,
