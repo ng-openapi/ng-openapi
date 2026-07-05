@@ -90,6 +90,8 @@ export interface SwaggerDefinition {
     maxProperties?: number | undefined;
     minProperties?: number | undefined;
     enum?: Array<string | number> | undefined;
+    /** OpenAPI 3.1 (JSON Schema); normalizeSchema folds it into a single-value `enum`. */
+    const?: unknown;
     items?: SwaggerDefinition | SwaggerDefinition[] | undefined;
     $ref?: string | undefined;
     allOf?: SwaggerDefinition[] | undefined;

@@ -89,7 +89,9 @@
                     "nickname": { "type": ["string", "null"] },
                     "weight": { "type": ["number", "null"] },
                     "kind": { "$ref": "#/components/schemas/WidgetKind" },
-                    "createdAt": { "type": "string", "format": "date-time" }
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "lastSeenAt": { "type": ["string", "null"], "format": "date-time" },
+                    "schemaVersion": { "const": "v2" }
                 }
             },
             "NewWidget": {

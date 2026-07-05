@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeSpec, SwaggerSpec } from "../src";
+import { normalizeSchema, normalizeSpec, SwaggerSpec } from "../src";
 
 const spec = {
     openapi: "3.0.3",
@@ -106,5 +106,68 @@ describe("normalizeSpec", () => {
         expect(normalized.operations.find((o) => o.operationId === "token")!.responseType).toBe("arraybuffer");
         // 201 with no content → json default
         expect(normalized.operations.find((o) => o.operationId === "upload")!.responseType).toBe("json");
+    });
+});
+
+describe("normalizeSchema (OpenAPI 3.1 constructs)", () => {
+    it("folds null members of type arrays into nullable", () => {
+        expect(normalizeSchema({ type: ["string", "null"] as unknown as string })).toMatchObject({
+            type: "string",
+            nullable: true,
+        });
+    });
+
+    it("keeps format working on nullable 3.1 schemas", () => {
+        const normalized = normalizeSchema({
+            type: ["string", "null"] as unknown as string,
+            format: "date-time",
+        });
+        expect(normalized).toMatchObject({ type: "string", format: "date-time", nullable: true });
+    });
+
+    it("keeps multi-type arrays as unions and handles null-only types", () => {
+        const multi = normalizeSchema({ type: ["string", "number", "null"] as unknown as string });
+        expect(multi.type).toEqual(["string", "number"]);
+        expect(multi.nullable).toBe(true);
+
+        expect(normalizeSchema({ type: ["null"] as unknown as string }).type).toBe("null");
+    });
+
+    it("converts const to a single-value enum", () => {
+        expect(normalizeSchema({ type: "string", const: "active" })).toMatchObject({
+            type: "string",
+            enum: ["active"],
+        });
+        expect(normalizeSchema({ type: "string", const: "active" }).const).toBeUndefined();
+        // An existing enum wins over const
+        expect(normalizeSchema({ const: "x", enum: ["a"] }).enum).toEqual(["a"]);
+    });
+
+    it("recurses into properties, items, compositions and additionalProperties", () => {
+        const normalized = normalizeSchema({
+            type: "object",
+            properties: {
+                tag: { type: ["string", "null"] as unknown as string },
+                list: { type: "array", items: { const: 1 } },
+            },
+            additionalProperties: { type: ["number", "null"] as unknown as string },
+            oneOf: [{ const: "a" }],
+        });
+        expect(normalized.properties?.tag).toMatchObject({ type: "string", nullable: true });
+        expect((normalized.properties?.list.items as { enum: unknown[] }).enum).toEqual([1]);
+        expect(normalized.additionalProperties).toMatchObject({ type: "number", nullable: true });
+        expect(normalized.oneOf?.[0].enum).toEqual(["a"]);
+    });
+
+    it("leaves 2.0/3.0-style schemas semantically untouched and never mutates input", () => {
+        const input = { type: "string", format: "date", enum: ["a"] } as const;
+        const copy = JSON.parse(JSON.stringify(input));
+        const normalized = normalizeSchema(input as never);
+        expect(normalized).toEqual(copy);
+        expect(input).toEqual(copy);
+
+        const arrayInput = { type: ["string", "null"] as unknown as string };
+        normalizeSchema(arrayInput);
+        expect(arrayInput.type).toEqual(["string", "null"]);
     });
 });
