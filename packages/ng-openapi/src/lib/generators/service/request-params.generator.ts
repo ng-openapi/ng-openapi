@@ -1,4 +1,4 @@
-import { Project } from "ts-morph";
+import { Project, SourceFile } from "ts-morph";
 import {
     GeneratorConfig,
     pascalCase,
@@ -73,13 +73,38 @@ export class RequestParamsGenerator {
             });
         });
 
-        // fixMissingImports before the header comment: inserting the first import
-        // into a file that starts with plain comment text trips up ts-morph
-        sourceFile.fixMissingImports().formatText();
+        // Imports before the header comment: inserting the first import into a
+        // file that starts with plain comment text trips up ts-morph
+        this.addMissingImports(sourceFile);
+        sourceFile.formatText();
         sourceFile.insertText(0, REQUEST_PARAMS_GENERATOR_HEADER_COMMENT);
         sourceFile.saveSync();
 
         this.addModelsBarrelExport(outputRoot);
+    }
+
+    /**
+     * `sourceFile.fixMissingImports()` fails with a tree-manipulation error when
+     * the first statement of the file carries a JSDoc (as the interfaces here do),
+     * so the same language-service code fix is applied as a plain text edit instead.
+     */
+    private addMissingImports(sourceFile: SourceFile): void {
+        const changes = this.project
+            .getLanguageService()
+            .getCombinedCodeFix(sourceFile, "fixMissingImport")
+            .getChanges()
+            .filter((fileChange) => fileChange.getFilePath() === sourceFile.getFilePath())
+            .flatMap((fileChange) => fileChange.getTextChanges())
+            .sort((a, b) => b.getSpan().getStart() - a.getSpan().getStart());
+        if (changes.length === 0) {
+            return;
+        }
+        let text = sourceFile.getFullText();
+        changes.forEach((change) => {
+            const span = change.getSpan();
+            text = text.slice(0, span.getStart()) + change.getNewText() + text.slice(span.getStart() + span.getLength());
+        });
+        sourceFile.replaceWithText(text);
     }
 
     /**
