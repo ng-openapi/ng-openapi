@@ -1,0 +1,154 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Edge Cases API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/things": {
+            "get": {
+                "tags": ["things"],
+                "operationId": "listThings",
+                "parameters": [
+                    {
+                        "name": "filter.name",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    },
+                    {
+                        "name": "sort-by",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": { "$ref": "#/components/schemas/user-profile" }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": ["things"],
+                "responses": {
+                    "204": { "description": "created, no content, no operationId" }
+                }
+            }
+        },
+        "/misc/no-tags/{id}": {
+            "get": {
+                "operationId": "getMiscById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "grouped by path segment, multiple success codes",
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/api.response" }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "alternate success",
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/123meta" }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "user-profile": {
+                "type": "object",
+                "required": ["user-id"],
+                "properties": {
+                    "user-id": { "type": "string" },
+                    "display name": { "type": "string" },
+                    "2fa-enabled": { "type": "boolean" },
+                    "address": {
+                        "type": "object",
+                        "properties": {
+                            "street": { "type": "string" },
+                            "geo": {
+                                "type": "object",
+                                "properties": {
+                                    "lat": { "type": "number" },
+                                    "lng": { "type": "number" }
+                                }
+                            }
+                        }
+                    },
+                    "roles": {
+                        "type": "array",
+                        "items": {
+                            "type": "array",
+                            "items": { "type": "string" }
+                        }
+                    },
+                    "state": { "$ref": "#/components/schemas/RecordState" },
+                    "level": { "$ref": "#/components/schemas/SignedLevel" },
+                    "label": { "$ref": "#/components/schemas/StringyEnum" }
+                }
+            },
+            "api.response": {
+                "type": "object",
+                "properties": {
+                    "data": { "type": "object", "additionalProperties": true },
+                    "meta": { "$ref": "#/components/schemas/123meta" }
+                }
+            },
+            "123meta": {
+                "type": "object",
+                "properties": {
+                    "count": { "type": "integer" }
+                }
+            },
+            "RecordState": {
+                "type": "integer",
+                "description": "[{\"Name\":\"Active\",\"Value\":1},{\"Name\":\"Archived\",\"Value\":2}]",
+                "enum": [1, 2]
+            },
+            "SignedLevel": {
+                "type": "integer",
+                "enum": [-1, 0, 1]
+            },
+            "StringyEnum": {
+                "type": "string",
+                "enum": ["in-progress", "it's done", "1st"]
+            },
+            "FreeMap": {
+                "type": "object",
+                "additionalProperties": true
+            },
+            "ClosedBox": {
+                "type": "object",
+                "additionalProperties": false
+            },
+            "TypedMap": {
+                "type": "object",
+                "additionalProperties": { "$ref": "#/components/schemas/123meta" }
+            },
+            "Untyped": {
+                "description": "A schema with no type information at all"
+            }
+        }
+    }
+}

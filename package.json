@@ -32,6 +32,7 @@
         "// Testing and validation": "",
         "test": "vitest run",
         "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage",
         "test:install": "npm pack dist/packages/ng-openapi && npm install -g ng-openapi-*.tgz",
         "test:uninstall": "npm uninstall -g ng-openapi && rm -f ng-openapi-*.tgz",
         "validate:package": "cd dist/packages/ng-openapi && npm pack && tar -tzf *.tgz"
