@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
-import { GeneratorConfig } from "@ng-openapi/shared";
-import { isUrl } from "@ng-openapi/shared/src/utils/functions/is-url";
+import { GeneratorConfig, isUrl } from "@ng-openapi/shared";
 import { Command } from "commander";
 import * as fs from "fs";
 import * as path from "path";
