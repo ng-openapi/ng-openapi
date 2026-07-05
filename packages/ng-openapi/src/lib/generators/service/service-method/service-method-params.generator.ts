@@ -6,6 +6,7 @@ import {
     getTypeScriptType,
     isDataTypeInterface,
     NormalizedOperation,
+    RequestBody,
     SwaggerDefinition,
 } from "@ng-openapi/shared";
 import { ServiceMethodRequestObjectGenerator } from "./service-method-request-object.generator";
@@ -114,7 +115,7 @@ export class ServiceMethodParamsGenerator {
         return `RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text', ${additionalTypeParameters.join(", ")}>`;
     }
 
-    private getRequestBodyType(requestBody: any): string {
+    private getRequestBodyType(requestBody: RequestBody): string {
         const content = requestBody.content || {};
         const jsonContent = content[CONTENT_TYPES.JSON];
 

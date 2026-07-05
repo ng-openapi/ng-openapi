@@ -55,8 +55,8 @@ jobs:
           done
           exit $missing
 
-      - name: Typecheck (tsc --noEmit, all packages)
-        run: npm run typecheck
+      - name: Typecheck + lint + build (nx run-many, all packages)
+        run: npx nx run-many -t typecheck lint build
 
       - name: Run tests (unit + golden + compile-check) with coverage
         run: npm run test:coverage

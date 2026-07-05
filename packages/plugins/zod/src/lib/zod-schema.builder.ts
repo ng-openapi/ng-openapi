@@ -76,8 +76,8 @@ export class ZodSchemaBuilder {
 
     private async buildStringSchema(schema: SwaggerDefinition, buildOptions: BuildOptions): Promise<string> {
         // Handle enums
-        if (schema.enum && schema.enum.every((v: any) => typeof v === "string")) {
-            const enumValues = schema.enum.map((v: any) => `'${this.escapeString(v)}'`).join(", ");
+        if (schema.enum && schema.enum.every((v) => typeof v === "string")) {
+            const enumValues = schema.enum.map((v) => `'${this.escapeString(String(v))}'`).join(", ");
             return `z.enum([${enumValues}])`;
         }
 
@@ -140,7 +140,7 @@ export class ZodSchemaBuilder {
             if (schema.enum.length === 1) {
                 return `z.literal(${schema.enum[0]})`;
             }
-            const literals = schema.enum.map((v: any) => `z.literal(${v})`).join(", ");
+            const literals = schema.enum.map((v) => `z.literal(${v})`).join(", ");
             return `z.union([${literals}])`;
         }
 
@@ -168,7 +168,7 @@ export class ZodSchemaBuilder {
             if (schema.enum.length === 1) {
                 return `z.literal(${schema.enum[0]})`;
             }
-            const literals = schema.enum.map((v: any) => `z.literal(${v})`).join(", ");
+            const literals = schema.enum.map((v) => `z.literal(${v})`).join(", ");
             return `z.union([${literals}])`;
         }
 
@@ -277,13 +277,15 @@ export class ZodSchemaBuilder {
         }
 
         const filtered = { ...schema };
-        filtered.properties = Object.entries(schema.properties).reduce<Record<string, any>>((acc, [key, value]) => {
-            const propSchema = value as SwaggerDefinition;
-            if (!propSchema.readOnly) {
-                acc[key] = value;
-            }
-            return acc;
-        }, {});
+        filtered.properties = Object.entries(schema.properties).reduce<Record<string, SwaggerDefinition>>(
+            (acc, [key, value]) => {
+                if (!value.readOnly) {
+                    acc[key] = value;
+                }
+                return acc;
+            },
+            {},
+        );
 
         return filtered;
     }
@@ -296,7 +298,7 @@ export class ZodSchemaBuilder {
         return schema.type || "any";
     }
 
-    private generateDefaultValue(defaultValue: any): string {
+    private generateDefaultValue(defaultValue: unknown): string {
         if (typeof defaultValue === "string") {
             return `'${this.escapeString(defaultValue)}'`;
         }
