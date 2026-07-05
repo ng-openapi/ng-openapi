@@ -21,22 +21,18 @@ export class ServiceGenerator {
     private config: GeneratorConfig;
     private methodGenerator: ServiceMethodGenerator;
     private requestObjects?: Map<NormalizedOperation, RequestObjectEntry>;
+    private readonly onWarning?: (message: string) => void;
 
-    constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
+    constructor(
+        parser: SwaggerParser,
+        project: Project,
+        config: GeneratorConfig,
+        onWarning?: (message: string) => void,
+    ) {
         this.config = config;
         this.project = project;
         this.parser = parser;
-
-        // Validate the spec
-        if (!this.parser.isValidSpec()) {
-            const versionInfo = this.parser.getSpecVersion();
-            throw new Error(
-                `Invalid or unsupported specification format. ` +
-                    `Expected OpenAPI 3.x or Swagger 2.x. ` +
-                    `${versionInfo ? `Found: ${versionInfo.type} ${versionInfo.version}` : "No version info found"}`,
-            );
-        }
-
+        this.onWarning = onWarning;
         this.methodGenerator = new ServiceMethodGenerator(config);
     }
 
@@ -45,7 +41,7 @@ export class ServiceGenerator {
         const paths = this.parser.getNormalizedSpec().operations;
 
         if (paths.length === 0) {
-            console.warn("No API paths found in the specification");
+            this.onWarning?.("No API paths found in the specification");
             return;
         }
 

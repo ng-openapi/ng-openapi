@@ -12,6 +12,7 @@ import {
 import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
 import { GeneratorConfig, isUrl, SwaggerParser } from "@ng-openapi/shared";
 import { validateGeneratorConfig } from "./config-validation";
+import { GenerationResult, Reporter } from "./reporter";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -39,9 +40,15 @@ export function validateInput(inputPath: string): void {
 }
 
 /**
- * Generates Angular services and types from a configuration object
+ * Generates Angular services and types from a configuration object.
+ *
+ * Pure orchestration: no logging, no process concerns. Progress and warnings
+ * are surfaced through the optional Reporter and the returned
+ * GenerationResult; presentation (emojis, hints, exit codes) is the CLI's job.
  */
-export async function generateFromConfig(config: GeneratorConfig): Promise<void> {
+export async function generateFromConfig(config: GeneratorConfig, reporter: Reporter = {}): Promise<GenerationResult> {
+    const startedAt = Date.now();
+
     // Fail fast on structurally invalid configs (JS callers / config files
     // bypass the compile-time types entirely)
     validateGeneratorConfig(config);
@@ -51,101 +58,99 @@ export async function generateFromConfig(config: GeneratorConfig): Promise<void>
 
     const outputPath = config.output;
     const generateServices = config.options.generateServices ?? true;
-    const inputType = isUrl(config.input) ? "URL" : "file";
+
+    const warnings: string[] = [];
+    const onWarning = (message: string): void => {
+        warnings.push(message);
+        reporter.onWarning?.(message);
+    };
 
     // Ensure output directory exists
     if (!fs.existsSync(outputPath)) {
         fs.mkdirSync(outputPath, { recursive: true });
     }
 
-    try {
-        const project = new Project({
-            compilerOptions: {
-                declaration: true,
-                target: ScriptTarget.ES2022,
-                module: ModuleKind.Preserve,
-                strict: true,
-                ...config.compilerOptions,
-            },
-        });
+    const project = new Project({
+        compilerOptions: {
+            declaration: true,
+            target: ScriptTarget.ES2022,
+            module: ModuleKind.Preserve,
+            strict: true,
+            ...config.compilerOptions,
+        },
+    });
 
-        console.log(`📡 Processing OpenAPI specification from ${inputType}: ${config.input}`);
-        const swaggerParser = await SwaggerParser.create(config.input, config);
+    reporter.onPhase?.("processing-spec");
+    const swaggerParser = await SwaggerParser.create(config.input, config);
 
-        // Use config for type generation - TypeGenerator now handles both files and URLs
-        const typeGenerator = new TypeGenerator(swaggerParser, project, config, outputPath);
-        await typeGenerator.generate();
-        console.log(`✅ TypeScript interfaces generated`);
-
-        if (generateServices) {
-            // Generate tokens first
-            const tokenGenerator = new TokenGenerator(project, config.clientName);
-            tokenGenerator.generate(outputPath);
-
-            // Generate date transformer if enabled
-            if (config.options.dateType === "Date") {
-                const dateTransformer = new DateTransformerGenerator(project);
-                dateTransformer.generate(outputPath);
-            }
-
-            // Generate file download helper
-            const fileDownloadHelper = new FileDownloadGenerator(project);
-            fileDownloadHelper.generate(outputPath);
-
-            // Generate HttpParamsBuilder
-            const httpParamsBuilderGenerator = new HttpParamsBuilderGenerator(project);
-            httpParamsBuilderGenerator.generate(outputPath);
-
-            // Generate provider functions (always generate, even if services are disabled)
-            const providerGenerator = new ProviderGenerator(project, config);
-            providerGenerator.generate(outputPath);
-
-            const baseInterceptorGenerator = new BaseInterceptorGenerator(project, config.clientName);
-            baseInterceptorGenerator.generate(outputPath);
-
-            // Generate services using the refactored ServiceGenerator
-            const serviceGenerator = new ServiceGenerator(swaggerParser, project, config);
-            await serviceGenerator.generate(outputPath);
-
-            // Generate services index file
-            const indexGenerator = new ServiceIndexGenerator(project);
-            indexGenerator.generateIndex(outputPath);
-
-            console.log(`✅ Angular services generated`);
-        }
-
-        if (config.plugins?.length) {
-            for (const plugin of config.plugins) {
-                const pluginGenerator = new plugin(swaggerParser, project, config);
-                await pluginGenerator.generate(outputPath);
-            }
-            console.log(`✅ Plugins are generated`);
-        }
-
-        // Generate main index file (always, regardless of generateServices)
-        const mainIndexGenerator = new MainIndexGenerator(project, config);
-        mainIndexGenerator.generateMainIndex(outputPath);
-
-        const sourceInfo = `from ${inputType}: ${config.input}`;
-        if (config.clientName) {
-            console.log(`🎉 ${config.clientName} Generation completed successfully ${sourceInfo} -> ${outputPath}`);
-        } else {
-            console.log(`🎉 Generation completed successfully ${sourceInfo} -> ${outputPath}`);
-        }
-    } catch (error) {
-        if (error instanceof Error) {
-            console.error("❌ Error during generation:", error.message);
-
-            // Provide helpful hints for common URL-related errors
-            if (error.message.includes("fetch") || error.message.includes("Failed to fetch")) {
-                console.error(
-                    "💡 Tip: Make sure the URL is accessible and returns a valid OpenAPI/Swagger specification",
-                );
-                console.error("💡 Alternative: Download the specification file locally and use the file path instead");
-            }
-        } else {
-            console.error("❌ Unknown error during generation:", error);
-        }
-        throw error;
+    // Guard once here instead of in every generator/plugin constructor
+    if (!swaggerParser.isValidSpec()) {
+        const versionInfo = swaggerParser.getSpecVersion();
+        throw new Error(
+            `Invalid or unsupported specification format. ` +
+                `Expected OpenAPI 3.x or Swagger 2.x. ` +
+                `${versionInfo ? `Found: ${versionInfo.type} ${versionInfo.version}` : "No version info found"}`,
+        );
     }
+    const normalizedSpec = swaggerParser.getNormalizedSpec();
+
+    const typeGenerator = new TypeGenerator(swaggerParser, project, config, outputPath, onWarning);
+    await typeGenerator.generate();
+    reporter.onPhase?.("types-generated");
+
+    if (generateServices) {
+        // Generate tokens first
+        const tokenGenerator = new TokenGenerator(project, config.clientName);
+        tokenGenerator.generate(outputPath);
+
+        // Generate date transformer if enabled
+        if (config.options.dateType === "Date") {
+            const dateTransformer = new DateTransformerGenerator(project);
+            dateTransformer.generate(outputPath);
+        }
+
+        // Generate file download helper
+        const fileDownloadHelper = new FileDownloadGenerator(project);
+        fileDownloadHelper.generate(outputPath);
+
+        // Generate HttpParamsBuilder
+        const httpParamsBuilderGenerator = new HttpParamsBuilderGenerator(project);
+        httpParamsBuilderGenerator.generate(outputPath);
+
+        // Generate provider functions (always generate, even if services are disabled)
+        const providerGenerator = new ProviderGenerator(project, config);
+        providerGenerator.generate(outputPath);
+
+        const baseInterceptorGenerator = new BaseInterceptorGenerator(project, config.clientName);
+        baseInterceptorGenerator.generate(outputPath);
+
+        // Generate services using the refactored ServiceGenerator
+        const serviceGenerator = new ServiceGenerator(swaggerParser, project, config, onWarning);
+        await serviceGenerator.generate(outputPath);
+
+        // Generate services index file
+        const indexGenerator = new ServiceIndexGenerator(project);
+        indexGenerator.generateIndex(outputPath);
+
+        reporter.onPhase?.("services-generated");
+    }
+
+    if (config.plugins?.length) {
+        for (const plugin of config.plugins) {
+            const pluginGenerator = new plugin({ spec: normalizedSpec, project, config, onWarning });
+            await pluginGenerator.generate(outputPath);
+        }
+        reporter.onPhase?.("plugins-generated");
+    }
+
+    // Generate main index file (always, regardless of generateServices)
+    const mainIndexGenerator = new MainIndexGenerator(project, config);
+    mainIndexGenerator.generateMainIndex(outputPath);
+
+    return {
+        client: config.clientName,
+        filesWritten: project.getSourceFiles().map((sourceFile) => sourceFile.getFilePath() as string),
+        warnings,
+        durationMs: Date.now() - startedAt,
+    };
 }

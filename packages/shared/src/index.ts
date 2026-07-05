@@ -19,6 +19,7 @@ export type {
     OpenApiSecurityScheme,
     Parameter,
     PathInfo,
+    PluginGeneratorContext,
     RequestBody,
     SwaggerDefinition,
     SwaggerResponse,

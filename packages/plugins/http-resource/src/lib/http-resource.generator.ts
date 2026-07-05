@@ -8,8 +8,9 @@ import {
     HTTP_RESOURCE_GENERATOR_HEADER_COMMENT,
     IPluginGenerator,
     NormalizedOperation,
+    NormalizedSpec,
     pascalCase,
-    SwaggerParser,
+    PluginGeneratorContext,
 } from "@ng-openapi/shared";
 import * as path from "path";
 import { HttpResourceMethodGenerator } from "./http-resource-method.generator";
@@ -17,37 +18,28 @@ import { HttpResourceIndexGenerator } from "./http-resource-index.generator";
 
 export class HttpResourceGenerator implements IPluginGenerator {
     private project: Project;
-    private parser: SwaggerParser;
+    private spec: NormalizedSpec;
     private config: GeneratorConfig;
     private methodGenerator: HttpResourceMethodGenerator;
     private indexGenerator: HttpResourceIndexGenerator;
+    private readonly onWarning?: (message: string) => void;
 
-    constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
-        this.config = config;
-        this.project = project;
-        this.parser = parser;
-        this.indexGenerator = new HttpResourceIndexGenerator(project);
-
-        // Validate the spec
-        if (!this.parser.isValidSpec()) {
-            const versionInfo = this.parser.getSpecVersion();
-            throw new Error(
-                `Invalid or unsupported specification format. ` +
-                    `Expected OpenAPI 3.x or Swagger 2.x. ` +
-                    `${versionInfo ? `Found: ${versionInfo.type} ${versionInfo.version}` : "No version info found"}`,
-            );
-        }
-
-        this.methodGenerator = new HttpResourceMethodGenerator(config);
+    constructor(context: PluginGeneratorContext) {
+        this.config = context.config;
+        this.project = context.project;
+        this.spec = context.spec;
+        this.onWarning = context.onWarning;
+        this.indexGenerator = new HttpResourceIndexGenerator(context.project);
+        this.methodGenerator = new HttpResourceMethodGenerator(context.config);
     }
 
     async generate(outputRoot: string) {
         const outputDir = path.join(outputRoot, "resources");
         // httpResource only wraps GETs
-        const paths = this.parser.getNormalizedSpec().operations.filter((operation) => operation.method === "GET");
+        const paths = this.spec.operations.filter((operation) => operation.method === "GET");
 
         if (paths.length === 0) {
-            console.warn("No API paths found in the specification");
+            this.onWarning?.("No API paths found in the specification");
             return;
         }
 

@@ -27,4 +27,4 @@ export default {
 
 ## Notes
 
-- This might become a public API in the future, allowing third-party plugins to be added
+- Third-party plugins can be written against the documented contract — see [Plugin Authoring](../../guide/plugin-authoring.md)

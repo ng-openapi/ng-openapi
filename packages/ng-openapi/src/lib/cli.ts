@@ -5,9 +5,46 @@ import { Command } from "commander";
 import * as fs from "fs";
 import * as path from "path";
 import * as packageJson from "../../package.json";
-import { generateFromConfig } from "./core";
+import { generateFromConfig, Reporter } from "./core";
 
 const program = new Command();
+
+/**
+ * Console presentation of generation progress. This is the only place in the
+ * workspace that prints — the orchestrator and generators stay silent.
+ */
+function createConsoleReporter(config: GeneratorConfig): Reporter {
+    const inputType = isUrl(config.input) ? "URL" : "file";
+    return {
+        onPhase(phase) {
+            switch (phase) {
+                case "processing-spec":
+                    console.log(`📡 Processing OpenAPI specification from ${inputType}: ${config.input}`);
+                    break;
+                case "types-generated":
+                    console.log("✅ TypeScript interfaces generated");
+                    break;
+                case "services-generated":
+                    console.log("✅ Angular services generated");
+                    break;
+                case "plugins-generated":
+                    console.log("✅ Plugins are generated");
+                    break;
+            }
+        },
+        onWarning(message) {
+            console.warn(`⚠️ ${message}`);
+        },
+    };
+}
+
+async function runGeneration(config: GeneratorConfig): Promise<void> {
+    const result = await generateFromConfig(config, createConsoleReporter(config));
+    const inputType = isUrl(config.input) ? "URL" : "file";
+    const sourceInfo = `from ${inputType}: ${config.input}`;
+    const clientPrefix = result.client ? `${result.client} ` : "";
+    console.log(`🎉 ${clientPrefix}Generation completed successfully ${sourceInfo} -> ${config.output}`);
+}
 
 async function loadConfigFile(configPath: string): Promise<GeneratorConfig> {
     const resolvedPath = path.resolve(configPath);
@@ -59,7 +96,7 @@ async function generateFromOptions(options: any): Promise<void> {
     try {
         if (options.config) {
             const config = await loadConfigFile(options.config);
-            await generateFromConfig(config);
+            await runGeneration(config);
         } else if (options.input) {
             const config: GeneratorConfig = {
                 input: options.input, // Can now be a URL or file path
@@ -72,7 +109,7 @@ async function generateFromOptions(options: any): Promise<void> {
                 },
             };
 
-            await generateFromConfig(config);
+            await runGeneration(config);
         } else {
             console.error("Error: Either --config or --input option is required");
             program.help();
@@ -82,6 +119,12 @@ async function generateFromOptions(options: any): Promise<void> {
         console.log("✨ Generation completed successfully!");
     } catch (error) {
         console.error("❌ Generation failed:", error instanceof Error ? error.message : error);
+
+        // Provide helpful hints for common URL-related errors
+        if (error instanceof Error && (error.message.includes("fetch") || error.message.includes("Failed to fetch"))) {
+            console.error("💡 Tip: Make sure the URL is accessible and returns a valid OpenAPI/Swagger specification");
+            console.error("💡 Alternative: Download the specification file locally and use the file path instead");
+        }
         process.exit(1);
     } finally {
         const duration = (new Date().getTime() - timestamp) / 1000;

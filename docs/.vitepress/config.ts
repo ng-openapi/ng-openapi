@@ -97,6 +97,7 @@ export default defineConfig({
                         { text: "File Download", link: "/guide/file-download" },
                         { text: "Date Handling", link: "/guide/date-handling" },
                         { text: "Code Generation", link: "/guide/generated-code" },
+                        { text: "Plugin Authoring", link: "/guide/plugin-authoring" },
                     ],
                 },
             ],

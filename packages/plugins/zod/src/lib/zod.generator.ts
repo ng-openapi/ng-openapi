@@ -6,7 +6,8 @@ import {
     IPluginGenerator,
     pascalCase,
     NormalizedOperation,
-    SwaggerParser,
+    NormalizedSpec,
+    PluginGeneratorContext,
     ZOD_PLUGIN_GENERATOR_HEADER_COMMENT,
 } from "@ng-openapi/shared";
 import { ZodSchemaGenerator } from "./zod-schema.generator";
@@ -16,38 +17,30 @@ import { DEFAULT_OPTIONS } from "./utils/default-options";
 
 export class ZodGenerator implements IPluginGenerator {
     private project: Project;
-    private parser: SwaggerParser;
+    private spec: NormalizedSpec;
     private config: GeneratorConfig;
     private options: ZodPluginOptions;
     private schemaGenerator: ZodSchemaGenerator;
     private indexGenerator: ZodIndexGenerator;
+    private readonly onWarning?: (message: string) => void;
 
-    constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig, options?: ZodPluginOptions) {
-        this.config = config;
-        this.project = project;
-        this.parser = parser;
+    constructor(context: PluginGeneratorContext, options?: ZodPluginOptions) {
+        this.config = context.config;
+        this.project = context.project;
+        this.spec = context.spec;
+        this.onWarning = context.onWarning;
         this.options = { ...DEFAULT_OPTIONS, ...options };
 
-        // Validate the spec
-        if (!this.parser.isValidSpec()) {
-            const versionInfo = this.parser.getSpecVersion();
-            throw new Error(
-                `Invalid or unsupported specification format. ` +
-                    `Expected OpenAPI 3.x or Swagger 2.x. ` +
-                    `${versionInfo ? `Found: ${versionInfo.type} ${versionInfo.version}` : "No version info found"}`,
-            );
-        }
-
-        this.schemaGenerator = new ZodSchemaGenerator(this.parser.getNormalizedSpec(), this.config, this.options);
-        this.indexGenerator = new ZodIndexGenerator(project);
+        this.schemaGenerator = new ZodSchemaGenerator(context.spec, this.config, this.options);
+        this.indexGenerator = new ZodIndexGenerator(context.project);
     }
 
     async generate(outputRoot: string) {
         const outputDir = path.join(outputRoot, "validators");
-        const paths = this.parser.getNormalizedSpec().operations;
+        const paths = this.spec.operations;
 
         if (paths.length === 0) {
-            console.warn("No API paths found in the specification");
+            this.onWarning?.("No API paths found in the specification");
             return;
         }
 
