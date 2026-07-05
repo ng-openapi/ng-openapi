@@ -5,7 +5,7 @@ import {
     ParameterDeclarationStructure,
 } from "ts-morph";
 import { HttpResourceMethodBodyGenerator, HttpResourceMethodParamsGenerator } from "./http-resource-method";
-import { camelCase, GeneratorConfig, getResponseType, pascalCase, PathInfo } from "@ng-openapi/shared";
+import { camelCase, GeneratorConfig, getResponseType, pascalCase, NormalizedOperation } from "@ng-openapi/shared";
 
 export class HttpResourceMethodGenerator {
     private config: GeneratorConfig;
@@ -19,7 +19,7 @@ export class HttpResourceMethodGenerator {
         this.paramsGenerator = new HttpResourceMethodParamsGenerator(config);
     }
 
-    addResourceMethod(serviceClass: ClassDeclaration, operation: PathInfo): void {
+    addResourceMethod(serviceClass: ClassDeclaration, operation: NormalizedOperation): void {
         const methodName = this.generateMethodName(operation);
         const parameters = this.paramsGenerator.generateMethodParameters(operation);
         const returnType = this.generateReturnType(operation);
@@ -36,7 +36,7 @@ export class HttpResourceMethodGenerator {
         });
     }
 
-    generateMethodName(operation: PathInfo): string {
+    generateMethodName(operation: NormalizedOperation): string {
         if (this.config.options.customizeMethodName) {
             if (operation.operationId == null) {
                 throw new Error(
@@ -49,7 +49,7 @@ export class HttpResourceMethodGenerator {
         }
     }
 
-    defaultNameGenerator(operation: PathInfo): string {
+    defaultNameGenerator(operation: NormalizedOperation): string {
         if (operation.operationId) {
             return camelCase(operation.operationId);
         }
@@ -63,7 +63,7 @@ export class HttpResourceMethodGenerator {
         return `${camelCase(resource)}${method}`;
     }
 
-    generateReturnType(operation: PathInfo): string {
+    generateReturnType(operation: NormalizedOperation): string {
         const response = operation.responses?.["200"] || operation.responses?.["201"] || operation.responses?.["204"];
 
         if (!response) {

@@ -1,5 +1,5 @@
 import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
-import { camelCase, GeneratorConfig, getResponseType, getTypeScriptType, PathInfo } from "@ng-openapi/shared";
+import { camelCase, GeneratorConfig, getResponseType, getTypeScriptType, NormalizedOperation } from "@ng-openapi/shared";
 
 export class HttpResourceMethodParamsGenerator {
     private config: GeneratorConfig;
@@ -8,7 +8,7 @@ export class HttpResourceMethodParamsGenerator {
         this.config = config;
     }
 
-    generateMethodParameters(operation: PathInfo): OptionalKind<ParameterDeclarationStructure>[] {
+    generateMethodParameters(operation: NormalizedOperation): OptionalKind<ParameterDeclarationStructure>[] {
         const params = this.generateApiParameters(operation);
         const responseType = this.getApiReturnType(operation);
         const optionsParam = this.addOptionsParameter(responseType);
@@ -29,12 +29,11 @@ export class HttpResourceMethodParamsGenerator {
         return uniqueParams;
     }
 
-    generateApiParameters(operation: PathInfo): OptionalKind<ParameterDeclarationStructure>[] {
+    generateApiParameters(operation: NormalizedOperation): OptionalKind<ParameterDeclarationStructure>[] {
         const params: OptionalKind<ParameterDeclarationStructure>[] = [];
 
         // Path parameters
-        const pathParams = operation.parameters?.filter((p) => p.in === "path") || [];
-        pathParams.forEach((param) => {
+        operation.pathParams.forEach((param) => {
             // Swagger 2.0 puts type/format/enum on the parameter itself; the
             // spread (vs passing param directly) is needed because Parameter
             // lacks TypeSchema's index signature — a fresh literal satisfies it.
@@ -48,8 +47,7 @@ export class HttpResourceMethodParamsGenerator {
         });
 
         // Query parameters
-        const queryParams = operation.parameters?.filter((p) => p.in === "query") || [];
-        queryParams.forEach((param) => {
+        operation.queryParams.forEach((param) => {
             const paramType = getTypeScriptType(param.schema || { ...param }, this.config);
             const signalParamType = param.required ? `Signal<${paramType}>` : `Signal<${paramType} | undefined>`;
             params.push({
@@ -78,7 +76,7 @@ export class HttpResourceMethodParamsGenerator {
         ];
     }
 
-    private getApiReturnType(operation: PathInfo): string {
+    private getApiReturnType(operation: NormalizedOperation): string {
         const successResponses = ["200", "201", "202", "204", "206"];
 
         for (const statusCode of successResponses) {

@@ -1,10 +1,4 @@
-import {
-    camelCase,
-    GeneratorConfig,
-    GetMethodGenerationContext,
-    getResponseTypeFromResponse,
-    PathInfo,
-} from "@ng-openapi/shared";
+import { camelCase, GeneratorConfig, NormalizedOperation } from "@ng-openapi/shared";
 
 export class HttpResourceMethodBodyGenerator {
     private config: GeneratorConfig;
@@ -13,27 +7,17 @@ export class HttpResourceMethodBodyGenerator {
         this.config = config;
     }
 
-    generateMethodBody(operation: PathInfo): string {
-        const context = this.createGenerationContext(operation);
-
-        const bodyParts = [this.generateHeaders(context), this.generateHttpResource(operation, context)];
+    generateMethodBody(operation: NormalizedOperation): string {
+        const bodyParts = [this.generateHeaders(), this.generateHttpResource(operation)];
 
         return bodyParts.filter(Boolean).join("\n");
     }
 
-    private createGenerationContext(operation: PathInfo): GetMethodGenerationContext {
-        return {
-            pathParams: operation.parameters?.filter((p) => p.in === "path") || [],
-            queryParams: operation.parameters?.filter((p) => p.in === "query") || [],
-            responseType: this.determineResponseType(operation),
-        };
-    }
-
-    private generateUrl(operation: PathInfo, context: GetMethodGenerationContext): string {
+    private generateUrl(operation: NormalizedOperation): string {
         let urlExpression = `\`\${this.basePath}${operation.path}\``;
 
-        if (context.pathParams.length > 0) {
-            context.pathParams.forEach((param) => {
+        if (operation.pathParams.length > 0) {
+            operation.pathParams.forEach((param) => {
                 urlExpression = urlExpression.replace(
                     `{${param.name}}`,
                     `\${typeof ${camelCase(param.name)} === 'function' ? ${camelCase(param.name)}() : ${camelCase(param.name)}}`,
@@ -44,12 +28,12 @@ export class HttpResourceMethodBodyGenerator {
         return urlExpression;
     }
 
-    private generateQueryParams(context: GetMethodGenerationContext): string {
-        if (context.queryParams.length === 0) {
+    private generateQueryParams(operation: NormalizedOperation): string {
+        if (operation.queryParams.length === 0) {
             return "";
         }
 
-        const paramMappings = context.queryParams
+        const paramMappings = operation.queryParams
             .map(
                 (param) =>
                     `const ${camelCase(param.name)}Value = typeof ${camelCase(param.name)} === 'function' ? ${camelCase(param.name)}() : ${camelCase(param.name)};
@@ -64,7 +48,7 @@ let params = new HttpParams();
 ${paramMappings}`;
     }
 
-    private generateHeaders(context: GetMethodGenerationContext): string {
+    private generateHeaders(): string {
         const hasCustomHeaders = this.config.options.customHeaders;
 
         // Use the approach that handles both HttpHeaders and plain objects
@@ -78,7 +62,6 @@ if (requestOptions?.headers instanceof HttpHeaders) {
 }`;
 
         if (hasCustomHeaders) {
-            // Add default headers
             headerCode += `
 // Add default headers if not already present
 ${Object.entries(this.config.options.customHeaders || {})
@@ -93,23 +76,23 @@ ${Object.entries(this.config.options.customHeaders || {})
         return headerCode;
     }
 
-    private generateRequestOptions(operation: PathInfo, context: GetMethodGenerationContext): string {
+    private generateRequestOptions(operation: NormalizedOperation): string {
         const options: string[] = [];
-        const url = this.generateUrl(operation, context);
+        const url = this.generateUrl(operation);
 
         // Always include observe
         options.push(`url: ${url}`);
         options.push(`method: "GET"`);
 
-        if (context.queryParams.length > 0) {
+        if (operation.queryParams.length > 0) {
             options.push("params");
         }
 
         options.push("headers");
 
         // Add response type if not JSON
-        if (context.responseType !== "json") {
-            options.push(`responseType: '${context.responseType}' as '${context.responseType}'`);
+        if (operation.responseType !== "json") {
+            options.push(`responseType: '${operation.responseType}' as '${operation.responseType}'`);
         }
 
         // Create HttpContext with client identification - call the helper method
@@ -123,11 +106,11 @@ ${Object.entries(this.config.options.customHeaders || {})
 }`;
     }
 
-    private generateHttpResource(operation: PathInfo, context: GetMethodGenerationContext): string {
-        const resourceOptions = this.generateRequestOptions(operation, context);
-        const queryParams = this.generateQueryParams(context);
+    private generateHttpResource(operation: NormalizedOperation): string {
+        const resourceOptions = this.generateRequestOptions(operation);
+        const queryParams = this.generateQueryParams(operation);
         let httpResource = "httpResource";
-        switch (context.responseType) {
+        switch (operation.responseType) {
             case "blob":
                 httpResource += ".blob";
                 break;
@@ -141,19 +124,5 @@ ${Object.entries(this.config.options.customHeaders || {})
         return `    return ${httpResource}(() => {${queryParams}
        ${resourceOptions}
     }, resourceOptions);`;
-    }
-
-    private determineResponseType(operation: PathInfo): "json" | "blob" | "arraybuffer" | "text" {
-        const successResponses = ["200", "201", "202", "204", "206"]; // Added 206 for partial content
-
-        for (const statusCode of successResponses) {
-            const response = operation.responses?.[statusCode];
-            if (!response) continue;
-
-            // Use the new function that checks both content type and schema
-            return getResponseTypeFromResponse(response);
-        }
-
-        return "json";
     }
 }

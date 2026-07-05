@@ -1,14 +1,20 @@
-import * as fs from "fs";
-import * as path from "path";
-import * as yaml from "js-yaml";
 // Import the concrete type modules, not the ../types barrel: the barrel pulls in
 // plugin.types.ts, which needs this file — going through it re-creates the cycle.
 import type { GeneratorConfig } from "../types/config.types";
 import type { SwaggerDefinition, SwaggerSpec } from "../types/swagger.types";
-import { isUrl } from "../utils/functions/is-url";
+import type { NormalizedSpec } from "../model/spec.model";
+import { loadSpecContent } from "./spec-loader";
+import { parseSpecContent } from "./spec-format";
+import { normalizeSpec } from "./normalize";
 
+/**
+ * Typed access to a parsed OpenAPI/Swagger spec.
+ * Loading (fs/http) lives in spec-loader.ts; format detection and parsing in
+ * spec-format.ts — this class is a façade over both plus spec accessors.
+ */
 export class SwaggerParser {
     private readonly spec: SwaggerSpec;
+    private normalized?: NormalizedSpec;
 
     private constructor(spec: SwaggerSpec, config: GeneratorConfig) {
         const isInputValid = config.validateInput?.(spec) ?? true;
@@ -19,130 +25,19 @@ export class SwaggerParser {
     }
 
     static async create(swaggerPathOrUrl: string, config: GeneratorConfig): Promise<SwaggerParser> {
-        const swaggerContent = await SwaggerParser.loadContent(swaggerPathOrUrl);
-        const spec = SwaggerParser.parseSpecContent(swaggerContent, swaggerPathOrUrl);
+        const swaggerContent = await loadSpecContent(swaggerPathOrUrl);
+        const spec = parseSpecContent(swaggerContent, swaggerPathOrUrl);
         return new SwaggerParser(spec, config);
     }
 
-    private static async loadContent(pathOrUrl: string): Promise<string> {
-        if (isUrl(pathOrUrl)) {
-            return await SwaggerParser.fetchUrlContent(pathOrUrl);
-        } else {
-            return fs.readFileSync(pathOrUrl, "utf8");
-        }
-    }
-
-    private static async fetchUrlContent(url: string): Promise<string> {
-        try {
-            const response = await fetch(url, {
-                method: "GET",
-                headers: {
-                    Accept: "application/json, application/yaml, text/yaml, text/plain, */*",
-                    "User-Agent": "ng-openapi",
-                },
-                // 30 second timeout
-                signal: AbortSignal.timeout(30000),
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const content = await response.text();
-
-            if (!content || content.trim() === "") {
-                throw new Error(`Empty response from URL: ${url}`);
-            }
-
-            return content;
-        } catch (error: unknown) {
-            // Provide helpful error message
-            let errorMessage = `Failed to fetch content from URL: ${url}`;
-
-            // AbortSignal.timeout() rejects with a DOMException named "TimeoutError";
-            // "AbortError" is kept for manual AbortController aborts.
-            if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
-                errorMessage += " - Request timeout (30s)";
-            } else if (error instanceof Error && error.message) {
-                errorMessage += ` - ${error.message}`;
-            }
-
-            throw new Error(errorMessage);
-        }
-    }
-
-    private static parseSpecContent(content: string, pathOrUrl: string): SwaggerSpec {
-        // Determine format from URL or file extension
-        let format: "json" | "yaml" | "yml";
-
-        if (isUrl(pathOrUrl)) {
-            // For URLs, try to determine format from URL path or content
-            const urlPath = new URL(pathOrUrl).pathname.toLowerCase();
-            if (urlPath.endsWith(".json")) {
-                format = "json";
-            } else if (urlPath.endsWith(".yaml") || urlPath.endsWith(".yml")) {
-                format = "yaml";
-            } else {
-                // Auto-detect from content
-                format = SwaggerParser.detectFormat(content);
-            }
-        } else {
-            // For files, use extension
-            const extension = path.extname(pathOrUrl).toLowerCase();
-            switch (extension) {
-                case ".json":
-                    format = "json";
-                    break;
-                case ".yaml":
-                    format = "yaml";
-                    break;
-                case ".yml":
-                    format = "yml";
-                    break;
-                default:
-                    format = SwaggerParser.detectFormat(content);
-            }
-        }
-
-        try {
-            switch (format) {
-                case "json":
-                    return JSON.parse(content);
-                case "yaml":
-                case "yml":
-                    return yaml.load(content) as SwaggerSpec;
-                default:
-                    throw new Error(`Unable to determine format for: ${pathOrUrl}`);
-            }
-        } catch (error) {
-            throw new Error(
-                `Failed to parse ${format.toUpperCase()} content from: ${pathOrUrl}. Error: ${
-                    error instanceof Error ? error.message : error
-                }`,
-            );
-        }
-    }
-
-    private static detectFormat(content: string): "json" | "yaml" {
-        const trimmed = content.trim();
-
-        // Check if it starts with JSON indicators
-        if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-            return "json";
-        }
-
-        // Check for YAML indicators
-        if (
-            trimmed.includes("openapi:") ||
-            trimmed.includes("swagger:") ||
-            trimmed.includes("---") ||
-            /^[a-zA-Z][a-zA-Z0-9_]*\s*:/.test(trimmed)
-        ) {
-            return "yaml";
-        }
-
-        // Default to JSON and let JSON.parse handle the error
-        return "json";
+    /**
+     * The version-free model generators consume. Computed once and cached —
+     * all generators share the same NormalizedOperation instances, so they
+     * can be used as Map keys across generators.
+     */
+    getNormalizedSpec(): NormalizedSpec {
+        this.normalized ??= normalizeSpec(this.spec);
+        return this.normalized;
     }
 
     getDefinitions(): Record<string, SwaggerDefinition> {

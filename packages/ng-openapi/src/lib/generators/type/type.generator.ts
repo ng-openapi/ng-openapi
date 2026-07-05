@@ -43,7 +43,7 @@ export class TypeGenerator {
 
     async generate() {
         try {
-            const definitions = this.parser.getDefinitions();
+            const definitions = this.parser.getNormalizedSpec().definitions;
             if (!definitions || Object.keys(definitions).length === 0) {
                 console.warn("No definitions found in swagger file");
             }

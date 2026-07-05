@@ -1,10 +1,9 @@
 import { Project } from "ts-morph";
 import {
     GeneratorConfig,
+    NormalizedOperation,
     pascalCase,
-    PathInfo,
     REQUEST_PARAMS_GENERATOR_HEADER_COMMENT,
-    SwaggerParser,
 } from "@ng-openapi/shared";
 import * as path from "path";
 import { ServiceMethodParamsGenerator } from "./service-method";
@@ -21,18 +20,18 @@ import {
 export class RequestParamsGenerator {
     private project: Project;
     private paramsGenerator: ServiceMethodParamsGenerator;
-    private readonly registry = new Map<PathInfo, RequestObjectEntry>();
+    private readonly registry = new Map<NormalizedOperation, RequestObjectEntry>();
     private readonly usedInterfaceNames = new Set<string>();
 
-    constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
+    constructor(project: Project, config: GeneratorConfig) {
         this.project = project;
-        this.paramsGenerator = new ServiceMethodParamsGenerator(config, parser);
+        this.paramsGenerator = new ServiceMethodParamsGenerator(config);
     }
 
     buildRegistry(
-        controllerGroups: Record<string, PathInfo[]>,
-        getMethodName: (operation: PathInfo) => string,
-    ): Map<PathInfo, RequestObjectEntry> {
+        controllerGroups: Record<string, NormalizedOperation[]>,
+        getMethodName: (operation: NormalizedOperation) => string,
+    ): Map<NormalizedOperation, RequestObjectEntry> {
         Object.entries(controllerGroups).forEach(([controllerName, operations]) => {
             operations.forEach((operation) => {
                 const parameters = ServiceMethodRequestObjectGenerator.dedupe(

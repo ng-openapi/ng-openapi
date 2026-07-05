@@ -1,11 +1,5 @@
 import { MethodDeclarationOverloadStructure, OptionalKind, ParameterDeclarationStructure } from "ts-morph";
-import {
-    GeneratorConfig,
-    getResponseType,
-    getResponseTypeFromResponse,
-    PathInfo,
-    SwaggerParser,
-} from "@ng-openapi/shared";
+import { GeneratorConfig, getResponseType, NormalizedOperation } from "@ng-openapi/shared";
 import { ServiceMethodParamsGenerator } from "./service-method-params.generator";
 import { RequestObjectEntry, ServiceMethodRequestObjectGenerator } from "./service-method-request-object.generator";
 
@@ -14,20 +8,20 @@ export class ServiceMethodOverloadsGenerator {
     private paramsGenerator: ServiceMethodParamsGenerator;
     private responseDataType = "any";
 
-    constructor(config: GeneratorConfig, parser: SwaggerParser) {
+    constructor(config: GeneratorConfig) {
         this.config = config;
-        this.paramsGenerator = new ServiceMethodParamsGenerator(config, parser);
+        this.paramsGenerator = new ServiceMethodParamsGenerator(config);
     }
 
     generateMethodOverloads(
-        operation: PathInfo,
+        operation: NormalizedOperation,
         requestObject?: RequestObjectEntry,
     ): OptionalKind<MethodDeclarationOverloadStructure>[] {
         const observeTypes: ("body" | "response" | "events")[] = ["body", "response", "events"];
         const overloads: OptionalKind<MethodDeclarationOverloadStructure>[] = [];
 
-        // Determine the actual response type for this operation
-        const responseType = this.determineResponseTypeForOperation(operation);
+        // The actual response type for this operation, precomputed by the normalizer
+        const responseType = operation.responseType;
 
         observeTypes.forEach((observe) => {
             const overload = this.generateMethodOverload(operation, observe, responseType, requestObject);
@@ -39,7 +33,7 @@ export class ServiceMethodOverloadsGenerator {
     }
 
     generateMethodOverload(
-        operation: PathInfo,
+        operation: NormalizedOperation,
         observe: "body" | "response" | "events",
         responseType: "json" | "blob" | "arraybuffer" | "text",
         requestObject?: RequestObjectEntry,
@@ -67,7 +61,7 @@ export class ServiceMethodOverloadsGenerator {
     }
 
     generateOverloadParameters(
-        operation: PathInfo,
+        operation: NormalizedOperation,
         observe: "body" | "response" | "events",
         responseType: "json" | "arraybuffer" | "blob" | "text",
     ): OptionalKind<ParameterDeclarationStructure>[] {
@@ -97,7 +91,7 @@ export class ServiceMethodOverloadsGenerator {
         ];
     }
 
-    generateOverloadResponseType(operation: PathInfo): string {
+    generateOverloadResponseType(operation: NormalizedOperation): string {
         const response = operation.responses?.["200"] || operation.responses?.["201"] || operation.responses?.["204"];
 
         if (!response) {
@@ -139,18 +133,5 @@ export class ServiceMethodOverloadsGenerator {
             return `RequestOptions<'${responseType}'>`;
         }
         return `RequestOptions<'${responseType}', ${additionalTypeParameters.join(", ")}>`;
-    }
-
-    private determineResponseTypeForOperation(operation: PathInfo): "json" | "blob" | "arraybuffer" | "text" {
-        const successResponses = ["200", "201", "202", "204", "206"];
-
-        for (const statusCode of successResponses) {
-            const response = operation.responses?.[statusCode];
-            if (!response) continue;
-
-            return getResponseTypeFromResponse(response);
-        }
-
-        return "json";
     }
 }

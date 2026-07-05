@@ -1,14 +1,14 @@
-import { GeneratorConfig, pascalCase, SwaggerDefinition, SwaggerParser } from "@ng-openapi/shared";
+import { GeneratorConfig, NormalizedSpec, pascalCase, SwaggerDefinition } from "@ng-openapi/shared";
 import { BuildOptions, ZodPluginOptions } from "./utils/types";
 import { isReferenceObject } from "./utils/is-reference-object";
 
 export class ZodSchemaBuilder {
-    private parser: SwaggerParser;
+    private spec: NormalizedSpec;
     private config: GeneratorConfig;
     private options: ZodPluginOptions;
 
-    constructor(parser: SwaggerParser, config: GeneratorConfig, options: ZodPluginOptions) {
-        this.parser = parser;
+    constructor(spec: NormalizedSpec, config: GeneratorConfig, options: ZodPluginOptions) {
+        this.spec = spec;
         this.config = config;
         this.options = options;
     }
@@ -19,7 +19,7 @@ export class ZodSchemaBuilder {
         buildOptions: BuildOptions = {},
     ): Promise<string> {
         if (isReferenceObject(schema)) {
-            const resolved = this.parser.resolveReference(schema.$ref);
+            const resolved = this.spec.resolveReference(schema.$ref);
             return this.buildSchema(resolved as SwaggerDefinition, name, buildOptions);
         }
 

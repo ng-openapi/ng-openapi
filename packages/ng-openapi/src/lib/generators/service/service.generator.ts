@@ -1,16 +1,14 @@
 import { Project, Scope, SourceFile } from "ts-morph";
 import {
     camelCase,
-    extractPaths,
     GeneratorConfig,
     getBasePathTokenName,
     getClientContextTokenName,
     hasDuplicateFunctionNames,
+    NormalizedOperation,
     pascalCase,
-    PathInfo,
     SERVICE_GENERATOR_HEADER_COMMENT,
     SwaggerParser,
-    SwaggerSpec,
 } from "@ng-openapi/shared";
 import * as path from "path";
 import { ServiceMethodGenerator } from "./service-method.generator";
@@ -20,16 +18,14 @@ import { RequestObjectEntry } from "./service-method";
 export class ServiceGenerator {
     private project: Project;
     private parser: SwaggerParser;
-    private spec: SwaggerSpec;
     private config: GeneratorConfig;
     private methodGenerator: ServiceMethodGenerator;
-    private requestObjects?: Map<PathInfo, RequestObjectEntry>;
+    private requestObjects?: Map<NormalizedOperation, RequestObjectEntry>;
 
     constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
         this.config = config;
         this.project = project;
         this.parser = parser;
-        this.spec = this.parser.getSpec();
 
         // Validate the spec
         if (!this.parser.isValidSpec()) {
@@ -41,12 +37,12 @@ export class ServiceGenerator {
             );
         }
 
-        this.methodGenerator = new ServiceMethodGenerator(config, parser);
+        this.methodGenerator = new ServiceMethodGenerator(config);
     }
 
     async generate(outputRoot: string) {
         const outputDir = path.join(outputRoot, "services");
-        const paths = extractPaths(this.spec.paths);
+        const paths = this.parser.getNormalizedSpec().operations;
 
         if (paths.length === 0) {
             console.warn("No API paths found in the specification");
@@ -56,7 +52,7 @@ export class ServiceGenerator {
         const controllerGroups = this.groupPathsByController(paths);
 
         if (this.config.options.useSingleRequestParameter) {
-            const requestParamsGenerator = new RequestParamsGenerator(this.parser, this.project, this.config);
+            const requestParamsGenerator = new RequestParamsGenerator(this.project, this.config);
             this.requestObjects = requestParamsGenerator.buildRegistry(controllerGroups, (operation) =>
                 this.methodGenerator.generateMethodName(operation),
             );
@@ -71,8 +67,8 @@ export class ServiceGenerator {
         );
     }
 
-    private groupPathsByController(paths: PathInfo[]): Record<string, PathInfo[]> {
-        const groups: Record<string, PathInfo[]> = {};
+    private groupPathsByController(paths: NormalizedOperation[]): Record<string, NormalizedOperation[]> {
+        const groups: Record<string, NormalizedOperation[]> = {};
 
         paths.forEach((path) => {
             let controllerName = "Default";
@@ -98,7 +94,7 @@ export class ServiceGenerator {
         return groups;
     }
 
-    private async generateServiceFile(controllerName: string, operations: PathInfo[], outputDir: string) {
+    private async generateServiceFile(controllerName: string, operations: NormalizedOperation[], outputDir: string) {
         const fileName = `${camelCase(controllerName)}.service.ts`;
         const filePath = path.join(outputDir, fileName);
 
@@ -110,7 +106,7 @@ export class ServiceGenerator {
         sourceFile.saveSync();
     }
 
-    private addServiceClass(sourceFile: SourceFile, controllerName: string, operations: PathInfo[]): void {
+    private addServiceClass(sourceFile: SourceFile, controllerName: string, operations: NormalizedOperation[]): void {
         const className = `${controllerName}Service`;
         const basePathTokenName = getBasePathTokenName(this.config.clientName);
         const clientContextTokenName = getClientContextTokenName(this.config.clientName);
