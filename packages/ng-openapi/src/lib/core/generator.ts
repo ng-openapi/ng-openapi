@@ -10,14 +10,17 @@ import {
     TokenGenerator,
 } from "../generators/utility";
 import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
-import { GeneratorConfig, isUrl, SwaggerParser } from "@ng-openapi/shared";
+import { GeneratorConfig, isUrl, SpecLoadError, SpecParseError, SwaggerParser } from "@ng-openapi/shared";
 import { validateGeneratorConfig } from "./config-validation";
 import { GenerationResult, Reporter } from "./reporter";
 import * as fs from "fs";
 import * as path from "path";
 
 /**
- * Validates input (file or URL)
+ * Validates input (file or URL).
+ *
+ * @throws SpecLoadError when a local input file is missing or has an
+ *   unsupported extension. URLs are validated by the loader when fetched.
  */
 export function validateInput(inputPath: string): void {
     if (isUrl(inputPath)) {
@@ -26,15 +29,16 @@ export function validateInput(inputPath: string): void {
 
     // For local files, check existence and extension
     if (!fs.existsSync(inputPath)) {
-        throw new Error(`Input file not found: ${inputPath}`);
+        throw new SpecLoadError(`Input file not found: ${inputPath}`, inputPath);
     }
 
     const extension = path.extname(inputPath).toLowerCase();
     const supportedExtensions = [".json", ".yaml", ".yml"];
 
     if (!supportedExtensions.includes(extension)) {
-        throw new Error(
+        throw new SpecLoadError(
             `Failed to parse ${extension || "specification"}. Supported formats are .json, .yaml, and .yml.`,
+            inputPath,
         );
     }
 }
@@ -45,6 +49,11 @@ export function validateInput(inputPath: string): void {
  * Pure orchestration: no logging, no process concerns. Progress and warnings
  * are surfaced through the optional Reporter and the returned
  * GenerationResult; presentation (emojis, hints, exit codes) is the CLI's job.
+ *
+ * @throws ConfigValidationError when the config is structurally invalid.
+ * @throws SpecLoadError when the input file/URL cannot be read.
+ * @throws SpecParseError when the spec cannot be parsed, has an unsupported
+ *   version, or is rejected by the config's `validateInput` hook.
  */
 export async function generateFromConfig(config: GeneratorConfig, reporter: Reporter = {}): Promise<GenerationResult> {
     const startedAt = Date.now();
@@ -86,10 +95,11 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
     // Guard once here instead of in every generator/plugin constructor
     if (!swaggerParser.isValidSpec()) {
         const versionInfo = swaggerParser.getSpecVersion();
-        throw new Error(
+        throw new SpecParseError(
             `Invalid or unsupported specification format. ` +
                 `Expected OpenAPI 3.x or Swagger 2.x. ` +
                 `${versionInfo ? `Found: ${versionInfo.type} ${versionInfo.version}` : "No version info found"}`,
+            config.input,
         );
     }
     const normalizedSpec = swaggerParser.getNormalizedSpec();

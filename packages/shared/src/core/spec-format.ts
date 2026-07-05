@@ -1,6 +1,7 @@
 import * as path from "path";
 import * as yaml from "js-yaml";
 import { isUrl } from "../utils/functions/is-url";
+import { SpecParseError } from "../errors";
 import type { SwaggerSpec } from "../types/swagger.types";
 
 /**
@@ -52,10 +53,12 @@ export function parseSpecContent(content: string, pathOrUrl: string): SwaggerSpe
                 throw new Error(`Unable to determine format for: ${pathOrUrl}`);
         }
     } catch (error) {
-        throw new Error(
+        throw new SpecParseError(
             `Failed to parse ${format.toUpperCase()} content from: ${pathOrUrl}. Error: ${
                 error instanceof Error ? error.message : error
             }`,
+            pathOrUrl,
+            error,
         );
     }
 }

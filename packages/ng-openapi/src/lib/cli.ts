@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { GeneratorConfig, isUrl } from "@ng-openapi/shared";
+import { GeneratorConfig, isUrl, SpecLoadError } from "@ng-openapi/shared";
 import { Command } from "commander";
 import * as fs from "fs";
 import * as path from "path";
@@ -132,8 +132,8 @@ async function generateFromOptions(options: CliOptions): Promise<void> {
     } catch (error) {
         console.error("❌ Generation failed:", error instanceof Error ? error.message : error);
 
-        // Provide helpful hints for common URL-related errors
-        if (error instanceof Error && (error.message.includes("fetch") || error.message.includes("Failed to fetch"))) {
+        // Typed hint mapping: branch on the error class, never on message text
+        if (error instanceof SpecLoadError && isUrl(error.source)) {
             console.error("💡 Tip: Make sure the URL is accessible and returns a valid OpenAPI/Swagger specification");
             console.error("💡 Alternative: Download the specification file locally and use the file path instead");
         }

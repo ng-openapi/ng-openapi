@@ -1,15 +1,27 @@
 import * as fs from "fs";
 import { isUrl } from "../utils/functions/is-url";
+import { SpecLoadError } from "../errors";
 
 /**
  * Loads raw spec content from a local file path or an http(s) URL.
  * Pure I/O — parsing and format detection live in spec-format.ts.
+ *
+ * @throws SpecLoadError when the file is unreadable or the URL fails
+ *   (HTTP error, 30s timeout, empty body).
  */
 export async function loadSpecContent(pathOrUrl: string): Promise<string> {
     if (isUrl(pathOrUrl)) {
         return await fetchUrlContent(pathOrUrl);
-    } else {
+    }
+
+    try {
         return fs.readFileSync(pathOrUrl, "utf8");
+    } catch (error: unknown) {
+        throw new SpecLoadError(
+            `Failed to read spec file: ${pathOrUrl}${error instanceof Error ? ` - ${error.message}` : ""}`,
+            pathOrUrl,
+            error,
+        );
     }
 }
 
@@ -48,6 +60,6 @@ async function fetchUrlContent(url: string): Promise<string> {
             errorMessage += ` - ${error.message}`;
         }
 
-        throw new Error(errorMessage);
+        throw new SpecLoadError(errorMessage, url, error);
     }
 }
