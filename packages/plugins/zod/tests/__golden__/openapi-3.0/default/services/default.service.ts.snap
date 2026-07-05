@@ -38,15 +38,13 @@ export class DefaultService {
             headers = new HttpHeaders(options?.headers);
         }
 
-        const requestOptions: any = {
-            observe: observe as any,
+        return this.httpClient.request('get', url, {
+            observe,
             headers,
-            responseType: 'text' as 'text',
+            responseType: 'text',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        };
-
-        return this.httpClient.get(url, requestOptions).pipe(map(response => options?.parse?.(response) ?? response));
+        }).pipe(map(response => options?.parse?.(response) ?? response));
     }
 }

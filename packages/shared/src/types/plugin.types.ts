@@ -1,17 +1,30 @@
-// Type-only import from the concrete module (not the ../core barrel): a value
-// import through the barrel creates the cycle core -> types -> core.
-import type { SwaggerParser } from "../core/swagger-parser";
 import type { Project } from "ts-morph";
+import type { NormalizedSpec } from "../model/spec.model";
 import type { GeneratorConfig } from "./config.types";
 
 /**
- * Interface for generator class (both constructor and instance)
+ * Everything a plugin generator receives from the orchestrator.
+ *
+ * Plugins consume the version-free NormalizedSpec — never the raw spec or the
+ * SwaggerParser — and emit through the shared ts-morph Project so the
+ * orchestrator can track written files.
+ */
+export interface PluginGeneratorContext {
+    /** Version-free spec model; $refs resolved, per-operation fields precomputed. */
+    spec: NormalizedSpec;
+    /** Shared ts-morph project all generators emit through. */
+    project: Project;
+    /** Full user-facing config; plugins should read only the slice they need. */
+    config: GeneratorConfig;
+    /** Sink for non-fatal diagnostics — plugins must never log directly. */
+    onWarning?: (message: string) => void;
+}
+
+/**
+ * Constructor contract for plugin generator classes (what GeneratorConfig.plugins accepts).
  */
 export interface IPluginGeneratorClass {
-    /**
-     * Constructor signature
-     */
-    new (parser: SwaggerParser, project: Project, config: GeneratorConfig): IPluginGenerator;
+    new (context: PluginGeneratorContext): IPluginGenerator;
 }
 
 /**
@@ -19,7 +32,7 @@ export interface IPluginGeneratorClass {
  */
 export interface IPluginGenerator {
     /**
-     * Generate code files
+     * Generate code files under the given output root.
      */
     generate(outputRoot: string): Promise<void>;
 }

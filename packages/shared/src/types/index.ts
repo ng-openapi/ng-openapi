@@ -20,4 +20,4 @@ export type {
 // Method-generation contexts and loose schema shape
 export type { GetMethodGenerationContext, MethodGenerationContext, TypeSchema } from "./generator.types";
 // Plugin contract
-export type { IPluginGenerator, IPluginGeneratorClass } from "./plugin.types";
+export type { IPluginGenerator, IPluginGeneratorClass, PluginGeneratorContext } from "./plugin.types";

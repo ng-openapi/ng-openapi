@@ -43,3 +43,7 @@ Work with automatic date transformation features.
 ### [Code Generation](./generated-code.md)
 
 Integrate ng-openapi into your development workflow.
+
+### [Plugin Authoring](./plugin-authoring.md)
+
+Write your own generator plugin against the documented plugin contract.

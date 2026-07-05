@@ -55,14 +55,13 @@ export class FilesService {
             formData.append('description', String(description));
         }
 
-        const requestOptions: any = {
-            observe: observe as any,
+        return this.httpClient.request('post', url, {
+            body: formData,
+            observe,
             headers,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        };
-
-        return this.httpClient.post(url, formData, requestOptions).pipe(map(response => options?.parse?.(response) ?? response));
+        }).pipe(map(response => options?.parse?.(response) ?? response));
     }
 }

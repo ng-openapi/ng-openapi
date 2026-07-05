@@ -27,13 +27,6 @@ export class WidgetsResource {
     listWidgets(kind: Signal<WidgetKind | undefined> | WidgetKind | undefined, resourceOptions: HttpResourceOptions<Array<Widget>, unknown> & { defaultValue: NoInfer<Array<Widget>> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<Widget>>;
     listWidgets(kind?: Signal<WidgetKind | undefined> | WidgetKind, resourceOptions?: HttpResourceOptions<Array<Widget>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<Widget> | undefined>;
     listWidgets(kind?: Signal<WidgetKind | undefined> | WidgetKind, resourceOptions?: HttpResourceOptions<Array<Widget>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<Widget> | undefined> {
-
-        let headers: HttpHeaders;
-        if (requestOptions?.headers instanceof HttpHeaders) {
-            headers = requestOptions.headers;
-        } else {
-            headers = new HttpHeaders(requestOptions?.headers as Record<string, string>);
-        }
         return httpResource(() => {
             let params = new HttpParams();
             const kindValue = typeof kind === 'function' ? kind() : kind;
@@ -43,10 +36,9 @@ export class WidgetsResource {
             return {
                 url: `${this.basePath}/widgets`,
                 method: "GET",
+                ...requestOptions,
                 params,
-                headers,
-                context: this.createContextWithClientId(requestOptions?.context),
-                ...requestOptions
+                context: this.createContextWithClientId(requestOptions?.context)
             }
         }, resourceOptions);
     }
@@ -54,20 +46,12 @@ export class WidgetsResource {
     getWidget(widgetId: Signal<string> | string, resourceOptions: HttpResourceOptions<Widget, unknown> & { defaultValue: NoInfer<Widget> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Widget>;
     getWidget(widgetId: Signal<string> | string, resourceOptions?: HttpResourceOptions<Widget, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Widget | undefined>;
     getWidget(widgetId: Signal<string> | string, resourceOptions?: HttpResourceOptions<Widget, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Widget | undefined> {
-
-        let headers: HttpHeaders;
-        if (requestOptions?.headers instanceof HttpHeaders) {
-            headers = requestOptions.headers;
-        } else {
-            headers = new HttpHeaders(requestOptions?.headers as Record<string, string>);
-        }
         return httpResource(() => {
             return {
                 url: `${this.basePath}/widgets/${typeof widgetId === 'function' ? widgetId() : widgetId}`,
                 method: "GET",
-                headers,
-                context: this.createContextWithClientId(requestOptions?.context),
-                ...requestOptions
+                ...requestOptions,
+                context: this.createContextWithClientId(requestOptions?.context)
             }
         }, resourceOptions);
     }

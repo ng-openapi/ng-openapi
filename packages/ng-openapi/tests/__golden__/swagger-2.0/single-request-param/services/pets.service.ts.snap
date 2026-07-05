@@ -47,16 +47,14 @@ export class PetsService {
             headers = new HttpHeaders(options?.headers);
         }
 
-        const requestOptions: any = {
-            observe: observe as any,
+        return this.httpClient.request('get', url, {
+            observe,
             headers,
             params,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        };
-
-        return this.httpClient.get(url, requestOptions);
+        });
     }
 
     createPet(observe?: 'body', options?: RequestOptions<'json'>): Observable<any>;
@@ -72,15 +70,14 @@ export class PetsService {
             headers = new HttpHeaders(options?.headers);
         }
 
-        const requestOptions: any = {
-            observe: observe as any,
+        return this.httpClient.request('post', url, {
+            body: null,
+            observe,
             headers,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        };
-
-        return this.httpClient.post(url, null, requestOptions);
+        });
     }
 
     getPetById(request: GetPetByIdParams, observe?: 'body', options?: RequestOptions<'json'>): Observable<any>;
@@ -97,15 +94,13 @@ export class PetsService {
             headers = new HttpHeaders(options?.headers);
         }
 
-        const requestOptions: any = {
-            observe: observe as any,
+        return this.httpClient.request('get', url, {
+            observe,
             headers,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        };
-
-        return this.httpClient.get(url, requestOptions);
+        });
     }
 
     deletePet(request: DeletePetParams, observe?: 'body', options?: RequestOptions<'json'>): Observable<any>;
@@ -122,15 +117,13 @@ export class PetsService {
             headers = new HttpHeaders(options?.headers);
         }
 
-        const requestOptions: any = {
-            observe: observe as any,
+        return this.httpClient.request('delete', url, {
+            observe,
             headers,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        };
-
-        return this.httpClient.delete(url, requestOptions);
+        });
     }
 
     getPetPhoto(request: GetPetPhotoParams, observe?: 'body', options?: RequestOptions<'json'>): Observable<any>;
@@ -147,14 +140,12 @@ export class PetsService {
             headers = new HttpHeaders(options?.headers);
         }
 
-        const requestOptions: any = {
-            observe: observe as any,
+        return this.httpClient.request('get', url, {
+            observe,
             headers,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        };
-
-        return this.httpClient.get(url, requestOptions);
+        });
     }
 }

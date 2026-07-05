@@ -44,16 +44,14 @@ export class WidgetsService {
             headers = new HttpHeaders(options?.headers);
         }
 
-        const requestOptions: any = {
-            observe: observe as any,
+        return this.httpClient.request('get', url, {
+            observe,
             headers,
             params,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        };
-
-        return this.httpClient.get(url, requestOptions);
+        });
     }
 
     createWidget(request: CreateWidgetParams, observe?: 'body', options?: RequestOptions<'json'>): Observable<Widget>;
@@ -74,15 +72,14 @@ export class WidgetsService {
             headers = headers.set('Content-Type', 'application/json');
         }
 
-        const requestOptions: any = {
-            observe: observe as any,
+        return this.httpClient.request('post', url, {
+            body: newWidget,
+            observe,
             headers,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        };
-
-        return this.httpClient.post(url, newWidget, requestOptions);
+        });
     }
 
     getWidget(request: GetWidgetParams, observe?: 'body', options?: RequestOptions<'json'>): Observable<Widget>;
@@ -99,14 +96,12 @@ export class WidgetsService {
             headers = new HttpHeaders(options?.headers);
         }
 
-        const requestOptions: any = {
-            observe: observe as any,
+        return this.httpClient.request('get', url, {
+            observe,
             headers,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        };
-
-        return this.httpClient.get(url, requestOptions);
+        });
     }
 }
