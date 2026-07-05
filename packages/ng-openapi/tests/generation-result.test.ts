@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
-import { generateFromConfig, GenerationPhase, GeneratorConfig } from "ng-openapi";
+import { generateFromConfig, GenerationPhase, GeneratorConfig, SpecLoadError, SpecParseError } from "ng-openapi";
 
 const FIXTURE = resolve(__dirname, "../../testing/fixtures/specs/openapi-3.0.json");
 
@@ -28,6 +28,27 @@ const buildConfig = (output: string): GeneratorConfig => ({
     output,
     clientName: "PetsApi",
     options: { dateType: "Date", enumStyle: "enum" },
+});
+
+describe("generateFromConfig typed errors", () => {
+    it("throws SpecLoadError for a missing input file", async () => {
+        const output = mkdtempSync(join(tmpRoot, "err-load-"));
+        tempDirs.push(output);
+
+        await expect(
+            generateFromConfig({ ...buildConfig(output), input: join(output, "missing.json") }),
+        ).rejects.toBeInstanceOf(SpecLoadError);
+    });
+
+    it("throws SpecParseError for a spec without a supported version", async () => {
+        const output = mkdtempSync(join(tmpRoot, "err-parse-"));
+        tempDirs.push(output);
+        const input = join(output, "not-a-spec.json");
+        const { writeFileSync } = await import("node:fs");
+        writeFileSync(input, JSON.stringify({ hello: "world" }));
+
+        await expect(generateFromConfig({ ...buildConfig(output), input })).rejects.toBeInstanceOf(SpecParseError);
+    });
 });
 
 describe("generateFromConfig result + reporter", () => {

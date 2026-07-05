@@ -19,6 +19,12 @@ interface RawOperation {
 
 type RawPathItem = { parameters?: Parameter[] } & { [method: string]: unknown };
 
+/**
+ * Flattens the spec's `paths` object into one PathInfo per (path, method)
+ * pair, merging path-level parameters into each operation. Supports both
+ * Swagger 2.0 and OpenAPI 3.x path items; methods outside the given list
+ * (and vendor extensions) are ignored.
+ */
 export function extractPaths(
     swaggerPaths: { [p: string]: Path } = {},
     methods = ["get", "post", "put", "patch", "delete", "options", "head"],

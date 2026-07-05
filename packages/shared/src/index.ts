@@ -35,6 +35,9 @@ export type { NormalizedOperation, NormalizedSpec, ResponseKind, SpecVersion } f
 // Spec loading and access
 export { normalizeSpec, SwaggerParser } from "./core";
 
+// Typed pipeline errors — branch on these, not on message text
+export { NgOpenApiError, SpecLoadError, SpecParseError } from "./errors";
+
 // Emission helpers (method-body fragments shared by core + plugins)
 export {
     emitDefaultHeadersMerge,

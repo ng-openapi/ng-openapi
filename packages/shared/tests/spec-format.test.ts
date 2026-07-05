@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 // Concrete-module imports on purpose: these are internal units, not part of the
 // public barrel — the SwaggerParser façade is the public surface.
 import { detectFormat, parseSpecContent } from "../src/core/spec-format";
+import { SpecParseError } from "../src/errors";
 
 describe("detectFormat", () => {
     it("detects JSON by leading brace or bracket", () => {
@@ -43,8 +44,15 @@ describe("parseSpecContent", () => {
         expect(parseSpecContent("openapi: 3.0.0", "https://example.com/openapi").openapi).toBe("3.0.0");
     });
 
-    it("throws a format-specific error for unparseable content", () => {
+    it("throws SpecParseError with a format-specific message for unparseable content", () => {
+        expect(() => parseSpecContent("{ not json", "broken.json")).toThrow(SpecParseError);
         expect(() => parseSpecContent("{ not json", "broken.json")).toThrow(/Failed to parse JSON content/);
         expect(() => parseSpecContent("\t- weird: [", "broken.yaml")).toThrow(/Failed to parse YAML content/);
+
+        try {
+            parseSpecContent("{ not json", "broken.json");
+        } catch (error) {
+            expect((error as SpecParseError).source).toBe("broken.json");
+        }
     });
 });

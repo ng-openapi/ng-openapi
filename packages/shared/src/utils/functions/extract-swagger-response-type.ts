@@ -2,6 +2,12 @@ import type { SwaggerDefinition, SwaggerResponse } from "../../types/swagger.typ
 import type { TypeMappingConfig } from "../../types/config.types";
 import { getTypeScriptType } from "../type.utils";
 
+/**
+ * Angular `responseType` for a response: inspects every content type the
+ * response declares and picks the highest-priority match (JSON-like content
+ * beats text beats binary). `responseTypeMapping` lets the user config pin a
+ * responseType per content type; empty content defaults to "json".
+ */
 export function getResponseTypeFromResponse(
     response: SwaggerResponse,
     responseTypeMapping?: { [p: string]: "json" | "blob" | "arraybuffer" | "text" },
@@ -85,6 +91,10 @@ export function getResponseTypeFromResponse(
     return responseTypes[0]?.type || "json";
 }
 
+/**
+ * Whether a schema resolves to a bare primitive (string/number/integer/
+ * boolean). Arrays, objects, $refs and compositions all count as complex.
+ */
 export function isPrimitiveType(schema: SwaggerDefinition | undefined): boolean {
     if (!schema) return false;
 
@@ -117,6 +127,10 @@ export function isPrimitiveType(schema: SwaggerDefinition | undefined): boolean 
     return false;
 }
 
+/**
+ * Maps a MIME type (parameters like charset stripped) to the Angular
+ * `responseType` used when fetching it; unknown types are assumed binary.
+ */
 export function inferResponseTypeFromContentType(contentType: string): "json" | "blob" | "arraybuffer" | "text" {
     // Normalize content type (remove parameters like charset)
     const normalizedType = contentType.split(";")[0].trim().toLowerCase();
@@ -186,6 +200,11 @@ export function inferResponseTypeFromContentType(contentType: string): "json" | 
     return "blob";
 }
 
+/**
+ * TS type of a response body for generated signatures: schema-derived when
+ * the response declares one, otherwise Blob/ArrayBuffer/string per the
+ * detected responseType ("any" for schema-less JSON).
+ */
 export function getResponseType(response: SwaggerResponse, config: TypeMappingConfig): string {
     const responseType = getResponseTypeFromResponse(response);
     const content = response.content || {};

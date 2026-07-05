@@ -1,7 +1,9 @@
 # Contributing to ng-openapi
 
 Thanks for contributing! This guide covers local setup and the test suites you'll
-interact with most.
+interact with most. For how the codebase is structured — the generation pipeline,
+the normalized spec model, module boundaries, and where new code should go — see
+[ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Setup
 
