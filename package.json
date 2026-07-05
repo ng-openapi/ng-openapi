@@ -7,7 +7,7 @@
         "build:ng-openapi": "nx build ng-openapi",
         "build:http-resource": "nx build http-resource",
         "build:zod": "nx build zod",
-        "build": "npm run build:ng-openapi && npm run build:http-resource && npm run build:zod",
+        "build": "nx run-many -t build",
         "docs:dev": "vitepress dev docs",
         "docs:build": "vitepress build docs",
         "docs:preview": "vitepress preview docs",
@@ -33,7 +33,8 @@
         "test": "vitest run",
         "test:watch": "vitest",
         "test:coverage": "vitest run --coverage",
-        "typecheck": "tsc -p packages/shared/tsconfig.lib.json --noEmit && tsc -p packages/ng-openapi/tsconfig.lib.json --noEmit && tsc -p packages/plugins/http-resource/tsconfig.lib.json --noEmit && tsc -p packages/plugins/zod/tsconfig.lib.json --noEmit && tsc -p packages/testing/tsconfig.lib.json --noEmit",
+        "typecheck": "nx run-many -t typecheck",
+        "lint": "nx run-many -t lint",
         "test:install": "npm pack dist/packages/ng-openapi && npm install -g ng-openapi-*.tgz",
         "test:uninstall": "npm uninstall -g ng-openapi && rm -f ng-openapi-*.tgz",
         "validate:package": "cd dist/packages/ng-openapi && npm pack && tar -tzf *.tgz"

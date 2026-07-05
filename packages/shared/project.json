@@ -3,5 +3,20 @@
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/shared/src",
     "projectType": "library",
-    "tags": ["type:shared", "scope:internal"]
+    "tags": ["scope:shared"],
+    "targets": {
+        "typecheck": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npx tsc -p {projectRoot}/tsconfig.lib.json --noEmit"
+            }
+        },
+        "test": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npx vitest run packages/shared",
+                "cwd": "{workspaceRoot}"
+            }
+        }
+    }
 }

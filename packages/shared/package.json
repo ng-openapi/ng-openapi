@@ -6,9 +6,6 @@
     "main": "./index.js",
     "module": "./index.js",
     "types": "./index.d.ts",
-    "scripts": {
-        "build": "tsup"
-    },
     "peerDependencies": {
         "@angular/common": ">=15",
         "@angular/core": ">=15",
