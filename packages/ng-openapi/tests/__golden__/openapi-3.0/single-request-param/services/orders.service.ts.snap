@@ -50,16 +50,14 @@ export class OrdersService {
             headers = new HttpHeaders(options?.headers);
         }
 
-        const requestOptions: any = {
-            observe: observe as any,
+        return this.httpClient.request('get', url, {
+            observe,
             headers,
             params,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        };
-
-        return this.httpClient.get(url, requestOptions);
+        });
     }
 
     createOrder(request: CreateOrderParams, observe?: 'body', options?: RequestOptions<'json'>): Observable<Order>;
@@ -80,15 +78,14 @@ export class OrdersService {
             headers = headers.set('Content-Type', 'application/json');
         }
 
-        const requestOptions: any = {
-            observe: observe as any,
+        return this.httpClient.request('post', url, {
+            body: createOrderRequest,
+            observe,
             headers,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        };
-
-        return this.httpClient.post(url, createOrderRequest, requestOptions);
+        });
     }
 
     getOrder(request: GetOrderParams, observe?: 'body', options?: RequestOptions<'json'>): Observable<Order>;
@@ -105,15 +102,13 @@ export class OrdersService {
             headers = new HttpHeaders(options?.headers);
         }
 
-        const requestOptions: any = {
-            observe: observe as any,
+        return this.httpClient.request('get', url, {
+            observe,
             headers,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        };
-
-        return this.httpClient.get(url, requestOptions);
+        });
     }
 
     updateOrder(request: UpdateOrderParams, observe?: 'body', options?: RequestOptions<'json'>): Observable<Order>;
@@ -134,15 +129,14 @@ export class OrdersService {
             headers = headers.set('Content-Type', 'application/json');
         }
 
-        const requestOptions: any = {
-            observe: observe as any,
+        return this.httpClient.request('patch', url, {
+            body: updateOrderRequest,
+            observe,
             headers,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        };
-
-        return this.httpClient.patch(url, updateOrderRequest, requestOptions);
+        });
     }
 
     downloadInvoice(request: DownloadInvoiceParams, observe?: 'body', options?: RequestOptions<'blob'>): Observable<Blob>;
@@ -159,15 +153,13 @@ export class OrdersService {
             headers = new HttpHeaders(options?.headers);
         }
 
-        const requestOptions: any = {
-            observe: observe as any,
+        return this.httpClient.request('get', url, {
+            observe,
             headers,
-            responseType: 'blob' as 'blob',
+            responseType: 'blob',
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        };
-
-        return this.httpClient.get(url, requestOptions);
+        });
     }
 }

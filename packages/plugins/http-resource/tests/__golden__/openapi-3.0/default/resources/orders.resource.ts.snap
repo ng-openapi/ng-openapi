@@ -27,13 +27,6 @@ export class OrdersResource {
     listOrders(page: Signal<number | undefined> | number | undefined, pageSize: Signal<number | undefined> | number | undefined, status: Signal<OrderStatus | undefined> | OrderStatus | undefined, resourceOptions: HttpResourceOptions<Array<Order>, unknown> & { defaultValue: NoInfer<Array<Order>> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<Order>>;
     listOrders(page?: Signal<number | undefined> | number, pageSize?: Signal<number | undefined> | number, status?: Signal<OrderStatus | undefined> | OrderStatus, resourceOptions?: HttpResourceOptions<Array<Order>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<Order> | undefined>;
     listOrders(page?: Signal<number | undefined> | number, pageSize?: Signal<number | undefined> | number, status?: Signal<OrderStatus | undefined> | OrderStatus, resourceOptions?: HttpResourceOptions<Array<Order>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<Order> | undefined> {
-
-        let headers: HttpHeaders;
-        if (requestOptions?.headers instanceof HttpHeaders) {
-            headers = requestOptions.headers;
-        } else {
-            headers = new HttpHeaders(requestOptions?.headers as Record<string, string>);
-        }
         return httpResource(() => {
             let params = new HttpParams();
             const pageValue = typeof page === 'function' ? page() : page;
@@ -51,10 +44,9 @@ export class OrdersResource {
             return {
                 url: `${this.basePath}/orders`,
                 method: "GET",
+                ...requestOptions,
                 params,
-                headers,
-                context: this.createContextWithClientId(requestOptions?.context),
-                ...requestOptions
+                context: this.createContextWithClientId(requestOptions?.context)
             }
         }, resourceOptions);
     }
@@ -62,20 +54,12 @@ export class OrdersResource {
     getOrder(orderId: Signal<string> | string, resourceOptions: HttpResourceOptions<Order, unknown> & { defaultValue: NoInfer<Order> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Order>;
     getOrder(orderId: Signal<string> | string, resourceOptions?: HttpResourceOptions<Order, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Order | undefined>;
     getOrder(orderId: Signal<string> | string, resourceOptions?: HttpResourceOptions<Order, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Order | undefined> {
-
-        let headers: HttpHeaders;
-        if (requestOptions?.headers instanceof HttpHeaders) {
-            headers = requestOptions.headers;
-        } else {
-            headers = new HttpHeaders(requestOptions?.headers as Record<string, string>);
-        }
         return httpResource(() => {
             return {
                 url: `${this.basePath}/orders/${typeof orderId === 'function' ? orderId() : orderId}`,
                 method: "GET",
-                headers,
-                context: this.createContextWithClientId(requestOptions?.context),
-                ...requestOptions
+                ...requestOptions,
+                context: this.createContextWithClientId(requestOptions?.context)
             }
         }, resourceOptions);
     }
@@ -83,21 +67,12 @@ export class OrdersResource {
     downloadInvoice(orderId: Signal<string> | string, resourceOptions: HttpResourceOptions<Blob, Blob> & { defaultValue: NoInfer<Blob> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Blob>;
     downloadInvoice(orderId: Signal<string> | string, resourceOptions?: HttpResourceOptions<Blob, Blob>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Blob | undefined>;
     downloadInvoice(orderId: Signal<string> | string, resourceOptions?: HttpResourceOptions<Blob, Blob>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Blob | undefined> {
-
-        let headers: HttpHeaders;
-        if (requestOptions?.headers instanceof HttpHeaders) {
-            headers = requestOptions.headers;
-        } else {
-            headers = new HttpHeaders(requestOptions?.headers as Record<string, string>);
-        }
         return httpResource.blob(() => {
             return {
                 url: `${this.basePath}/orders/${typeof orderId === 'function' ? orderId() : orderId}/invoice`,
                 method: "GET",
-                headers,
-                responseType: 'blob' as 'blob',
-                context: this.createContextWithClientId(requestOptions?.context),
-                ...requestOptions
+                ...requestOptions,
+                context: this.createContextWithClientId(requestOptions?.context)
             }
         }, resourceOptions);
     }

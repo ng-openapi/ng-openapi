@@ -1,9 +1,14 @@
 import {
     camelCase,
     CONTENT_TYPES,
-    MethodGenOptions,
+    emitHeaders,
+    emitQueryParams,
+    emitResponseTypeOption,
+    emitUrlConstruction,
     getRequestBodyType,
     isDataTypeInterface,
+    joinRequestOptionEntries,
+    MethodGenOptions,
     NormalizedOperation,
 } from "@ng-openapi/shared";
 
@@ -16,92 +21,19 @@ export class ServiceMethodBodyGenerator {
 
     generateMethodBody(operation: NormalizedOperation): string {
         const bodyParts = [
-            this.generateUrlConstruction(operation),
-            this.generateQueryParams(operation),
-            this.generateHeaders(operation),
+            emitUrlConstruction(operation.path, operation.pathParams),
+            emitQueryParams(operation.queryParams),
+            emitHeaders({
+                optionsExpression: "options",
+                customHeaders: this.config.options.customHeaders,
+                contentType: operation,
+            }),
             this.generateMultipartFormData(operation),
             this.generateUrlEncodedFormData(operation),
-            this.generateRequestOptions(operation),
             this.generateHttpRequest(operation),
         ];
 
         return bodyParts.filter(Boolean).join("\n");
-    }
-
-    private generateUrlConstruction(operation: NormalizedOperation): string {
-        let urlExpression = `\`\${this.basePath}${operation.path}\``;
-
-        if (operation.pathParams.length > 0) {
-            operation.pathParams.forEach((param) => {
-                urlExpression = urlExpression.replace(`{${param.name}}`, `\${${camelCase(param.name)}}`);
-            });
-        }
-
-        return `const url = ${urlExpression};`;
-    }
-
-    private generateQueryParams(operation: NormalizedOperation): string {
-        if (operation.queryParams.length === 0) {
-            return "";
-        }
-
-        const paramMappings = operation.queryParams
-            .map(
-                (param) =>
-                    `if (${camelCase(param.name)} != null) {
-  params = HttpParamsBuilder.addToHttpParams(params, ${camelCase(param.name)}, '${param.name}');
-}`,
-            )
-            .join("\n");
-
-        return `
-let params = new HttpParams();
-${paramMappings}`;
-    }
-
-    private generateHeaders(operation: NormalizedOperation): string {
-        const hasCustomHeaders = this.config.options.customHeaders;
-
-        let headerCode = `
-let headers: HttpHeaders;
-if (options?.headers instanceof HttpHeaders) {
-  headers = options.headers;
-} else {
-  headers = new HttpHeaders(options?.headers);
-}`;
-
-        if (hasCustomHeaders) {
-            headerCode += `
-// Add default headers if not already present
-${Object.entries(this.config.options.customHeaders || {})
-    .map(
-        ([key, value]) =>
-            `if (!headers.has('${key}')) {
-  headers = headers.set('${key}', '${value}');
-}`,
-    )
-    .join("\n")}`;
-        }
-
-        if (operation.isMultipart) {
-            headerCode += `
-// Remove Content-Type for multipart (browser will set it with boundary)
-headers = headers.delete('Content-Type');`;
-        } else if (operation.isUrlEncoded) {
-            headerCode += `
-// Set Content-Type for URL-encoded form data
-if (!headers.has('Content-Type')) {
-  headers = headers.set('Content-Type', 'application/x-www-form-urlencoded');
-}`;
-        } else if (operation.hasBody) {
-            headerCode += `
-// Set Content-Type for JSON requests if not already set
-if (!headers.has('Content-Type')) {
-  headers = headers.set('Content-Type', 'application/json');
-}`;
-        }
-
-        return headerCode;
     }
 
     private generateMultipartFormData(operation: NormalizedOperation): string {
@@ -178,33 +110,6 @@ const formBody = new URLSearchParams();
 ${formBodyAppends}`;
     }
 
-    private generateRequestOptions(operation: NormalizedOperation): string {
-        const options: string[] = [];
-
-        options.push("observe: observe as any");
-
-        options.push("headers");
-
-        if (operation.queryParams.length > 0) {
-            options.push("params");
-        }
-
-        if (operation.responseType !== "json") {
-            options.push(`responseType: '${operation.responseType}' as '${operation.responseType}'`);
-        }
-
-        options.push("reportProgress: options?.reportProgress");
-        options.push("withCredentials: options?.withCredentials");
-        options.push("context: this.createContextWithClientId(options?.context)");
-
-        const formattedOptions = options.filter((opt) => opt && !opt.includes("undefined")).join(",\n  ");
-
-        return `
-const requestOptions: any = {
-  ${formattedOptions}
-};`;
-    }
-
     private generateHttpRequest(operation: NormalizedOperation): string {
         const httpMethod = operation.method.toLowerCase();
 
@@ -226,12 +131,27 @@ const requestOptions: any = {
             ? `.pipe(map(response => options?.parse?.(response) ?? response))`
             : "";
 
+        // The options object is inlined into the request() call so that the
+        // literals stay contextually typed — `request` is the only HttpClient
+        // method whose overloads accept a union `observe` / `responseType`,
+        // which is what lets the generated code stay cast-free.
+        const entries: string[] = [];
         if (methodsWithBody.includes(httpMethod)) {
-            return `
-return this.httpClient.${httpMethod}(url, ${bodyParam || "null"}, requestOptions)${parseResponse};`;
-        } else {
-            return `
-return this.httpClient.${httpMethod}(url, requestOptions)${parseResponse};`;
+            entries.push(`body: ${bodyParam || "null"}`);
         }
+        entries.push("observe");
+        entries.push("headers");
+        if (operation.queryParams.length > 0) {
+            entries.push("params");
+        }
+        entries.push(emitResponseTypeOption(operation.responseType));
+        entries.push("reportProgress: options?.reportProgress");
+        entries.push("withCredentials: options?.withCredentials");
+        entries.push("context: this.createContextWithClientId(options?.context)");
+
+        return `
+return this.httpClient.request('${httpMethod}', url, {
+  ${joinRequestOptionEntries(entries)}
+})${parseResponse};`;
     }
 }
