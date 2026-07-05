@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.21](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.2.20...ng-openapi-v0.2.21) (2026-07-05)
+
+
+### Features
+
+* **ng-openapi:** add useSingleRequestParameter option for request object parameters ([#92](https://github.com/ng-openapi/ng-openapi/issues/92)) ([9085680](https://github.com/ng-openapi/ng-openapi/commit/908568009bb87caaa9dee316f1869ee549a09ff4))
+
 ## [0.2.20](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.2.19...ng-openapi-v0.2.20) (2026-06-10)
 
 
