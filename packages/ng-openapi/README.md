@@ -220,3 +220,9 @@ Add these scripts to your `package.json`:
     }
 }
 ```
+
+## Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](https://github.com/ng-openapi/ng-openapi/blob/main/CONTRIBUTING.md)
+for setup and test workflows, and [ARCHITECTURE.md](https://github.com/ng-openapi/ng-openapi/blob/main/ARCHITECTURE.md)
+for how the generation pipeline is structured and where new code should go.

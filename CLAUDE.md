@@ -1,3 +1,12 @@
+## Architecture
+
+Read ARCHITECTURE.md before structural changes: it documents the generation
+pipeline (load → parse → normalize → generate → emit), the NormalizedSpec IR,
+the shared emission layer, the plugin contract, typed errors, and the
+"where does X go" rules. Key invariants: generators consume the IR (never raw
+specs or $refs), shared emission fragments live in packages/shared/src/emit/,
+and `console.*` exists only in cli.ts.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
