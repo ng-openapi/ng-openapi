@@ -34,6 +34,21 @@ export type { NormalizedOperation, NormalizedSpec, ResponseKind, SpecVersion } f
 // Spec loading and access
 export { normalizeSpec, SwaggerParser } from "./core";
 
+// Emission helpers (method-body fragments shared by core + plugins)
+export {
+    emitDefaultHeadersMerge,
+    emitHeaders,
+    emitQueryParams,
+    emitResponseTypeOption,
+    emitSignalAwareQueryParams,
+    emitUrlConstruction,
+    emitUrlExpression,
+    joinRequestOptionEntries,
+    plainParamValue,
+    signalAwareParamValue,
+} from "./emit";
+export type { HeadersEmitOptions } from "./emit";
+
 // Utilities
 export {
     camelCase,
