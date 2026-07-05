@@ -4,7 +4,7 @@ import { normalizeSchema, SwaggerDefinition, TypeGenOptions } from "@ng-openapi/
 import { TypeResolver } from "../src/lib/generators/type/type-resolver";
 
 /**
- * Property-based test (REFACTORING_PLAN.md phase 6): for randomly generated
+ * Property-based test: for randomly generated
  * schemas, the pipeline `raw schema → normalizeSchema → TypeResolver.resolve`
  * must always produce a type expression the TypeScript compiler accepts under
  * strict mode. Hand-rolled seeded PRNG — deterministic, no dependency; bump

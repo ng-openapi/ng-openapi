@@ -5,8 +5,8 @@ import { generateFromConfig } from "ng-openapi";
 import type { SwaggerDefinition } from "@ng-openapi/shared";
 
 /**
- * Performance benchmark fixture (REFACTORING_PLAN.md phase 6): a synthesized
- * large spec keeps the batch AST emission honest after the phase-3 de-caching.
+ * Performance benchmark fixture: a synthesized
+ * large spec keeps the batch AST emission honest after the de-caching refactor.
  * The ceiling is deliberately generous — it exists to catch *pathological*
  * regressions (accidentally quadratic emission, per-schema formatText, …),
  * not to measure machines. The actual duration is logged for trend-watching

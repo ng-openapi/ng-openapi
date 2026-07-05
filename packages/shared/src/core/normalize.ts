@@ -41,7 +41,7 @@ export function normalizeSpec(spec: SwaggerSpec): NormalizedSpec {
 
 /**
  * Normalizes the JSON-Schema constructs OpenAPI 3.1 introduced so generators
- * never see them (REFACTORING_PLAN.md phase 6):
+ * never see them:
  *
  * - type arrays: `"null"` members fold into `nullable: true`, and a single
  *   remaining type collapses to a plain string type — so `format`, `enum` and

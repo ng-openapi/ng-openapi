@@ -6,7 +6,7 @@ export type ResponseKind = "json" | "blob" | "arraybuffer" | "text";
  * A spec operation with everything the generators need precomputed once at
  * normalization time. Generators must not re-derive any of these fields or
  * resolve $refs during emission — that is exactly the duplication this model
- * exists to remove (REFACTORING_PLAN.md phase 2.2).
+ * exists to remove.
  */
 export interface NormalizedOperation extends PathInfo {
     /** parameters with in === "path" */

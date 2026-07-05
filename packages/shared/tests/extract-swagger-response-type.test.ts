@@ -57,7 +57,7 @@ describe("inferResponseTypeFromContentType", () => {
     // Current behavior, frozen deliberately: the source compares against the
     // literal string "CONTENT_TYPES.FORM_URLENCODED" instead of the constant's
     // value, so url-encoded responses fall through to blob. Tracked for a
-    // behavioral fix in a later refactoring phase (REFACTORING_PLAN.md §1.2/3.3).
+    // behavioral fix in a future PR (changes generated output).
     it("maps application/x-www-form-urlencoded to blob (known quirk)", () => {
         expect(inferResponseTypeFromContentType("application/x-www-form-urlencoded")).toBe("blob");
     });

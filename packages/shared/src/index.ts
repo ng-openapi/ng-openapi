@@ -3,7 +3,7 @@
  *
  * Every sub-barrel exports an explicit, curated symbol list — anything not
  * re-exported here is internal to the package and free to change without
- * notice (REFACTORING_PLAN.md phase 1.3).
+ * notice.
  */
 
 // Spec shapes, generator config, plugin contract

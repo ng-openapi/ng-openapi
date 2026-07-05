@@ -102,8 +102,8 @@ Documented for third parties in `docs/guide/plugin-authoring.md`.
   output with `strict` + `noImplicitAny`, after stripping the shipped
   `@ts-nocheck` pragma. The generated code is provably strict-clean.
 - **Unit tests** — parser/normalizer/emitters/type units directly.
-- **Knowledge graph** — `graphify update .` after each phase; god-node degrees
-  and cycle counts are tracked in PRs (see REFACTORING_PLAN.md §5).
+- **Knowledge graph** — `graphify update .` after structural changes; god-node
+  degrees and cycle counts are tracked in PRs.
 
 ## Where does X go?
 

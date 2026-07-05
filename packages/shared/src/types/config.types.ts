@@ -54,7 +54,7 @@ export interface GeneratorConfig {
 }
 
 /**
- * Segregated views of GeneratorConfig (REFACTORING_PLAN.md phase 2.4).
+ * Segregated views of GeneratorConfig.
  * Generators declare the slice they actually consume; callers keep passing the
  * full GeneratorConfig, which satisfies every view structurally. Only the
  * user-facing boundary (CLI/orchestrator) and the plugin contract see the

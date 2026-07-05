@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 /**
  * Guards against import cycles across all workspace source files.
  *
- * Phase 1.1 of REFACTORING_PLAN.md removed two barrel-driven cycles in
+ * The maintainability refactor removed two barrel-driven cycles in
  * packages/shared (core -> types -> core); this test keeps them from coming
  * back. It runs as a test (not a lint rule) because CI runs the test suite on
  * every PR — lint joins CI in phase 4.

@@ -1,8 +1,7 @@
 /**
  * Progress/diagnostics contract between the pure orchestrator and whatever
  * hosts it (CLI, tests, programmatic callers). The orchestrator never logs;
- * presentation lives entirely in the host's Reporter implementation
- * (REFACTORING_PLAN.md phase 3.4).
+ * presentation lives entirely in the host's Reporter implementation.
  */
 
 export type GenerationPhase = "processing-spec" | "types-generated" | "services-generated" | "plugins-generated";

@@ -13,7 +13,7 @@ export default [
     {
         files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
         rules: {
-            // Module boundaries by scope tag (REFACTORING_PLAN.md phase 4.2):
+            // Module boundaries by scope tag:
             // shared is the foundation and depends on nothing internal; core and
             // plugins may reach shared only; the testing harness may drive
             // everything. A plugin importing from packages/ng-openapi fails here.
@@ -52,7 +52,7 @@ export default [
         // Override or add rules here
         rules: {
             // Package internals must be reached through the public barrel; deep
-            // imports bypass the curated API (REFACTORING_PLAN.md phase 1.2/1.3).
+            // imports bypass the curated API.
             "no-restricted-imports": [
                 "error",
                 {
@@ -78,8 +78,8 @@ export default [
     {
         files: ["**/*.ts", "**/*.tsx"],
         rules: {
-            // Ratchet complete: phases 1-3 removed the `any`s from package
-            // sources; new ones cannot land (REFACTORING_PLAN.md phase 4.3).
+            // Ratchet complete: the maintainability refactor removed the `any`s from package
+            // sources; new ones cannot land.
             "@typescript-eslint/no-explicit-any": "error",
         },
     },

@@ -1,5 +1,5 @@
 /**
- * Typed, user-facing errors of the spec pipeline (REFACTORING_PLAN.md phase 5.3).
+ * Typed, user-facing errors of the spec pipeline.
  *
  * Hosts (CLI, programmatic callers, tests) branch on the error class — never
  * on message text, which is presentation and not part of the API contract.
