@@ -48,3 +48,4 @@ export default config;
 - [customHeaders](options/custom-headers)
 - [responseTypeMapping](options/response-type-mapping)
 - [customizeMethodName](options/customize-method-name)
+- [useSingleRequestParameter](options/use-single-request-parameter)

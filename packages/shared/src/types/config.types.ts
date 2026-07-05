@@ -21,6 +21,7 @@ export interface GeneratorConfig {
             [contentType: string]: "json" | "blob" | "arraybuffer" | "text";
         };
         customizeMethodName?: (operationId: string) => string;
+        useSingleRequestParameter?: boolean;
     };
     compilerOptions?: {
         declaration?: boolean;

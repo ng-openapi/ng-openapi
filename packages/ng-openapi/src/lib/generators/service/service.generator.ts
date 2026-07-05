@@ -14,6 +14,8 @@ import {
 } from "@ng-openapi/shared";
 import * as path from "path";
 import { ServiceMethodGenerator } from "./service-method.generator";
+import { RequestParamsGenerator } from "./request-params.generator";
+import { RequestObjectEntry } from "./service-method";
 
 export class ServiceGenerator {
     private project: Project;
@@ -21,6 +23,7 @@ export class ServiceGenerator {
     private spec: SwaggerSpec;
     private config: GeneratorConfig;
     private methodGenerator: ServiceMethodGenerator;
+    private requestObjects?: Map<PathInfo, RequestObjectEntry>;
 
     constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig) {
         this.config = config;
@@ -51,6 +54,15 @@ export class ServiceGenerator {
         }
 
         const controllerGroups = this.groupPathsByController(paths);
+
+        if (this.config.options.useSingleRequestParameter) {
+            const requestParamsGenerator = new RequestParamsGenerator(this.parser, this.project, this.config);
+            this.requestObjects = requestParamsGenerator.buildRegistry(controllerGroups, (operation) =>
+                this.methodGenerator.generateMethodName(operation),
+            );
+            // Must run before the service files so fixMissingImports can resolve the interfaces
+            requestParamsGenerator.generate(outputRoot);
+        }
 
         await Promise.all(
             Object.entries(controllerGroups).map(([controllerName, operations]) =>
@@ -184,7 +196,7 @@ return context.set(this.clientContextToken, '${this.config.clientName || "defaul
 
         // Generate methods for each operation
         operations.forEach((operation) => {
-            this.methodGenerator.addServiceMethod(serviceClass, operation);
+            this.methodGenerator.addServiceMethod(serviceClass, operation, this.requestObjects?.get(operation));
         });
 
         if (hasDuplicateFunctionNames(serviceClass.getMethods())) {

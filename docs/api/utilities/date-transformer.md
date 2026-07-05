@@ -38,9 +38,9 @@ import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
 
-export const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/;
+export const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/;
 
-export function transformDates(obj: any): any {
+export function transformDates(obj: any, dateRegex: RegExp = ISO_DATE_REGEX): any {
     if (obj === null || obj === undefined || typeof obj !== "object") {
         return obj;
     }
@@ -50,17 +50,17 @@ export function transformDates(obj: any): any {
     }
 
     if (Array.isArray(obj)) {
-        return obj.map((item) => transformDates(item));
+        return obj.map((item) => transformDates(item, dateRegex));
     }
 
     if (typeof obj === "object") {
         const transformed: any = {};
         for (const key of Object.keys(obj)) {
             const value = obj[key];
-            if (typeof value === "string" && ISO_DATE_REGEX.test(value)) {
+            if (typeof value === "string" && dateRegex.test(value)) {
                 transformed[key] = new Date(value);
             } else {
-                transformed[key] = transformDates(value);
+                transformed[key] = transformDates(value, dateRegex);
             }
         }
         return transformed;
@@ -71,15 +71,55 @@ export function transformDates(obj: any): any {
 
 @Injectable()
 export class DateInterceptor implements HttpInterceptor {
+    /** @param dateRegex Optional override for the pattern used to detect ISO date strings. */
+    constructor(private readonly dateRegex: RegExp = ISO_DATE_REGEX) {}
+
     intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
         return next.handle(req).pipe(
             map((event) => {
                 if (event instanceof HttpResponse && event.body) {
-                    return event.clone({ body: transformDates(event.body) });
+                    return event.clone({ body: transformDates(event.body, this.dateRegex) });
                 }
                 return event;
             }),
         );
     }
 }
+```
+
+## Recognized Formats
+
+`ISO_DATE_REGEX` matches a full RFC 3339 / ISO 8601 date-time with optional
+fractional seconds (of any length) and an optional `Z` or numeric timezone offset
+(`±hh:mm` or `±hhmm`):
+
+- `2024-01-15T10:30:00Z`
+- `2024-01-15T10:30:00.123Z`
+- `2024-01-15T10:30:00.04` — any number of fractional-second digits
+- `2024-01-15T10:30:00.7559265+02:00` — numeric timezone offset
+- `2024-01-15T10:30:00+0200` — offset without colon
+- `2024-01-15T10:30:00`
+
+The pattern is intentionally strict (full date-time only) so plain strings such as
+a bare year (`"2024"`) or a numeric ID are never accidentally turned into `Date`
+objects.
+
+## Customizing the Regex
+
+If your API uses a format the default pattern doesn't cover, override it via the
+provider instead of editing the generated file:
+
+```typescript
+provideNgOpenapi({
+    basePath: "https://api.example.com",
+    dateTransformRegex: /your-custom-pattern/,
+});
+```
+
+Both `transformDates` and `DateInterceptor` accept the regex directly as well, for
+manual interceptor setups:
+
+```typescript
+new DateInterceptor(/your-custom-pattern/);
+transformDates(responseBody, /your-custom-pattern/);
 ```

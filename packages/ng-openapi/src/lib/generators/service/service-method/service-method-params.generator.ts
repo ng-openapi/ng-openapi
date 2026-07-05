@@ -9,6 +9,7 @@ import {
     SwaggerDefinition,
     SwaggerParser,
 } from "@ng-openapi/shared";
+import { ServiceMethodRequestObjectGenerator } from "./service-method-request-object.generator";
 
 export class ServiceMethodParamsGenerator {
     private config: GeneratorConfig;
@@ -24,19 +25,7 @@ export class ServiceMethodParamsGenerator {
         const optionsParam = this.addOptionsParameter(params);
 
         // Combine all parameters
-        const combined = [...params, ...optionsParam];
-
-        const seen = new Set<string>();
-        const uniqueParams: OptionalKind<ParameterDeclarationStructure>[] = [];
-
-        for (const param of combined) {
-            if (!seen.has(param.name)) {
-                seen.add(param.name);
-                uniqueParams.push(param);
-            }
-        }
-
-        return uniqueParams;
+        return ServiceMethodRequestObjectGenerator.dedupe([...params, ...optionsParam]);
     }
 
     generateApiParameters(operation: PathInfo): OptionalKind<ParameterDeclarationStructure>[] {

@@ -113,6 +113,7 @@ ng-openapi -i ./swagger.json -o ./src/api --date-type string
 - `customHeaders` - Headers to add to all HTTP requests
 - `responseTypeMapping` - Map content types to Angular HttpClient response types
 - `customizeMethodName` - Function to customize generated method names
+- `useSingleRequestParameter` - Generate one request object parameter per method instead of positional parameters (default: `false`)
 - `compilerOptions` - TypeScript compiler options for code generation
 
 ## Generated Files Structure

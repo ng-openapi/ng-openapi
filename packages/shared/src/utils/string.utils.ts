@@ -1,6 +1,6 @@
 export function camelCase(str: string): string {
     return str
-        .replace(/[-_\s]+(.)?/g, (_, char) => (char ? char.toUpperCase() : ""))
+        .replace(/[-_.\s]+(.)?/g, (_, char) => (char ? char.toUpperCase() : ""))
         .replace(/^./, (char) => char.toLowerCase());
 }
 
@@ -13,7 +13,7 @@ export function kebabCase(str: string): string {
 
 export function pascalCase(str: string): string {
     return str
-        .replace(/[-_\s]+(.)?/g, (_, char) => (char ? char.toUpperCase() : ""))
+        .replace(/[-_.\s]+(.)?/g, (_, char) => (char ? char.toUpperCase() : ""))
         .replace(/^./, (char) => char.toUpperCase());
 }
 
