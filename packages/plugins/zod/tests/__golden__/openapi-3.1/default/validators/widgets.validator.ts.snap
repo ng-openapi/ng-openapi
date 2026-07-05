@@ -18,7 +18,9 @@ export const listWidgets200ResponseItem = z.object({
     "nickname": z.string().nullish(),
     "weight": z.number().nullish(),
     "kind": z.enum(['gadget', 'gizmo']).optional(),
-    "createdAt": z.date().optional()
+    "createdAt": z.date().optional(),
+    "lastSeenAt": z.date().nullish(),
+    "schemaVersion": z.enum(['v2']).optional()
 });
 export const listWidgets200Response = z.array(listWidgets200ResponseItem);
 export type ListWidgets200Response = z.infer<typeof listWidgets200Response>;
@@ -34,7 +36,9 @@ export const createWidget201Response = z.object({
     "nickname": z.string().nullish(),
     "weight": z.number().nullish(),
     "kind": z.enum(['gadget', 'gizmo']).optional(),
-    "createdAt": z.date().optional()
+    "createdAt": z.date().optional(),
+    "lastSeenAt": z.date().nullish(),
+    "schemaVersion": z.enum(['v2']).optional()
 });
 export type CreateWidget201Response = z.infer<typeof createWidget201Response>;
 export const getWidgetParams = z.object({
@@ -47,6 +51,8 @@ export const getWidget200Response = z.object({
     "nickname": z.string().nullish(),
     "weight": z.number().nullish(),
     "kind": z.enum(['gadget', 'gizmo']).optional(),
-    "createdAt": z.date().optional()
+    "createdAt": z.date().optional(),
+    "lastSeenAt": z.date().nullish(),
+    "schemaVersion": z.enum(['v2']).optional()
 });
 export type GetWidget200Response = z.infer<typeof getWidget200Response>;

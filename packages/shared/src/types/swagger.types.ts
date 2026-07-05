@@ -41,13 +41,21 @@ export interface PathInfo {
     responses?: Record<string, SwaggerResponse>;
 }
 
-/** Operation request body, keyed by content type (normalizer maps 2.0 body params into this shape). */
+/**
+ * Operation request body, keyed by content type — the OpenAPI 3.x shape.
+ * Swagger 2.0 `in: "body"` parameters are NOT yet lifted into this shape;
+ * 2.0 operations currently generate without a body parameter.
+ */
 export interface RequestBody {
     required?: boolean;
     content?: Record<string, { schema?: SwaggerDefinition }>;
 }
 
-/** A single response entry, keyed by content type (normalizer maps 2.0 `schema` into `content`). */
+/**
+ * A single response entry, keyed by content type — the OpenAPI 3.x shape.
+ * A Swagger 2.0 response's direct `schema` is NOT yet mapped into `content`;
+ * 2.0 responses currently type as `any`.
+ */
 export interface SwaggerResponse {
     description?: string;
     content?: Record<string, { schema?: SwaggerDefinition }>;
@@ -90,6 +98,8 @@ export interface SwaggerDefinition {
     maxProperties?: number | undefined;
     minProperties?: number | undefined;
     enum?: Array<string | number> | undefined;
+    /** OpenAPI 3.1 (JSON Schema); normalizeSchema folds it into a single-value `enum`. */
+    const?: unknown;
     items?: SwaggerDefinition | SwaggerDefinition[] | undefined;
     $ref?: string | undefined;
     allOf?: SwaggerDefinition[] | undefined;

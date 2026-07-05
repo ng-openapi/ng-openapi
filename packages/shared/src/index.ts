@@ -33,7 +33,7 @@ export type {
 export type { NormalizedOperation, NormalizedSpec, ResponseKind, SpecVersion } from "./model";
 
 // Spec loading and access
-export { normalizeSpec, SwaggerParser } from "./core";
+export { normalizeSchema, normalizeSpec, SwaggerParser } from "./core";
 
 // Typed pipeline errors — branch on these, not on message text
 export { NgOpenApiError, SpecLoadError, SpecParseError } from "./errors";
