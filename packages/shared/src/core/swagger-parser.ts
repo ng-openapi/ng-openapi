@@ -1,7 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as yaml from "js-yaml";
-import { GeneratorConfig, SwaggerDefinition, SwaggerSpec } from "../types";
+// Import the concrete type modules, not the ../types barrel: the barrel pulls in
+// plugin.types.ts, which needs this file — going through it re-creates the cycle.
+import type { GeneratorConfig } from "../types/config.types";
+import type { SwaggerDefinition, SwaggerSpec } from "../types/swagger.types";
 import { isUrl } from "../utils/functions/is-url";
 
 export class SwaggerParser {
@@ -52,13 +55,13 @@ export class SwaggerParser {
             }
 
             return content;
-        } catch (error: any) {
+        } catch (error: unknown) {
             // Provide helpful error message
             let errorMessage = `Failed to fetch content from URL: ${url}`;
 
-            if (error.name === "AbortError") {
+            if (error instanceof Error && error.name === "AbortError") {
                 errorMessage += " - Request timeout (30s)";
-            } else if (error.message) {
+            } else if (error instanceof Error && error.message) {
                 errorMessage += ` - ${error.message}`;
             }
 
@@ -165,7 +168,7 @@ export class SwaggerParser {
         return this.spec;
     }
 
-    getPaths(): Record<string, any> {
+    getPaths(): SwaggerSpec["paths"] {
         return this.spec.paths || {};
     }
 

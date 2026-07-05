@@ -1,6 +1,8 @@
-import { SwaggerParser } from "../core";
-import { Project } from "ts-morph";
-import { GeneratorConfig } from "./config.types";
+// Type-only import from the concrete module (not the ../core barrel): a value
+// import through the barrel creates the cycle core -> types -> core.
+import type { SwaggerParser } from "../core/swagger-parser";
+import type { Project } from "ts-morph";
+import type { GeneratorConfig } from "./config.types";
 
 /**
  * Interface for generator class (both constructor and instance)

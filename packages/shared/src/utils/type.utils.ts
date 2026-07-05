@@ -1,23 +1,23 @@
-import { GeneratorConfig, TypeSchema } from "../types";
+import { GeneratorConfig, SwaggerDefinition, TypeSchema } from "../types";
 import { pascalCaseForEnums } from "./string.utils";
 
 /**
  * Convert OpenAPI/Swagger types to TypeScript types
- * @param schemaOrType - Either a schema object or a type string
+ * @param schemaOrType - Either a schema object (loose TypeSchema or a parsed SwaggerDefinition) or a type string
  * @param config - generator configuration
  * @param formatOrNullable - Either format string (if first param is string) or nullable boolean
  * @param isNullable - Nullable boolean (only used if first param is string)
  * @param context - Whether this is for type generation or service generation
  */
 export function getTypeScriptType(
-    schemaOrType: TypeSchema | string | undefined,
+    schemaOrType: TypeSchema | SwaggerDefinition | string | undefined,
     config: GeneratorConfig,
     formatOrNullable?: string | boolean,
     isNullable?: boolean,
     context: "type" | "service" = "type",
 ): string {
     // Handle the two different call signatures
-    let schema: TypeSchema;
+    let schema: TypeSchema | SwaggerDefinition;
     let nullable: boolean | undefined;
 
     if (typeof schemaOrType === "string" || schemaOrType === undefined) {
@@ -45,8 +45,12 @@ export function getTypeScriptType(
 
     // Handle arrays
     if (schema.type === "array") {
+        // Tuple-style `items: []` has always fallen through to `any`; keep that
+        // behavior explicit now that TypeSchema types items as schema-or-array.
         const itemType = schema.items
-            ? getTypeScriptType(schema.items, config, undefined, undefined, context)
+            ? Array.isArray(schema.items)
+                ? "any"
+                : getTypeScriptType(schema.items, config, undefined, undefined, context)
             : "unknown";
         return nullable ? `(Array<${itemType}> | null)` : `Array<${itemType}>`;
     }

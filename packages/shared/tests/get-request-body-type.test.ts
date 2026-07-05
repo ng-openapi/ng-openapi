@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GeneratorConfig, getRequestBodyType } from "@ng-openapi/shared";
+import { GeneratorConfig, getRequestBodyType } from "../src";
 
 const config: GeneratorConfig = {
     input: "spec.json",

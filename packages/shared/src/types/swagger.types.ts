@@ -14,7 +14,7 @@ export interface Parameter {
     name: string;
     in: "query" | "path" | "header" | "cookie";
     required?: boolean;
-    schema?: any;
+    schema?: SwaggerDefinition;
     type?: string;
     format?: string;
     description?: string;
@@ -39,7 +39,7 @@ export interface RequestBody {
 
 export interface SwaggerResponse {
     description?: string;
-    content?: Record<string, { schema?: any }>;
+    content?: Record<string, { schema?: SwaggerDefinition }>;
 }
 
 export interface OpenApiSecurityScheme {
@@ -49,7 +49,7 @@ export interface OpenApiSecurityScheme {
     in?: "query" | "header" | "cookie";
     scheme?: string;
     bearerFormat?: string;
-    flows?: Record<string, any>;
+    flows?: Record<string, unknown>;
     openIdConnectUrl?: string;
 }
 
@@ -58,7 +58,7 @@ export interface SwaggerDefinition {
     format?: string | undefined;
     title?: string | undefined;
     description?: string | undefined;
-    default?: any;
+    default?: unknown;
     multipleOf?: number | undefined;
     maximum?: number | undefined;
     exclusiveMaximum?: boolean | undefined;
@@ -72,7 +72,7 @@ export interface SwaggerDefinition {
     uniqueItems?: boolean | undefined;
     maxProperties?: number | undefined;
     minProperties?: number | undefined;
-    enum?: any[] | undefined;
+    enum?: Array<string | number> | undefined;
     items?: SwaggerDefinition | SwaggerDefinition[] | undefined;
     $ref?: string | undefined;
     allOf?: SwaggerDefinition[] | undefined;
@@ -83,7 +83,7 @@ export interface SwaggerDefinition {
     nullable?: boolean | undefined;
     xml?: XML | undefined;
     externalDocs?: ExternalDocs | undefined;
-    example?: any;
+    example?: unknown;
     required?: string[] | undefined;
     oneOf?: SwaggerDefinition[];
     anyOf?: SwaggerDefinition[];

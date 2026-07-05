@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { escapeString, GeneratorConfig, getTypeScriptType, nullableType } from "@ng-openapi/shared";
+import { escapeString, GeneratorConfig, getTypeScriptType, nullableType } from "../src";
 
 const makeConfig = (dateType: "string" | "Date" = "string"): GeneratorConfig => ({
     input: "spec.json",

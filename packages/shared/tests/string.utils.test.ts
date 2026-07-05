@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { camelCase, kebabCase, pascalCase, pascalCaseForEnums, screamingSnakeCase } from "@ng-openapi/shared";
+import { camelCase, kebabCase, pascalCase, pascalCaseForEnums, screamingSnakeCase } from "../src";
 
 describe("camelCase", () => {
     it("converts kebab-case", () => {

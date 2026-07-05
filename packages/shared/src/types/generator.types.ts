@@ -13,11 +13,11 @@ export interface TypeSchema {
     type?: string;
     format?: string;
     $ref?: string;
-    items?: any;
+    items?: TypeSchema | TypeSchema[];
     nullable?: boolean;
     enum?: Array<string | number>;
 
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface GetMethodGenerationContext {

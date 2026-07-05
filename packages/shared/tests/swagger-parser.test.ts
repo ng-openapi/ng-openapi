@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
-import { GeneratorConfig, SwaggerParser } from "@ng-openapi/shared";
+import { GeneratorConfig, SwaggerParser } from "../src";
 
 const config: GeneratorConfig = {
     input: "spec.json",
