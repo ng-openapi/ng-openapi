@@ -109,6 +109,25 @@ describe("SwaggerParser.create from URLs", () => {
             /Empty response/,
         );
     });
+
+    it("reports a timeout when fetch aborts via AbortSignal.timeout", async () => {
+        // AbortSignal.timeout() rejects with a DOMException named "TimeoutError"
+        stubFetch(async () => {
+            throw Object.assign(new Error("The operation was aborted due to timeout"), { name: "TimeoutError" });
+        });
+        await expect(SwaggerParser.create("https://example.com/spec.json", config)).rejects.toThrow(
+            /Request timeout \(30s\)/,
+        );
+    });
+
+    it("reports a timeout for manual AbortError aborts", async () => {
+        stubFetch(async () => {
+            throw Object.assign(new Error("This operation was aborted"), { name: "AbortError" });
+        });
+        await expect(SwaggerParser.create("https://example.com/spec.json", config)).rejects.toThrow(
+            /Request timeout \(30s\)/,
+        );
+    });
 });
 
 describe("spec access", () => {

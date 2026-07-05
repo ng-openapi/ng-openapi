@@ -33,6 +33,7 @@
         "test": "vitest run",
         "test:watch": "vitest",
         "test:coverage": "vitest run --coverage",
+        "typecheck": "tsc -p packages/shared/tsconfig.lib.json --noEmit && tsc -p packages/ng-openapi/tsconfig.lib.json --noEmit && tsc -p packages/plugins/http-resource/tsconfig.lib.json --noEmit && tsc -p packages/plugins/zod/tsconfig.lib.json --noEmit && tsc -p packages/testing/tsconfig.lib.json --noEmit",
         "test:install": "npm pack dist/packages/ng-openapi && npm install -g ng-openapi-*.tgz",
         "test:uninstall": "npm uninstall -g ng-openapi && rm -f ng-openapi-*.tgz",
         "validate:package": "cd dist/packages/ng-openapi && npm pack && tar -tzf *.tgz"

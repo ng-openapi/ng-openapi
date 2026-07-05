@@ -37,6 +37,10 @@ describe("getTypeScriptType", () => {
         expect(getTypeScriptType({ type: "array" }, config)).toBe("Array<unknown>");
     });
 
+    it("maps tuple-style items arrays to Array<any> (long-standing fall-through)", () => {
+        expect(getTypeScriptType({ type: "array", items: [{ type: "string" }] }, config)).toBe("Array<any>");
+    });
+
     it("wraps nullable arrays in parentheses", () => {
         expect(getTypeScriptType({ type: "array", items: { type: "string" }, nullable: true }, config)).toBe(
             "(Array<string> | null)",

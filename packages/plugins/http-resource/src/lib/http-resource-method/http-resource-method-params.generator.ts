@@ -35,7 +35,10 @@ export class HttpResourceMethodParamsGenerator {
         // Path parameters
         const pathParams = operation.parameters?.filter((p) => p.in === "path") || [];
         pathParams.forEach((param) => {
-            const paramType = getTypeScriptType(param.schema || param, this.config);
+            // Swagger 2.0 puts type/format/enum on the parameter itself; the
+            // spread (vs passing param directly) is needed because Parameter
+            // lacks TypeSchema's index signature — a fresh literal satisfies it.
+            const paramType = getTypeScriptType(param.schema || { ...param }, this.config);
             const signalParamType = param.required ? `Signal<${paramType}>` : `Signal<${paramType} | undefined>`;
             params.push({
                 name: camelCase(param.name),
@@ -47,7 +50,7 @@ export class HttpResourceMethodParamsGenerator {
         // Query parameters
         const queryParams = operation.parameters?.filter((p) => p.in === "query") || [];
         queryParams.forEach((param) => {
-            const paramType = getTypeScriptType(param.schema || param, this.config);
+            const paramType = getTypeScriptType(param.schema || { ...param }, this.config);
             const signalParamType = param.required ? `Signal<${paramType}>` : `Signal<${paramType} | undefined>`;
             params.push({
                 name: camelCase(param.name),

@@ -12,6 +12,12 @@ import { describe, expect, it } from "vitest";
  *
  * Note: TypeScript `import type` statements are erased at compile time and do
  * not create runtime cycles, so they are ignored here.
+ *
+ * Scope: only static `import ... from` / `export ... from` edges are detected.
+ * Side-effect imports (`import "./x"`), dynamic `import()`, and require()
+ * are not parsed — none are used in workspace source today. Deep alias paths
+ * (@ng-openapi/shared/<subpath>) are resolved so they enter the graph; other
+ * packages have no deep alias mapping and such imports are banned by lint.
  */
 
 const ROOT = resolve(__dirname, "..", "..", "..");
@@ -59,6 +65,10 @@ function resolveSpecifier(fromFile: string, specifier: string): string | undefin
         base = resolve(dirname(fromFile), specifier);
     } else if (ALIASES[specifier]) {
         return join(ROOT, ALIASES[specifier]);
+    } else if (specifier.startsWith("@ng-openapi/shared/")) {
+        // Deep alias into shared internals (mirrors the vitest alias). Banned by
+        // lint, but resolved here so a violation still enters the cycle graph.
+        base = join(ROOT, "packages/shared", specifier.slice("@ng-openapi/shared/".length));
     } else {
         return undefined; // external dependency
     }
@@ -116,6 +126,10 @@ describe("workspace import graph", () => {
         }
 
         expect(graph.size).toBeGreaterThan(50); // guard against a silently empty scan
+        // Edge count is the real fail-open guard: if the import parser silently
+        // broke and returned [] everywhere, node count alone would still pass.
+        const edgeCount = [...graph.values()].reduce((sum, targets) => sum + targets.length, 0);
+        expect(edgeCount).toBeGreaterThan(50);
 
         const cycle = findCycle(graph);
         const pretty = cycle?.map((f) => f.split(sep).join("/").split("packages/")[1]).join("\n  -> ");

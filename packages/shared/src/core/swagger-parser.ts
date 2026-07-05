@@ -59,7 +59,9 @@ export class SwaggerParser {
             // Provide helpful error message
             let errorMessage = `Failed to fetch content from URL: ${url}`;
 
-            if (error instanceof Error && error.name === "AbortError") {
+            // AbortSignal.timeout() rejects with a DOMException named "TimeoutError";
+            // "AbortError" is kept for manual AbortController aborts.
+            if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
                 errorMessage += " - Request timeout (30s)";
             } else if (error instanceof Error && error.message) {
                 errorMessage += ` - ${error.message}`;

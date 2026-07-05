@@ -39,7 +39,13 @@ export default [
                             // `**` is required: a single `*` only matches one path
                             // segment, silently missing nested deep imports like
                             // @ng-openapi/shared/src/utils/functions/is-url.
-                            group: ["@ng-openapi/shared/**", "ng-openapi/**", "@ng-openapi/testing/**"],
+                            group: [
+                                "@ng-openapi/shared/**",
+                                "ng-openapi/**",
+                                "@ng-openapi/testing/**",
+                                "@ng-openapi/http-resource/**",
+                                "@ng-openapi/zod/**",
+                            ],
                             message: "Import from the package's public barrel instead of internal paths.",
                         },
                     ],

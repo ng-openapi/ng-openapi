@@ -2,9 +2,10 @@ import { Parameter, PathInfo, RequestBody, SwaggerResponse } from "../../types";
 import { Path } from "swagger-schema-official";
 
 /**
- * The raw operation shape as it appears in the spec, before normalization.
- * Kept loose on purpose — extractPaths is the boundary between untyped spec
- * JSON and the typed PathInfo the generators consume.
+ * The raw operation shape as it appears in the spec: only the fields
+ * extractPaths reads, all optional because the raw spec may omit any of them.
+ * RawPathItem below is the loose boundary between untyped spec JSON and the
+ * typed PathInfo the generators consume.
  */
 interface RawOperation {
     operationId?: string;
