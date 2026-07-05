@@ -1,4 +1,4 @@
-import { GeneratorConfig, SwaggerDefinition, TypeSchema } from "../types";
+import { SwaggerDefinition, TypeMappingConfig, TypeSchema } from "../types";
 import { pascalCaseForEnums } from "./string.utils";
 
 /**
@@ -11,7 +11,7 @@ import { pascalCaseForEnums } from "./string.utils";
  */
 export function getTypeScriptType(
     schemaOrType: TypeSchema | SwaggerDefinition | string | undefined,
-    config: GeneratorConfig,
+    config: TypeMappingConfig,
     formatOrNullable?: string | boolean,
     isNullable?: boolean,
     context: "type" | "service" = "type",

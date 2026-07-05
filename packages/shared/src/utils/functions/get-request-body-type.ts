@@ -1,8 +1,8 @@
-import { GeneratorConfig, RequestBody } from "../../types";
+import { RequestBody, TypeMappingConfig } from "../../types";
 import { getTypeScriptType } from "../type.utils";
 import { CONTENT_TYPES } from "../content-types.constants";
 
-export function getRequestBodyType(requestBody: RequestBody, config: GeneratorConfig): string {
+export function getRequestBodyType(requestBody: RequestBody, config: TypeMappingConfig): string {
     const content = requestBody.content || {};
     const jsonContent = content[CONTENT_TYPES.JSON];
 

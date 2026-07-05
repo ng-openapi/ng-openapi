@@ -14,6 +14,7 @@ export type {
     IPluginGenerator,
     IPluginGeneratorClass,
     MethodGenerationContext,
+    MethodGenOptions,
     NgOpenapiClientConfig,
     OpenApiSecurityScheme,
     Parameter,
@@ -22,11 +23,16 @@ export type {
     SwaggerDefinition,
     SwaggerResponse,
     SwaggerSpec,
+    TypeGenOptions,
+    TypeMappingConfig,
     TypeSchema,
 } from "./types";
 
+// Normalized spec model (version-free view consumed by generators)
+export type { NormalizedOperation, NormalizedSpec, ResponseKind, SpecVersion } from "./model";
+
 // Spec loading and access
-export { SwaggerParser } from "./core";
+export { normalizeSpec, SwaggerParser } from "./core";
 
 // Utilities
 export {

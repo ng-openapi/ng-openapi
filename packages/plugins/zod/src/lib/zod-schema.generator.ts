@@ -1,13 +1,13 @@
 import {
     camelCase,
     CONTENT_TYPES,
-    GeneratorConfig,
+    TypeMappingConfig,
     Parameter,
     pascalCase,
     PathInfo,
     RequestBody,
     SwaggerDefinition,
-    SwaggerParser,
+    NormalizedSpec,
     SwaggerResponse,
 } from "@ng-openapi/shared";
 import { ZodSchemaBuilder } from "./zod-schema.builder";
@@ -15,16 +15,16 @@ import { ZodPluginOptions } from "./utils/types";
 import { isReferenceObject } from "./utils/is-reference-object";
 
 export class ZodSchemaGenerator {
-    private parser: SwaggerParser;
-    private config: GeneratorConfig;
+    private spec: NormalizedSpec;
+    private config: TypeMappingConfig;
     private options: ZodPluginOptions;
     private schemaBuilder: ZodSchemaBuilder;
 
-    constructor(parser: SwaggerParser, config: GeneratorConfig, options: ZodPluginOptions) {
-        this.parser = parser;
+    constructor(spec: NormalizedSpec, config: TypeMappingConfig, options: ZodPluginOptions) {
+        this.spec = spec;
         this.config = config;
         this.options = options;
-        this.schemaBuilder = new ZodSchemaBuilder(parser, config, options);
+        this.schemaBuilder = new ZodSchemaBuilder(spec, config, options);
     }
 
     async generateParametersValidator(parameters: Parameter[], operationName: string, suffix: string): Promise<string> {
@@ -194,7 +194,7 @@ export class ZodSchemaGenerator {
 
     private resolveRequestBody(requestBody: RequestBody): RequestBody {
         if (isReferenceObject(requestBody)) {
-            const resolved = this.parser.resolveReference(requestBody.$ref);
+            const resolved = this.spec.resolveReference(requestBody.$ref);
             return resolved as RequestBody;
         }
         return requestBody;
@@ -202,7 +202,7 @@ export class ZodSchemaGenerator {
 
     private resolveResponse(response: SwaggerResponse): SwaggerResponse {
         if (isReferenceObject(response)) {
-            const resolved = this.parser.resolveReference(response.$ref);
+            const resolved = this.spec.resolveReference(response.$ref);
             return resolved as SwaggerResponse;
         }
         return response;
@@ -210,7 +210,7 @@ export class ZodSchemaGenerator {
 
     private resolveSchema(schema: SwaggerDefinition | { $ref: string }): SwaggerDefinition {
         if (isReferenceObject(schema)) {
-            const resolved = this.parser.resolveReference(schema.$ref);
+            const resolved = this.spec.resolveReference(schema.$ref);
             return resolved as SwaggerDefinition;
         }
         return schema as SwaggerDefinition;

@@ -6,22 +6,26 @@ import {
     ServiceMethodParamsGenerator,
     ServiceMethodRequestObjectGenerator,
 } from "./service-method";
-import { camelCase, GeneratorConfig, pascalCase, PathInfo, SwaggerParser } from "@ng-openapi/shared";
+import { camelCase, MethodGenOptions, NormalizedOperation, pascalCase } from "@ng-openapi/shared";
 
 export class ServiceMethodGenerator {
-    private config: GeneratorConfig;
+    private config: MethodGenOptions;
     private bodyGenerator: ServiceMethodBodyGenerator;
     private overloadsGenerator: ServiceMethodOverloadsGenerator;
     private paramsGenerator: ServiceMethodParamsGenerator;
 
-    constructor(config: GeneratorConfig, parser: SwaggerParser) {
+    constructor(config: MethodGenOptions) {
         this.config = config;
-        this.bodyGenerator = new ServiceMethodBodyGenerator(config, parser);
-        this.overloadsGenerator = new ServiceMethodOverloadsGenerator(config, parser);
-        this.paramsGenerator = new ServiceMethodParamsGenerator(config, parser);
+        this.bodyGenerator = new ServiceMethodBodyGenerator(config);
+        this.overloadsGenerator = new ServiceMethodOverloadsGenerator(config);
+        this.paramsGenerator = new ServiceMethodParamsGenerator(config);
     }
 
-    addServiceMethod(serviceClass: ClassDeclaration, operation: PathInfo, requestObject?: RequestObjectEntry): void {
+    addServiceMethod(
+        serviceClass: ClassDeclaration,
+        operation: NormalizedOperation,
+        requestObject?: RequestObjectEntry,
+    ): void {
         const methodName = this.generateMethodName(operation);
         const parameters = requestObject
             ? this.generateSingleRequestParameters(requestObject)
@@ -50,7 +54,7 @@ export class ServiceMethodGenerator {
         ];
     }
 
-    generateMethodName(operation: PathInfo): string {
+    generateMethodName(operation: NormalizedOperation): string {
         if (this.config.options.customizeMethodName) {
             if (operation.operationId == null) {
                 throw new Error(
@@ -67,7 +71,7 @@ export class ServiceMethodGenerator {
         return "Observable<any>";
     }
 
-    defaultNameGenerator(operation: PathInfo): string {
+    defaultNameGenerator(operation: NormalizedOperation): string {
         if (operation.operationId) {
             return camelCase(operation.operationId);
         }
