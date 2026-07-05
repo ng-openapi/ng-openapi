@@ -1,6 +1,6 @@
 import { Project } from "ts-morph";
 import {
-    GeneratorConfig,
+    MethodGenOptions,
     NormalizedOperation,
     pascalCase,
     REQUEST_PARAMS_GENERATOR_HEADER_COMMENT,
@@ -23,7 +23,7 @@ export class RequestParamsGenerator {
     private readonly registry = new Map<NormalizedOperation, RequestObjectEntry>();
     private readonly usedInterfaceNames = new Set<string>();
 
-    constructor(project: Project, config: GeneratorConfig) {
+    constructor(project: Project, config: MethodGenOptions) {
         this.project = project;
         this.paramsGenerator = new ServiceMethodParamsGenerator(config);
     }

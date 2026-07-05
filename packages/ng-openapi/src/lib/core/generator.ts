@@ -11,6 +11,7 @@ import {
 } from "../generators/utility";
 import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
 import { GeneratorConfig, isUrl, SwaggerParser } from "@ng-openapi/shared";
+import { validateGeneratorConfig } from "./config-validation";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -41,6 +42,10 @@ export function validateInput(inputPath: string): void {
  * Generates Angular services and types from a configuration object
  */
 export async function generateFromConfig(config: GeneratorConfig): Promise<void> {
+    // Fail fast on structurally invalid configs (JS callers / config files
+    // bypass the compile-time types entirely)
+    validateGeneratorConfig(config);
+
     // Validate input (file or URL)
     validateInput(config.input);
 

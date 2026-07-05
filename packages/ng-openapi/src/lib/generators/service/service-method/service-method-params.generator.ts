@@ -2,7 +2,7 @@ import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
 import {
     camelCase,
     CONTENT_TYPES,
-    GeneratorConfig,
+    MethodGenOptions,
     getTypeScriptType,
     isDataTypeInterface,
     NormalizedOperation,
@@ -11,9 +11,9 @@ import {
 import { ServiceMethodRequestObjectGenerator } from "./service-method-request-object.generator";
 
 export class ServiceMethodParamsGenerator {
-    private config: GeneratorConfig;
+    private config: MethodGenOptions;
 
-    constructor(config: GeneratorConfig) {
+    constructor(config: MethodGenOptions) {
         this.config = config;
     }
 

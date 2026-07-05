@@ -14,6 +14,7 @@ export type {
     IPluginGenerator,
     IPluginGeneratorClass,
     MethodGenerationContext,
+    MethodGenOptions,
     NgOpenapiClientConfig,
     OpenApiSecurityScheme,
     Parameter,
@@ -22,6 +23,8 @@ export type {
     SwaggerDefinition,
     SwaggerResponse,
     SwaggerSpec,
+    TypeGenOptions,
+    TypeMappingConfig,
     TypeSchema,
 } from "./types";
 

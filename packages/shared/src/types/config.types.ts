@@ -32,6 +32,46 @@ export interface GeneratorConfig {
     plugins?: IPluginGeneratorClass[];
 }
 
+/**
+ * Segregated views of GeneratorConfig (REFACTORING_PLAN.md phase 2.4).
+ * Generators declare the slice they actually consume; callers keep passing the
+ * full GeneratorConfig, which satisfies every view structurally. Only the
+ * user-facing boundary (CLI/orchestrator) and the plugin contract see the
+ * whole config.
+ */
+
+/** What swagger→TypeScript type mapping needs (getTypeScriptType and friends). */
+export interface TypeMappingConfig {
+    options: {
+        dateType: "string" | "Date";
+    };
+}
+
+/** Options consumed by model/interface generation (TypeGenerator). */
+export interface TypeGenOptions {
+    options: {
+        dateType: "string" | "Date";
+        enumStyle: "enum" | "union";
+        generateEnumBasedOnDescription?: boolean;
+        validation?: {
+            response?: boolean;
+        };
+    };
+}
+
+/** Options consumed by the service/resource method-generation chain. */
+export interface MethodGenOptions {
+    options: {
+        dateType: "string" | "Date";
+        validation?: {
+            response?: boolean;
+        };
+        customHeaders?: Record<string, string>;
+        customizeMethodName?: (operationId: string) => string;
+        useSingleRequestParameter?: boolean;
+    };
+}
+
 // Multi-client configuration for providers
 export interface NgOpenapiClientConfig {
     clientName: string; // Unique identifier for this client

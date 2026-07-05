@@ -1,14 +1,14 @@
 import { MethodDeclarationOverloadStructure, OptionalKind, ParameterDeclarationStructure } from "ts-morph";
-import { GeneratorConfig, getResponseType, NormalizedOperation } from "@ng-openapi/shared";
+import { MethodGenOptions, getResponseType, NormalizedOperation } from "@ng-openapi/shared";
 import { ServiceMethodParamsGenerator } from "./service-method-params.generator";
 import { RequestObjectEntry, ServiceMethodRequestObjectGenerator } from "./service-method-request-object.generator";
 
 export class ServiceMethodOverloadsGenerator {
-    private config: GeneratorConfig;
+    private config: MethodGenOptions;
     private paramsGenerator: ServiceMethodParamsGenerator;
     private responseDataType = "any";
 
-    constructor(config: GeneratorConfig) {
+    constructor(config: MethodGenOptions) {
         this.config = config;
         this.paramsGenerator = new ServiceMethodParamsGenerator(config);
     }

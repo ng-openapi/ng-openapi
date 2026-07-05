@@ -1,9 +1,9 @@
-import { camelCase, GeneratorConfig, NormalizedOperation } from "@ng-openapi/shared";
+import { camelCase, MethodGenOptions, NormalizedOperation } from "@ng-openapi/shared";
 
 export class HttpResourceMethodBodyGenerator {
-    private config: GeneratorConfig;
+    private config: MethodGenOptions;
 
-    constructor(config: GeneratorConfig) {
+    constructor(config: MethodGenOptions) {
         this.config = config;
     }
 

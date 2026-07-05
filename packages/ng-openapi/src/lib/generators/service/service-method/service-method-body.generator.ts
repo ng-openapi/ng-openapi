@@ -1,16 +1,16 @@
 import {
     camelCase,
     CONTENT_TYPES,
-    GeneratorConfig,
+    MethodGenOptions,
     getRequestBodyType,
     isDataTypeInterface,
     NormalizedOperation,
 } from "@ng-openapi/shared";
 
 export class ServiceMethodBodyGenerator {
-    private config: GeneratorConfig;
+    private config: MethodGenOptions;
 
-    constructor(config: GeneratorConfig) {
+    constructor(config: MethodGenOptions) {
         this.config = config;
     }
 

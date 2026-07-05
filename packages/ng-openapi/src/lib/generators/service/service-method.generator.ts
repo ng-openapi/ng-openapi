@@ -6,15 +6,15 @@ import {
     ServiceMethodParamsGenerator,
     ServiceMethodRequestObjectGenerator,
 } from "./service-method";
-import { camelCase, GeneratorConfig, NormalizedOperation, pascalCase } from "@ng-openapi/shared";
+import { camelCase, MethodGenOptions, NormalizedOperation, pascalCase } from "@ng-openapi/shared";
 
 export class ServiceMethodGenerator {
-    private config: GeneratorConfig;
+    private config: MethodGenOptions;
     private bodyGenerator: ServiceMethodBodyGenerator;
     private overloadsGenerator: ServiceMethodOverloadsGenerator;
     private paramsGenerator: ServiceMethodParamsGenerator;
 
-    constructor(config: GeneratorConfig) {
+    constructor(config: MethodGenOptions) {
         this.config = config;
         this.bodyGenerator = new ServiceMethodBodyGenerator(config);
         this.overloadsGenerator = new ServiceMethodOverloadsGenerator(config);

@@ -1,4 +1,5 @@
-import { GeneratorConfig, SwaggerDefinition, SwaggerResponse } from "../../types";
+import type { SwaggerDefinition, SwaggerResponse } from "../../types/swagger.types";
+import type { TypeMappingConfig } from "../../types/config.types";
 import { getTypeScriptType } from "../type.utils";
 
 export function getResponseTypeFromResponse(
@@ -185,7 +186,7 @@ export function inferResponseTypeFromContentType(contentType: string): "json" | 
     return "blob";
 }
 
-export function getResponseType(response: SwaggerResponse, config: GeneratorConfig): string {
+export function getResponseType(response: SwaggerResponse, config: TypeMappingConfig): string {
     const responseType = getResponseTypeFromResponse(response);
     const content = response.content || {};
 

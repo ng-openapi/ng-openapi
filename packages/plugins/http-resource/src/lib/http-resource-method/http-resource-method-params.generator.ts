@@ -1,10 +1,10 @@
 import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
-import { camelCase, GeneratorConfig, getResponseType, getTypeScriptType, NormalizedOperation } from "@ng-openapi/shared";
+import { camelCase, getResponseType, getTypeScriptType, MethodGenOptions, NormalizedOperation } from "@ng-openapi/shared";
 
 export class HttpResourceMethodParamsGenerator {
-    private config: GeneratorConfig;
+    private config: MethodGenOptions;
 
-    constructor(config: GeneratorConfig) {
+    constructor(config: MethodGenOptions) {
         this.config = config;
     }
 

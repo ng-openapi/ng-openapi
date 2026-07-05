@@ -5,15 +5,15 @@ import {
     ParameterDeclarationStructure,
 } from "ts-morph";
 import { HttpResourceMethodBodyGenerator, HttpResourceMethodParamsGenerator } from "./http-resource-method";
-import { camelCase, GeneratorConfig, getResponseType, pascalCase, NormalizedOperation } from "@ng-openapi/shared";
+import { camelCase, getResponseType, MethodGenOptions, NormalizedOperation, pascalCase } from "@ng-openapi/shared";
 
 export class HttpResourceMethodGenerator {
-    private config: GeneratorConfig;
+    private config: MethodGenOptions;
     private bodyGenerator: HttpResourceMethodBodyGenerator;
     private paramsGenerator: HttpResourceMethodParamsGenerator;
     #responseType = "unknown";
 
-    constructor(config: GeneratorConfig) {
+    constructor(config: MethodGenOptions) {
         this.config = config;
         this.bodyGenerator = new HttpResourceMethodBodyGenerator(config);
         this.paramsGenerator = new HttpResourceMethodParamsGenerator(config);

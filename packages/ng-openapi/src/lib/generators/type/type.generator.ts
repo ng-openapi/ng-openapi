@@ -1,6 +1,6 @@
 import {
     EnumValueObject,
-    GeneratorConfig,
+    TypeGenOptions,
     pascalCase,
     pascalCaseForEnums,
     SwaggerDefinition,
@@ -22,7 +22,7 @@ export class TypeGenerator {
     private readonly parser: SwaggerParser;
     private sourceFile: SourceFile;
     private readonly generatedTypes = new Set<string>();
-    private readonly config: GeneratorConfig;
+    private readonly config: TypeGenOptions;
 
     // Performance caches
     private readonly pascalCaseCache = new Map<string, string>();
@@ -33,7 +33,7 @@ export class TypeGenerator {
     private readonly statements: StatementStructures[] = [];
     private readonly deferredTypes = new Map<string, SwaggerDefinition>();
 
-    constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig, outputRoot: string) {
+    constructor(parser: SwaggerParser, project: Project, config: TypeGenOptions, outputRoot: string) {
         this.config = config;
         this.project = project;
         this.parser = parser;

@@ -1,7 +1,7 @@
 import {
     camelCase,
     CONTENT_TYPES,
-    GeneratorConfig,
+    TypeMappingConfig,
     Parameter,
     pascalCase,
     PathInfo,
@@ -16,11 +16,11 @@ import { isReferenceObject } from "./utils/is-reference-object";
 
 export class ZodSchemaGenerator {
     private spec: NormalizedSpec;
-    private config: GeneratorConfig;
+    private config: TypeMappingConfig;
     private options: ZodPluginOptions;
     private schemaBuilder: ZodSchemaBuilder;
 
-    constructor(spec: NormalizedSpec, config: GeneratorConfig, options: ZodPluginOptions) {
+    constructor(spec: NormalizedSpec, config: TypeMappingConfig, options: ZodPluginOptions) {
         this.spec = spec;
         this.config = config;
         this.options = options;

@@ -1,4 +1,4 @@
-import { Parameter, PathInfo, RequestBody, SwaggerResponse } from "../../types";
+import type { Parameter, PathInfo, RequestBody, SwaggerResponse } from "../../types/swagger.types";
 import { Path } from "swagger-schema-official";
 
 /**

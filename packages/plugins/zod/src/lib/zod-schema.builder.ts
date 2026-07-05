@@ -1,13 +1,13 @@
-import { GeneratorConfig, NormalizedSpec, pascalCase, SwaggerDefinition } from "@ng-openapi/shared";
+import { NormalizedSpec, pascalCase, SwaggerDefinition, TypeMappingConfig } from "@ng-openapi/shared";
 import { BuildOptions, ZodPluginOptions } from "./utils/types";
 import { isReferenceObject } from "./utils/is-reference-object";
 
 export class ZodSchemaBuilder {
     private spec: NormalizedSpec;
-    private config: GeneratorConfig;
+    private config: TypeMappingConfig;
     private options: ZodPluginOptions;
 
-    constructor(spec: NormalizedSpec, config: GeneratorConfig, options: ZodPluginOptions) {
+    constructor(spec: NormalizedSpec, config: TypeMappingConfig, options: ZodPluginOptions) {
         this.spec = spec;
         this.config = config;
         this.options = options;
