@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { ModuleKind, ModuleResolutionKind, Project, ScriptTarget } from "ts-morph";
+import { ModuleKind, Project, ScriptTarget } from "ts-morph";
 import { afterAll, describe, expect, it } from "vitest";
 import { generateFromConfig, GeneratorConfig } from "ng-openapi";
 
@@ -15,7 +15,10 @@ type ConfigBuilder = (input: string, output: string) => GeneratorConfig;
 export function registerCompileCheckSuite(suiteName: string, buildConfig: ConfigBuilder): void {
     describe(suiteName, () => {
         const tempDirs: string[] = [];
-        const tmpRoot = join(process.cwd(), "node_modules", ".cache", "ng-openapi-tests");
+        // Must live outside node_modules: the generator adds imports via the
+        // TypeScript language service, which refuses to auto-import from files
+        // it considers external libraries — anything under a node_modules dir.
+        const tmpRoot = join(process.cwd(), "tmp", "ng-openapi-tests");
         mkdirSync(tmpRoot, { recursive: true });
 
         afterAll(() => {
@@ -54,6 +57,9 @@ export function registerCompileCheckSuite(suiteName: string, buildConfig: Config
 
                     const globPath = `${outputDir.replace(/\\/g, "/")}/**/*.ts`;
                     project.addSourceFilesAtPaths(globPath);
+
+                    // Guard against a broken glob silently checking nothing
+                    expect(project.getSourceFiles().length, "no generated files found").toBeGreaterThan(0);
 
                     const diagnostics = project.getPreEmitDiagnostics();
                     const formatted = project.formatDiagnosticsWithColorAndContext(diagnostics);
