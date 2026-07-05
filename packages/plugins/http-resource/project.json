@@ -24,6 +24,13 @@
                 "cwd": "packages/plugins/http-resource"
             },
             "outputs": ["{workspaceRoot}/dist/packages/plugins/http-resource"]
+        },
+        "test": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npx vitest run packages/plugins/http-resource",
+                "cwd": "{workspaceRoot}"
+            }
         }
     }
 }

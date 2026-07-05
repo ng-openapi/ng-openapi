@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', 'latest']
+    env:
+      # Spec URLs are read from repository variables. If you'd rather keep them
+      # private, define matching secrets and remove the `vars.` fallback.
+      OPENAPI_SPEC_V2_URL: ${{ vars.OPENAPI_SPEC_V2_URL || secrets.OPENAPI_SPEC_V2_URL }}
+      OPENAPI_SPEC_V3_URL: ${{ vars.OPENAPI_SPEC_V3_URL || secrets.OPENAPI_SPEC_V3_URL }}
+      OPENAPI_SPEC_V3_1_URL: ${{ vars.OPENAPI_SPEC_V3_1_URL || secrets.OPENAPI_SPEC_V3_1_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify spec URLs are configured
+        run: |
+          missing=0
+          for var in OPENAPI_SPEC_V2_URL OPENAPI_SPEC_V3_URL OPENAPI_SPEC_V3_1_URL; do
+            if [ -z "${!var}" ]; then
+              echo "::error::Required variable $var is not set. Define it under repo Settings → Secrets and variables → Actions."
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: Run tests
+        run: npm test
