@@ -1,0 +1,110 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Widgets API (OpenAPI 3.1)",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/widgets": {
+            "get": {
+                "tags": ["widgets"],
+                "operationId": "listWidgets",
+                "parameters": [
+                    {
+                        "name": "kind",
+                        "in": "query",
+                        "schema": { "$ref": "#/components/schemas/WidgetKind" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "widgets",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": { "$ref": "#/components/schemas/Widget" }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": ["widgets"],
+                "operationId": "createWidget",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": { "$ref": "#/components/schemas/NewWidget" }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "created",
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/Widget" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/widgets/{widgetId}": {
+            "get": {
+                "tags": ["widgets"],
+                "operationId": "getWidget",
+                "parameters": [
+                    {
+                        "name": "widgetId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "widget",
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/Widget" }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Widget": {
+                "type": "object",
+                "required": ["id", "name"],
+                "properties": {
+                    "id": { "type": "string" },
+                    "name": { "type": "string" },
+                    "nickname": { "type": ["string", "null"] },
+                    "weight": { "type": ["number", "null"] },
+                    "kind": { "$ref": "#/components/schemas/WidgetKind" },
+                    "createdAt": { "type": "string", "format": "date-time" }
+                }
+            },
+            "NewWidget": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                    "name": { "type": "string" },
+                    "nickname": { "type": ["string", "null"] },
+                    "kind": { "$ref": "#/components/schemas/WidgetKind" }
+                }
+            },
+            "WidgetKind": {
+                "type": "string",
+                "enum": ["gadget", "gizmo"]
+            }
+        }
+    }
+}
