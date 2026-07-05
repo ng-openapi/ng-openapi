@@ -1,6 +1,7 @@
 import type { SwaggerDefinition } from "../types/swagger.types";
 import type { NormalizedOperation } from "./operation.model";
 
+/** Detected spec flavor and its literal version string (e.g. openapi "3.0.3"). */
 export interface SpecVersion {
     type: "swagger" | "openapi";
     version: string;

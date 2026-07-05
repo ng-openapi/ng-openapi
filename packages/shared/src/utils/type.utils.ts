@@ -116,10 +116,12 @@ export function getTypeScriptType(
     }
 }
 
+/** Appends `| null` to a type expression when the schema is nullable. */
 export function nullableType(type: string, isNullable?: boolean): string {
     return type + (isNullable ? " | null" : "");
 }
 
+/** Escapes backslashes and single quotes for embedding in a single-quoted generated literal. */
 export function escapeString(str: string): string {
     return str.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }

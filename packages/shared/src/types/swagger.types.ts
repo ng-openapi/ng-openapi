@@ -10,6 +10,11 @@ import {
     XML,
 } from "swagger-schema-official";
 
+/**
+ * An operation parameter. OpenAPI 3.x carries the type in `schema`;
+ * Swagger 2.0 puts `type`/`format` directly on the parameter — consumers
+ * must handle both (or use the normalized model, which precomputes them).
+ */
 export interface Parameter {
     name: string;
     in: "query" | "path" | "header" | "cookie";
@@ -20,6 +25,10 @@ export interface Parameter {
     description?: string;
 }
 
+/**
+ * One operation of the spec, flattened to (path, method). Raw-ish view —
+ * generators consume its precomputed extension NormalizedOperation instead.
+ */
 export interface PathInfo {
     path: string;
     method: string;
@@ -32,16 +41,19 @@ export interface PathInfo {
     responses?: Record<string, SwaggerResponse>;
 }
 
+/** Operation request body, keyed by content type (normalizer maps 2.0 body params into this shape). */
 export interface RequestBody {
     required?: boolean;
     content?: Record<string, { schema?: SwaggerDefinition }>;
 }
 
+/** A single response entry, keyed by content type (normalizer maps 2.0 `schema` into `content`). */
 export interface SwaggerResponse {
     description?: string;
     content?: Record<string, { schema?: SwaggerDefinition }>;
 }
 
+/** OpenAPI 3.x security scheme (subset of the spec's fields). */
 export interface OpenApiSecurityScheme {
     type?: "apiKey" | "http" | "oauth2" | "openIdConnect";
     description?: string;
@@ -53,6 +65,11 @@ export interface OpenApiSecurityScheme {
     openIdConnectUrl?: string;
 }
 
+/**
+ * A JSON-Schema-ish definition as it appears in the spec, shared by
+ * Swagger 2.0 and OpenAPI 3.x (3.0's `nullable` and 3.1's type arrays
+ * both flow through `type`/`nullable`). May contain unresolved `$ref`s.
+ */
 export interface SwaggerDefinition {
     type?: ParameterType | undefined;
     format?: string | undefined;
@@ -89,6 +106,11 @@ export interface SwaggerDefinition {
     anyOf?: SwaggerDefinition[];
 }
 
+/**
+ * The raw parsed spec document. Exactly one of `swagger` ("2.x") or
+ * `openapi` ("3.x") identifies the version; everything version-specific
+ * is resolved once by normalizeSpec.
+ */
 export interface SwaggerSpec {
     openapi: string;
     swagger: string;
@@ -112,6 +134,11 @@ export interface SwaggerSpec {
     };
 }
 
+/**
+ * Shape of a JSON-encoded enum description consumed when
+ * `generateEnumBasedOnDescription` is enabled: the description holds
+ * `[{"Name":"First","Value":1}, …]` and supplies the member names.
+ */
 export type EnumValueObject = {
     Name: string;
     Value: number;
