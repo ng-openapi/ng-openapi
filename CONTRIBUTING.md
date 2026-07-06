@@ -92,10 +92,36 @@ npm test
 In CI these are provided as repository variables (`vars.*`), so the compile-checks run
 on every pull request without any per-fork setup.
 
+## Documentation
+
+The docs site (https://ng-openapi.dev) is a [VitePress](https://vitepress.dev) app in `docs/`:
+
+```bash
+npm run docs:dev       # local dev server with hot reload
+npm run docs:build     # production build (also runs the dead-link check)
+```
+
+Conventions when touching docs:
+
+- Every page needs a one-line `description:` in its frontmatter (quote it if it
+  contains a colon) — it becomes the meta description and link-preview text.
+- `docs/public/llms.txt` is **hand-curated** guidance for AI assistants; update it when
+  user-facing behavior changes. `llms-full.txt` and the raw per-page `.md` endpoints are
+  **generated** by the build (`buildEnd` in `docs/.vitepress/config.ts`) — never edit those.
+- Page URLs are load-bearing (the npm READMEs and `llms.txt` link to them). Don't move
+  or rename a page without adding a redirect in `docs/public/_redirects`.
+
 ## Pull requests
 
 - Follow the [Conventional Commits](https://www.conventionalcommits.org) format for PR
   titles (e.g. `feat(ng-openapi): ...`, `fix(shared): ...`, `chore(testing): ...`) — the
   title is validated by CI.
-- Run `npm test` before pushing; include updated golden snapshots when output changes.
+- CI runs typecheck, lint, and build in addition to the test suite, so run the same
+  locally before pushing:
+
+  ```bash
+  npm run typecheck && npm run lint && npm test
+  ```
+
+- Include updated golden snapshots when generator output changes.
 - Fill out the pull request template.
