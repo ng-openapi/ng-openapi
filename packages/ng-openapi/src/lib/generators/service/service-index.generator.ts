@@ -1,7 +1,6 @@
 import { Project } from "ts-morph";
-import * as fs from "fs";
 import * as path from "path";
-import { pascalCase, SERVICE_INDEX_GENERATOR_HEADER_COMMENT } from "@ng-openapi/shared";
+import { listGeneratedFileNames, pascalCase, SERVICE_INDEX_GENERATOR_HEADER_COMMENT } from "@ng-openapi/shared";
 
 export class ServiceIndexGenerator {
     private project: Project;
@@ -12,16 +11,19 @@ export class ServiceIndexGenerator {
 
     generateIndex(outputRoot: string): void {
         const servicesDir = path.join(outputRoot, "services");
+
+        // Export what this run generated (from the Project, not the disk):
+        // path-less specs produce no services and no services/ directory
+        const serviceFiles = listGeneratedFileNames(this.project, servicesDir, ".service.ts");
+
+        if (serviceFiles.length === 0) {
+            return;
+        }
+
         const indexPath = path.join(servicesDir, "index.ts");
         const sourceFile = this.project.createSourceFile(indexPath, "", { overwrite: true });
 
         sourceFile.insertText(0, SERVICE_INDEX_GENERATOR_HEADER_COMMENT);
-
-        // get all service files
-        const serviceFiles = fs
-            .readdirSync(servicesDir)
-            .filter((file) => file.endsWith(".service.ts"))
-            .map((file) => file.replace(".service.ts", ""));
 
         // Add exports
         serviceFiles.forEach((serviceName) => {

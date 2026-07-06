@@ -92,9 +92,6 @@ describe("generateFromConfig result + reporter", () => {
         const config: GeneratorConfig = {
             ...base,
             input: resolve(__dirname, "fixtures-empty-spec.json"),
-            // generateServices off: the service-index generator predates this
-            // refactor in not tolerating path-less specs
-            options: { ...base.options, generateServices: false },
         };
 
         // A spec with no paths/definitions triggers the warning channel
@@ -107,7 +104,12 @@ describe("generateFromConfig result + reporter", () => {
         try {
             const result = await generateFromConfig(config, { onWarning: (message) => reported.push(message) });
             expect(reported).toContain("No definitions found in swagger file");
+            expect(reported).toContain("No API paths found in the specification");
             expect(result.warnings).toEqual(reported);
+            // Path-less spec: no services were generated, so neither the
+            // services barrel nor a dangling ./services re-export may exist
+            const written = result.filesWritten.map((file) => file.replace(/\\/g, "/"));
+            expect(written.some((file) => file.includes("/services/"))).toBe(false);
         } finally {
             rmSync(config.input, { force: true });
         }

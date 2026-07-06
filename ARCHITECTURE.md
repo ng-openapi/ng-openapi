@@ -93,9 +93,20 @@ Plugins are classes constructed with a single `PluginGeneratorContext`
 IR in, files out through the shared project, warnings through the sink.
 Documented for third parties in `docs/guide/plugin-authoring.md`.
 
+### Project as the manifest
+
+The shared ts-morph `Project` is the source of truth for what a run generated.
+Index generators derive their export lists from it
+(`listGeneratedFileNames()` in `packages/shared/src/utils/project.utils.ts`),
+never from `fs.readdirSync` on the output tree: the filesystem may hold stale
+files from earlier runs, and a path-less spec legitimately generates no
+`services/` directory at all. The corollary: a generator that decides not to
+emit a file must remove it from the Project rather than leave it unsaved —
+otherwise it would show up in indexes and `filesWritten`.
+
 ## Safety nets
 
-- **Golden suite** — every generated file from 4 spec fixtures × config
+- **Golden suite** — every generated file from 5 spec fixtures × config
   variants is snapshot-compared byte-for-byte. Structural refactors must keep
   them identical; intentional output changes are the review artifact.
 - **Compile-check suite** — generates from live/local specs and type-checks the

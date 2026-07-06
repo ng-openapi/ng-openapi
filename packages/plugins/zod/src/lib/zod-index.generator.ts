@@ -1,7 +1,6 @@
 import { Project } from "ts-morph";
-import * as fs from "fs";
 import * as path from "path";
-import { ZOD_PLUGIN_INDEX_GENERATOR_HEADER_COMMENT } from "@ng-openapi/shared";
+import { listGeneratedFileNames, ZOD_PLUGIN_INDEX_GENERATOR_HEADER_COMMENT } from "@ng-openapi/shared";
 
 export class ZodIndexGenerator {
     private project: Project;
@@ -12,16 +11,19 @@ export class ZodIndexGenerator {
 
     generateIndex(outputRoot: string): void {
         const validatorsDir = path.join(outputRoot, "validators");
+
+        // Export what this run generated (from the Project, not the disk):
+        // path-less specs produce no validators and no validators/ directory
+        const validatorFiles = listGeneratedFileNames(this.project, validatorsDir, ".validator.ts");
+
+        if (validatorFiles.length === 0) {
+            return;
+        }
+
         const indexPath = path.join(validatorsDir, "index.ts");
         const sourceFile = this.project.createSourceFile(indexPath, "", { overwrite: true });
 
         sourceFile.insertText(0, ZOD_PLUGIN_INDEX_GENERATOR_HEADER_COMMENT);
-
-        // Get all validator files
-        const validatorFiles = fs
-            .readdirSync(validatorsDir)
-            .filter((file) => file.endsWith(".validator.ts"))
-            .map((file) => file.replace(".validator.ts", ""));
 
         // Add exports
         validatorFiles.forEach((fileName) => {
