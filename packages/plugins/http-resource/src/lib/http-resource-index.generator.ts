@@ -1,12 +1,19 @@
 import { Project } from "ts-morph";
 import * as path from "path";
-import { listGeneratedFileNames, pascalCase, SERVICE_INDEX_GENERATOR_HEADER_COMMENT } from "@ng-openapi/shared";
+import {
+    getResourceClassName,
+    listGeneratedFileNames,
+    NameDecoration,
+    SERVICE_INDEX_GENERATOR_HEADER_COMMENT,
+} from "@ng-openapi/shared";
 
 export class HttpResourceIndexGenerator {
     private project: Project;
+    private readonly naming?: NameDecoration;
 
-    constructor(project: Project) {
+    constructor(project: Project, naming?: NameDecoration) {
         this.project = project;
+        this.naming = naming;
     }
 
     generateIndex(outputRoot: string): void {
@@ -27,7 +34,7 @@ export class HttpResourceIndexGenerator {
 
         // Add exports
         resourceFiles.forEach((resourceName) => {
-            const className = pascalCase(resourceName) + "Resource";
+            const className = getResourceClassName(resourceName, this.naming);
             sourceFile.addExportDeclaration({
                 namedExports: [className],
                 moduleSpecifier: `./${resourceName}.resource`,

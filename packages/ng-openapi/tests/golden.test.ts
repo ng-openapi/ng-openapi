@@ -44,5 +44,15 @@ registerGoldenSuite("ng-openapi golden", {
             config.options.generateServices = false;
             return config;
         },
+        // Identifier decoration: prefixed service classes, suffixed models —
+        // model declarations and every reference must agree byte-for-byte
+        naming: (input, output) => {
+            const config = baseConfig(input, output);
+            config.options.naming = {
+                services: { prefix: "Api" },
+                models: { suffix: "Dto" },
+            };
+            return config;
+        },
     },
 });

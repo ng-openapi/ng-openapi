@@ -26,3 +26,4 @@ export default {
 
 - Scoped interceptors are applied for resources as well
 - Currently only supports `GET` methods, as suggested by [Angular's documentation ↗️](https://angular.dev/guide/http/http-resource)
+- Generated resource class names default to `<Tag>Resource` and can be decorated via [`naming.resources`](../options/naming.md); model references follow `naming.models`

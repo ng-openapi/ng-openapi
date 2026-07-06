@@ -139,7 +139,7 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
         await serviceGenerator.generate(outputPath);
 
         // Generate services index file
-        const indexGenerator = new ServiceIndexGenerator(project);
+        const indexGenerator = new ServiceIndexGenerator(project, config.options.naming?.services);
         indexGenerator.generateIndex(outputPath);
 
         reporter.onPhase?.("services-generated");

@@ -4,6 +4,7 @@ import {
     GeneratorConfig,
     getBasePathTokenName,
     getClientContextTokenName,
+    getResourceClassName,
     hasDuplicateFunctionNames,
     HTTP_RESOURCE_GENERATOR_HEADER_COMMENT,
     IPluginGenerator,
@@ -29,7 +30,7 @@ export class HttpResourceGenerator implements IPluginGenerator {
         this.project = context.project;
         this.spec = context.spec;
         this.onWarning = context.onWarning;
-        this.indexGenerator = new HttpResourceIndexGenerator(context.project);
+        this.indexGenerator = new HttpResourceIndexGenerator(context.project, context.config.options.naming?.resources);
         this.methodGenerator = new HttpResourceMethodGenerator(context.config);
     }
 
@@ -46,8 +47,8 @@ export class HttpResourceGenerator implements IPluginGenerator {
         const controllerGroups = this.groupPathsByController(paths);
 
         await Promise.all(
-            Object.entries(controllerGroups).map(([resourceName, operations]) => {
-                this.generateServiceFile(resourceName, operations, outputDir);
+            Object.entries(controllerGroups).map(([controllerName, operations]) => {
+                this.generateServiceFile(controllerName, operations, outputDir);
             }),
         );
 
@@ -69,7 +70,6 @@ export class HttpResourceGenerator implements IPluginGenerator {
                     controllerName = pascalCase(pathParts[1]);
                 }
             }
-            controllerName += "Resource";
             controllerName = pascalCase(controllerName);
 
             if (!groups[controllerName]) {
@@ -81,22 +81,22 @@ export class HttpResourceGenerator implements IPluginGenerator {
         return groups;
     }
 
-    private async generateServiceFile(resourceName: string, operations: NormalizedOperation[], outputDir: string) {
-        const fileName = `${camelCase(resourceName).replace(/Resource/, "")}.resource.ts`;
+    private async generateServiceFile(controllerName: string, operations: NormalizedOperation[], outputDir: string) {
+        const fileName = `${camelCase(controllerName)}.resource.ts`;
         const filePath = path.join(outputDir, fileName);
 
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
-        this.addServiceClass(sourceFile, resourceName, operations);
+        this.addServiceClass(sourceFile, controllerName, operations);
         sourceFile.fixMissingImports().formatText(); //TODO: add models
         sourceFile.saveSync();
     }
 
-    private addServiceClass(sourceFile: SourceFile, resourceName: string, operations: NormalizedOperation[]): void {
-        const className = `${resourceName}`;
+    private addServiceClass(sourceFile: SourceFile, controllerName: string, operations: NormalizedOperation[]): void {
+        const className = getResourceClassName(controllerName, this.config.options.naming?.resources);
         const basePathTokenName = getBasePathTokenName(this.config.clientName);
         const clientContextTokenName = getClientContextTokenName(this.config.clientName);
 
-        sourceFile.insertText(0, HTTP_RESOURCE_GENERATOR_HEADER_COMMENT(resourceName));
+        sourceFile.insertText(0, HTTP_RESOURCE_GENERATOR_HEADER_COMMENT(className));
 
         sourceFile.addImportDeclarations([
             {

@@ -290,6 +290,10 @@ export default defineConfig({
                                             text: "Use Single Request Parameter",
                                             link: "/api/configuration/options/use-single-request-parameter",
                                         },
+                                        {
+                                            text: "Naming",
+                                            link: "/api/configuration/options/naming",
+                                        },
                                     ],
                                     collapsed: true,
                                 },

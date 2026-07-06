@@ -13,6 +13,8 @@ export type {
 export type {
     GeneratorConfig,
     MethodGenOptions,
+    NameDecoration,
+    NamingOptions,
     NgOpenapiClientConfig,
     TypeGenOptions,
     TypeMappingConfig,
