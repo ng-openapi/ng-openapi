@@ -140,6 +140,14 @@ describe("toEnumKey", () => {
         expect(toEnumKey(1)).toBe("_1");
         expect(toEnumKey(-2)).toBe("_n2");
     });
+
+    it("sanitizes characters that are not identifier-safe", () => {
+        // "+1"/"-1" as in GitHub-style reaction enums; "+1" as a raw object
+        // key does not even parse in union style
+        expect(toEnumKey("+1")).toBe("_1");
+        expect(toEnumKey("-1")).toBe("_n1");
+        expect(toEnumKey("a/b")).toBe("AB");
+    });
 });
 
 describe("EnumBuilder", () => {

@@ -10,6 +10,6 @@
 export type StringyEnum = 'in-progress' | 'it\'s done' | '1st';
 export const StringyEnum = {
     InProgress: 'in-progress' as StringyEnum,
-    It'sDone: 'it\'s done' as StringyEnum,
+    ItSDone: 'it\'s done' as StringyEnum,
     _1st: '1st' as StringyEnum
 };

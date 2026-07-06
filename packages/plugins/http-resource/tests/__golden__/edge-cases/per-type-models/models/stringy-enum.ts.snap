@@ -9,6 +9,6 @@
 */
 export enum StringyEnum {
     InProgress = "in-progress",
-    "It'sDone" = "it's done",
+    ItSDone = "it's done",
     _1st = "1st"
 }
