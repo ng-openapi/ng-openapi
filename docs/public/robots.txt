@@ -7,3 +7,5 @@ Sitemap: https://ng-openapi.dev/sitemap.xml
 User-agent: *
 Disallow: /preview/
 Disallow: /*.json$
+
+# Algolia-Crawler-Verif: 74E7170704B87107
