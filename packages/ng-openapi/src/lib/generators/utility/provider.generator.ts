@@ -86,6 +86,17 @@ export class ProviderGenerator {
                 hasQuestionToken: true,
                 docs: ["Functional HTTP interceptors to apply to this client. Run after class-based interceptors."],
             },
+            {
+                name: "registerDiInterceptor",
+                type: "boolean",
+                hasQuestionToken: true,
+                docs: [
+                    "Register the class-based interceptor on HTTP_INTERCEPTORS (default: true).",
+                    "Set to false when your app needs withInterceptorsFromDi() for its own",
+                    "interceptors but this client's chain is registered functionally via",
+                    "withInterceptors([...]) — otherwise the chain would run twice.",
+                ],
+            },
         ];
 
         if (this.config.options.dateType === "Date") {
@@ -145,14 +156,6 @@ const providers: Provider[] = [
         provide: ${basePathTokenName},
         useValue: config.basePath
     },
-    // Class-based registration of the scoped chain; only active together with
-    // withInterceptorsFromDi(). Standalone apps should instead register the
-    // functional interceptor: provideHttpClient(withInterceptors([${interceptorFnName}]))
-    {
-        provide: HTTP_INTERCEPTORS,
-        useClass: ${baseInterceptorClassName},
-        multi: true
-    },
     // This client's interceptor chain, normalized to functional interceptors
     {
         provide: ${interceptorFnsTokenName},
@@ -172,6 +175,19 @@ ${dateInterceptorBlock}
         }
     }
 ];
+
+// Class-based registration of the scoped chain; only active together with
+// withInterceptorsFromDi(). Disable it (registerDiInterceptor: false) when the
+// app uses withInterceptorsFromDi() for its own interceptors but this client's
+// chain is registered via withInterceptors([${interceptorFnName}]) —
+// otherwise the chain would run twice.
+if (config.registerDiInterceptor !== false) {
+    providers.push({
+        provide: HTTP_INTERCEPTORS,
+        useClass: ${baseInterceptorClassName},
+        multi: true
+    });
+}
 
 return makeEnvironmentProviders(providers);`;
 

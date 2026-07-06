@@ -23,6 +23,11 @@ export interface PetsApiConfig {
     interceptors?: (new (...args: any[]) => HttpInterceptor)[];
     /** Functional HTTP interceptors to apply to this client. Run after class-based interceptors. */
     interceptorFns?: HttpInterceptorFn[];
+    /** Register the class-based interceptor on HTTP_INTERCEPTORS (default: true). */
+    /** Set to false when your app needs withInterceptorsFromDi() for its own */
+    /** interceptors but this client's chain is registered functionally via */
+    /** withInterceptors([...]) — otherwise the chain would run twice. */
+    registerDiInterceptor?: boolean;
 }
 
 /** Provides configuration for PetsApi client */
@@ -54,14 +59,6 @@ export function providePetsApiClient(config: PetsApiConfig): EnvironmentProvider
             provide: BASE_PATH_PETSAPI,
             useValue: config.basePath
         },
-        // Class-based registration of the scoped chain; only active together with
-        // withInterceptorsFromDi(). Standalone apps should instead register the
-        // functional interceptor: provideHttpClient(withInterceptors([petsApiClientInterceptor]))
-        {
-            provide: HTTP_INTERCEPTORS,
-            useClass: PetsApiBaseInterceptor,
-            multi: true
-        },
         // This client's interceptor chain, normalized to functional interceptors
         {
             provide: HTTP_INTERCEPTOR_FNS_PETSAPI,
@@ -83,6 +80,19 @@ export function providePetsApiClient(config: PetsApiConfig): EnvironmentProvider
             }
         }
     ];
+
+    // Class-based registration of the scoped chain; only active together with
+    // withInterceptorsFromDi(). Disable it (registerDiInterceptor: false) when the
+    // app uses withInterceptorsFromDi() for its own interceptors but this client's
+    // chain is registered via withInterceptors([petsApiClientInterceptor]) —
+    // otherwise the chain would run twice.
+    if (config.registerDiInterceptor !== false) {
+        providers.push({
+            provide: HTTP_INTERCEPTORS,
+            useClass: PetsApiBaseInterceptor,
+            multi: true
+        });
+    }
 
     return makeEnvironmentProviders(providers);
 }

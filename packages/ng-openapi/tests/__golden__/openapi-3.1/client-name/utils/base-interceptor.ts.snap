@@ -34,8 +34,9 @@ function interceptClientRequest(req: HttpRequest<any>, next: HttpHandlerFn, inte
 /**
  * Functional interceptor running the PetsApi client's scoped interceptor chain.
  * Register it once with `provideHttpClient(withInterceptors([petsApiClientInterceptor]))`.
- * Do not combine with `withInterceptorsFromDi()` — the class-based registration
- * added by the client's provide function would run the same chain twice.
+ * If your app also uses `withInterceptorsFromDi()`, pass `registerDiInterceptor: false`
+ * to the client's provide function — otherwise the class-based registration it adds
+ * would run the same chain twice.
  */
 export const petsApiClientInterceptor: HttpInterceptorFn = (req, next) =>
     interceptClientRequest(req, next, inject(HTTP_INTERCEPTOR_FNS_PETSAPI), CLIENT_CONTEXT_TOKEN_PETSAPI, inject(EnvironmentInjector));

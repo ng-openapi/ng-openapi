@@ -98,8 +98,9 @@ export class BaseInterceptorGenerator {
             leadingTrivia: `/**
  * Functional interceptor running the ${this.#clientName} client's scoped interceptor chain.
  * Register it once with \`provideHttpClient(withInterceptors([${interceptorFnName}]))\`.
- * Do not combine with \`withInterceptorsFromDi()\` — the class-based registration
- * added by the client's provide function would run the same chain twice.
+ * If your app also uses \`withInterceptorsFromDi()\`, pass \`registerDiInterceptor: false\`
+ * to the client's provide function — otherwise the class-based registration it adds
+ * would run the same chain twice.
  */\n`,
         });
 

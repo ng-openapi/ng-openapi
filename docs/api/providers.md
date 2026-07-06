@@ -40,7 +40,7 @@ provideHttpClient(withInterceptorsFromDi());
 ```
 
 ::: warning
-Register exactly one of the two variants. Combining `withInterceptors([defaultClientInterceptor])` with `withInterceptorsFromDi()` runs the client's interceptor chain twice.
+Register exactly one of the two variants. Combining `withInterceptors([defaultClientInterceptor])` with `withInterceptorsFromDi()` runs the client's interceptor chain twice — duplicate auth headers, doubled logs. If your app needs `withInterceptorsFromDi()` for its own interceptors while this client's chain is registered functionally, disable the automatic class registration with [`registerDiInterceptor: false`](#registerdiinterceptor).
 :::
 
 ## Configuration Options
@@ -83,6 +83,27 @@ provideDefaultClient({
     interceptorFns: [authInterceptor],
 });
 ```
+
+### `registerDiInterceptor`
+
+**Type:** `boolean` | **Default:** `true`
+
+Whether the provide function registers the class-based scoped interceptor on `HTTP_INTERCEPTORS`. That registration is dormant unless the app enables `withInterceptorsFromDi()` — but if it does, and this client's chain is *also* registered via `withInterceptors([defaultClientInterceptor])`, the chain runs twice. Set this to `false` in that situation:
+
+```typescript
+export const appConfig: ApplicationConfig = {
+    providers: [
+        // withInterceptorsFromDi() needed for the app's own DI-based interceptors
+        provideHttpClient(withInterceptors([defaultClientInterceptor]), withInterceptorsFromDi()),
+        provideDefaultClient({
+            basePath: "https://api.example.com",
+            registerDiInterceptor: false, // client chain comes from withInterceptors above
+        }),
+    ],
+};
+```
+
+Leave it at `true` (default) when the client chain should run through `withInterceptorsFromDi()` itself.
 
 ### `enableDateTransform`
 
