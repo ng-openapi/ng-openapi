@@ -84,6 +84,17 @@ export default defineConfig({
         ["meta", { name: "twitter:card", content: "summary_large_image" }],
         ["meta", { name: "twitter:image", content: `${SITE_URL}/og-image.png` }],
 
+        // Context7 AI chat widget (floating chat button on every page)
+        [
+            "script",
+            {
+                src: "https://context7.com/widget.js",
+                "data-library": "/ng-openapi/ng-openapi",
+                "data-color": "#3c82f6",
+                async: "",
+            },
+        ],
+
         // Schema.org structured data for software
         [
             "script",
