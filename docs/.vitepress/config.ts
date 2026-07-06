@@ -302,6 +302,10 @@ export default defineConfig({
                                             text: "Naming",
                                             link: "/api/configuration/options/naming",
                                         },
+                                        {
+                                            text: "Model File Structure",
+                                            link: "/api/configuration/options/model-file-structure",
+                                        },
                                     ],
                                     collapsed: true,
                                 },

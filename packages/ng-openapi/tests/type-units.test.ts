@@ -94,11 +94,59 @@ describe("TypeResolver", () => {
     });
 });
 
+describe("TypeResolver.withReferenceTracking", () => {
+    it("records $refs resolved anywhere inside the tracked call, raw names untouched", () => {
+        const r = resolver();
+        const references = new Set<string>();
+        r.withReferenceTracking(references, () =>
+            r.resolve({
+                type: "object",
+                properties: {
+                    owner: { $ref: "#/components/schemas/user_profile" },
+                    tags: { type: "array", items: { $ref: "#/definitions/Tag" } },
+                    variant: { oneOf: [{ $ref: "#/definitions/A" }, { type: "string" }] },
+                },
+            }),
+        );
+        expect([...references].sort()).toEqual(["A", "Tag", "user_profile"]);
+    });
+
+    it("does not record outside a tracked call and restores the previous sink", () => {
+        const r = resolver();
+        const outer = new Set<string>();
+        const inner = new Set<string>();
+        r.withReferenceTracking(outer, () => {
+            r.withReferenceTracking(inner, () => r.resolve({ $ref: "#/definitions/Inner" }));
+            r.resolve({ $ref: "#/definitions/Outer" });
+        });
+        r.resolve({ $ref: "#/definitions/Untracked" });
+        expect([...inner]).toEqual(["Inner"]);
+        expect([...outer]).toEqual(["Outer"]);
+    });
+
+    it("records a reference even when the schema resolution is cached", () => {
+        const r = resolver();
+        const schema: SwaggerDefinition = { $ref: "#/definitions/Cached" };
+        r.resolve(schema); // primes the cache, untracked
+        const references = new Set<string>();
+        r.withReferenceTracking(references, () => r.resolve(schema));
+        expect([...references]).toEqual(["Cached"]);
+    });
+});
+
 describe("toEnumKey", () => {
     it("pascal-cases values and guards leading digits", () => {
         expect(toEnumKey("in progress")).toBe("InProgress");
         expect(toEnumKey(1)).toBe("_1");
         expect(toEnumKey(-2)).toBe("_n2");
+    });
+
+    it("sanitizes characters that are not identifier-safe", () => {
+        // "+1"/"-1" as in GitHub-style reaction enums; "+1" as a raw object
+        // key does not even parse in union style
+        expect(toEnumKey("+1")).toBe("_1");
+        expect(toEnumKey("-1")).toBe("_n1");
+        expect(toEnumKey("a/b")).toBe("AB");
     });
 });
 

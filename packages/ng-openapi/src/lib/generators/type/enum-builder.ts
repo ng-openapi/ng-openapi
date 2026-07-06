@@ -1,4 +1,4 @@
-import { EnumValueObject, SwaggerDefinition, TypeGenOptions, pascalCase } from "@ng-openapi/shared";
+import { EnumValueObject, SwaggerDefinition, TypeGenOptions, pascalCaseForEnums } from "@ng-openapi/shared";
 import {
     EnumMemberStructure,
     OptionalKind,
@@ -11,8 +11,10 @@ import { escapeString } from "./type-resolver";
 export function toEnumKey(value: string | number): string {
     const str = value.toString();
     const hasLeadingMinus = str.startsWith("-");
-    const pascalCased = pascalCase(str);
-    return hasLeadingMinus ? pascalCased.replace(/^([0-9])/, "_n$1") : pascalCased.replace(/^([0-9])/, "_$1");
+    // pascalCaseForEnums (not pascalCase) so characters like "+" become
+    // separators too: "+1" must not survive into an object-literal key
+    const pascalCased = pascalCaseForEnums(str);
+    return hasLeadingMinus ? pascalCased.replace(/^_([0-9])/, "_n$1") : pascalCased;
 }
 
 /**

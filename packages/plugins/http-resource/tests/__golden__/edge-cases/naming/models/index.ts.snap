@@ -42,7 +42,7 @@ export enum SignedLevelDto {
 
 export enum StringyEnumDto {
     InProgress = "in-progress",
-    "It'sDone" = "it's done",
+    ItSDone = "it's done",
     _1st = "1st"
 }
 

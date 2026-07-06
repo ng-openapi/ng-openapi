@@ -44,6 +44,19 @@ registerGoldenSuite("http-resource golden", {
             },
             plugins: [HttpResourcePlugin],
         }),
+        // Per-type model files: resource imports must keep resolving to the
+        // "../models" barrel, not the individual model files
+        "per-type-models": (input, output) => ({
+            input,
+            output,
+            options: {
+                dateType: "Date",
+                enumStyle: "enum",
+                generateServices: true,
+                modelFileStructure: "per-type",
+            },
+            plugins: [HttpResourcePlugin],
+        }),
         // Identifier decoration across core services, resources and models —
         // the resources barrel must re-derive the same decorated class names
         naming: (input, output) => ({

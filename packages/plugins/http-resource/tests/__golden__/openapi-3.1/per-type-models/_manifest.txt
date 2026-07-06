@@ -1,0 +1,16 @@
+index.ts
+models/index.ts
+models/new-widget.ts
+models/request-options.ts
+models/widget-kind.ts
+models/widget.ts
+providers.ts
+resources/index.ts
+resources/widgets.resource.ts
+services/index.ts
+services/widgets.service.ts
+tokens/index.ts
+utils/base-interceptor.ts
+utils/date-transformer.ts
+utils/file-download.ts
+utils/http-params-builder.ts

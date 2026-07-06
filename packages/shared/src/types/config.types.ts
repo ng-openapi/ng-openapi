@@ -79,6 +79,13 @@ export interface GeneratorConfig {
         serviceDecorator?: "injectable" | "service";
         /** Prefix/suffix decoration of generated service/resource/model identifiers. */
         naming?: NamingOptions;
+        /**
+         * Layout of the generated model declarations. `"single"` (default)
+         * keeps every type in `models/index.ts`; `"per-type"` writes one file
+         * per schema (kebab-case of the raw schema name) plus
+         * `models/request-options.ts`, with `models/index.ts` as a barrel.
+         */
+        modelFileStructure?: "single" | "per-type";
     };
     /** Overrides for the ts-morph compiler settings used during generation. */
     compilerOptions?: {
@@ -121,6 +128,7 @@ export interface TypeGenOptions {
         naming?: {
             models?: NameDecoration;
         };
+        modelFileStructure?: "single" | "per-type";
     };
 }
 

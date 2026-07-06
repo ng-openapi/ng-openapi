@@ -43,7 +43,7 @@ export const SignedLevelDto = {
 export type StringyEnumDto = 'in-progress' | 'it\'s done' | '1st';
 export const StringyEnumDto = {
     InProgress: 'in-progress' as StringyEnumDto,
-    It'sDone: 'it\'s done' as StringyEnumDto,
+    ItSDone: 'it\'s done' as StringyEnumDto,
     _1st: '1st' as StringyEnumDto
 };
 export type FreeMapDto = Record<string, unknown>;
