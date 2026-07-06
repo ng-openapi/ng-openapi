@@ -69,6 +69,7 @@ export {
     getModelTypeName,
     getRequestBodyType,
     getResourceClassName,
+    getResponseInfoFromResponse,
     getResponseType,
     getResponseTypeFromResponse,
     getServiceClassName,
@@ -85,6 +86,7 @@ export {
     pascalCaseForEnums,
     screamingSnakeCase,
 } from "./utils";
+export type { ResponseTypeInfo } from "./utils";
 
 // Typed config-file helper (user-facing)
 export { defineConfig } from "./config";

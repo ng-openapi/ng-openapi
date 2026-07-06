@@ -26,11 +26,22 @@ export class NoTagsApiResource {
     getMiscById(id: Signal<string> | string, resourceOptions: HttpResourceOptions<ApiResponseDto, unknown> & { defaultValue: NoInfer<ApiResponseDto> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<ApiResponseDto>;
     getMiscById(id: Signal<string> | string, resourceOptions?: HttpResourceOptions<ApiResponseDto, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<ApiResponseDto | undefined>;
     getMiscById(id: Signal<string> | string, resourceOptions?: HttpResourceOptions<ApiResponseDto, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<ApiResponseDto | undefined> {
+
+        // Add default headers if not already present
+        let headers = requestOptions?.headers;
+        if (headers instanceof HttpHeaders) {
+            if (!headers.has('Accept')) {
+                headers = headers.set('Accept', 'application/json');
+            }
+        } else {
+            headers = { 'Accept': 'application/json', ...headers };
+        }
         return httpResource(() => {
             return {
                 url: `${this.basePath}/misc/no-tags/${typeof id === 'function' ? id() : id}`,
                 method: "GET",
                 ...requestOptions,
+                headers,
                 context: this.createContextWithClientId(requestOptions?.context)
             }
         }, resourceOptions);

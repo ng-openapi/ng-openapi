@@ -283,6 +283,10 @@ export default defineConfig({
                                             link: "/api/configuration/options/custom-headers",
                                         },
                                         {
+                                            text: "Emit Accept Header",
+                                            link: "/api/configuration/options/emit-accept-header",
+                                        },
+                                        {
                                             text: "Response Type Mapping",
                                             link: "/api/configuration/options/response-type-mapping",
                                         },

@@ -3,6 +3,8 @@ export interface HeadersEmitOptions {
     optionsExpression: string;
     /** Default headers from GeneratorConfig, added when not already present on the request. */
     customHeaders?: Record<string, string>;
+    /** Accept value derived from the operation's response content types; omit to skip. */
+    accept?: string;
     /** Content-Type rules derived from the operation's body; omit to skip (http-resource is GET-only). */
     contentType?: {
         isMultipart: boolean;
@@ -13,11 +15,11 @@ export interface HeadersEmitOptions {
 
 /**
  * Emits the `headers` initialization block: normalize the caller-supplied
- * headers into HttpHeaders, apply configured default headers, then apply
- * Content-Type rules.
+ * headers into HttpHeaders, apply configured default headers, apply the
+ * spec-derived Accept header, then apply Content-Type rules.
  */
 export function emitHeaders(options: HeadersEmitOptions): string {
-    const { optionsExpression, customHeaders, contentType } = options;
+    const { optionsExpression, customHeaders, accept, contentType } = options;
 
     let headerCode = `
 let headers: HttpHeaders;
@@ -31,6 +33,14 @@ if (${optionsExpression}?.headers instanceof HttpHeaders) {
         headerCode += `
 // Add default headers if not already present
 ${emitDefaultHeaderGuards(customHeaders)}`;
+    }
+
+    if (accept) {
+        headerCode += `
+// Advertise the response content type declared in the spec
+if (!headers.has('Accept')) {
+  headers = headers.set('Accept', '${accept}');
+}`;
     }
 
     if (contentType?.isMultipart) {

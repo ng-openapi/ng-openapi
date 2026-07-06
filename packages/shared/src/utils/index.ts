@@ -17,6 +17,7 @@ export {
     getRequestBodyType,
     getResourceClassName,
     getServiceClassName,
+    getResponseInfoFromResponse,
     getResponseType,
     getResponseTypeFromResponse,
     hasDuplicateFunctionNames,
@@ -25,3 +26,4 @@ export {
     isPrimitiveType,
     isUrl,
 } from "./functions";
+export type { ResponseTypeInfo } from "./functions";

@@ -25,11 +25,22 @@ export class DefaultResource {
     getStatus(resourceOptions: HttpResourceOptions<string, string> & { defaultValue: NoInfer<string> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<string>;
     getStatus(resourceOptions?: HttpResourceOptions<string, string>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<string | undefined>;
     getStatus(resourceOptions?: HttpResourceOptions<string, string>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<string | undefined> {
+
+        // Add default headers if not already present
+        let headers = requestOptions?.headers;
+        if (headers instanceof HttpHeaders) {
+            if (!headers.has('Accept')) {
+                headers = headers.set('Accept', 'text/plain');
+            }
+        } else {
+            headers = { 'Accept': 'text/plain', ...headers };
+        }
         return httpResource.text(() => {
             return {
                 url: `${this.basePath}/status`,
                 method: "GET",
                 ...requestOptions,
+                headers,
                 context: this.createContextWithClientId(requestOptions?.context)
             }
         }, resourceOptions);

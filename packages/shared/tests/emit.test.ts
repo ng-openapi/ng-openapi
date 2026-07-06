@@ -66,6 +66,20 @@ describe("headers emission", () => {
         expect(block).toContain("headers = headers.set('X-Api-Key', 'secret');");
     });
 
+    it("advertises the spec-derived Accept value guarded by has()", () => {
+        const block = emitHeaders({
+            optionsExpression: "options",
+            accept: "application/vnd.users+json;version=1.0",
+        });
+        expect(block).toContain("if (!headers.has('Accept'))");
+        expect(block).toContain("headers = headers.set('Accept', 'application/vnd.users+json;version=1.0');");
+    });
+
+    it("omits the Accept block when no accept value is given", () => {
+        const block = emitHeaders({ optionsExpression: "options" });
+        expect(block).not.toContain("Accept");
+    });
+
     it("applies content-type rules in priority order", () => {
         const multipart = emitHeaders({
             optionsExpression: "options",

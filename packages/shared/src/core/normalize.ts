@@ -2,9 +2,10 @@
 // import graph cycle-free — see swagger-parser.ts for the same rule.
 import { CONTENT_TYPES } from "../utils/content-types.constants";
 import { extractPaths } from "../utils/functions/extract-paths";
-import { getResponseTypeFromResponse } from "../utils/functions/extract-swagger-response-type";
+import { getResponseInfoFromResponse } from "../utils/functions/extract-swagger-response-type";
+import type { ResponseTypeInfo } from "../utils/functions/extract-swagger-response-type";
 import type { PathInfo, RequestBody, SwaggerDefinition, SwaggerSpec } from "../types/swagger.types";
-import type { NormalizedOperation, ResponseKind } from "../model/operation.model";
+import type { NormalizedOperation } from "../model/operation.model";
 import type { NormalizedSpec } from "../model/spec.model";
 
 type ResolveRef = (ref: string) => SwaggerDefinition | undefined;
@@ -161,6 +162,8 @@ function normalizeOperation(operation: PathInfo, resolveRef: ResolveRef): Normal
         ? resolveBodySchema(operation.requestBody, CONTENT_TYPES.FORM_URLENCODED, resolveRef)
         : undefined;
 
+    const responseInfo = determineResponseInfo(operation);
+
     return {
         ...operation,
         pathParams: operation.parameters?.filter((p) => p.in === "path") || [],
@@ -172,7 +175,8 @@ function normalizeOperation(operation: PathInfo, resolveRef: ResolveRef): Normal
         formDataFields: Object.keys(formDataSchema?.properties || {}),
         urlEncodedSchema,
         urlEncodedFields: Object.keys(urlEncodedSchema?.properties || {}),
-        responseType: determineResponseType(operation),
+        responseType: responseInfo.responseType,
+        acceptHeader: responseInfo.acceptHeader,
     };
 }
 
@@ -185,15 +189,15 @@ function resolveBodySchema(
     return schema?.$ref ? resolveRef(schema.$ref) : schema;
 }
 
-function determineResponseType(operation: PathInfo): ResponseKind {
+function determineResponseInfo(operation: PathInfo): ResponseTypeInfo {
     const successResponses = ["200", "201", "202", "204", "206"];
 
     for (const statusCode of successResponses) {
         const response = operation.responses?.[statusCode];
         if (!response) continue;
 
-        return getResponseTypeFromResponse(response);
+        return getResponseInfoFromResponse(response);
     }
 
-    return "json";
+    return { responseType: "json" };
 }

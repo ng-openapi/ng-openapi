@@ -26,6 +26,16 @@ export class WidgetsApiResource {
     listWidgets(kind: Signal<WidgetKindDto | undefined> | WidgetKindDto | undefined, resourceOptions: HttpResourceOptions<Array<WidgetDto>, unknown> & { defaultValue: NoInfer<Array<WidgetDto>> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<WidgetDto>>;
     listWidgets(kind?: Signal<WidgetKindDto | undefined> | WidgetKindDto, resourceOptions?: HttpResourceOptions<Array<WidgetDto>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<WidgetDto> | undefined>;
     listWidgets(kind?: Signal<WidgetKindDto | undefined> | WidgetKindDto, resourceOptions?: HttpResourceOptions<Array<WidgetDto>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<WidgetDto> | undefined> {
+
+        // Add default headers if not already present
+        let headers = requestOptions?.headers;
+        if (headers instanceof HttpHeaders) {
+            if (!headers.has('Accept')) {
+                headers = headers.set('Accept', 'application/json');
+            }
+        } else {
+            headers = { 'Accept': 'application/json', ...headers };
+        }
         return httpResource(() => {
             let params = new HttpParams();
             const kindValue = typeof kind === 'function' ? kind() : kind;
@@ -37,6 +47,7 @@ export class WidgetsApiResource {
                 method: "GET",
                 ...requestOptions,
                 params,
+                headers,
                 context: this.createContextWithClientId(requestOptions?.context)
             }
         }, resourceOptions);
@@ -45,11 +56,22 @@ export class WidgetsApiResource {
     getWidget(widgetId: Signal<string> | string, resourceOptions: HttpResourceOptions<WidgetDto, unknown> & { defaultValue: NoInfer<WidgetDto> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<WidgetDto>;
     getWidget(widgetId: Signal<string> | string, resourceOptions?: HttpResourceOptions<WidgetDto, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<WidgetDto | undefined>;
     getWidget(widgetId: Signal<string> | string, resourceOptions?: HttpResourceOptions<WidgetDto, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<WidgetDto | undefined> {
+
+        // Add default headers if not already present
+        let headers = requestOptions?.headers;
+        if (headers instanceof HttpHeaders) {
+            if (!headers.has('Accept')) {
+                headers = headers.set('Accept', 'application/json');
+            }
+        } else {
+            headers = { 'Accept': 'application/json', ...headers };
+        }
         return httpResource(() => {
             return {
                 url: `${this.basePath}/widgets/${typeof widgetId === 'function' ? widgetId() : widgetId}`,
                 method: "GET",
                 ...requestOptions,
+                headers,
                 context: this.createContextWithClientId(requestOptions?.context)
             }
         }, resourceOptions);

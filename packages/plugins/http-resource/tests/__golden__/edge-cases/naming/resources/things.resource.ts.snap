@@ -26,6 +26,16 @@ export class ThingsApiResource {
     listThings(filterName: Signal<string | undefined> | string | undefined, sortBy: Signal<string | undefined> | string | undefined, resourceOptions: HttpResourceOptions<Array<UserProfileDto>, unknown> & { defaultValue: NoInfer<Array<UserProfileDto>> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<UserProfileDto>>;
     listThings(filterName?: Signal<string | undefined> | string, sortBy?: Signal<string | undefined> | string, resourceOptions?: HttpResourceOptions<Array<UserProfileDto>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<UserProfileDto> | undefined>;
     listThings(filterName?: Signal<string | undefined> | string, sortBy?: Signal<string | undefined> | string, resourceOptions?: HttpResourceOptions<Array<UserProfileDto>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<UserProfileDto> | undefined> {
+
+        // Add default headers if not already present
+        let headers = requestOptions?.headers;
+        if (headers instanceof HttpHeaders) {
+            if (!headers.has('Accept')) {
+                headers = headers.set('Accept', 'application/json');
+            }
+        } else {
+            headers = { 'Accept': 'application/json', ...headers };
+        }
         return httpResource(() => {
             let params = new HttpParams();
             const filterNameValue = typeof filterName === 'function' ? filterName() : filterName;
@@ -41,6 +51,31 @@ export class ThingsApiResource {
                 method: "GET",
                 ...requestOptions,
                 params,
+                headers,
+                context: this.createContextWithClientId(requestOptions?.context)
+            }
+        }, resourceOptions);
+    }
+
+    getVendorThing(resourceOptions: HttpResourceOptions<UserProfileDto, unknown> & { defaultValue: NoInfer<UserProfileDto> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<UserProfileDto>;
+    getVendorThing(resourceOptions?: HttpResourceOptions<UserProfileDto, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<UserProfileDto | undefined>;
+    getVendorThing(resourceOptions?: HttpResourceOptions<UserProfileDto, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<UserProfileDto | undefined> {
+
+        // Add default headers if not already present
+        let headers = requestOptions?.headers;
+        if (headers instanceof HttpHeaders) {
+            if (!headers.has('Accept')) {
+                headers = headers.set('Accept', 'application/vnd.users+json;version=1.0');
+            }
+        } else {
+            headers = { 'Accept': 'application/vnd.users+json;version=1.0', ...headers };
+        }
+        return httpResource(() => {
+            return {
+                url: `${this.basePath}/things/vendor`,
+                method: "GET",
+                ...requestOptions,
+                headers,
                 context: this.createContextWithClientId(requestOptions?.context)
             }
         }, resourceOptions);

@@ -38,6 +38,10 @@ export class AuthService {
         } else {
             headers = new HttpHeaders(options?.headers);
         }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
         // Set Content-Type for URL-encoded form data
         if (!headers.has('Content-Type')) {
             headers = headers.set('Content-Type', 'application/x-www-form-urlencoded');

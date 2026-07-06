@@ -26,6 +26,7 @@ export class ServiceMethodBodyGenerator {
             emitHeaders({
                 optionsExpression: "options",
                 customHeaders: this.config.options.customHeaders,
+                accept: (this.config.options.emitAcceptHeader ?? true) ? operation.acceptHeader : undefined,
                 contentType: operation,
             }),
             this.generateMultipartFormData(operation),

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
     GeneratorConfig,
+    getResponseInfoFromResponse,
     getResponseType,
     getResponseTypeFromResponse,
     inferResponseTypeFromContentType,
@@ -136,6 +137,50 @@ describe("getResponseTypeFromResponse", () => {
                 },
             }),
         ).toBe("json");
+    });
+});
+
+describe("getResponseInfoFromResponse", () => {
+    it("derives the Accept header from the winning content type, media type parameters preserved", () => {
+        expect(
+            getResponseInfoFromResponse({
+                content: { "application/vnd.users+json;version=1.0": { schema: { type: "object" } } },
+            }),
+        ).toEqual({ responseType: "json", acceptHeader: "application/vnd.users+json;version=1.0" });
+    });
+
+    it("joins every content type that agrees with the chosen responseType, winner first", () => {
+        expect(
+            getResponseInfoFromResponse({
+                content: {
+                    "application/xml": {},
+                    "application/json": { schema: { type: "object" } },
+                    "application/hal+json": { schema: { type: "object" } },
+                },
+            }),
+        ).toEqual({ responseType: "json", acceptHeader: "application/json, application/hal+json" });
+    });
+
+    it("excludes content types the generated method could not parse", () => {
+        expect(
+            getResponseInfoFromResponse({
+                content: {
+                    "application/json": { schema: { type: "object" } },
+                    "application/octet-stream": {},
+                },
+            }),
+        ).toEqual({ responseType: "json", acceptHeader: "application/json" });
+    });
+
+    it("keeps the json content type when a primitive schema downgrades parsing to text", () => {
+        expect(
+            getResponseInfoFromResponse({ content: { "application/json": { schema: { type: "string" } } } }),
+        ).toEqual({ responseType: "text", acceptHeader: "application/json" });
+    });
+
+    it("leaves acceptHeader unset for missing or empty content", () => {
+        expect(getResponseInfoFromResponse({})).toEqual({ responseType: "json" });
+        expect(getResponseInfoFromResponse({ content: {} })).toEqual({ responseType: "json" });
     });
 });
 

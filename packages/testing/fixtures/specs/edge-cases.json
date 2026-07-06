@@ -42,6 +42,22 @@
                 }
             }
         },
+        "/things/vendor": {
+            "get": {
+                "tags": ["things"],
+                "operationId": "getVendorThing",
+                "responses": {
+                    "200": {
+                        "description": "vendor media type with parameters (issue #56)",
+                        "content": {
+                            "application/vnd.users+json;version=1.0": {
+                                "schema": { "$ref": "#/components/schemas/user-profile" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/misc/no-tags/{id}": {
             "get": {
                 "operationId": "getMiscById",
