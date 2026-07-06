@@ -1,0 +1,4 @@
+# Golden snapshots are compared byte-for-byte by the test suite;
+# keep them LF regardless of core.autocrlf so checkouts never break them.
+packages/**/tests/__golden__/** text eol=lf
+packages/testing/fixtures/** text eol=lf

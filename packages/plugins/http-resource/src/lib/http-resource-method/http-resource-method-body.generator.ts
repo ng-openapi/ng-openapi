@@ -1,133 +1,71 @@
 import {
-    camelCase,
-    GeneratorConfig,
-    GetMethodGenerationContext,
-    getResponseTypeFromResponse,
-    PathInfo,
+    emitDefaultHeadersMerge,
+    emitSignalAwareQueryParams,
+    emitUrlExpression,
+    joinRequestOptionEntries,
+    MethodGenOptions,
+    NormalizedOperation,
+    signalAwareParamValue,
 } from "@ng-openapi/shared";
 
 export class HttpResourceMethodBodyGenerator {
-    private config: GeneratorConfig;
+    private config: MethodGenOptions;
 
-    constructor(config: GeneratorConfig) {
+    constructor(config: MethodGenOptions) {
         this.config = config;
     }
 
-    generateMethodBody(operation: PathInfo): string {
-        const context = this.createGenerationContext(operation);
-
-        const bodyParts = [this.generateHeaders(context), this.generateHttpResource(operation, context)];
+    generateMethodBody(operation: NormalizedOperation): string {
+        const bodyParts = [this.generateDefaultHeaders(), this.generateHttpResource(operation)];
 
         return bodyParts.filter(Boolean).join("\n");
     }
 
-    private createGenerationContext(operation: PathInfo): GetMethodGenerationContext {
-        return {
-            pathParams: operation.parameters?.filter((p) => p.in === "path") || [],
-            queryParams: operation.parameters?.filter((p) => p.in === "query") || [],
-            responseType: this.determineResponseType(operation),
-        };
-    }
-
-    private generateUrl(operation: PathInfo, context: GetMethodGenerationContext): string {
-        let urlExpression = `\`\${this.basePath}${operation.path}\``;
-
-        if (context.pathParams.length > 0) {
-            context.pathParams.forEach((param) => {
-                urlExpression = urlExpression.replace(
-                    `{${param.name}}`,
-                    `\${typeof ${camelCase(param.name)} === 'function' ? ${camelCase(param.name)}() : ${camelCase(param.name)}}`,
-                );
-            });
-        }
-
-        return urlExpression;
-    }
-
-    private generateQueryParams(context: GetMethodGenerationContext): string {
-        if (context.queryParams.length === 0) {
+    /**
+     * Caller headers flow through `...requestOptions` untouched; a headers
+     * merge is only needed when the config declares default headers.
+     */
+    private generateDefaultHeaders(): string {
+        const customHeaders = this.config.options.customHeaders;
+        if (!customHeaders || Object.keys(customHeaders).length === 0) {
             return "";
         }
-
-        const paramMappings = context.queryParams
-            .map(
-                (param) =>
-                    `const ${camelCase(param.name)}Value = typeof ${camelCase(param.name)} === 'function' ? ${camelCase(param.name)}() : ${camelCase(param.name)};
-                if (${camelCase(param.name)}Value != null) {
-                    params = HttpParamsBuilder.addToHttpParams(params, ${camelCase(param.name)}Value, '${param.name}');
-                }`,
-            )
-            .join("\n");
-
-        return `
-let params = new HttpParams();
-${paramMappings}`;
+        return emitDefaultHeadersMerge("requestOptions", customHeaders);
     }
 
-    private generateHeaders(context: GetMethodGenerationContext): string {
-        const hasCustomHeaders = this.config.options.customHeaders;
+    private generateRequestOptions(operation: NormalizedOperation): string {
+        const entries: string[] = [];
+        const url = emitUrlExpression(operation.path, operation.pathParams, signalAwareParamValue);
 
-        // Use the approach that handles both HttpHeaders and plain objects
-        // TODO: as Record<string, string> is temporary
-        let headerCode = `
-let headers: HttpHeaders;
-if (requestOptions?.headers instanceof HttpHeaders) {
-  headers = requestOptions.headers;
-} else {
-  headers = new HttpHeaders(requestOptions?.headers as Record<string, string>);
-}`;
+        // Computed entries come after the spread so that caller-supplied
+        // request options cannot clobber the merged headers, the accumulated
+        // params, or the client-id context.
+        entries.push(`url: ${url}`);
+        entries.push(`method: "GET"`);
+        entries.push("...requestOptions");
 
-        if (hasCustomHeaders) {
-            // Add default headers
-            headerCode += `
-// Add default headers if not already present
-${Object.entries(this.config.options.customHeaders || {})
-    .map(
-        ([key, value]) =>
-            `if (!headers.has('${key}')) {
-  headers = headers.set('${key}', '${value}');
-}`,
-    )
-    .join("\n")}`;
-        }
-        return headerCode;
-    }
-
-    private generateRequestOptions(operation: PathInfo, context: GetMethodGenerationContext): string {
-        const options: string[] = [];
-        const url = this.generateUrl(operation, context);
-
-        // Always include observe
-        options.push(`url: ${url}`);
-        options.push(`method: "GET"`);
-
-        if (context.queryParams.length > 0) {
-            options.push("params");
+        if (operation.queryParams.length > 0) {
+            entries.push("params");
         }
 
-        options.push("headers");
-
-        // Add response type if not JSON
-        if (context.responseType !== "json") {
-            options.push(`responseType: '${context.responseType}' as '${context.responseType}'`);
+        if (this.config.options.customHeaders && Object.keys(this.config.options.customHeaders).length > 0) {
+            entries.push("headers");
         }
 
-        // Create HttpContext with client identification - call the helper method
-        options.push("context: this.createContextWithClientId(requestOptions?.context)");
+        entries.push("context: this.createContextWithClientId(requestOptions?.context)");
 
-        const formattedOptions = options.filter((opt) => opt && !opt.includes("undefined")).join(",\n  ");
+        const formattedOptions = joinRequestOptionEntries(entries);
 
         return `return {
-  ${formattedOptions},
-  ...requestOptions
+  ${formattedOptions}
 }`;
     }
 
-    private generateHttpResource(operation: PathInfo, context: GetMethodGenerationContext): string {
-        const resourceOptions = this.generateRequestOptions(operation, context);
-        const queryParams = this.generateQueryParams(context);
+    private generateHttpResource(operation: NormalizedOperation): string {
+        const resourceOptions = this.generateRequestOptions(operation);
+        const queryParams = emitSignalAwareQueryParams(operation.queryParams);
         let httpResource = "httpResource";
-        switch (context.responseType) {
+        switch (operation.responseType) {
             case "blob":
                 httpResource += ".blob";
                 break;
@@ -138,22 +76,10 @@ ${Object.entries(this.config.options.customHeaders || {})
                 httpResource += ".text";
                 break;
         }
-        return `    return ${httpResource}(() => {${queryParams}
-       ${resourceOptions}
-    }, resourceOptions);`;
-    }
-
-    private determineResponseType(operation: PathInfo): "json" | "blob" | "arraybuffer" | "text" {
-        const successResponses = ["200", "201", "202", "204", "206"]; // Added 206 for partial content
-
-        for (const statusCode of successResponses) {
-            const response = operation.responses?.[statusCode];
-            if (!response) continue;
-
-            // Use the new function that checks both content type and schema
-            return getResponseTypeFromResponse(response);
-        }
-
-        return "json";
+        // No hand-rolled indentation: the generator's final formatText() pass
+        // is the single authority for generated-code layout.
+        return `return ${httpResource}(() => {${queryParams}
+${resourceOptions}
+}, resourceOptions);`;
     }
 }

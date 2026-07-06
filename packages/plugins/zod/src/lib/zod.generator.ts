@@ -2,13 +2,12 @@ import { Project, SourceFile } from "ts-morph";
 import * as path from "path";
 import {
     camelCase,
-    extractPaths,
     GeneratorConfig,
     IPluginGenerator,
     pascalCase,
-    PathInfo,
-    SwaggerParser,
-    SwaggerSpec,
+    NormalizedOperation,
+    NormalizedSpec,
+    PluginGeneratorContext,
     ZOD_PLUGIN_GENERATOR_HEADER_COMMENT,
 } from "@ng-openapi/shared";
 import { ZodSchemaGenerator } from "./zod-schema.generator";
@@ -18,40 +17,30 @@ import { DEFAULT_OPTIONS } from "./utils/default-options";
 
 export class ZodGenerator implements IPluginGenerator {
     private project: Project;
-    private parser: SwaggerParser;
-    private spec: SwaggerSpec;
+    private spec: NormalizedSpec;
     private config: GeneratorConfig;
     private options: ZodPluginOptions;
     private schemaGenerator: ZodSchemaGenerator;
     private indexGenerator: ZodIndexGenerator;
+    private readonly onWarning?: (message: string) => void;
 
-    constructor(parser: SwaggerParser, project: Project, config: GeneratorConfig, options?: ZodPluginOptions) {
-        this.config = config;
-        this.project = project;
-        this.parser = parser;
-        this.spec = this.parser.getSpec();
+    constructor(context: PluginGeneratorContext, options?: ZodPluginOptions) {
+        this.config = context.config;
+        this.project = context.project;
+        this.spec = context.spec;
+        this.onWarning = context.onWarning;
         this.options = { ...DEFAULT_OPTIONS, ...options };
 
-        // Validate the spec
-        if (!this.parser.isValidSpec()) {
-            const versionInfo = this.parser.getSpecVersion();
-            throw new Error(
-                `Invalid or unsupported specification format. ` +
-                    `Expected OpenAPI 3.x or Swagger 2.x. ` +
-                    `${versionInfo ? `Found: ${versionInfo.type} ${versionInfo.version}` : "No version info found"}`,
-            );
-        }
-
-        this.schemaGenerator = new ZodSchemaGenerator(this.parser, this.config, this.options);
-        this.indexGenerator = new ZodIndexGenerator(project);
+        this.schemaGenerator = new ZodSchemaGenerator(context.spec, this.config, this.options);
+        this.indexGenerator = new ZodIndexGenerator(context.project);
     }
 
     async generate(outputRoot: string) {
         const outputDir = path.join(outputRoot, "validators");
-        const paths = extractPaths(this.spec.paths);
+        const paths = this.spec.operations;
 
         if (paths.length === 0) {
-            console.warn("No API paths found in the specification");
+            this.onWarning?.("No API paths found in the specification");
             return;
         }
 
@@ -66,8 +55,8 @@ export class ZodGenerator implements IPluginGenerator {
         this.indexGenerator.generateIndex(outputRoot);
     }
 
-    private groupPathsByController(paths: PathInfo[]): Record<string, PathInfo[]> {
-        const groups: Record<string, PathInfo[]> = {};
+    private groupPathsByController(paths: NormalizedOperation[]): Record<string, NormalizedOperation[]> {
+        const groups: Record<string, NormalizedOperation[]> = {};
 
         paths.forEach((path) => {
             let controllerName = "Default";
@@ -93,7 +82,7 @@ export class ZodGenerator implements IPluginGenerator {
         return groups;
     }
 
-    private async generateValidatorFile(validatorName: string, operations: PathInfo[], outputDir: string) {
+    private async generateValidatorFile(validatorName: string, operations: NormalizedOperation[], outputDir: string) {
         const fileName = `${camelCase(validatorName)}.validator.ts`;
         const filePath = path.join(outputDir, fileName);
 
@@ -118,7 +107,7 @@ export class ZodGenerator implements IPluginGenerator {
         }
     }
 
-    private addImports(sourceFile: SourceFile, operations: PathInfo[]): void {
+    private addImports(sourceFile: SourceFile, operations: NormalizedOperation[]): void {
         // Always import zod
         sourceFile.addImportDeclaration({
             namedImports: ["z"],
@@ -126,7 +115,7 @@ export class ZodGenerator implements IPluginGenerator {
         });
     }
 
-    private async generateOperationValidators(sourceFile: SourceFile, operation: PathInfo) {
+    private async generateOperationValidators(sourceFile: SourceFile, operation: NormalizedOperation) {
         const operationName = this.getOperationName(operation);
         const statements: string[] = [];
 
@@ -158,7 +147,7 @@ export class ZodGenerator implements IPluginGenerator {
         return statements;
     }
 
-    private async generateParameterValidators(operation: PathInfo, operationName: string): Promise<string[]> {
+    private async generateParameterValidators(operation: NormalizedOperation, operationName: string): Promise<string[]> {
         const statements: string[] = [];
 
         // Group parameters by type
@@ -209,7 +198,7 @@ export class ZodGenerator implements IPluginGenerator {
         return this.options.generate?.[type] ?? DEFAULT_OPTIONS.generate![type]!;
     }
 
-    private getOperationName(operation: PathInfo): string {
+    private getOperationName(operation: NormalizedOperation): string {
         if (operation.operationId) {
             return camelCase(operation.operationId);
         }

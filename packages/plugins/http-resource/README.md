@@ -22,11 +22,8 @@
 
 ## What is HTTP Resource Plugin?
 
-The HTTP Resource plugin generates Angular services using the new **experimental** `httpResource` API instead of
-traditional `HttpClient`. This provides automatic caching, state management, and reactive data loading for your OpenAPI
-endpoints.
-
-> ⚠️ **Experimental Feature**: `httpResource` is still experimental in Angular. Use with caution in production.
+The HTTP Resource plugin generates Angular services using the `httpResource` API instead of traditional `HttpClient`.
+This provides automatic caching, state management, and reactive data loading for your OpenAPI endpoints.
 
 ## Installation
 
@@ -46,8 +43,12 @@ import { HttpResourcePlugin } from "@ng-openapi/http-resource";
 export default {
     input: "./swagger.json",
     output: "./src/api",
-    clientName: "NgOpenApi",
+    clientName: "MyApi",
     plugins: [HttpResourcePlugin],
+    options: {
+        dateType: "Date",
+        enumStyle: "enum",
+    },
 } as GeneratorConfig;
 ```
 
@@ -62,11 +63,12 @@ ng-openapi -c openapi.config.ts
 ```typescript
 // app.config.ts
 import { ApplicationConfig } from "@angular/core";
-import { provideDefaultClient } from "./api/providers";
+import { provideMyApiClient } from "./api/providers";
 
 export const appConfig: ApplicationConfig = {
     providers: [
-        provideNgOpenApiClient({
+        // The provider function is named after `clientName` ("MyApi" → provideMyApiClient)
+        provideMyApiClient({
             basePath: "https://api.example.com",
         }),
     ],
@@ -118,6 +120,6 @@ src/api/
 
 ## Documentation
 
-- 📖 [Full Documentation](https://ng-openapi.dev/plugins/http-resource)
+- 📖 [Full Documentation](https://ng-openapi.dev/guide/http-resource)
 - 🎯 [Angular httpResource Guide](https://angular.dev/guide/http/resource)
 - 🚀 [Live Examples](https://stackblitz.com/@Mr-Jami/collections/ng-openapi-examples)

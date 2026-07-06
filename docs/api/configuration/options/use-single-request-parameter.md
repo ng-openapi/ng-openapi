@@ -1,4 +1,5 @@
 ---
+description: "useSingleRequestParameter: one typed request object instead of positional parameters."
 title: Use Single Request Parameter
 ---
 

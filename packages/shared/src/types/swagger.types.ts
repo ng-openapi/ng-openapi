@@ -10,16 +10,25 @@ import {
     XML,
 } from "swagger-schema-official";
 
+/**
+ * An operation parameter. OpenAPI 3.x carries the type in `schema`;
+ * Swagger 2.0 puts `type`/`format` directly on the parameter — consumers
+ * must handle both (or use the normalized model, which precomputes them).
+ */
 export interface Parameter {
     name: string;
     in: "query" | "path" | "header" | "cookie";
     required?: boolean;
-    schema?: any;
+    schema?: SwaggerDefinition;
     type?: string;
     format?: string;
     description?: string;
 }
 
+/**
+ * One operation of the spec, flattened to (path, method). Raw-ish view —
+ * generators consume its precomputed extension NormalizedOperation instead.
+ */
 export interface PathInfo {
     path: string;
     method: string;
@@ -32,16 +41,27 @@ export interface PathInfo {
     responses?: Record<string, SwaggerResponse>;
 }
 
+/**
+ * Operation request body, keyed by content type — the OpenAPI 3.x shape.
+ * Swagger 2.0 `in: "body"` parameters are NOT yet lifted into this shape;
+ * 2.0 operations currently generate without a body parameter.
+ */
 export interface RequestBody {
     required?: boolean;
     content?: Record<string, { schema?: SwaggerDefinition }>;
 }
 
+/**
+ * A single response entry, keyed by content type — the OpenAPI 3.x shape.
+ * A Swagger 2.0 response's direct `schema` is NOT yet mapped into `content`;
+ * 2.0 responses currently type as `any`.
+ */
 export interface SwaggerResponse {
     description?: string;
-    content?: Record<string, { schema?: any }>;
+    content?: Record<string, { schema?: SwaggerDefinition }>;
 }
 
+/** OpenAPI 3.x security scheme (subset of the spec's fields). */
 export interface OpenApiSecurityScheme {
     type?: "apiKey" | "http" | "oauth2" | "openIdConnect";
     description?: string;
@@ -49,16 +69,21 @@ export interface OpenApiSecurityScheme {
     in?: "query" | "header" | "cookie";
     scheme?: string;
     bearerFormat?: string;
-    flows?: Record<string, any>;
+    flows?: Record<string, unknown>;
     openIdConnectUrl?: string;
 }
 
+/**
+ * A JSON-Schema-ish definition as it appears in the spec, shared by
+ * Swagger 2.0 and OpenAPI 3.x (3.0's `nullable` and 3.1's type arrays
+ * both flow through `type`/`nullable`). May contain unresolved `$ref`s.
+ */
 export interface SwaggerDefinition {
     type?: ParameterType | undefined;
     format?: string | undefined;
     title?: string | undefined;
     description?: string | undefined;
-    default?: any;
+    default?: unknown;
     multipleOf?: number | undefined;
     maximum?: number | undefined;
     exclusiveMaximum?: boolean | undefined;
@@ -72,7 +97,9 @@ export interface SwaggerDefinition {
     uniqueItems?: boolean | undefined;
     maxProperties?: number | undefined;
     minProperties?: number | undefined;
-    enum?: any[] | undefined;
+    enum?: Array<string | number> | undefined;
+    /** OpenAPI 3.1 (JSON Schema); normalizeSchema folds it into a single-value `enum`. */
+    const?: unknown;
     items?: SwaggerDefinition | SwaggerDefinition[] | undefined;
     $ref?: string | undefined;
     allOf?: SwaggerDefinition[] | undefined;
@@ -83,12 +110,17 @@ export interface SwaggerDefinition {
     nullable?: boolean | undefined;
     xml?: XML | undefined;
     externalDocs?: ExternalDocs | undefined;
-    example?: any;
+    example?: unknown;
     required?: string[] | undefined;
     oneOf?: SwaggerDefinition[];
     anyOf?: SwaggerDefinition[];
 }
 
+/**
+ * The raw parsed spec document. Exactly one of `swagger` ("2.x") or
+ * `openapi` ("3.x") identifies the version; everything version-specific
+ * is resolved once by normalizeSpec.
+ */
 export interface SwaggerSpec {
     openapi: string;
     swagger: string;
@@ -112,6 +144,11 @@ export interface SwaggerSpec {
     };
 }
 
+/**
+ * Shape of a JSON-encoded enum description consumed when
+ * `generateEnumBasedOnDescription` is enabled: the description holds
+ * `[{"Name":"First","Value":1}, …]` and supplies the member names.
+ */
 export type EnumValueObject = {
     Name: string;
     Value: number;

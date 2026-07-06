@@ -1,4 +1,5 @@
 ---
+description: "customHeaders: default headers added to every generated request."
 title: Custom Headers
 ---
 

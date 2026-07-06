@@ -1,4 +1,5 @@
 ---
+description: "Generate a type-safe Angular API client from an OpenAPI spec in four steps."
 title: Quick Start
 ---
 
@@ -30,7 +31,7 @@ import { GeneratorConfig } from "ng-openapi";
 
 const config: GeneratorConfig = {
     input: "./swagger.json",
-    output: "./src/client",
+    output: "./src/api",
     options: {
         dateType: "Date",
         enumStyle: "enum",
@@ -53,12 +54,12 @@ Add the provider to your `app.config.ts`:
 ```typescript
 import { ApplicationConfig } from "@angular/core";
 import { provideHttpClient } from "@angular/common/http";
-import { provideNgOpenapi } from "./api/providers";
+import { provideDefaultClient } from "./api/providers";
 
 export const appConfig: ApplicationConfig = {
     providers: [
         provideHttpClient(),
-        provideNgOpenapi({
+        provideDefaultClient({
             basePath: "https://api.example.com",
         }),
     ],
@@ -85,16 +86,19 @@ After generation, you'll have:
 
 ```
 src/api/
-├── models/
-│   └── index.ts          # TypeScript interfaces
-├── services/
-│   ├── index.ts          # Service exports
-│   └── pets.service.ts   # Generated service
-├── tokens/
-│   └── index.ts          # Injection tokens
-├── utils/
-│   ├── date-transformer.ts
-│   └── file-download.ts
-├── providers.ts          # Provider functions
-└── index.ts             # Main exports
+├── models/               # TypeScript interfaces, enums
+├── services/             # One Angular service per controller
+├── tokens/               # Injection tokens
+├── utils/                # Date transformer, download helpers, …
+├── providers.ts          # provideDefaultClient() setup function
+└── index.ts              # Main exports
 ```
+
+See [Generated Output](../guide/generated-code.md) for what every file does.
+
+## Next Steps
+
+- [Configuration Reference](../api/configuration.md) — all generator options at a glance
+- [Angular Integration](../guide/angular-integration.md) — providers, interceptors, environments
+- [Multiple Clients](../guide/multiple-clients.md) — several APIs in one app
+- [Schema Validation](../guide/schema-validation.md) — validate responses at runtime

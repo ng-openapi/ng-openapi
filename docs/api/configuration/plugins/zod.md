@@ -1,4 +1,5 @@
 ---
+description: "ZodPlugin: generate Zod schemas from your OpenAPI spec for runtime validation."
 title: Zod Plugin
 ---
 
@@ -8,7 +9,7 @@ The `ZodPlugin` generates Zod schemas for your OpenAPI models, allowing for runt
 your Angular applications.
 
 :::warning Beta Feature
-Since this plugin is released pre-planned. It might contain bugs. Please report any issues you encounter.
+This plugin is still in beta and may contain bugs. Please [report any issues](https://github.com/ng-openapi/ng-openapi/issues) you encounter.
 :::
 
 ## Usage
@@ -19,9 +20,7 @@ import { GeneratorConfig } from 'ng-openapi';
 import { ZodPlugin } from '@ng-openapi/zod';
 
 export default {
-  options: {
-    plugins: [ZodPlugin],
-  },
+  plugins: [ZodPlugin], // top-level, not inside `options`
   ... // other configurations
 } as GeneratorConfig;
 ```

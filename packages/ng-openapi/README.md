@@ -101,20 +101,24 @@ ng-openapi -i ./swagger.json -o ./src/api --date-type string
 
 ### Required Fields
 
-- `input` - Path to your Swagger/OpenAPI specification file
+- `input` - Path or URL to your Swagger/OpenAPI specification (`.json`, `.yaml`, `.yml`)
 - `output` - Output directory for generated files
+- `options.dateType` - How to handle date types: `'string'` or `'Date'`
+- `options.enumStyle` - Enum generation style: `'enum'` or `'union'`
 
 ### Optional Fields
 
-- `dateType` - How to handle date types: `'string'` or `'Date'` (default: `'Date'`)
-- `enumStyle` - Enum generation style: `'enum'` or `'union'` (default: `'enum'`)
-- `generateEnumBasedOnDescription` - Parse enum values from description field (default: `true`)
-- `generateServices` - Generate Angular services (default: `true`)
-- `customHeaders` - Headers to add to all HTTP requests
-- `responseTypeMapping` - Map content types to Angular HttpClient response types
-- `customizeMethodName` - Function to customize generated method names
-- `useSingleRequestParameter` - Generate one request object parameter per method instead of positional parameters (default: `false`)
+- `clientName` - Unique identifier for this client; names the generated provider function and tokens (default: `'default'`)
+- `validateInput` - Custom acceptance check `(spec) => boolean`; returning `false` aborts generation
+- `plugins` - Plugin generator classes (e.g. `HttpResourcePlugin`, `ZodPlugin`), run after core generation
 - `compilerOptions` - TypeScript compiler options for code generation
+- `options.generateServices` - Generate Angular services (default: `true`)
+- `options.generateEnumBasedOnDescription` - Parse enum values from description field (default: `false`)
+- `options.validation` - `{ response?: boolean }`; adds a `parse` hook to generated methods for response validation
+- `options.customHeaders` - Headers to add to all HTTP requests
+- `options.responseTypeMapping` - Map content types to Angular HttpClient response types
+- `options.customizeMethodName` - Function to customize generated method names
+- `options.useSingleRequestParameter` - Generate one request object parameter per method instead of positional parameters (default: `false`)
 
 ## Generated Files Structure
 
@@ -128,11 +132,15 @@ output/
 ├── tokens/
 │   └── index.ts        # Injection tokens
 ├── utils/
-│   ├── date-transformer.ts  # Date transformation interceptor
-│   └── file-download.ts     # File download helpers
+│   ├── base-interceptor.ts    # Client-scoped interceptor routing
+│   ├── date-transformer.ts    # Date interceptor (dateType: "Date" only)
+│   ├── file-download.ts       # File download helpers
+│   └── http-params-builder.ts # Query-param serialization
 ├── providers.ts        # Provider functions for easy setup
 └── index.ts           # Main exports
 ```
+
+See [Generated Output](https://ng-openapi.dev/guide/generated-code) for what every file does.
 
 ## Angular Integration
 
@@ -143,18 +151,20 @@ The simplest way to integrate ng-openapi is using the provider function:
 ```typescript
 // In your app.config.ts
 import { ApplicationConfig } from "@angular/core";
-import { provideNgOpenapi } from "./api/providers";
+import { provideDefaultClient } from "./api/providers";
 
 export const appConfig: ApplicationConfig = {
     providers: [
         // One-line setup with automatic interceptor configuration
-        provideNgOpenapi({
+        provideDefaultClient({
             basePath: "https://api.example.com",
         }),
         // other providers...
     ],
 };
 ```
+
+> The provider function is named after your `clientName` (e.g. `clientName: "PetStore"` → `providePetStoreClient`); without a `clientName` it is `provideDefaultClient`.
 
 That's it! This automatically configures:
 
@@ -165,14 +175,15 @@ That's it! This automatically configures:
 
 ```typescript
 // Disable date transformation
-provideNgOpenapi({
+provideDefaultClient({
     basePath: "https://api.example.com",
     enableDateTransform: false,
 });
 
-// Async configuration
-provideNgOpenapiAsync({
-    basePath: () => import("./config").then((c) => c.apiConfig.baseUrl),
+// Client-specific interceptors (classes, not instances)
+provideDefaultClient({
+    basePath: "https://api.example.com",
+    interceptors: [AuthInterceptor, LoggingInterceptor],
 });
 ```
 
@@ -220,3 +231,16 @@ Add these scripts to your `package.json`:
     }
 }
 ```
+
+## Using AI Assistants?
+
+Point your AI coding assistant (Claude Code, Cursor, Copilot, …) at
+<https://ng-openapi.dev/llms.txt> — it contains usage rules that prevent the
+most common integration mistakes, plus links into the full documentation
+(<https://ng-openapi.dev/llms-full.txt> for everything in one file).
+
+## Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](https://github.com/ng-openapi/ng-openapi/blob/main/CONTRIBUTING.md)
+for setup and test workflows, and [ARCHITECTURE.md](https://github.com/ng-openapi/ng-openapi/blob/main/ARCHITECTURE.md)
+for how the generation pipeline is structured and where new code should go.

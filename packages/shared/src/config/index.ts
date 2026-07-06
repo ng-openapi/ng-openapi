@@ -1,1 +1,16 @@
-export * from "./constants";
+// Typed config-file helper (user-facing, re-exported by ng-openapi)
+export { defineConfig } from "./define-config";
+
+// Header comments stamped onto generated files
+export {
+    BASE_INTERCEPTOR_HEADER_COMMENT,
+    HTTP_RESOURCE_GENERATOR_HEADER_COMMENT,
+    MAIN_INDEX_GENERATOR_HEADER_COMMENT,
+    PROVIDER_GENERATOR_HEADER_COMMENT,
+    REQUEST_PARAMS_GENERATOR_HEADER_COMMENT,
+    SERVICE_GENERATOR_HEADER_COMMENT,
+    SERVICE_INDEX_GENERATOR_HEADER_COMMENT,
+    TYPE_GENERATOR_HEADER_COMMENT,
+    ZOD_PLUGIN_GENERATOR_HEADER_COMMENT,
+    ZOD_PLUGIN_INDEX_GENERATOR_HEADER_COMMENT,
+} from "./constants";

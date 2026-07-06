@@ -1,24 +1,28 @@
 ---
+description: "Registering plugin generators like HttpResourcePlugin and ZodPlugin (top-level plugins array)."
 title: Plugins
 ---
 
 # `plugins`
 
-**Type:** `IPluginGenerator[]` | **Default: `undefined`**
+**Type:** `IPluginGeneratorClass[]` | **Default: `undefined`**
 
 ## Usage
 
 ```typescript
 // openapi.config.ts
 import { GeneratorConfig } from 'ng-openapi';
+import { HttpResourcePlugin } from '@ng-openapi/http-resource';
 
 export default {
-  options: {
-    plugins: [HttpResourcePlugin],
-  },
+  plugins: [HttpResourcePlugin],
   ... // other configurations
 } as GeneratorConfig;
 ```
+
+::: warning
+`plugins` is a **top-level** configuration property, not part of `options`. A `plugins` array placed inside `options` is silently ignored.
+:::
 
 ## Available Plugins
 
@@ -27,4 +31,4 @@ export default {
 
 ## Notes
 
-- This might become a public API in the future, allowing third-party plugins to be added
+- Third-party plugins can be written against the documented contract — see [Plugin Authoring](../../guide/plugin-authoring.md)

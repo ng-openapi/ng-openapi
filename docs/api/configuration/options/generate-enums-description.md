@@ -1,4 +1,5 @@
 ---
+description: "generateEnumBasedOnDescription: derive enum member names from JSON-encoded descriptions."
 title: Generate Enums Based on Description
 ---
 

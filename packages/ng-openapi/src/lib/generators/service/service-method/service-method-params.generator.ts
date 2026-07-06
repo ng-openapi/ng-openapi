@@ -2,25 +2,23 @@ import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
 import {
     camelCase,
     CONTENT_TYPES,
-    GeneratorConfig,
+    MethodGenOptions,
     getTypeScriptType,
     isDataTypeInterface,
-    PathInfo,
+    NormalizedOperation,
+    RequestBody,
     SwaggerDefinition,
-    SwaggerParser,
 } from "@ng-openapi/shared";
 import { ServiceMethodRequestObjectGenerator } from "./service-method-request-object.generator";
 
 export class ServiceMethodParamsGenerator {
-    private config: GeneratorConfig;
-    private parser: SwaggerParser;
+    private config: MethodGenOptions;
 
-    constructor(config: GeneratorConfig, parser: SwaggerParser) {
+    constructor(config: MethodGenOptions) {
         this.config = config;
-        this.parser = parser;
     }
 
-    generateMethodParameters(operation: PathInfo): OptionalKind<ParameterDeclarationStructure>[] {
+    generateMethodParameters(operation: NormalizedOperation): OptionalKind<ParameterDeclarationStructure>[] {
         const params = this.generateApiParameters(operation);
         const optionsParam = this.addOptionsParameter(params);
 
@@ -28,15 +26,17 @@ export class ServiceMethodParamsGenerator {
         return ServiceMethodRequestObjectGenerator.dedupe([...params, ...optionsParam]);
     }
 
-    generateApiParameters(operation: PathInfo): OptionalKind<ParameterDeclarationStructure>[] {
+    generateApiParameters(operation: NormalizedOperation): OptionalKind<ParameterDeclarationStructure>[] {
         const params: OptionalKind<ParameterDeclarationStructure>[] = [];
 
         // Path parameters
-        const pathParams = operation.parameters?.filter((p) => p.in === "path") || [];
-        pathParams.forEach((param) => {
+        operation.pathParams.forEach((param) => {
             params.push({
                 name: camelCase(param.name),
-                type: getTypeScriptType(param.schema || param, this.config),
+                // Swagger 2.0 puts type/format/enum on the parameter itself; the
+                // spread (vs passing param directly) is needed because Parameter
+                // lacks TypeSchema's index signature — a fresh literal satisfies it.
+                type: getTypeScriptType(param.schema || { ...param }, this.config),
                 hasQuestionToken: !param.required,
             });
         });
@@ -44,24 +44,20 @@ export class ServiceMethodParamsGenerator {
         const requestBody = operation.requestBody;
 
         if (requestBody) {
-            const formDataContent = requestBody.content?.[CONTENT_TYPES.MULTIPART];
-            const urlEncodedContent = requestBody.content?.[CONTENT_TYPES.FORM_URLENCODED];
             const jsonContent = requestBody.content?.[CONTENT_TYPES.JSON];
 
             // form parameters
-            if (formDataContent) {
-                const formParams = this.convertObjectToSingleParams(formDataContent.schema);
-                params.push(...formParams);
+            if (operation.isMultipart) {
+                params.push(...this.convertObjectToSingleParams(operation.formDataSchema));
             }
 
             // x-www-form-urlencoded parameters
-            if (!jsonContent && urlEncodedContent) {
-                const formParams = this.convertObjectToSingleParams(urlEncodedContent.schema);
-                params.push(...formParams);
+            if (operation.isUrlEncoded) {
+                params.push(...this.convertObjectToSingleParams(operation.urlEncodedSchema));
             }
 
             // body parameters
-            if (jsonContent && !formDataContent) {
+            if (jsonContent && !operation.isMultipart) {
                 const bodyType = this.getRequestBodyType(requestBody);
                 const isInterface = isDataTypeInterface(bodyType);
                 params.push({
@@ -73,11 +69,10 @@ export class ServiceMethodParamsGenerator {
         }
 
         // Query parameters
-        const queryParams = operation.parameters?.filter((p) => p.in === "query") || [];
-        queryParams.forEach((param) => {
+        operation.queryParams.forEach((param) => {
             params.push({
                 name: camelCase(param.name),
-                type: getTypeScriptType(param.schema || param, this.config),
+                type: getTypeScriptType(param.schema || { ...param }, this.config),
                 hasQuestionToken: !param.required,
             });
         });
@@ -120,7 +115,7 @@ export class ServiceMethodParamsGenerator {
         return `RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text', ${additionalTypeParameters.join(", ")}>`;
     }
 
-    private getRequestBodyType(requestBody: any): string {
+    private getRequestBodyType(requestBody: RequestBody): string {
         const content = requestBody.content || {};
         const jsonContent = content[CONTENT_TYPES.JSON];
 
@@ -131,20 +126,16 @@ export class ServiceMethodParamsGenerator {
         return "any";
     }
 
+    /** `schema` arrives ref-resolved from the normalizer (formData/urlEncoded schema). */
     private convertObjectToSingleParams(schema?: SwaggerDefinition): OptionalKind<ParameterDeclarationStructure>[] {
         const params: OptionalKind<ParameterDeclarationStructure>[] = [];
-        let resolvedSchema = schema;
-
-        if (schema?.$ref) {
-            resolvedSchema = this.parser.resolveReference(schema.$ref);
-        }
 
         // For multipart/form-data, add individual parameters for each field
-        Object.entries(resolvedSchema?.properties ?? {}).forEach(([key, value]: [string, any]) => {
+        Object.entries(schema?.properties ?? {}).forEach(([key, value]) => {
             params.push({
                 name: key,
                 type: getTypeScriptType(value, this.config, value.nullable),
-                hasQuestionToken: !resolvedSchema?.required?.includes(key),
+                hasQuestionToken: !schema?.required?.includes(key),
             });
         });
 

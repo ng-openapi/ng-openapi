@@ -1,6 +1,6 @@
 ---
 title: Impressum
-description: Legal disclosure (Impressum) for ng-openapi according to § 5 DDG.
+description: "Legal disclosure (Impressum) for ng-openapi according to § 5 DDG."
 editLink: false
 lastUpdated: false
 ---

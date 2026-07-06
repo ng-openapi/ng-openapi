@@ -1,4 +1,5 @@
 ---
+description: "downloadFile, downloadFileOperator, and Content-Disposition filename extraction."
 title: File Download Helper
 ---
 
@@ -23,7 +24,7 @@ export class ReportComponent {
 }
 ```
 
-## Example Date Transformer
+## Generated Source
 
 ```typescript
 // client/utils/file-download.ts

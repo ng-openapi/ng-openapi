@@ -3,5 +3,13 @@
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/testing/src",
     "projectType": "library",
-    "tags": ["type:testing", "scope:internal"]
+    "tags": ["scope:testing"],
+    "targets": {
+        "typecheck": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "npx tsc -p {projectRoot}/tsconfig.lib.json --noEmit"
+            }
+        }
+    }
 }

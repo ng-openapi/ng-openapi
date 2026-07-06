@@ -1,4 +1,5 @@
 ---
+description: "Install ng-openapi with npm, yarn, or pnpm. Prerequisites: Node 20+ and Angular 15+."
 title: Installation
 ---
 
@@ -15,17 +16,21 @@ Install ng-openapi to generate Angular services and TypeScript types from OpenAP
 
 ### Development Dependency (Recommended)
 
-```bash
+::: code-group
+
+```bash [npm]
 npm install ng-openapi --save-dev
 ```
 
-```bash
+```bash [yarn]
 yarn add ng-openapi --dev
 ```
 
-```bash
+```bash [pnpm]
 pnpm add ng-openapi --save-dev
 ```
+
+:::
 
 ### Global Installation
 
@@ -38,3 +43,7 @@ npm install -g ng-openapi
 ```bash
 ng-openapi --version
 ```
+
+## Next Step
+
+Continue with the [Quick Start](./quick-start.md) to generate your first client.

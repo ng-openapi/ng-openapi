@@ -1,0 +1,383 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Orders API (OpenAPI 3.0)",
+        "version": "1.0.0"
+    },
+    "servers": [{ "url": "https://api.example.com/v2" }],
+    "tags": [{ "name": "orders" }, { "name": "files" }, { "name": "auth" }],
+    "paths": {
+        "/orders": {
+            "get": {
+                "tags": ["orders"],
+                "operationId": "listOrders",
+                "summary": "List orders",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": { "type": "integer", "format": "int32" }
+                    },
+                    {
+                        "name": "page-size",
+                        "in": "query",
+                        "schema": { "type": "integer" }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": { "$ref": "#/components/schemas/OrderStatus" }
+                    },
+                    {
+                        "name": "X-Request-Id",
+                        "in": "header",
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "orders",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": { "$ref": "#/components/schemas/Order" }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": ["orders"],
+                "operationId": "createOrder",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": { "$ref": "#/components/schemas/CreateOrderRequest" }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "created",
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/Order" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/{orderId}": {
+            "parameters": [
+                {
+                    "name": "orderId",
+                    "in": "path",
+                    "required": true,
+                    "schema": { "type": "string", "format": "uuid" }
+                }
+            ],
+            "get": {
+                "tags": ["orders"],
+                "operationId": "getOrder",
+                "responses": {
+                    "200": {
+                        "description": "order",
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/Order" }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/ApiError" }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": ["orders"],
+                "operationId": "updateOrder",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": { "$ref": "#/components/schemas/UpdateOrderRequest" }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "updated",
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/Order" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/{orderId}/invoice": {
+            "get": {
+                "tags": ["orders"],
+                "operationId": "downloadInvoice",
+                "parameters": [
+                    {
+                        "name": "orderId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "pdf invoice",
+                        "content": {
+                            "application/pdf": {
+                                "schema": { "type": "string", "format": "binary" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/files/upload": {
+            "post": {
+                "tags": ["files"],
+                "operationId": "uploadFile",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["file"],
+                                "properties": {
+                                    "file": { "type": "string", "format": "binary" },
+                                    "attachments": {
+                                        "type": "array",
+                                        "items": { "type": "string", "format": "binary" }
+                                    },
+                                    "description": { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "uploaded",
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/FileInfo" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/token": {
+            "post": {
+                "tags": ["auth"],
+                "operationId": "requestToken",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["username", "password"],
+                                "properties": {
+                                    "username": { "type": "string" },
+                                    "password": { "type": "string" },
+                                    "scopes": {
+                                        "type": "array",
+                                        "items": { "type": "string" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "token",
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/TokenResponse" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/status": {
+            "get": {
+                "operationId": "getStatus",
+                "responses": {
+                    "200": {
+                        "description": "plain text status",
+                        "content": {
+                            "text/plain": {
+                                "schema": { "type": "string" }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "OrderStatus": {
+                "type": "string",
+                "enum": ["pending", "in-progress", "shipped", "cancelled"]
+            },
+            "Priority": {
+                "type": "integer",
+                "enum": [1, 2, 3]
+            },
+            "Order": {
+                "type": "object",
+                "required": ["id", "status", "total", "createdAt"],
+                "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "status": { "$ref": "#/components/schemas/OrderStatus" },
+                    "priority": { "$ref": "#/components/schemas/Priority" },
+                    "total": { "type": "number", "format": "double" },
+                    "note": { "type": "string", "nullable": true },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "items": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/OrderItem" }
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "additionalProperties": { "type": "string" }
+                    },
+                    "payment": { "$ref": "#/components/schemas/PaymentInstrument" }
+                }
+            },
+            "OrderItem": {
+                "type": "object",
+                "required": ["productId", "quantity"],
+                "properties": {
+                    "productId": { "type": "string" },
+                    "quantity": { "type": "integer" },
+                    "unitPrice": { "type": "number", "nullable": true }
+                }
+            },
+            "CreateOrderRequest": {
+                "type": "object",
+                "required": ["items"],
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/OrderItem" }
+                    },
+                    "note": { "type": "string", "nullable": true }
+                }
+            },
+            "UpdateOrderRequest": {
+                "type": "object",
+                "properties": {
+                    "status": { "$ref": "#/components/schemas/OrderStatus" },
+                    "note": { "type": "string", "nullable": true }
+                }
+            },
+            "Card": {
+                "type": "object",
+                "required": ["cardNumber"],
+                "properties": {
+                    "cardNumber": { "type": "string" },
+                    "expiry": { "type": "string" }
+                }
+            },
+            "BankTransfer": {
+                "type": "object",
+                "required": ["iban"],
+                "properties": {
+                    "iban": { "type": "string" },
+                    "bic": { "type": "string" }
+                }
+            },
+            "PaymentInstrument": {
+                "oneOf": [
+                    { "$ref": "#/components/schemas/Card" },
+                    { "$ref": "#/components/schemas/BankTransfer" }
+                ]
+            },
+            "SearchFilter": {
+                "anyOf": [
+                    { "$ref": "#/components/schemas/OrderStatus" },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "query": { "type": "string" }
+                        }
+                    }
+                ]
+            },
+            "AuditedOrder": {
+                "allOf": [
+                    { "$ref": "#/components/schemas/Order" },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "auditedBy": { "type": "string" },
+                            "auditedAt": { "type": "string", "format": "date-time" }
+                        }
+                    }
+                ]
+            },
+            "User": {
+                "type": "object",
+                "required": ["id", "first-name"],
+                "properties": {
+                    "id": { "type": "string", "readOnly": true },
+                    "first-name": { "type": "string" },
+                    "last_login": { "type": "string", "format": "date-time" },
+                    "user.role": { "type": "string" }
+                }
+            },
+            "ApiError": {
+                "type": "object",
+                "required": ["code", "message"],
+                "properties": {
+                    "code": { "type": "integer" },
+                    "message": { "type": "string" },
+                    "details": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                    }
+                }
+            },
+            "TokenResponse": {
+                "type": "object",
+                "required": ["accessToken", "expiresIn"],
+                "properties": {
+                    "accessToken": { "type": "string" },
+                    "expiresIn": { "type": "integer" },
+                    "refreshToken": { "type": "string", "nullable": true }
+                }
+            },
+            "FileInfo": {
+                "type": "object",
+                "required": ["id", "fileName", "size"],
+                "properties": {
+                    "id": { "type": "string" },
+                    "fileName": { "type": "string" },
+                    "size": { "type": "integer", "format": "int64" },
+                    "contentType": { "type": "string" }
+                }
+            }
+        }
+    }
+}

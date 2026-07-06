@@ -1,3 +1,3 @@
-export function isReferenceObject(obj: any): obj is { $ref: string } {
-    return obj && typeof obj === "object" && "$ref" in obj;
+export function isReferenceObject(obj: unknown): obj is { $ref: string } {
+    return typeof obj === "object" && obj !== null && "$ref" in obj;
 }

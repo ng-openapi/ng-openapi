@@ -1,4 +1,5 @@
 ---
+description: "The input property: local JSON/YAML spec files or http(s) URLs."
 title: Input
 ---
 
@@ -6,7 +7,7 @@ title: Input
 
 **Type:** `string` | **Required**
 
-Path to your OpenAPI/Swagger specification file. Currently supports local files only.
+Path or http(s) URL of your OpenAPI/Swagger specification.
 
 ## Usage
 
@@ -22,11 +23,23 @@ const config: GeneratorConfig = {
 export default config;
 ```
 
+Remote specifications work the same way:
+
+```typescript
+const config: GeneratorConfig = {
+  input: 'https://api.example.com/openapi.yaml',
+  ... // other configurations
+};
+```
+
 ## Supported Formats
 
 - **JSON**: `.json` files containing OpenAPI/Swagger specifications
+- **YAML**: `.yaml` / `.yml` files containing OpenAPI/Swagger specifications
+- **URLs**: `http(s)` URLs returning any of the above
 
 ## Notes
 
-- File must contain a valid OpenAPI 2.0+ or Swagger specification
+- The specification must be a valid Swagger 2.x or OpenAPI 3.x document
 - Remote URLs must be accessible and return valid JSON/YAML content
+- Consider [`validateInput`](./validate-input.md) to guard against unexpected spec changes when generating from a URL

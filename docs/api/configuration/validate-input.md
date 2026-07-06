@@ -1,4 +1,5 @@
 ---
+description: "The validateInput hook: guard generation against unexpected spec changes."
 title: Validate Input
 ---
 

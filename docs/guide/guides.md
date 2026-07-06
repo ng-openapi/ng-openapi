@@ -1,45 +1,50 @@
 ---
+description: "Overview of all ng-openapi guides: setup, features, and plugins."
 title: Guides
 ---
 
 # Guides
 
-Learn how to use ng-openapi features effectively in your Angular applications.
+Learn how to use ng-openapi features effectively in your Angular applications. New here? Start with the [Quick Start](../getting-started/quick-start.md).
 
 ## Setup
 
 ### [CLI Usage](./cli-usage.md)
 
-Generate API clients using the ng-openapi command line interface.
+Everyday generation workflows: npm scripts, watch mode, fetching specs, multiple APIs.
 
 ### [Angular Integration](./angular-integration.md)
 
 Configure ng-openapi providers and services in your Angular application.
 
+### [Generated Output](./generated-code.md)
+
+A file-by-file tour of everything ng-openapi writes into your output directory.
+
 ## Features
-
-### [HTTP Resource Plugin](./http-resource.md)
-
-Generate Angular services using the experimental `httpResource` API.
 
 ### [Multiple Clients](./multiple-clients.md)
 
 Configure multiple API clients in a single Angular application.
 
-### [Schema Validation](./schema-validation)
+### [Date Handling](./date-handling.md)
 
-Validate API responses against the OpenAPI schema at runtime.
+Work with automatic date transformation features.
 
 ### [File Downloads](./file-download.md)
 
 Use the built-in file download utilities with generated services.
 
-### [Date Handling](./date-handling.md)
+### [Schema Validation](./schema-validation.md)
 
-Work with automatic date transformation features.
+Validate API responses against the OpenAPI schema at runtime.
 
-## Best Practices
+## Plugins
 
-### [Code Generation](./generated-code.md)
+### [HTTP Resource Plugin](./http-resource.md)
 
-Integrate ng-openapi into your development workflow.
+Generate Angular services using the `httpResource` API.
+
+### [Plugin Authoring](./plugin-authoring.md)
+
+Write your own generator plugin against the documented plugin contract.

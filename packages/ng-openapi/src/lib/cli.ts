@@ -1,14 +1,50 @@
 #!/usr/bin/env node
 
-import { GeneratorConfig } from "@ng-openapi/shared";
-import { isUrl } from "@ng-openapi/shared/src/utils/functions/is-url";
+import { GeneratorConfig, isUrl, SpecLoadError } from "@ng-openapi/shared";
 import { Command } from "commander";
 import * as fs from "fs";
 import * as path from "path";
 import * as packageJson from "../../package.json";
-import { generateFromConfig } from "./core";
+import { generateFromConfig, Reporter } from "./core";
 
 const program = new Command();
+
+/**
+ * Console presentation of generation progress. This is the only place in the
+ * workspace that prints — the orchestrator and generators stay silent.
+ */
+function createConsoleReporter(config: GeneratorConfig): Reporter {
+    const inputType = isUrl(config.input) ? "URL" : "file";
+    return {
+        onPhase(phase) {
+            switch (phase) {
+                case "processing-spec":
+                    console.log(`📡 Processing OpenAPI specification from ${inputType}: ${config.input}`);
+                    break;
+                case "types-generated":
+                    console.log("✅ TypeScript interfaces generated");
+                    break;
+                case "services-generated":
+                    console.log("✅ Angular services generated");
+                    break;
+                case "plugins-generated":
+                    console.log("✅ Plugins are generated");
+                    break;
+            }
+        },
+        onWarning(message) {
+            console.warn(`⚠️ ${message}`);
+        },
+    };
+}
+
+async function runGeneration(config: GeneratorConfig): Promise<void> {
+    const result = await generateFromConfig(config, createConsoleReporter(config));
+    const inputType = isUrl(config.input) ? "URL" : "file";
+    const sourceInfo = `from ${inputType}: ${config.input}`;
+    const clientPrefix = result.client ? `${result.client} ` : "";
+    console.log(`🎉 ${clientPrefix}Generation completed successfully ${sourceInfo} -> ${config.output}`);
+}
 
 async function loadConfigFile(configPath: string): Promise<GeneratorConfig> {
     const resolvedPath = path.resolve(configPath);
@@ -55,39 +91,58 @@ async function loadConfigFile(configPath: string): Promise<GeneratorConfig> {
     }
 }
 
-async function generateFromOptions(options: any): Promise<void> {
+interface CliOptions {
+    config?: string;
+    input?: string;
+    output?: string;
+    typesOnly?: boolean;
+    /** Free-form from the flag; validateGeneratorConfig rejects invalid values with a clear message. */
+    dateType?: string;
+}
+
+async function generateFromOptions(options: CliOptions): Promise<void> {
     const timestamp = new Date().getTime();
     try {
         if (options.config) {
             const config = await loadConfigFile(options.config);
-            await generateFromConfig(config);
+            await runGeneration(config);
         } else if (options.input) {
             const config: GeneratorConfig = {
                 input: options.input, // Can now be a URL or file path
                 output: options.output || "./src/generated",
                 options: {
-                    dateType: options.dateType || "Date",
+                    // Passed through unchecked on purpose: validateGeneratorConfig
+                    // rejects anything but "string" | "Date" with an actionable error
+                    dateType: (options.dateType || "Date") as GeneratorConfig["options"]["dateType"],
                     enumStyle: "enum",
                     generateEnumBasedOnDescription: true,
                     generateServices: !options.typesOnly,
                 },
             };
 
-            await generateFromConfig(config);
+            await runGeneration(config);
         } else {
             console.error("Error: Either --config or --input option is required");
-            program.help();
-            process.exit(1);
+            // help({ error: true }) prints to stderr and exits non-zero;
+            // plain help() would exit 0 before a process.exit(1) could run
+            program.help({ error: true });
         }
 
         console.log("✨ Generation completed successfully!");
     } catch (error) {
         console.error("❌ Generation failed:", error instanceof Error ? error.message : error);
-        process.exit(1);
+
+        // Typed hint mapping: branch on the error class, never on message text
+        if (error instanceof SpecLoadError && isUrl(error.source)) {
+            console.error("💡 Tip: Make sure the URL is accessible and returns a valid OpenAPI/Swagger specification");
+            console.error("💡 Alternative: Download the specification file locally and use the file path instead");
+        }
+        // exitCode instead of process.exit(): lets the event loop drain (no
+        // truncated piped output) and can't be short-circuited by refactors
+        process.exitCode = 1;
     } finally {
         const duration = (new Date().getTime() - timestamp) / 1000;
         console.log(`⏱️  Duration: ${duration.toFixed(2)} seconds`);
-        process.exit(0);
     }
 }
 

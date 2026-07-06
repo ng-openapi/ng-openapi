@@ -1,1 +1,2 @@
-export * from "./swagger-parser";
+export { SwaggerParser } from "./swagger-parser";
+export { normalizeSchema, normalizeSpec } from "./normalize";

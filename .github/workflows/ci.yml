@@ -55,5 +55,20 @@ jobs:
           done
           exit $missing
 
-      - name: Run tests
-        run: npm test
+      - name: Typecheck + lint + build (nx run-many, all packages)
+        run: npx nx run-many -t typecheck lint build
+
+      # Deliberately runs vitest directly (not `nx run-many -t test`): a single
+      # workspace-wide run produces the one aggregated coverage report we upload.
+      # This bypasses the Nx test cache — only local `nx test` runs benefit from
+      # the test targetDefault's caching/inputs in nx.json.
+      - name: Run tests (unit + golden + compile-check) with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        if: matrix.node == '20'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 14

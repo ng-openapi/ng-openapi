@@ -1,4 +1,5 @@
 ---
+description: "responseTypeMapping: pin the Angular responseType per content type."
 title: Response Type Mapping
 ---
 

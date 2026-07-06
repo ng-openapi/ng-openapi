@@ -48,3 +48,11 @@ docs/.vitepress/cache/deps
 .claude/worktrees
 .nx/polygraph
 .nx/self-healing
+
+# graphify: keep the queryable graph (graph.json, GRAPH_REPORT.md, manifest,
+# labels); ignore caches, per-run snapshots, and machine-local metadata
+graphify-out/cache/
+graphify-out/20*/
+graphify-out/graph.html
+graphify-out/cost.json
+graphify-out/.graphify_python

@@ -1,0 +1,16 @@
+{
+    "$schema": "https://context7.com/schema/context7.json",
+    "projectTitle": "ng-openapi",
+    "description": "Angular-first OpenAPI client generator: type-safe Angular services, TypeScript models, and validation schemas from Swagger 2.x / OpenAPI 3.x specifications.",
+    "folders": ["docs"],
+    "excludeFiles": ["docs/imprint.md"],
+    "rules": [
+        "Prefer a TypeScript config file (openapi.config.ts) with `ng-openapi -c` over inline CLI flags; CLI flags cover only a small subset of options.",
+        "A valid config requires input, output, options.dateType ('string' | 'Date'), and options.enumStyle ('enum' | 'union').",
+        "`plugins` is a top-level config property, never inside `options`.",
+        "The generated provider is provide<ClientName>Client() (provideDefaultClient without clientName), imported from the generated providers.ts — not from the ng-openapi package.",
+        "Pass client-scoped interceptors as classes, not instances.",
+        "Runtime response validation needs options.validation.response: true; the parse function goes in the trailing options argument of service methods.",
+        "Never edit generated files; they are overwritten on every generation run."
+    ]
+}

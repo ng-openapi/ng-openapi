@@ -1,4 +1,5 @@
 ---
+description: "Validate API responses at runtime with Zod or any validation library via the parse hook."
 title: Schema Validation
 ---
 

@@ -1,15 +1,39 @@
-import { Parameter, PathInfo } from "../../types";
+import type { Parameter, PathInfo, RequestBody, SwaggerResponse } from "../../types/swagger.types";
 import { Path } from "swagger-schema-official";
 
+/**
+ * The raw operation shape as it appears in the spec: only the fields
+ * extractPaths reads, all optional because the raw spec may omit any of them.
+ * RawPathItem below is the loose boundary between untyped spec JSON and the
+ * typed PathInfo the generators consume.
+ */
+interface RawOperation {
+    operationId?: string;
+    summary?: string;
+    description?: string;
+    tags?: string[];
+    parameters?: Parameter[];
+    requestBody?: RequestBody;
+    responses?: Record<string, SwaggerResponse>;
+}
+
+type RawPathItem = { parameters?: Parameter[] } & { [method: string]: unknown };
+
+/**
+ * Flattens the spec's `paths` object into one PathInfo per (path, method)
+ * pair, merging path-level parameters into each operation. Supports both
+ * Swagger 2.0 and OpenAPI 3.x path items; methods outside the given list
+ * (and vendor extensions) are ignored.
+ */
 export function extractPaths(
     swaggerPaths: { [p: string]: Path } = {},
     methods = ["get", "post", "put", "patch", "delete", "options", "head"],
 ): PathInfo[] {
     const paths: PathInfo[] = [];
-    Object.entries(swaggerPaths).forEach(([path, pathItem]: [string, any]) => {
+    Object.entries(swaggerPaths as Record<string, RawPathItem>).forEach(([path, pathItem]) => {
         methods.forEach((method) => {
-            if (pathItem[method]) {
-                const operation = pathItem[method];
+            const operation = pathItem[method] as RawOperation | undefined;
+            if (operation) {
                 paths.push({
                     path,
                     method: method.toUpperCase(),
@@ -28,7 +52,7 @@ export function extractPaths(
     return paths;
 }
 
-function parseParameters(operationParams: any[], pathParams: any[]): Parameter[] {
+function parseParameters(operationParams: Parameter[], pathParams: Parameter[]): Parameter[] {
     const allParams = [...pathParams, ...operationParams];
     return allParams.map((param) => ({
         name: param.name,

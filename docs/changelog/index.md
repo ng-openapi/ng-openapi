@@ -1,3 +1,7 @@
+---
+description: "Release notes for all published ng-openapi packages."
+---
+
 # Changelog
 
 Release notes for each published package in the ng-openapi workspace.

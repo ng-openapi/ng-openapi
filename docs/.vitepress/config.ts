@@ -1,27 +1,88 @@
 import { defineConfig } from "vitepress";
 import { execSync } from "child_process";
 import * as path from "path";
+import * as fs from "fs";
 import packageJson from "../../packages/ng-openapi/package.json";
+
+const SITE_URL = "https://ng-openapi.dev";
+
+/** Canonical page URL for a markdown source path (mirrors cleanUrls: true). */
+function pageUrl(relativePath: string): string {
+    const clean = relativePath
+        .replace(/\\/g, "/")
+        .replace(/index\.md$/, "")
+        .replace(/\.md$/, "");
+    return `${SITE_URL}/${clean}`;
+}
+
+// ---------------------------------------------------------------------------
+// LLM-friendly outputs (see https://llmstxt.org/): buildEnd writes
+//  - /llms-full.txt   — the whole documentation concatenated in reading order
+//  - /<page>.md       — the processed markdown source next to each HTML page
+// ---------------------------------------------------------------------------
+
+/** Pages that should not be fed to LLMs or served as raw markdown. */
+const LLM_EXCLUDED = new Set(["imprint.md"]);
+
+/** Section reading order for llms-full.txt; alphabetical within a section. */
+const LLM_SECTION_ORDER = ["index.md", "getting-started/", "guide/", "api/", "changelog/"];
+
+function sectionRank(relativePath: string): number {
+    const rank = LLM_SECTION_ORDER.findIndex(
+        (prefix) => relativePath === prefix || relativePath.startsWith(prefix),
+    );
+    return rank === -1 ? LLM_SECTION_ORDER.length : rank;
+}
+
+function walkMarkdown(dir: string, base = dir): string[] {
+    const out: string[] = [];
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (entry.name.startsWith(".") || entry.name === "public" || entry.name === "node_modules") continue;
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+            out.push(...walkMarkdown(full, base));
+        } else if (entry.name.endsWith(".md")) {
+            out.push(path.relative(base, full).replace(/\\/g, "/"));
+        }
+    }
+    return out;
+}
+
+/** Inline VitePress `<!--@include: file{start,end}-->` directives (used by the changelog pages). */
+function resolveIncludes(content: string, fileDir: string): string {
+    return content.replace(/<!--\s*@include:\s*(.+?)\s*-->/g, (match, target: string) => {
+        const rangeMatch = target.match(/^(.*?)\{(\d*),(\d*)\}$/);
+        const includePath = path.resolve(fileDir, (rangeMatch ? rangeMatch[1] : target).trim());
+        if (!fs.existsSync(includePath)) return match;
+        let lines = fs.readFileSync(includePath, "utf-8").split("\n");
+        if (rangeMatch) {
+            const start = rangeMatch[2] ? parseInt(rangeMatch[2], 10) - 1 : 0;
+            const end = rangeMatch[3] ? parseInt(rangeMatch[3], 10) : lines.length;
+            lines = lines.slice(start, end);
+        }
+        return lines.join("\n");
+    });
+}
+
+function stripFrontmatter(content: string): string {
+    return content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "");
+}
 
 export default defineConfig({
     title: "ng-openapi",
     description: "Generate Angular services and TypeScript types from OpenAPI/Swagger specifications",
 
     head: [
-        [
-            "link",
-            {
-                rel: "icon",
-                href: "https://raw.githubusercontent.com/ng-openapi/ng-openapi/HEAD/docs/public/favicon.ico",
-            },
-        ],
+        ["link", { rel: "icon", href: "/favicon.ico" }],
         ["meta", { name: "theme-color", content: "#3c82f6" }],
         ["meta", { property: "og:type", content: "website" }],
         ["meta", { property: "og:locale", content: "en" }],
-        ["meta", { property: "og:title", content: "ng-openapi | Angular OpenAPI Client Generator" }],
         ["meta", { property: "og:site_name", content: "ng-openapi" }],
-        ["meta", { property: "og:url", content: "https://ng-openapi.github.io/" }],
-        ["link", { rel: "canonical", href: "https://ng-openapi.dev" }],
+        ["meta", { property: "og:image", content: `${SITE_URL}/og-image.png` }],
+        ["meta", { property: "og:image:width", content: "1200" }],
+        ["meta", { property: "og:image:height", content: "630" }],
+        ["meta", { name: "twitter:card", content: "summary_large_image" }],
+        ["meta", { name: "twitter:image", content: `${SITE_URL}/og-image.png` }],
 
         // Schema.org structured data for software
         [
@@ -55,8 +116,36 @@ export default defineConfig({
 
     lastUpdated: true,
 
+    // Per-page canonical URL and Open Graph tags. A single site-wide canonical
+    // would tell crawlers every page is a duplicate of the homepage.
+    transformPageData(pageData) {
+        const url = pageUrl(pageData.relativePath);
+        const isHome = pageData.frontmatter.layout === "home";
+        const title = isHome
+            ? "ng-openapi | Angular OpenAPI Client Generator"
+            : `${pageData.title} | ng-openapi`;
+        const description =
+            pageData.description ||
+            "Generate Angular services and TypeScript types from OpenAPI/Swagger specifications";
+
+        pageData.frontmatter.head ??= [];
+        pageData.frontmatter.head.push(
+            ["link", { rel: "canonical", href: url }],
+            ["meta", { property: "og:url", content: url }],
+            ["meta", { property: "og:title", content: title }],
+            ["meta", { property: "og:description", content: description }],
+        );
+    },
+
     themeConfig: {
-        logo: "https://raw.githubusercontent.com/ng-openapi/ng-openapi/HEAD/docs/public/ng-openapi-logo.svg",
+        logo: "/ng-openapi-logo.svg",
+
+        notFound: {
+            title: "Page not found",
+            quote: "The page may have moved during a docs restructure. Try the search, or start from the Quick Start.",
+            linkText: "Go to Quick Start",
+            link: "/getting-started/quick-start",
+        },
 
         nav: [
             { text: "Home", link: "/" },
@@ -86,17 +175,28 @@ export default defineConfig({
             ],
             "/guide/": [
                 {
-                    text: "User Guide",
-                    link: "guide/guides",
+                    text: "Setup",
                     items: [
+                        { text: "Overview", link: "/guide/guides" },
                         { text: "CLI Usage", link: "/guide/cli-usage" },
                         { text: "Angular Integration", link: "/guide/angular-integration" },
-                        { text: "Http Resource", link: "/guide/http-resource" },
+                        { text: "Generated Output", link: "/guide/generated-code" },
+                    ],
+                },
+                {
+                    text: "Features",
+                    items: [
                         { text: "Multiple Clients", link: "/guide/multiple-clients" },
-                        { text: "Schema Validation", link: "/guide/schema-validation" },
-                        { text: "File Download", link: "/guide/file-download" },
                         { text: "Date Handling", link: "/guide/date-handling" },
-                        { text: "Code Generation", link: "/guide/generated-code" },
+                        { text: "File Downloads", link: "/guide/file-download" },
+                        { text: "Schema Validation", link: "/guide/schema-validation" },
+                    ],
+                },
+                {
+                    text: "Plugins",
+                    items: [
+                        { text: "HTTP Resource", link: "/guide/http-resource" },
+                        { text: "Plugin Authoring", link: "/guide/plugin-authoring" },
                     ],
                 },
             ],
@@ -202,7 +302,7 @@ export default defineConfig({
                                     collapsed: true,
                                 },
                             ],
-                            collapsed: true,
+                            collapsed: false,
                         },
                         { text: "Providers", link: "/api/providers" },
                         {
@@ -257,6 +357,38 @@ export default defineConfig({
     },
 
     cleanUrls: true,
+
+    buildEnd(siteConfig) {
+        const srcDir = siteConfig.srcDir;
+        const outDir = siteConfig.outDir;
+
+        const files = walkMarkdown(srcDir)
+            .filter((file) => !LLM_EXCLUDED.has(file))
+            .sort((a, b) => sectionRank(a) - sectionRank(b) || a.localeCompare(b));
+
+        const sections: string[] = [
+            "# ng-openapi — full documentation",
+            "",
+            "> Concatenated documentation of ng-openapi (https://ng-openapi.dev)," +
+                " generated from the same sources as the website." +
+                " See https://ng-openapi.dev/llms.txt for the index and usage rules.",
+        ];
+
+        for (const file of files) {
+            const fullPath = path.join(srcDir, file);
+            const processed = resolveIncludes(fs.readFileSync(fullPath, "utf-8"), path.dirname(fullPath));
+
+            // Raw markdown next to the HTML page (e.g. /guide/cli-usage.md)
+            const target = path.join(outDir, file);
+            fs.mkdirSync(path.dirname(target), { recursive: true });
+            fs.writeFileSync(target, processed);
+
+            sections.push("", "---", "", `<!-- Source: ${pageUrl(file)} -->`, "", stripFrontmatter(processed).trim());
+        }
+
+        fs.writeFileSync(path.join(outDir, "llms-full.txt"), sections.join("\n") + "\n");
+    },
+
     sitemap: {
         hostname: "https://ng-openapi.dev",
         transformItems: (items) => {
