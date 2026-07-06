@@ -66,18 +66,14 @@ export class ProviderGenerator {
                 docs: ["Base API URL"],
             },
             {
-                name: "enableDateTransform",
-                type: "boolean",
-                hasQuestionToken: true,
-                docs: ["Enable automatic date transformation (default: true)"],
-            },
-            {
                 name: "interceptors",
                 type: "(new (...args: any[]) => HttpInterceptor)[]",
                 hasQuestionToken: true,
                 docs: [
                     "Class-based HTTP interceptors to apply to this client.",
-                    "Classes are resolved through DI when provided, otherwise instantiated directly.",
+                    "Classes are resolved through DI when provided; classes that are not",
+                    "provided anywhere are instantiated without constructor arguments, so",
+                    "classes with required dependencies must be registered as providers.",
                 ],
             },
             {
@@ -95,20 +91,33 @@ export class ProviderGenerator {
                     "Set to false when your app needs withInterceptorsFromDi() for its own",
                     "interceptors but this client's chain is registered functionally via",
                     "withInterceptors([...]) — otherwise the chain would run twice.",
+                    "",
+                    "WARNING: with false you MUST register the functional interceptor yourself",
+                    "(provideHttpClient(withInterceptors([...]))); if neither variant is",
+                    "registered, this client's entire chain (date transform, interceptors,",
+                    "interceptorFns) silently does nothing.",
                 ],
             },
         ];
 
         if (this.config.options.dateType === "Date") {
-            configProperties.push({
-                name: "dateTransformRegex",
-                type: "RegExp",
-                hasQuestionToken: true,
-                docs: [
-                    "Override the pattern used to detect ISO date strings during date transformation.",
-                    "Defaults to the generated ISO_DATE_REGEX.",
-                ],
-            });
+            configProperties.push(
+                {
+                    name: "enableDateTransform",
+                    type: "boolean",
+                    hasQuestionToken: true,
+                    docs: ["Enable automatic date transformation (default: true)"],
+                },
+                {
+                    name: "dateTransformRegex",
+                    type: "RegExp",
+                    hasQuestionToken: true,
+                    docs: [
+                        "Override the pattern used to detect ISO date strings during date transformation.",
+                        "Defaults to the generated ISO_DATE_REGEX.",
+                    ],
+                },
+            );
         }
 
         sourceFile.addInterface({

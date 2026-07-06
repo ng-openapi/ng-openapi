@@ -16,10 +16,10 @@ import { DefaultBaseInterceptor } from "./utils/base-interceptor";
 export interface DefaultConfig {
     /** Base API URL */
     basePath: string;
-    /** Enable automatic date transformation (default: true) */
-    enableDateTransform?: boolean;
     /** Class-based HTTP interceptors to apply to this client. */
-    /** Classes are resolved through DI when provided, otherwise instantiated directly. */
+    /** Classes are resolved through DI when provided; classes that are not */
+    /** provided anywhere are instantiated without constructor arguments, so */
+    /** classes with required dependencies must be registered as providers. */
     interceptors?: (new (...args: any[]) => HttpInterceptor)[];
     /** Functional HTTP interceptors to apply to this client. Run after class-based interceptors. */
     interceptorFns?: HttpInterceptorFn[];
@@ -27,6 +27,11 @@ export interface DefaultConfig {
     /** Set to false when your app needs withInterceptorsFromDi() for its own */
     /** interceptors but this client's chain is registered functionally via */
     /** withInterceptors([...]) — otherwise the chain would run twice. */
+    /** */
+    /** WARNING: with false you MUST register the functional interceptor yourself */
+    /** (provideHttpClient(withInterceptors([...]))); if neither variant is */
+    /** registered, this client's entire chain (date transform, interceptors, */
+    /** interceptorFns) silently does nothing. */
     registerDiInterceptor?: boolean;
 }
 

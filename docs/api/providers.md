@@ -55,7 +55,7 @@ The base URL for your API. This is prepended to all API requests.
 
 **Type:** `(new (...args: any[]) => HttpInterceptor)[]` | **Default:** `[]`
 
-Apply client specific class-based interceptors. Pass the interceptor **classes** (not instances) — the provider resolves them through DI when they are provided (so constructor injection works), otherwise instantiates them directly. This is not going to replace the global interceptors configured in your application, but will be applied to requests made by the provided client.
+Apply client specific class-based interceptors. Pass the interceptor **classes** (not instances) — the provider resolves them through DI when they are provided (so constructor injection works), otherwise instantiates them directly **without constructor arguments**. A class with required dependencies must therefore be registered as a provider; an unprovided one is silently constructed with `undefined` dependencies. This is not going to replace the global interceptors configured in your application, but will be applied to requests made by the provided client.
 
 Interceptors can be re-used across different clients.
 
@@ -105,11 +105,15 @@ export const appConfig: ApplicationConfig = {
 
 Leave it at `true` (default) when the client chain should run through `withInterceptorsFromDi()` itself.
 
+::: warning
+If you set this to `false`, you **must** register the functional interceptor yourself via `provideHttpClient(withInterceptors([defaultClientInterceptor]))`. With neither variant registered, the client still resolves its base path and requests appear to work — but the entire scoped chain (date transform, `interceptors`, `interceptorFns`) silently does nothing: models typed as `Date` carry ISO strings, auth headers are missing.
+:::
+
 ### `enableDateTransform`
 
 **Type:** `boolean` | **Default:** `true`
 
-If disabled, [Date Transformer Interceptor](utilities/date-transformer.md) will not be applied to the HTTP client. This means date strings will not be automatically converted to `Date` objects.
+If disabled, [Date Transformer Interceptor](utilities/date-transformer.md) will not be applied to the HTTP client. This means date strings will not be automatically converted to `Date` objects. Only available when the client was generated with `dateType: 'Date'`.
 
 ### `dateTransformRegex`
 
