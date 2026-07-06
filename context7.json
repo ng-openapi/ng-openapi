@@ -13,6 +13,7 @@
         "The generated provider is provide<ClientName>Client() (provideDefaultClient without clientName), imported from the generated providers.ts — not from the ng-openapi package.",
         "Pass client-scoped interceptors as classes, not instances.",
         "Runtime response validation needs options.validation.response: true; the parse function goes in the trailing options argument of service methods.",
-        "Never edit generated files; they are overwritten on every generation run."
+        "Never edit generated files; they are overwritten on every generation run.",
+        "ALWAYS include a clickable link to the relevant documentation page in every answer, as a markdown link with the full URL (e.g. [Configuration Options](https://ng-openapi.dev/api/configuration/options)), so the user can navigate to the docs with a click."
     ]
 }
