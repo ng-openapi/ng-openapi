@@ -1,5 +1,6 @@
 import { Project, VariableDeclarationKind } from "ts-morph";
 import * as path from "path";
+import { getBasePathTokenName, getClientContextTokenName, getInterceptorFnsTokenName } from "@ng-openapi/shared";
 
 export class TokenGenerator {
     private project: Project;
@@ -22,15 +23,15 @@ export class TokenGenerator {
                 moduleSpecifier: "@angular/core",
             },
             {
-                namedImports: ["HttpInterceptor", "HttpContextToken"],
+                namedImports: ["HttpInterceptorFn", "HttpContextToken"],
                 moduleSpecifier: "@angular/common/http",
             },
         ]);
 
         // Generate client-specific tokens
-        const basePathTokenName = this.getBasePathTokenName();
-        const interceptorsTokenName = this.getInterceptorsTokenName();
-        const clientContextTokenName = this.getClientContextTokenName();
+        const basePathTokenName = getBasePathTokenName(this.clientName);
+        const interceptorFnsTokenName = getInterceptorFnsTokenName(this.clientName);
+        const clientContextTokenName = getClientContextTokenName(this.clientName);
 
         sourceFile.addVariableStatement({
             isExported: true,
@@ -54,15 +55,16 @@ export class TokenGenerator {
             declarationKind: VariableDeclarationKind.Const,
             declarations: [
                 {
-                    name: interceptorsTokenName,
-                    initializer: `new InjectionToken<HttpInterceptor[]>('${interceptorsTokenName}', {
+                    name: interceptorFnsTokenName,
+                    initializer: `new InjectionToken<HttpInterceptorFn[]>('${interceptorFnsTokenName}', {
   providedIn: 'root',
   factory: () => [], // Default empty array
 })`,
                 },
             ],
             leadingTrivia: `/**
- * Injection token for the ${this.clientName} client HTTP interceptor instances
+ * Injection token carrying the ${this.clientName} client's scoped interceptor chain,
+ * normalized to functional interceptors. Populated by the client's provide function.
  */\n`,
         });
 
@@ -114,20 +116,5 @@ export class TokenGenerator {
 
         sourceFile.formatText();
         sourceFile.saveSync();
-    }
-
-    private getBasePathTokenName(): string {
-        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
-        return `BASE_PATH_${clientSuffix}`;
-    }
-
-    private getInterceptorsTokenName(): string {
-        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
-        return `HTTP_INTERCEPTORS_${clientSuffix}`;
-    }
-
-    private getClientContextTokenName(): string {
-        const clientSuffix = this.clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
-        return `CLIENT_CONTEXT_TOKEN_${clientSuffix}`;
     }
 }

@@ -2,9 +2,11 @@ import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import {
     generateParseRequestTypeParams,
+    getBaseInterceptorClassName,
     getBasePathTokenName,
     getClientContextTokenName,
-    getInterceptorsTokenName,
+    getClientInterceptorFnName,
+    getInterceptorFnsTokenName,
     hasDuplicateFunctionNames,
     isDataTypeInterface,
 } from "../src";
@@ -13,12 +15,21 @@ describe("token names", () => {
     it("defaults to the DEFAULT client suffix", () => {
         expect(getBasePathTokenName()).toBe("BASE_PATH_DEFAULT");
         expect(getClientContextTokenName()).toBe("CLIENT_CONTEXT_TOKEN_DEFAULT");
-        expect(getInterceptorsTokenName()).toBe("HTTP_INTERCEPTORS_DEFAULT");
+        expect(getInterceptorFnsTokenName()).toBe("HTTP_INTERCEPTOR_FNS_DEFAULT");
     });
 
     it("uppercases and sanitizes the client name", () => {
         expect(getBasePathTokenName("PetsApi")).toBe("BASE_PATH_PETSAPI");
         expect(getBasePathTokenName("my-client v2")).toBe("BASE_PATH_MY_CLIENT_V2");
+    });
+});
+
+describe("interceptor names", () => {
+    it("derives class and functional interceptor identifiers from the client name", () => {
+        expect(getBaseInterceptorClassName()).toBe("DefaultBaseInterceptor");
+        expect(getBaseInterceptorClassName("users")).toBe("UsersBaseInterceptor");
+        expect(getClientInterceptorFnName()).toBe("defaultClientInterceptor");
+        expect(getClientInterceptorFnName("PetsApi")).toBe("petsApiClientInterceptor");
     });
 });
 

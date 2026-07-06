@@ -10,9 +10,11 @@ export { listGeneratedFileNames } from "./project.utils";
 export {
     extractPaths,
     generateParseRequestTypeParams,
+    getBaseInterceptorClassName,
     getBasePathTokenName,
     getClientContextTokenName,
-    getInterceptorsTokenName,
+    getClientInterceptorFnName,
+    getInterceptorFnsTokenName,
     getModelTypeName,
     getRequestBodyType,
     getResourceClassName,

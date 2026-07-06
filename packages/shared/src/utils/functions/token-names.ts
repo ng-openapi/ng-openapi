@@ -17,8 +17,8 @@ export function getBasePathTokenName(clientName = "default"): string {
     return `BASE_PATH_${clientSuffix}`;
 }
 
-/** Token carrying the client's interceptor chain. */
-export function getInterceptorsTokenName(clientName = "default"): string {
+/** Token carrying the client's interceptor chain, normalized to `HttpInterceptorFn[]`. */
+export function getInterceptorFnsTokenName(clientName = "default"): string {
     const clientSuffix = clientName.toUpperCase().replace(/[^A-Z0-9]/g, "_");
-    return `HTTP_INTERCEPTORS_${clientSuffix}`;
+    return `HTTP_INTERCEPTOR_FNS_${clientSuffix}`;
 }

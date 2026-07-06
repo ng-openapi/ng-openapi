@@ -13,18 +13,21 @@ Configure ng-openapi providers and services in your Angular application.
 
 ```typescript
 import { ApplicationConfig } from "@angular/core";
-import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClient, withInterceptors } from "@angular/common/http";
 import { provideDefaultClient } from "./client/providers";
+import { defaultClientInterceptor } from "./client/utils/base-interceptor";
 
 export const appConfig: ApplicationConfig = {
     providers: [
-        provideHttpClient(),
+        provideHttpClient(withInterceptors([defaultClientInterceptor])),
         provideDefaultClient({
             basePath: "https://api.example.com",
         }),
     ],
 };
 ```
+
+`defaultClientInterceptor` is the generated functional interceptor that runs this client's scoped interceptor chain; requests from other clients pass through untouched. DI-based setups can use `withInterceptorsFromDi()` instead — see [Providers](../api/providers.md#di-based-registration).
 
 ### Inject Services
 

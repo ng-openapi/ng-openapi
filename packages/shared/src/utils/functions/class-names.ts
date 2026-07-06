@@ -24,6 +24,20 @@ export function getResourceClassName(controllerName: string, naming?: NameDecora
 }
 
 /**
+ * Class name of the generated scoped interceptor ("users" → "UsersBaseInterceptor").
+ * Deliberately capitalizes only the first character (not pascalCase) to keep
+ * parity with the client-name handling of the token helpers.
+ */
+export function getBaseInterceptorClassName(clientName = "default"): string {
+    return `${clientName.charAt(0).toUpperCase()}${clientName.slice(1)}BaseInterceptor`;
+}
+
+/** Identifier of the generated functional scoped interceptor ("users" → "usersClientInterceptor"). */
+export function getClientInterceptorFnName(clientName = "default"): string {
+    return `${clientName.charAt(0).toLowerCase()}${clientName.slice(1)}ClientInterceptor`;
+}
+
+/**
  * TypeScript identifier of a schema-derived model type. Used both where
  * models are declared (models/index.ts) and where they are referenced
  * (service/resource signatures) — ts-morph's fixMissingImports matches the

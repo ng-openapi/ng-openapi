@@ -59,18 +59,18 @@ One injectable service per controller (OpenAPI tag), using `inject(HttpClient)` 
 Injection tokens namespaced per client so multiple clients can coexist (see [Multiple Clients](./multiple-clients.md)):
 
 - `BASE_PATH_<CLIENTNAME>` — the API base URL (falls back to `/api`)
-- `HTTP_INTERCEPTORS_<CLIENTNAME>` — this client's interceptor instances
+- `HTTP_INTERCEPTOR_FNS_<CLIENTNAME>` — this client's interceptor chain, normalized to functional interceptors
 - `CLIENT_CONTEXT_TOKEN_<CLIENTNAME>` — `HttpContext` token marking which client a request belongs to
 
 For the default client, deprecated `BASE_PATH` / `CLIENT_CONTEXT_TOKEN` aliases are kept for backwards compatibility.
 
 ### `utils/base-interceptor.ts`
 
-A global interceptor that checks each request's `HttpContext` and applies this client's interceptor chain only to requests made by this client's services — that's what keeps interceptors from leaking across clients.
+The scoped interceptor that checks each request's `HttpContext` and applies this client's interceptor chain only to requests made by this client's services — that's what keeps interceptors from leaking across clients. It is exported in two forms sharing one implementation: a functional `<clientName>ClientInterceptor` for `withInterceptors([...])` and a `<ClientName>BaseInterceptor` class for `withInterceptorsFromDi()`. Register exactly one of the two — see [Providers](../api/providers.md#usage).
 
 ### `utils/date-transformer.ts`
 
-Only generated with `dateType: "Date"`. Contains `ISO_DATE_REGEX`, `transformDates`, and the `DateInterceptor` that converts ISO date strings in responses to `Date` objects. See the [Date Transformer reference](../api/utilities/date-transformer.md).
+Only generated with `dateType: "Date"`. Contains `ISO_DATE_REGEX`, `transformDates`, the functional `dateInterceptor` / `dateInterceptorWithRegex(...)`, and the class-based `DateInterceptor` — all converting ISO date strings in responses to `Date` objects. See the [Date Transformer reference](../api/utilities/date-transformer.md).
 
 ### `utils/file-download.ts`
 

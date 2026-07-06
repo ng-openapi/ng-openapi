@@ -53,18 +53,21 @@ Add the provider to your `app.config.ts`:
 
 ```typescript
 import { ApplicationConfig } from "@angular/core";
-import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClient, withInterceptors } from "@angular/common/http";
 import { provideDefaultClient } from "./api/providers";
+import { defaultClientInterceptor } from "./api/utils/base-interceptor";
 
 export const appConfig: ApplicationConfig = {
     providers: [
-        provideHttpClient(),
+        provideHttpClient(withInterceptors([defaultClientInterceptor])),
         provideDefaultClient({
             basePath: "https://api.example.com",
         }),
     ],
 };
 ```
+
+The generated `defaultClientInterceptor` runs this client's scoped interceptors (date transformation, anything passed to the provider) and leaves all other requests untouched. See [Providers](../api/providers.md) for details.
 
 ## Step 4: Use Generated Services
 

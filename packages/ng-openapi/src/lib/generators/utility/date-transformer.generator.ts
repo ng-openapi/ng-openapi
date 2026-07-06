@@ -16,7 +16,14 @@ export class DateTransformerGenerator {
 
         sourceFile.addImportDeclarations([
             {
-                namedImports: ["HttpEvent", "HttpHandler", "HttpInterceptor", "HttpRequest", "HttpResponse"],
+                namedImports: [
+                    "HttpEvent",
+                    "HttpHandler",
+                    "HttpInterceptor",
+                    "HttpInterceptorFn",
+                    "HttpRequest",
+                    "HttpResponse",
+                ],
                 moduleSpecifier: "@angular/common/http",
             },
             {
@@ -82,6 +89,50 @@ export class DateTransformerGenerator {
     return obj;`,
         });
 
+        // Add shared response transform used by both interceptor variants
+        sourceFile.addFunction({
+            name: "transformDateResponse",
+            parameters: [
+                { name: "event", type: "HttpEvent<any>" },
+                { name: "dateRegex", type: "RegExp" },
+            ],
+            returnType: "HttpEvent<any>",
+            statements: `
+    if (event instanceof HttpResponse && event.body) {
+        return event.clone({ body: transformDates(event.body, dateRegex) });
+    }
+    return event;`,
+        });
+
+        // Add functional interceptor factory + default instance
+        sourceFile.addFunction({
+            name: "dateInterceptorWithRegex",
+            isExported: true,
+            docs: [
+                "Builds a functional date interceptor for `provideHttpClient(withInterceptors([...]))`.\n@param dateRegex Optional override for the pattern used to detect ISO date strings.",
+            ],
+            parameters: [{ name: "dateRegex", type: "RegExp", initializer: "ISO_DATE_REGEX" }],
+            returnType: "HttpInterceptorFn",
+            statements: `
+    return (req, next) => next(req).pipe(map((event) => transformDateResponse(event, dateRegex)));`,
+        });
+
+        sourceFile.addVariableStatement({
+            isExported: true,
+            declarationKind: VariableDeclarationKind.Const,
+            declarations: [
+                {
+                    name: "dateInterceptor",
+                    type: "HttpInterceptorFn",
+                    initializer: "dateInterceptorWithRegex()",
+                },
+            ],
+            leadingTrivia: `/**
+ * Functional date interceptor using the default ISO_DATE_REGEX.
+ * Use dateInterceptorWithRegex(...) to customize the pattern.
+ */\n`,
+        });
+
         // Add interceptor class
         sourceFile.addClass({
             name: "DateInterceptor",
@@ -118,14 +169,7 @@ export class DateTransformerGenerator {
                     ],
                     returnType: "Observable<HttpEvent<any>>",
                     statements: `
-    return next.handle(req).pipe(
-        map(event => {
-            if (event instanceof HttpResponse && event.body) {
-                return event.clone({ body: transformDates(event.body, this.dateRegex) });
-            }
-            return event;
-        })
-    );`,
+    return next.handle(req).pipe(map((event) => transformDateResponse(event, this.dateRegex)));`,
                 },
             ],
         });
