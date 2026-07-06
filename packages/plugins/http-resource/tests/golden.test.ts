@@ -31,5 +31,22 @@ registerGoldenSuite("http-resource golden", {
             },
             plugins: [HttpResourcePlugin],
         }),
+        // Identifier decoration across core services, resources and models —
+        // the resources barrel must re-derive the same decorated class names
+        naming: (input, output) => ({
+            input,
+            output,
+            options: {
+                dateType: "Date",
+                enumStyle: "enum",
+                generateServices: true,
+                naming: {
+                    services: { prefix: "Api" },
+                    resources: { suffix: "ApiResource" },
+                    models: { suffix: "Dto" },
+                },
+            },
+            plugins: [HttpResourcePlugin],
+        }),
     },
 });

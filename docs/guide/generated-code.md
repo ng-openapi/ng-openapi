@@ -41,7 +41,7 @@ With [`generateServices: false`](../api/configuration/options/generate-services.
 
 ### `models/index.ts`
 
-One interface per schema in the spec, plus enums in the style you chose via [`enumStyle`](../api/configuration/options/enum-style.md). Date fields are typed `Date` or `string` depending on [`dateType`](../api/configuration/options/date-type.md).
+One interface per schema in the spec, plus enums in the style you chose via [`enumStyle`](../api/configuration/options/enum-style.md). Date fields are typed `Date` or `string` depending on [`dateType`](../api/configuration/options/date-type.md). Type names can be decorated with a prefix/suffix via [`naming.models`](../api/configuration/options/naming.md).
 
 ### `models/request-params.ts`
 
@@ -49,7 +49,7 @@ Only generated with [`useSingleRequestParameter`](../api/configuration/options/u
 
 ### `services/*.service.ts`
 
-One injectable service per controller (OpenAPI tag), using `inject(HttpClient)` and this client's base-path token. Method names come from `operationId`, optionally transformed by [`customizeMethodName`](../api/configuration/options/customize-method-name.md). When [`validation.response`](../api/configuration/options/validation.md) is enabled, each method accepts a `parse` hook in its trailing options parameter.
+One injectable service per controller (OpenAPI tag), using `inject(HttpClient)` and this client's base-path token. Class names default to `<Tag>Service` and can be decorated via [`naming.services`](../api/configuration/options/naming.md) (file names are unaffected). Method names come from `operationId`, optionally transformed by [`customizeMethodName`](../api/configuration/options/customize-method-name.md). When [`validation.response`](../api/configuration/options/validation.md) is enabled, each method accepts a `parse` hook in its trailing options parameter.
 
 ### `tokens/index.ts`
 

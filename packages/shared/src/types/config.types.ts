@@ -4,6 +4,30 @@ import type { SwaggerSpec } from "./swagger.types";
 import type { IPluginGeneratorClass } from "./plugin.types";
 
 /**
+ * Prefix/suffix decoration for one category of generated identifiers.
+ * A prefix is prepended verbatim and must be a valid identifier start.
+ * For services/resources the suffix replaces the default
+ * "Service"/"Resource" (an empty string drops it); for models it is
+ * plainly appended (models have no default suffix).
+ */
+export interface NameDecoration {
+    prefix?: string;
+    suffix?: string;
+}
+
+/**
+ * Identifier decoration for generated classes/types. File names are
+ * unaffected; model decoration applies to schema-derived types only
+ * (request-params interfaces and zod schemas keep their operation-derived
+ * names).
+ */
+export interface NamingOptions {
+    services?: NameDecoration;
+    resources?: NameDecoration;
+    models?: NameDecoration;
+}
+
+/**
  * The user-facing configuration (config file or programmatic call).
  * Validated at the boundary by validateGeneratorConfig, which throws
  * ConfigValidationError listing every problem at once — see
@@ -41,6 +65,8 @@ export interface GeneratorConfig {
         customizeMethodName?: (operationId: string) => string;
         /** Collapse each method's parameters into a single request object. */
         useSingleRequestParameter?: boolean;
+        /** Prefix/suffix decoration of generated service/resource/model identifiers. */
+        naming?: NamingOptions;
     };
     /** Overrides for the ts-morph compiler settings used during generation. */
     compilerOptions?: {
@@ -65,6 +91,9 @@ export interface GeneratorConfig {
 export interface TypeMappingConfig {
     options: {
         dateType: "string" | "Date";
+        naming?: {
+            models?: NameDecoration;
+        };
     };
 }
 
@@ -76,6 +105,9 @@ export interface TypeGenOptions {
         generateEnumBasedOnDescription?: boolean;
         validation?: {
             response?: boolean;
+        };
+        naming?: {
+            models?: NameDecoration;
         };
     };
 }
@@ -90,6 +122,9 @@ export interface MethodGenOptions {
         customHeaders?: Record<string, string>;
         customizeMethodName?: (operationId: string) => string;
         useSingleRequestParameter?: boolean;
+        naming?: {
+            models?: NameDecoration;
+        };
     };
 }
 

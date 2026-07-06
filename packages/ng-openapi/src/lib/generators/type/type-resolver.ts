@@ -1,4 +1,4 @@
-import { SwaggerDefinition, TypeMappingConfig, pascalCaseForEnums } from "@ng-openapi/shared";
+import { getModelTypeName, SwaggerDefinition, TypeMappingConfig } from "@ng-openapi/shared";
 
 export function escapeString(str: string): string {
     return str.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
@@ -40,7 +40,7 @@ export class TypeResolver {
 
     pascalName(str: string): string {
         if (!this.pascalCaseCache.has(str)) {
-            this.pascalCaseCache.set(str, pascalCaseForEnums(str));
+            this.pascalCaseCache.set(str, getModelTypeName(str, this.config.options.naming?.models));
         }
         return this.pascalCaseCache.get(str) as string;
     }

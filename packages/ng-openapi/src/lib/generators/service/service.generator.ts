@@ -4,6 +4,7 @@ import {
     GeneratorConfig,
     getBasePathTokenName,
     getClientContextTokenName,
+    getServiceClassName,
     hasDuplicateFunctionNames,
     NormalizedOperation,
     pascalCase,
@@ -103,7 +104,7 @@ export class ServiceGenerator {
     }
 
     private addServiceClass(sourceFile: SourceFile, controllerName: string, operations: NormalizedOperation[]): void {
-        const className = `${controllerName}Service`;
+        const className = getServiceClassName(controllerName, this.config.options.naming?.services);
         const basePathTokenName = getBasePathTokenName(this.config.clientName);
         const clientContextTokenName = getClientContextTokenName(this.config.clientName);
 
