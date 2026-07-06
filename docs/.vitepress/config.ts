@@ -362,6 +362,19 @@ export default defineConfig({
         const srcDir = siteConfig.srcDir;
         const outDir = siteConfig.outDir;
 
+        // Serve the root context7.json (single source of truth) at /context7.json
+        // without committing a duplicate under docs/public. The served copy points
+        // `url` at the hosted llms-full.txt index; the repo file stays untouched.
+        const context7Src = path.resolve(srcDir, "..", "context7.json");
+        if (fs.existsSync(context7Src)) {
+            const context7 = JSON.parse(fs.readFileSync(context7Src, "utf-8"));
+            context7.url = "https://context7.com/llmstxt/ng-openapi_dev_llms-full_txt";
+            fs.writeFileSync(
+                path.join(outDir, "context7.json"),
+                JSON.stringify(context7, null, 4) + "\n",
+            );
+        }
+
         const files = walkMarkdown(srcDir)
             .filter((file) => !LLM_EXCLUDED.has(file))
             .sort((a, b) => sectionRank(a) - sectionRank(b) || a.localeCompare(b));
