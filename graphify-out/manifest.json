@@ -45,8 +45,8 @@
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1783296715.179059,
-    "ast_hash": "2ca778548c3679356854e749c7866f57",
+    "mtime": 1783364831.9165199,
+    "ast_hash": "376c40ff3f3dee39d83066f209328864",
     "semantic_hash": ""
   },
   "packages/ng-openapi/eslint.config.mjs": {
@@ -180,8 +180,8 @@
     "semantic_hash": ""
   },
   "packages/ng-openapi/src/lib/generators/utility/provider.generator.ts": {
-    "mtime": 1783363880.1205728,
-    "ast_hash": "9a217daa0cadc5ecdf3a1044b3a2c275",
+    "mtime": 1783364680.0643747,
+    "ast_hash": "e9bed0a9c8abe6050869b055bd909721",
     "semantic_hash": ""
   },
   "packages/ng-openapi/tests/compile-check.test.ts": {
@@ -710,8 +710,8 @@
     "semantic_hash": ""
   },
   "docs/api/providers.md": {
-    "mtime": 1783363908.799409,
-    "ast_hash": "2d2c3201311f6760dc9cdd0fe8d98f7c",
+    "mtime": 1783364696.4093823,
+    "ast_hash": "365c287e3ca25e36b27e0779e2201d72",
     "semantic_hash": ""
   },
   "docs/api/utilities.md": {
@@ -1290,8 +1290,8 @@
     "semantic_hash": ""
   },
   "docs/public/llms.txt": {
-    "mtime": 1783363911.2401025,
-    "ast_hash": "5bb752ea096c9aba076678dcad2f2daf",
+    "mtime": 1783364705.5105484,
+    "ast_hash": "9a86416afa4a9c94ac0b44777af71e7f",
     "semantic_hash": ""
   },
   "docs/public/og-image.png": {
@@ -1567,6 +1567,11 @@
   "packages/ng-openapi/tests/per-type-reserved-names.test.ts": {
     "mtime": 1783343239.7727835,
     "ast_hash": "127c7c4e5eab94a950b71e1bfd8cf467",
+    "semantic_hash": ""
+  },
+  "packages/ng-openapi/tests/generated-runtime.test.ts": {
+    "mtime": 1783365184.0331943,
+    "ast_hash": "3adf7c871e9538dd9e4672c4d184e493",
     "semantic_hash": ""
   }
 }
