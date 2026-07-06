@@ -64,6 +64,15 @@ export function validateGeneratorConfig(config: unknown): asserts config is Gene
         if (options.enumStyle !== "enum" && options.enumStyle !== "union") {
             issues.push(`\`options.enumStyle\` must be "enum" or "union", got ${JSON.stringify(options.enumStyle)}`);
         }
+        if (
+            options.serviceDecorator !== undefined &&
+            options.serviceDecorator !== "injectable" &&
+            options.serviceDecorator !== "service"
+        ) {
+            issues.push(
+                `\`options.serviceDecorator\` must be "injectable" or "service", got ${JSON.stringify(options.serviceDecorator)}`,
+            );
+        }
 
         const booleanKeys = ["generateServices", "generateEnumBasedOnDescription", "useSingleRequestParameter"] as const;
         for (const key of booleanKeys) {

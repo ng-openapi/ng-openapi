@@ -31,6 +31,19 @@ registerGoldenSuite("http-resource golden", {
             },
             plugins: [HttpResourcePlugin],
         }),
+        // Angular 22+ @Service() decorator on both the core services and the
+        // generated resources
+        "service-decorator": (input, output) => ({
+            input,
+            output,
+            options: {
+                dateType: "Date",
+                enumStyle: "enum",
+                generateServices: true,
+                serviceDecorator: "service",
+            },
+            plugins: [HttpResourcePlugin],
+        }),
         // Identifier decoration across core services, resources and models —
         // the resources barrel must re-derive the same decorated class names
         naming: (input, output) => ({

@@ -65,6 +65,13 @@ export interface GeneratorConfig {
         customizeMethodName?: (operationId: string) => string;
         /** Collapse each method's parameters into a single request object. */
         useSingleRequestParameter?: boolean;
+        /**
+         * Class decorator emitted on generated services/resources. `"service"`
+         * emits Angular 22+'s `@Service()` (pre-release; shorthand for exactly
+         * `@Injectable({ providedIn: "root" })`) — generated code will not
+         * compile on Angular ≤ 21. Default: `"injectable"`.
+         */
+        serviceDecorator?: "injectable" | "service";
         /** Prefix/suffix decoration of generated service/resource/model identifiers. */
         naming?: NamingOptions;
     };

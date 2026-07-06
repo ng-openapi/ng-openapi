@@ -49,7 +49,7 @@ Only generated with [`useSingleRequestParameter`](../api/configuration/options/u
 
 ### `services/*.service.ts`
 
-One injectable service per controller (OpenAPI tag), using `inject(HttpClient)` and this client's base-path token. Class names default to `<Tag>Service` and can be decorated via [`naming.services`](../api/configuration/options/naming.md) (file names are unaffected). Method names come from `operationId`, optionally transformed by [`customizeMethodName`](../api/configuration/options/customize-method-name.md). When [`validation.response`](../api/configuration/options/validation.md) is enabled, each method accepts a `parse` hook in its trailing options parameter.
+One injectable service per controller (OpenAPI tag), using `inject(HttpClient)` and this client's base-path token. Class names default to `<Tag>Service` and can be decorated via [`naming.services`](../api/configuration/options/naming.md) (file names are unaffected). Classes are decorated with `@Injectable({ providedIn: "root" })`, or Angular 22+'s `@Service()` when [`serviceDecorator`](../api/configuration/options/service-decorator.md) is set to `'service'`. Method names come from `operationId`, optionally transformed by [`customizeMethodName`](../api/configuration/options/customize-method-name.md). When [`validation.response`](../api/configuration/options/validation.md) is enabled, each method accepts a `parse` hook in its trailing options parameter.
 
 ### `tokens/index.ts`
 
