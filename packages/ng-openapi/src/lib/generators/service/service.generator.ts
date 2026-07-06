@@ -1,6 +1,7 @@
 import { Project, Scope, SourceFile } from "ts-morph";
 import {
     camelCase,
+    emitServiceDecorator,
     GeneratorConfig,
     getBasePathTokenName,
     getClientContextTokenName,
@@ -106,6 +107,7 @@ export class ServiceGenerator {
         const className = `${controllerName}Service`;
         const basePathTokenName = getBasePathTokenName(this.config.clientName);
         const clientContextTokenName = getClientContextTokenName(this.config.clientName);
+        const serviceDecorator = emitServiceDecorator(this.config.options);
 
         sourceFile.insertText(0, SERVICE_GENERATOR_HEADER_COMMENT(controllerName));
 
@@ -123,7 +125,7 @@ export class ServiceGenerator {
                 moduleSpecifier: "@angular/common/http",
             },
             {
-                namedImports: ["inject", "Injectable"],
+                namedImports: ["inject", serviceDecorator.namedImport],
                 moduleSpecifier: "@angular/core",
             },
             {
@@ -143,7 +145,7 @@ export class ServiceGenerator {
         const serviceClass = sourceFile.addClass({
             name: className,
             isExported: true,
-            decorators: [{ name: "Injectable", arguments: ['{ providedIn: "root" }'] }],
+            decorators: [serviceDecorator.decorator],
         });
 
         serviceClass.addProperty({

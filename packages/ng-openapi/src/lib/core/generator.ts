@@ -12,6 +12,7 @@ import {
 import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
 import { GeneratorConfig, isUrl, SpecLoadError, SpecParseError, SwaggerParser } from "@ng-openapi/shared";
 import { validateGeneratorConfig } from "./config-validation";
+import { detectAngularCoreVersion } from "./angular-version";
 import { GenerationResult, Reporter } from "./reporter";
 import * as fs from "fs";
 import * as path from "path";
@@ -73,6 +74,20 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
         warnings.push(message);
         reporter.onWarning?.(message);
     };
+
+    // Soft guard only: @Service() requires Angular 22+, but the workspace the
+    // CLI runs in is not always the workspace that compiles the output, so an
+    // undetectable or mismatched version must never block generation.
+    if (config.options.serviceDecorator === "service") {
+        const angularVersion = detectAngularCoreVersion();
+        if (angularVersion !== undefined && parseInt(angularVersion, 10) < 22) {
+            onWarning(
+                `serviceDecorator "service" emits @Service(), which requires Angular 22+ — ` +
+                    `found @angular/core ${angularVersion} in this workspace. ` +
+                    `Generated services will not compile there.`,
+            );
+        }
+    }
 
     // Ensure output directory exists
     if (!fs.existsSync(outputPath)) {

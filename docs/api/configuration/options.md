@@ -49,3 +49,4 @@ export default config;
 | [`responseTypeMapping`](options/response-type-mapping) | `Record<string, ResponseType>` | — | `undefined` | Pin the Angular `responseType` per content type |
 | [`customizeMethodName`](options/customize-method-name) | `(operationId) => string` | — | `undefined` | Derive method names from `operationId`s |
 | [`useSingleRequestParameter`](options/use-single-request-parameter) | `boolean` | — | `false` | One request object per method instead of positional parameters |
+| [`serviceDecorator`](options/service-decorator) | `'injectable' \| 'service'` | — | `'injectable'` | Emit Angular 22+'s `@Service()` instead of `@Injectable({ providedIn: 'root' })` |

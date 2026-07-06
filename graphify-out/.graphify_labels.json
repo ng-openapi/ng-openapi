@@ -108,7 +108,11 @@
   "106": "funding",
   "107": "publishConfig",
   "108": "scripts",
+  "109": "package.json",
+  "110": "service-decorator.md",
+  "111": "HttpParamsBuilderGenerator",
   "112": "CLAUDE.md",
+  "113": "client-name.md",
   "114": "provide<ClientName>Client provider",
   "115": "generate Command",
   "116": "clientName option",
@@ -151,5 +155,8 @@
   "153": "@ng-openapi/http-resource package",
   "154": "HttpResourcePlugin",
   "155": "@ng-openapi/zod package",
-  "157": "README.md"
+  "156": "`input`",
+  "157": "README.md",
+  "158": "validation.md",
+  "159": "output.md"
 }

@@ -31,5 +31,18 @@ registerGoldenSuite("http-resource golden", {
             },
             plugins: [HttpResourcePlugin],
         }),
+        // Angular 22+ @Service() decorator on both the core services and the
+        // generated resources
+        "service-decorator": (input, output) => ({
+            input,
+            output,
+            options: {
+                dateType: "Date",
+                enumStyle: "enum",
+                generateServices: true,
+                serviceDecorator: "service",
+            },
+            plugins: [HttpResourcePlugin],
+        }),
     },
 });

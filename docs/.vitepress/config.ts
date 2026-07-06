@@ -290,6 +290,10 @@ export default defineConfig({
                                             text: "Use Single Request Parameter",
                                             link: "/api/configuration/options/use-single-request-parameter",
                                         },
+                                        {
+                                            text: "Service Decorator",
+                                            link: "/api/configuration/options/service-decorator",
+                                        },
                                     ],
                                     collapsed: true,
                                 },

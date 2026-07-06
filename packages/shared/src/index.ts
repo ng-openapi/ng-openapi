@@ -44,6 +44,7 @@ export {
     emitHeaders,
     emitQueryParams,
     emitResponseTypeOption,
+    emitServiceDecorator,
     emitSignalAwareQueryParams,
     emitUrlConstruction,
     emitUrlExpression,
@@ -51,7 +52,7 @@ export {
     plainParamValue,
     signalAwareParamValue,
 } from "./emit";
-export type { HeadersEmitOptions } from "./emit";
+export type { HeadersEmitOptions, ServiceDecoratorEmit, ServiceDecoratorEmitOptions } from "./emit";
 
 // Utilities
 export {

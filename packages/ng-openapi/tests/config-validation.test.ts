@@ -34,6 +34,7 @@ describe("validateGeneratorConfig", () => {
                     generateServices: true,
                     generateEnumBasedOnDescription: false,
                     useSingleRequestParameter: true,
+                    serviceDecorator: "service",
                     validation: { response: true },
                     customHeaders: { "X-Api-Key": "k" },
                     responseTypeMapping: { "application/pdf": "blob" },
@@ -60,9 +61,13 @@ describe("validateGeneratorConfig", () => {
     });
 
     it("names the offending value for enum-like options", () => {
-        const issues = issuesOf({ ...validConfig, options: { dateType: "date", enumStyle: "unions" } });
+        const issues = issuesOf({
+            ...validConfig,
+            options: { dateType: "date", enumStyle: "unions", serviceDecorator: "Service" },
+        });
         expect(issues.find((i) => i.includes("dateType"))).toContain('"date"');
         expect(issues.find((i) => i.includes("enumStyle"))).toContain('"unions"');
+        expect(issues.find((i) => i.includes("serviceDecorator"))).toContain('"Service"');
     });
 
     it("validates option value types", () => {

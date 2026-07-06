@@ -26,3 +26,4 @@ export default {
 
 - Scoped interceptors are applied for resources as well
 - Currently only supports `GET` methods, as suggested by [Angular's documentation ↗️](https://angular.dev/guide/http/http-resource)
+- Generated resource classes honor [`serviceDecorator`](../options/service-decorator.md), so services and resources always use the same decorator

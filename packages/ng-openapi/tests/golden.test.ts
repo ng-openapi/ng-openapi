@@ -44,5 +44,12 @@ registerGoldenSuite("ng-openapi golden", {
             config.options.generateServices = false;
             return config;
         },
+        // Angular 22+ @Service() decorator; no compile-check variant until the
+        // repo's own Angular reaches 22 (Service does not exist below that)
+        "service-decorator": (input, output) => {
+            const config = baseConfig(input, output);
+            config.options.serviceDecorator = "service";
+            return config;
+        },
     },
 });
