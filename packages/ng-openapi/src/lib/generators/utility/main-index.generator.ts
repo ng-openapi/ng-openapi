@@ -1,6 +1,6 @@
 import { Project } from "ts-morph";
 import * as path from "path";
-import { GeneratorConfig, MAIN_INDEX_GENERATOR_HEADER_COMMENT } from "@ng-openapi/shared";
+import { GeneratorConfig, listGeneratedFileNames, MAIN_INDEX_GENERATOR_HEADER_COMMENT } from "@ng-openapi/shared";
 
 export class MainIndexGenerator {
     private project: Project;
@@ -35,9 +35,14 @@ export class MainIndexGenerator {
                 moduleSpecifier: "./providers",
             });
 
-            sourceFile.addExportDeclaration({
-                moduleSpecifier: "./services",
-            });
+            // A path-less spec generates no services (and no services/index.ts
+            // to re-export), even with generateServices enabled
+            const servicesDir = path.join(outputRoot, "services");
+            if (listGeneratedFileNames(this.project, servicesDir, ".service.ts").length > 0) {
+                sourceFile.addExportDeclaration({
+                    moduleSpecifier: "./services",
+                });
+            }
 
             sourceFile.addExportDeclaration({
                 moduleSpecifier: "./utils/file-download",

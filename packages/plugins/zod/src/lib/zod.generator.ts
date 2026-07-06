@@ -104,6 +104,10 @@ export class ZodGenerator implements IPluginGenerator {
         if (_statements.length > 0) {
             sourceFile.formatText();
             sourceFile.saveSync();
+        } else {
+            // Nothing to validate for this controller: drop the file from the
+            // Project so it neither reaches the index nor filesWritten
+            this.project.removeSourceFile(sourceFile);
         }
     }
 

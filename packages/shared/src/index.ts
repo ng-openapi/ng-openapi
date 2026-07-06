@@ -73,6 +73,7 @@ export {
     isPrimitiveType,
     isUrl,
     kebabCase,
+    listGeneratedFileNames,
     nullableType,
     pascalCase,
     pascalCaseForEnums,

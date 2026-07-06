@@ -1,0 +1,42 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Models Only API (no paths)",
+        "version": "1.0.0"
+    },
+    "paths": {},
+    "components": {
+        "schemas": {
+            "EventType": {
+                "type": "string",
+                "enum": ["created", "updated", "deleted"]
+            },
+            "WebhookEvent": {
+                "type": "object",
+                "required": ["id", "type", "createdAt"],
+                "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "type": { "$ref": "#/components/schemas/EventType" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "payload": {
+                        "type": "object",
+                        "additionalProperties": { "type": "string" }
+                    },
+                    "retryCount": { "type": "integer", "nullable": true }
+                }
+            },
+            "Subscription": {
+                "type": "object",
+                "required": ["url", "events"],
+                "properties": {
+                    "url": { "type": "string" },
+                    "events": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/EventType" }
+                    },
+                    "active": { "type": "boolean" }
+                }
+            }
+        }
+    }
+}

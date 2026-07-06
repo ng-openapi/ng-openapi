@@ -1,7 +1,6 @@
 import { Project } from "ts-morph";
-import * as fs from "fs";
 import * as path from "path";
-import { pascalCase, SERVICE_INDEX_GENERATOR_HEADER_COMMENT } from "@ng-openapi/shared";
+import { listGeneratedFileNames, pascalCase, SERVICE_INDEX_GENERATOR_HEADER_COMMENT } from "@ng-openapi/shared";
 
 export class HttpResourceIndexGenerator {
     private project: Project;
@@ -11,24 +10,27 @@ export class HttpResourceIndexGenerator {
     }
 
     generateIndex(outputRoot: string): void {
-        const servicesDir = path.join(outputRoot, "resources");
-        const indexPath = path.join(servicesDir, "index.ts");
+        const resourcesDir = path.join(outputRoot, "resources");
+
+        // Export what this run generated (from the Project, not the disk):
+        // path-less specs produce no resources and no resources/ directory
+        const resourceFiles = listGeneratedFileNames(this.project, resourcesDir, ".resource.ts");
+
+        if (resourceFiles.length === 0) {
+            return;
+        }
+
+        const indexPath = path.join(resourcesDir, "index.ts");
         const sourceFile = this.project.createSourceFile(indexPath, "", { overwrite: true });
 
         sourceFile.insertText(0, SERVICE_INDEX_GENERATOR_HEADER_COMMENT);
 
-        // get all service files
-        const serviceFiles = fs
-            .readdirSync(servicesDir)
-            .filter((file) => file.endsWith(".resource.ts"))
-            .map((file) => file.replace(".resource.ts", ""));
-
         // Add exports
-        serviceFiles.forEach((serviceName) => {
-            const className = pascalCase(serviceName) + "Resource";
+        resourceFiles.forEach((resourceName) => {
+            const className = pascalCase(resourceName) + "Resource";
             sourceFile.addExportDeclaration({
                 namedExports: [className],
-                moduleSpecifier: `./${serviceName}.resource`,
+                moduleSpecifier: `./${resourceName}.resource`,
             });
         });
 
