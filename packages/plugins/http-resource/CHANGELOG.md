@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.1](https://github.com/ng-openapi/ng-openapi/compare/http-resource-v0.1.0...http-resource-v0.1.1) (2026-07-06)
+
+
+### Features
+
+* add modelFileStructure option for one model file per schema ([#113](https://github.com/ng-openapi/ng-openapi/issues/113)) ([085cc53](https://github.com/ng-openapi/ng-openapi/commit/085cc5339acf7edc8f052488e47581227d19a57b)), closes [#62](https://github.com/ng-openapi/ng-openapi/issues/62)
+* add naming customization for generated services, resources and models ([#111](https://github.com/ng-openapi/ng-openapi/issues/111)) ([0ac5ffe](https://github.com/ng-openapi/ng-openapi/commit/0ac5ffe6ba50b1dc76ae07ca50a593957ef2d223)), closes [#16](https://github.com/ng-openapi/ng-openapi/issues/16)
+* send Accept header derived from response content types ([#112](https://github.com/ng-openapi/ng-openapi/issues/112)) ([6d3a932](https://github.com/ng-openapi/ng-openapi/commit/6d3a932da5b0f113dcd272937cdecfd00224f42e))
+* support emitting Angular 22 @Service decorator for generated services ([#110](https://github.com/ng-openapi/ng-openapi/issues/110)) ([54bb1f4](https://github.com/ng-openapi/ng-openapi/commit/54bb1f4da6365c823d59573daae4b4b20d5361d2)), closes [#104](https://github.com/ng-openapi/ng-openapi/issues/104)
+
+
+### Bug Fixes
+
+* **ng-openapi:** tolerate path-less specs — derive index exports from the Project ([#107](https://github.com/ng-openapi/ng-openapi/issues/107)) ([58c01e6](https://github.com/ng-openapi/ng-openapi/commit/58c01e67149f6918df27445cdbe0cff02a0f7752))
+
 ## [0.1.0](https://github.com/ng-openapi/ng-openapi/compare/http-resource-v0.0.32...http-resource-v0.1.0) (2026-07-06)
 
 
