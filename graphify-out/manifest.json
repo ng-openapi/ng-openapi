@@ -145,8 +145,8 @@
     "semantic_hash": ""
   },
   "packages/ng-openapi/src/lib/generators/type/type.generator.ts": {
-    "mtime": 1783339577.1868525,
-    "ast_hash": "df0f0efd651750d5faef4f6b852f93f5",
+    "mtime": 1783341154.5076928,
+    "ast_hash": "10f288a8ee629124a6401ec14b82058d",
     "semantic_hash": ""
   },
   "packages/ng-openapi/src/lib/generators/utility/base-interceptor.generator.ts": {
@@ -1510,8 +1510,8 @@
     "semantic_hash": ""
   },
   "docs/api/configuration/options/model-file-structure.md": {
-    "mtime": 1783339580.4558468,
-    "ast_hash": "ca097b2f2d19ed2c388dc3027c19b73c",
+    "mtime": 1783341175.5135689,
+    "ast_hash": "fd27b47bfe2dc22a15ddc4f87db02221",
     "semantic_hash": ""
   },
   "packages/ng-openapi/tests/__golden__/edge-cases/per-type-models/_manifest.txt": {
@@ -1562,6 +1562,11 @@
   "packages/plugins/http-resource/tests/__golden__/swagger-2.0/per-type-models/_manifest.txt": {
     "mtime": 1783338898.4985654,
     "ast_hash": "4f4ac6019cca5de76ac2c4bcd3463af4",
+    "semantic_hash": ""
+  },
+  "packages/ng-openapi/tests/per-type-reserved-names.test.ts": {
+    "mtime": 1783341224.9216173,
+    "ast_hash": "3a246a8e962062c08c8d4215dacfa973",
     "semantic_hash": ""
   }
 }

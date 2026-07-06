@@ -55,6 +55,6 @@ export interface Order {
 ## Notes
 
 - File names derive from the **undecorated** schema name: [`naming.models`](./naming) prefixes/suffixes decorate identifiers only, consistent with service file naming
-- Two schemas whose names kebab-case to the same file name (e.g. `UserProfile` and `user_profile`) are disambiguated with a numeric suffix (`user-profile-2.ts`) and reported as a warning
+- Two schemas whose names kebab-case to the same file name (e.g. `UserProfile` and `user_profile`) are disambiguated with a numeric suffix (`user-profile-2.ts`) and reported as a warning. The fixed file names `index`, `request-options` and `request-params` are reserved, so schemas named like them (e.g. `Index`) get a suffixed file too
 - Schemas whose (decorated) **type names** collide — with each other, or with the built-in `RequestOptions` — produce TypeScript code that does not compile, in either file structure. Rename the schema or use [`naming.models`](./naming) to move the generated identifiers out of the way
 - With [`useSingleRequestParameter`](./use-single-request-parameter), `models/request-params.ts` is generated and re-exported through the barrel exactly as in single-file mode

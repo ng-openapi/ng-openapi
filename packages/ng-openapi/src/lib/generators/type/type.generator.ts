@@ -147,12 +147,17 @@ export class TypeGenerator {
 
     private generatePerType(definitions: Record<string, SwaggerDefinition>): void {
         const registry = new ModelFileRegistry(this.onWarning);
-        // Claimed before user schemas so a schema named "RequestOptions" gets
-        // a numeric-suffixed file deterministically. File names only: a schema
-        // whose decorated identifier equals another export (e.g. RequestOptions
-        // itself) does not compile in either mode — single-file collides at the
-        // declarations, per-type at the barrel re-exports.
+        // Claimed before user schemas so schemas named like the fixed model
+        // files fall into the numeric-suffix path instead of clobbering the
+        // barrel ("index"), the SDK-types file, or the file
+        // RequestParamsGenerator writes later with overwrite ("request-params").
+        // File names only: a schema whose decorated identifier equals another
+        // export (e.g. RequestOptions itself) does not compile in either mode —
+        // single-file collides at the declarations, per-type at the barrel
+        // re-exports.
         const sdkFileName = registry.reserveExact("request-options");
+        registry.reserveExact("index");
+        registry.reserveExact("request-params");
 
         const entries = Object.entries(definitions);
         entries.forEach(([rawName]) => registry.reserveForSchema(rawName));
