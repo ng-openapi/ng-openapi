@@ -127,7 +127,9 @@ export class ProviderGenerator {
 
         const dateInterceptorBlock = hasDateInterceptor
             ? `
-            // Date interceptor first so later interceptors see Date instances
+            // Date interceptor first: it runs first on requests (a no-op) and, being
+            // outermost, its response transform applies last — the other client
+            // interceptors see the raw body; only the service sees Date instances
             if (config.enableDateTransform !== false) {
                 interceptorFns.push(dateInterceptorWithRegex(config.dateTransformRegex));
             }
