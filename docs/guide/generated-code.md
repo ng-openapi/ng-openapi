@@ -15,6 +15,7 @@ With the default configuration (`generateServices: true`, `dateType: "Date"`):
 <output>/
 ├── models/
 │   ├── index.ts             # TypeScript interfaces, enums / unions
+│   ├── *.ts                 # One file per schema (only with modelFileStructure: 'per-type')
 │   └── request-params.ts    # Request-object interfaces (only with useSingleRequestParameter)
 ├── services/
 │   ├── index.ts             # Service exports
@@ -42,6 +43,8 @@ With [`generateServices: false`](../api/configuration/options/generate-services.
 ### `models/index.ts`
 
 One interface per schema in the spec, plus enums in the style you chose via [`enumStyle`](../api/configuration/options/enum-style.md). Date fields are typed `Date` or `string` depending on [`dateType`](../api/configuration/options/date-type.md). Type names can be decorated with a prefix/suffix via [`naming.models`](../api/configuration/options/naming.md).
+
+With [`modelFileStructure: 'per-type'`](../api/configuration/options/model-file-structure.md), each schema instead gets its own `models/<kebab-name>.ts` file (plus `models/request-options.ts` for the `RequestOptions` interface), and `models/index.ts` becomes a pure barrel re-exporting them — imports from `../models` and the main `index.ts` are unaffected.
 
 ### `models/request-params.ts`
 

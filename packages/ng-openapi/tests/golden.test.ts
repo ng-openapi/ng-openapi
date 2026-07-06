@@ -51,6 +51,14 @@ registerGoldenSuite("ng-openapi golden", {
             config.options.serviceDecorator = "service";
             return config;
         },
+        // One model file per schema: kebab-case files, manual cross-model
+        // imports, models/index.ts as a barrel; service imports must keep
+        // resolving to "../models"
+        "per-type-models": (input, output) => {
+            const config = baseConfig(input, output);
+            config.options.modelFileStructure = "per-type";
+            return config;
+        },
         // Identifier decoration: prefixed service classes, suffixed models —
         // model declarations and every reference must agree byte-for-byte
         naming: (input, output) => {

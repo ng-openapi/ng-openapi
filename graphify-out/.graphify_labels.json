@@ -161,5 +161,15 @@
   "159": "cli.ts",
   "160": "no-import-cycles.test.ts",
   "161": "`useSingleRequestParameter`",
-  "162": "namedInputs"
+  "162": "namedInputs",
+  "163": "`validation`",
+  "164": "`HttpResourcePlugin`",
+  "165": "ServiceMethodParamsGenerator",
+  "166": "index.ts",
+  "167": "ServiceMethodOverloadsGenerator",
+  "168": "ServiceMethodBodyGenerator",
+  "169": "ServiceGenerator",
+  "170": "ServiceMethodGenerator",
+  "171": "swagger-parser.test.ts",
+  "172": "ProviderGenerator"
 }

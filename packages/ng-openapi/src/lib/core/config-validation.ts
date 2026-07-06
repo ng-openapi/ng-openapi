@@ -73,6 +73,15 @@ export function validateGeneratorConfig(config: unknown): asserts config is Gene
                 `\`options.serviceDecorator\` must be "injectable" or "service", got ${JSON.stringify(options.serviceDecorator)}`,
             );
         }
+        if (
+            options.modelFileStructure !== undefined &&
+            options.modelFileStructure !== "single" &&
+            options.modelFileStructure !== "per-type"
+        ) {
+            issues.push(
+                `\`options.modelFileStructure\` must be "single" or "per-type", got ${JSON.stringify(options.modelFileStructure)}`,
+            );
+        }
 
         const booleanKeys = [
             "generateServices",

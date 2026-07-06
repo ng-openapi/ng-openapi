@@ -29,6 +29,25 @@ registerCompileCheckSuite("ng-openapi compile-check (naming)", (input, output) =
     },
 }));
 
+// per-type model files compute cross-model imports manually (no language
+// service); only a strict compile pass proves every reference in every
+// split file actually resolves, including decorated identifiers and the
+// request-params barrel interplay
+registerCompileCheckSuite("ng-openapi compile-check (per-type models)", (input, output) => ({
+    input,
+    output,
+    options: {
+        dateType: "Date",
+        enumStyle: "union",
+        generateServices: true,
+        useSingleRequestParameter: true,
+        modelFileStructure: "per-type",
+        naming: {
+            models: { suffix: "Dto" },
+        },
+    },
+}));
+
 // customHeaders emits the default-header guards into every method body —
 // the only compile coverage that branch gets, since no golden variant sets it
 registerCompileCheckSuite("ng-openapi compile-check (custom headers)", (input, output) => ({

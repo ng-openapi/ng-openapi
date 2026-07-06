@@ -21,13 +21,39 @@ export class TypeResolver {
     private readonly resolutionCache = new WeakMap<SwaggerDefinition, string>();
     private readonly pascalCaseCache = new Map<string, string>();
     private readonly sanitizedNameCache = new Map<string, string>();
+    private referenceSink: Set<string> | null = null;
 
     constructor(config: TypeMappingConfig, onWarning?: (message: string) => void) {
         this.config = config;
         this.onWarning = onWarning;
     }
 
+    /**
+     * Runs `fn` while recording the raw schema name of every `$ref` resolved
+     * during its execution (allOf/oneOf/anyOf members, array items and inline
+     * object properties all funnel through resolve()). Per-type model
+     * generation uses this to compute cross-file imports without the
+     * language service.
+     */
+    withReferenceTracking<T>(sink: Set<string>, fn: () => T): T {
+        const previous = this.referenceSink;
+        this.referenceSink = sink;
+        try {
+            return fn();
+        } finally {
+            this.referenceSink = previous;
+        }
+    }
+
     resolve(schema: SwaggerDefinition): string {
+        // Record before the cache check so a cache hit still reports the reference
+        if (schema.$ref && this.referenceSink) {
+            const refName = schema.$ref.split("/").pop();
+            if (refName) {
+                this.referenceSink.add(refName);
+            }
+        }
+
         const cached = this.resolutionCache.get(schema);
         if (cached !== undefined) {
             return cached;
