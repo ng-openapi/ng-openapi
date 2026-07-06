@@ -1,5 +1,5 @@
 import { SwaggerDefinition, TypeMappingConfig, TypeSchema } from "../types";
-import { pascalCaseForEnums } from "./string.utils";
+import { getModelTypeName } from "./functions/class-names";
 
 /**
  * Convert OpenAPI/Swagger types to TypeScript types
@@ -40,7 +40,7 @@ export function getTypeScriptType(
     // Handle references
     if (schema.$ref) {
         const refName = schema.$ref.split("/").pop();
-        return nullableType(pascalCaseForEnums(refName!), nullable);
+        return nullableType(getModelTypeName(refName!, config.options.naming?.models), nullable);
     }
 
     // Handle arrays

@@ -1,12 +1,19 @@
 import { Project } from "ts-morph";
 import * as path from "path";
-import { listGeneratedFileNames, pascalCase, SERVICE_INDEX_GENERATOR_HEADER_COMMENT } from "@ng-openapi/shared";
+import {
+    getServiceClassName,
+    listGeneratedFileNames,
+    NameDecoration,
+    SERVICE_INDEX_GENERATOR_HEADER_COMMENT,
+} from "@ng-openapi/shared";
 
 export class ServiceIndexGenerator {
     private project: Project;
+    private readonly naming?: NameDecoration;
 
-    constructor(project: Project) {
+    constructor(project: Project, naming?: NameDecoration) {
         this.project = project;
+        this.naming = naming;
     }
 
     generateIndex(outputRoot: string): void {
@@ -27,7 +34,7 @@ export class ServiceIndexGenerator {
 
         // Add exports
         serviceFiles.forEach((serviceName) => {
-            const className = pascalCase(serviceName) + "Service";
+            const className = getServiceClassName(serviceName, this.naming);
             sourceFile.addExportDeclaration({
                 namedExports: [className],
                 moduleSpecifier: `./${serviceName}.service`,

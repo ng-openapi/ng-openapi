@@ -294,6 +294,10 @@ export default defineConfig({
                                             text: "Service Decorator",
                                             link: "/api/configuration/options/service-decorator",
                                         },
+                                        {
+                                            text: "Naming",
+                                            link: "/api/configuration/options/naming",
+                                        },
                                     ],
                                     collapsed: true,
                                 },

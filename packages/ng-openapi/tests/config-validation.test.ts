@@ -39,6 +39,11 @@ describe("validateGeneratorConfig", () => {
                     customHeaders: { "X-Api-Key": "k" },
                     responseTypeMapping: { "application/pdf": "blob" },
                     customizeMethodName: (id: string) => id,
+                    naming: {
+                        services: { prefix: "Api" },
+                        resources: { suffix: "ApiResource" },
+                        models: { prefix: "Api", suffix: "Dto" },
+                    },
                 },
                 plugins: [class {}],
             }),
@@ -68,6 +73,34 @@ describe("validateGeneratorConfig", () => {
         expect(issues.find((i) => i.includes("dateType"))).toContain('"date"');
         expect(issues.find((i) => i.includes("enumStyle"))).toContain('"unions"');
         expect(issues.find((i) => i.includes("serviceDecorator"))).toContain('"Service"');
+    });
+
+    it("accepts an empty-string naming suffix (drops the default)", () => {
+        expect(issuesOf({ ...validConfig, options: { ...validConfig.options, naming: { services: { suffix: "" } } } })).toEqual(
+            [],
+        );
+    });
+
+    it("validates naming decorations as identifier fragments", () => {
+        const issues = issuesOf({
+            ...validConfig,
+            options: {
+                ...validConfig.options,
+                naming: {
+                    services: { prefix: "1Bad" },
+                    resources: "Api",
+                    models: { suffix: "My-Dto" },
+                },
+            },
+        });
+        expect(issues.find((i) => i.includes("naming.services.prefix"))).toContain('"1Bad"');
+        expect(issues.some((i) => i.includes("`options.naming.resources`"))).toBe(true);
+        expect(issues.find((i) => i.includes("naming.models.suffix"))).toContain('"My-Dto"');
+    });
+
+    it("rejects a non-object naming option", () => {
+        const issues = issuesOf({ ...validConfig, options: { ...validConfig.options, naming: "Api" } });
+        expect(issues.some((i) => i.includes("`options.naming`"))).toBe(true);
     });
 
     it("validates option value types", () => {
