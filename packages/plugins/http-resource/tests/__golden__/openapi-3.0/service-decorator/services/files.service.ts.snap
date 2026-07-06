@@ -37,6 +37,10 @@ export class FilesService {
         } else {
             headers = new HttpHeaders(options?.headers);
         }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
         // Remove Content-Type for multipart (browser will set it with boundary)
         headers = headers.delete('Content-Type');
 

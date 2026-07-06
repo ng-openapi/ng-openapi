@@ -46,6 +46,10 @@ export class ThingsService {
         } else {
             headers = new HttpHeaders(options?.headers);
         }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
 
         return this.httpClient.request('get', url, {
             observe,
@@ -72,6 +76,32 @@ export class ThingsService {
 
         return this.httpClient.request('post', url, {
             body: null,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    getVendorThing(observe?: 'body', options?: RequestOptions<'json'>): Observable<UserProfile>;
+    getVendorThing(observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<UserProfile>>;
+    getVendorThing(observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<UserProfile>>;
+    getVendorThing(observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/things/vendor`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/vnd.users+json;version=1.0');
+        }
+
+        return this.httpClient.request('get', url, {
             observe,
             headers,
             reportProgress: options?.reportProgress,

@@ -27,4 +27,9 @@ export interface NormalizedOperation extends PathInfo {
     urlEncodedFields: string[];
     /** derived from the first success response (200/201/202/204/206) */
     responseType: ResponseKind;
+    /**
+     * Accept header value derived from the same success response: its content
+     * types that agree with responseType (unset when none are declared).
+     */
+    acceptHeader?: string;
 }

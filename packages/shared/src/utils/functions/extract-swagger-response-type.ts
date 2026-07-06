@@ -2,6 +2,18 @@ import type { SwaggerDefinition, SwaggerResponse } from "../../types/swagger.typ
 import type { TypeMappingConfig } from "../../types/config.types";
 import { getTypeScriptType } from "../type.utils";
 
+/** Result of analyzing a response's content types once for both concerns. */
+export interface ResponseTypeInfo {
+    /** Angular `responseType` of the highest-priority content type. */
+    responseType: "json" | "blob" | "arraybuffer" | "text";
+    /**
+     * Accept header value: the declared content types whose inferred kind
+     * matches `responseType` (priority winner first, comma-joined, media type
+     * parameters preserved). Unset when the response declares no content.
+     */
+    acceptHeader?: string;
+}
+
 /**
  * Angular `responseType` for a response: inspects every content type the
  * response declares and picks the highest-priority match (JSON-like content
@@ -12,10 +24,23 @@ export function getResponseTypeFromResponse(
     response: SwaggerResponse,
     responseTypeMapping?: { [p: string]: "json" | "blob" | "arraybuffer" | "text" },
 ): "json" | "blob" | "arraybuffer" | "text" {
+    return getResponseInfoFromResponse(response, responseTypeMapping).responseType;
+}
+
+/**
+ * Same content-type analysis as getResponseTypeFromResponse, additionally
+ * deriving the Accept header value from the content types that agree with the
+ * chosen responseType — advertising a type the method cannot parse would
+ * invite a response Angular's HttpClient chokes on.
+ */
+export function getResponseInfoFromResponse(
+    response: SwaggerResponse,
+    responseTypeMapping?: { [p: string]: "json" | "blob" | "arraybuffer" | "text" },
+): ResponseTypeInfo {
     const content = response.content || {};
 
     if (Object.keys(content).length === 0) {
-        return "json"; // default for empty content
+        return { responseType: "json" }; // default for empty content
     }
 
     // Collect all possible response types with their priorities
@@ -88,7 +113,15 @@ export function getResponseTypeFromResponse(
 
     // Sort by priority (lower number = higher priority) and return the best match
     responseTypes.sort((a, b) => a.priority - b.priority);
-    return responseTypes[0]?.type || "json";
+    const responseType = responseTypes[0]?.type || "json";
+    const acceptedContentTypes = responseTypes
+        .filter((candidate) => candidate.type === responseType)
+        .map((candidate) => candidate.contentType);
+
+    return {
+        responseType,
+        acceptHeader: acceptedContentTypes.length > 0 ? acceptedContentTypes.join(", ") : undefined,
+    };
 }
 
 /**

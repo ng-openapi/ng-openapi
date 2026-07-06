@@ -5,11 +5,13 @@ export { getModelTypeName, getResourceClassName, getServiceClassName } from "./c
 export { hasDuplicateFunctionNames } from "./duplicate-function-name";
 export { extractPaths } from "./extract-paths";
 export {
+    getResponseInfoFromResponse,
     getResponseType,
     getResponseTypeFromResponse,
     inferResponseTypeFromContentType,
     isPrimitiveType,
 } from "./extract-swagger-response-type";
+export type { ResponseTypeInfo } from "./extract-swagger-response-type";
 export { getRequestBodyType } from "./get-request-body-type";
 export { isDataTypeInterface } from "./is-data-type-interface";
 export { generateParseRequestTypeParams } from "./generate-parse-request-type-params";

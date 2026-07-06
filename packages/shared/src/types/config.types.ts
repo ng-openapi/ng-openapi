@@ -57,6 +57,11 @@ export interface GeneratorConfig {
         generateEnumBasedOnDescription?: boolean;
         /** Default headers added to every request when not already present. */
         customHeaders?: Record<string, string>;
+        /**
+         * Send an Accept header derived from each operation's response content
+         * types (caller-supplied and customHeaders values win). Default: true.
+         */
+        emitAcceptHeader?: boolean;
         /** Pin the Angular responseType per response content type. */
         responseTypeMapping?: {
             [contentType: string]: "json" | "blob" | "arraybuffer" | "text";
@@ -127,6 +132,7 @@ export interface MethodGenOptions {
             response?: boolean;
         };
         customHeaders?: Record<string, string>;
+        emitAcceptHeader?: boolean;
         customizeMethodName?: (operationId: string) => string;
         useSingleRequestParameter?: boolean;
         naming?: {

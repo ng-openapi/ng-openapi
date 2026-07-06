@@ -16,21 +16,31 @@ export class HttpResourceMethodBodyGenerator {
     }
 
     generateMethodBody(operation: NormalizedOperation): string {
-        const bodyParts = [this.generateDefaultHeaders(), this.generateHttpResource(operation)];
+        const bodyParts = [this.generateDefaultHeaders(operation), this.generateHttpResource(operation)];
 
         return bodyParts.filter(Boolean).join("\n");
     }
 
     /**
      * Caller headers flow through `...requestOptions` untouched; a headers
-     * merge is only needed when the config declares default headers.
+     * merge is only needed when the config declares default headers or the
+     * operation derives an Accept header from its response content types.
      */
-    private generateDefaultHeaders(): string {
-        const customHeaders = this.config.options.customHeaders;
-        if (!customHeaders || Object.keys(customHeaders).length === 0) {
+    private generateDefaultHeaders(operation: NormalizedOperation): string {
+        const defaultHeaders = this.defaultHeaders(operation);
+        if (Object.keys(defaultHeaders).length === 0) {
             return "";
         }
-        return emitDefaultHeadersMerge("requestOptions", customHeaders);
+        return emitDefaultHeadersMerge("requestOptions", defaultHeaders);
+    }
+
+    /** Spec-derived Accept first so configured customHeaders can override it. */
+    private defaultHeaders(operation: NormalizedOperation): Record<string, string> {
+        const emitAccept = this.config.options.emitAcceptHeader ?? true;
+        return {
+            ...(emitAccept && operation.acceptHeader ? { Accept: operation.acceptHeader } : {}),
+            ...this.config.options.customHeaders,
+        };
     }
 
     private generateRequestOptions(operation: NormalizedOperation): string {
@@ -48,7 +58,7 @@ export class HttpResourceMethodBodyGenerator {
             entries.push("params");
         }
 
-        if (this.config.options.customHeaders && Object.keys(this.config.options.customHeaders).length > 0) {
+        if (Object.keys(this.defaultHeaders(operation)).length > 0) {
             entries.push("headers");
         }
 

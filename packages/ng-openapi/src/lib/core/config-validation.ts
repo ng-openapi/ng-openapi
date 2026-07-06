@@ -74,7 +74,12 @@ export function validateGeneratorConfig(config: unknown): asserts config is Gene
             );
         }
 
-        const booleanKeys = ["generateServices", "generateEnumBasedOnDescription", "useSingleRequestParameter"] as const;
+        const booleanKeys = [
+            "generateServices",
+            "generateEnumBasedOnDescription",
+            "useSingleRequestParameter",
+            "emitAcceptHeader",
+        ] as const;
         for (const key of booleanKeys) {
             if (options[key] !== undefined && typeof options[key] !== "boolean") {
                 issues.push(`\`options.${key}\` must be a boolean`);

@@ -107,6 +107,15 @@ describe("normalizeSpec", () => {
         // 201 with no content → json default
         expect(normalized.operations.find((o) => o.operationId === "upload")!.responseType).toBe("json");
     });
+
+    it("derives acceptHeader from the same success response", () => {
+        expect(normalized.operations.find((o) => o.operationId === "getOrder")!.acceptHeader).toBe(
+            "application/json",
+        );
+        expect(normalized.operations.find((o) => o.operationId === "token")!.acceptHeader).toBe("application/pdf");
+        // 201 with no content → nothing to advertise
+        expect(normalized.operations.find((o) => o.operationId === "upload")!.acceptHeader).toBeUndefined();
+    });
 });
 
 describe("normalizeSchema (OpenAPI 3.1 constructs)", () => {
