@@ -183,6 +183,42 @@
                 }
             }
         },
+        "/files/import": {
+            "post": {
+                "tags": ["files"],
+                "operationId": "importFile",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "allOf": [
+                                    { "$ref": "#/components/schemas/ImportRequest" },
+                                    {
+                                        "type": "object",
+                                        "required": ["file"],
+                                        "properties": {
+                                            "file": { "type": "string", "format": "binary" },
+                                            "category": { "type": "string" }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "imported",
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/FileInfo" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/token": {
             "post": {
                 "tags": ["auth"],
@@ -366,6 +402,14 @@
                     "accessToken": { "type": "string" },
                     "expiresIn": { "type": "integer" },
                     "refreshToken": { "type": "string", "nullable": true }
+                }
+            },
+            "ImportRequest": {
+                "type": "object",
+                "required": ["source"],
+                "properties": {
+                    "source": { "type": "string" },
+                    "overwrite": { "type": "boolean" }
                 }
             },
             "FileInfo": {

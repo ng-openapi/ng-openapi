@@ -12,7 +12,7 @@ import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { UploadFileParams, RequestOptions, FileInfo } from "../models";
+import { UploadFileParams, RequestOptions, FileInfo, ImportFileParams } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class FilesService {
@@ -58,6 +58,50 @@ export class FilesService {
         }
         if (description !== undefined) {
             formData.append('description', String(description));
+        }
+
+        return this.httpClient.request('post', url, {
+            body: formData,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    importFile(request: ImportFileParams, observe?: 'body', options?: RequestOptions<'json'>): Observable<FileInfo>;
+    importFile(request: ImportFileParams, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<FileInfo>>;
+    importFile(request: ImportFileParams, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<FileInfo>>;
+    importFile(request: ImportFileParams, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const { source, file, overwrite, category } = request;
+        const url = `${this.basePath}/files/import`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+        // Remove Content-Type for multipart (browser will set it with boundary)
+        headers = headers.delete('Content-Type');
+
+        const formData = new FormData();
+        if (source !== undefined) {
+            formData.append('source', String(source));
+        }
+        if (overwrite !== undefined) {
+            formData.append('overwrite', String(overwrite));
+        }
+        if (file !== undefined) {
+            formData.append('file', file);
+        }
+        if (category !== undefined) {
+            formData.append('category', String(category));
         }
 
         return this.httpClient.request('post', url, {
