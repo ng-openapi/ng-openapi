@@ -31,6 +31,11 @@ on:
         required: false
         default: false
         type: boolean
+      nx_cloud:
+        description: 'Use Nx Cloud (remote cache & distribution). Turn off to run the build without any Nx Cloud features.'
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: read
@@ -41,6 +46,12 @@ jobs:
   publish:
     name: Publish single package
     runs-on: ubuntu-latest
+    env:
+      # Nx Cloud is on by default. Setting the `nx_cloud` dispatch input to false
+      # exports NX_NO_CLOUD=true, which disables all Nx Cloud features (remote
+      # cache, distribution) for every nx command in this job. Empty string on
+      # tag-push / cloud-on runs is treated as unset by Nx.
+      NX_NO_CLOUD: ${{ github.event.inputs.nx_cloud == 'false' && 'true' || '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
