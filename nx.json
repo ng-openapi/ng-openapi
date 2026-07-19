@@ -2,7 +2,7 @@
     "extends": "nx/presets/npm.json",
     "$schema": "./node_modules/nx/schemas/nx-schema.json",
     "defaultBase": "main",
-    "nxCloudId": "687430d7011c6a6c64494347",
+    "neverConnectToCloud": true,
     "namedInputs": {
         "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"],
         "default": ["{projectRoot}/**/*", "sharedGlobals"]
