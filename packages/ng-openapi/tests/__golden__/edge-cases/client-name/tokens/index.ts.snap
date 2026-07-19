@@ -1,5 +1,5 @@
 import { InjectionToken } from "@angular/core";
-import { HttpInterceptor, HttpContextToken } from "@angular/common/http";
+import { HttpInterceptorFn, HttpContextToken } from "@angular/common/http";
 
 /**
  * Injection token for the PetsApi client base API path
@@ -9,9 +9,10 @@ export const BASE_PATH_PETSAPI = new InjectionToken<string>('BASE_PATH_PETSAPI',
     factory: () => '/api', // Default fallback
 });
 /**
- * Injection token for the PetsApi client HTTP interceptor instances
+ * Injection token carrying the PetsApi client's scoped interceptor chain,
+ * normalized to functional interceptors. Populated by the client's provide function.
  */
-export const HTTP_INTERCEPTORS_PETSAPI = new InjectionToken<HttpInterceptor[]>('HTTP_INTERCEPTORS_PETSAPI', {
+export const HTTP_INTERCEPTOR_FNS_PETSAPI = new InjectionToken<HttpInterceptorFn[]>('HTTP_INTERCEPTOR_FNS_PETSAPI', {
     providedIn: 'root',
     factory: () => [], // Default empty array
 });

@@ -101,19 +101,18 @@ provideDefaultClient({
 
 ### Manual Setup
 
-`DateInterceptor` is class-based, so it is registered through the `HTTP_INTERCEPTORS` multi-provider (`withInterceptors` only accepts functional interceptors):
+Use the generated functional `dateInterceptor` with `withInterceptors(...)`:
 
 ```typescript
-import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from "@angular/common/http";
-import { DateInterceptor } from "./client/utils/date-transformer";
+import { provideHttpClient, withInterceptors } from "@angular/common/http";
+import { dateInterceptor } from "./client/utils/date-transformer";
 
 export const appConfig: ApplicationConfig = {
-    providers: [
-        provideHttpClient(withInterceptorsFromDi()),
-        { provide: HTTP_INTERCEPTORS, useClass: DateInterceptor, multi: true },
-    ],
+    providers: [provideHttpClient(withInterceptors([dateInterceptor]))],
 };
 ```
+
+Note that registered this way, the transform applies to all `HttpClient` requests, not just this client's. The class-based `DateInterceptor` remains available for DI setups via the `HTTP_INTERCEPTORS` multi-provider and `withInterceptorsFromDi()` — see the [Date Transformer reference](../api/utilities/date-transformer.md#manual-setup).
 
 ## Which Strings Are Detected as Dates?
 
@@ -132,11 +131,12 @@ provideDefaultClient({
 });
 ```
 
-`transformDates` and `DateInterceptor` also accept the regex directly, so you can
-reuse them in a manual interceptor setup:
+`dateInterceptorWithRegex`, `transformDates`, and `DateInterceptor` also accept the
+regex directly, so you can reuse them in a manual interceptor setup:
 
 ```typescript
-new DateInterceptor(/your-custom-regex/);
+dateInterceptorWithRegex(/your-custom-regex/); // functional
+new DateInterceptor(/your-custom-regex/); // class-based
 transformDates(responseBody, /your-custom-regex/);
 ```
 

@@ -1,9 +1,11 @@
-import { Project, Scope } from "ts-morph";
+import { Project, Scope, VariableDeclarationKind } from "ts-morph";
 import * as path from "path";
 import {
     BASE_INTERCEPTOR_HEADER_COMMENT,
+    getBaseInterceptorClassName,
     getClientContextTokenName,
-    getInterceptorsTokenName,
+    getClientInterceptorFnName,
+    getInterceptorFnsTokenName,
 } from "@ng-openapi/shared";
 
 export class BaseInterceptorGenerator {
@@ -23,16 +25,25 @@ export class BaseInterceptorGenerator {
 
         sourceFile.insertText(0, BASE_INTERCEPTOR_HEADER_COMMENT(this.#clientName));
 
-        const interceptorsTokenName = getInterceptorsTokenName(this.#clientName);
+        const interceptorFnsTokenName = getInterceptorFnsTokenName(this.#clientName);
         const clientContextTokenName = getClientContextTokenName(this.#clientName);
+        const interceptorFnName = getClientInterceptorFnName(this.#clientName);
 
         sourceFile.addImportDeclarations([
             {
-                namedImports: ["HttpContextToken", "HttpEvent", "HttpHandler", "HttpInterceptor", "HttpRequest"],
+                namedImports: [
+                    "HttpContextToken",
+                    "HttpEvent",
+                    "HttpHandler",
+                    "HttpHandlerFn",
+                    "HttpInterceptor",
+                    "HttpInterceptorFn",
+                    "HttpRequest",
+                ],
                 moduleSpecifier: "@angular/common/http",
             },
             {
-                namedImports: ["inject", "Injectable"],
+                namedImports: ["EnvironmentInjector", "inject", "Injectable", "runInInjectionContext"],
                 moduleSpecifier: "@angular/core",
             },
             {
@@ -40,14 +51,65 @@ export class BaseInterceptorGenerator {
                 moduleSpecifier: "rxjs",
             },
             {
-                namedImports: [clientContextTokenName, interceptorsTokenName],
+                namedImports: [clientContextTokenName, interceptorFnsTokenName],
                 moduleSpecifier: "../tokens",
             },
         ]);
 
-        sourceFile.addClass({
-            name: `${this.capitalizeFirst(this.#clientName)}BaseInterceptor`,
+        sourceFile.addFunction({
+            name: "interceptClientRequest",
+            parameters: [
+                { name: "req", type: "HttpRequest<any>" },
+                { name: "next", type: "HttpHandlerFn" },
+                { name: "interceptorFns", type: "HttpInterceptorFn[]" },
+                { name: "clientContextToken", type: "HttpContextToken<string>" },
+                { name: "injector", type: "EnvironmentInjector" },
+            ],
+            returnType: "Observable<HttpEvent<any>>",
+            statements: `
+    // Check if this request belongs to this client using HttpContext
+    if (!req.context.has(clientContextToken)) {
+      // This request doesn't belong to this client, pass it through
+      return next(req);
+    }
+
+    // Compose right-to-left so the interceptors run in array order. Each fn is
+    // invoked inside an injection context, mirroring Angular's own interceptor
+    // chain, so client interceptors can use inject().
+    const chain = interceptorFns.reduceRight<HttpHandlerFn>(
+      (nextFn, interceptorFn) => (request) => runInInjectionContext(injector, () => interceptorFn(request, nextFn)),
+      next
+    );
+
+    return chain(req);`,
+        });
+
+        sourceFile.addVariableStatement({
             isExported: true,
+            declarationKind: VariableDeclarationKind.Const,
+            declarations: [
+                {
+                    name: interceptorFnName,
+                    type: "HttpInterceptorFn",
+                    initializer: `(req, next) =>
+  interceptClientRequest(req, next, inject(${interceptorFnsTokenName}), ${clientContextTokenName}, inject(EnvironmentInjector))`,
+                },
+            ],
+            leadingTrivia: `/**
+ * Functional interceptor running the ${this.#clientName} client's scoped interceptor chain.
+ * Register it once with \`provideHttpClient(withInterceptors([${interceptorFnName}]))\`.
+ * If your app also uses \`withInterceptorsFromDi()\`, pass \`registerDiInterceptor: false\`
+ * to the client's provide function — otherwise the class-based registration it adds
+ * would run the same chain twice.
+ */\n`,
+        });
+
+        sourceFile.addClass({
+            name: getBaseInterceptorClassName(this.#clientName),
+            isExported: true,
+            docs: [
+                `Class-based equivalent of \`${interceptorFnName}\` for DI registration via\n\`withInterceptorsFromDi()\`. Register exactly one of the two variants.`,
+            ],
             decorators: [
                 {
                     name: "Injectable",
@@ -57,11 +119,11 @@ export class BaseInterceptorGenerator {
             implements: ["HttpInterceptor"],
             properties: [
                 {
-                    name: "httpInterceptors",
-                    type: "HttpInterceptor[]",
+                    name: "interceptorFns",
+                    type: "HttpInterceptorFn[]",
                     scope: Scope.Private,
                     isReadonly: true,
-                    initializer: `inject(${interceptorsTokenName})`,
+                    initializer: `inject(${interceptorFnsTokenName})`,
                 },
                 {
                     name: "clientContextToken",
@@ -69,6 +131,13 @@ export class BaseInterceptorGenerator {
                     scope: Scope.Private,
                     isReadonly: true,
                     initializer: clientContextTokenName,
+                },
+                {
+                    name: "injector",
+                    type: "EnvironmentInjector",
+                    scope: Scope.Private,
+                    isReadonly: true,
+                    initializer: "inject(EnvironmentInjector)",
                 },
             ],
             methods: [
@@ -80,32 +149,12 @@ export class BaseInterceptorGenerator {
                     ],
                     returnType: "Observable<HttpEvent<any>>",
                     statements: `
-    // Check if this request belongs to this client using HttpContext
-    if (!req.context.has(this.clientContextToken)) {
-      // This request doesn't belong to this client, pass it through
-      return next.handle(req);
-    }
-
-    // Apply client-specific interceptors in reverse order
-    let handler = next;
-
-    handler = this.httpInterceptors.reduceRight(
-      (next, interceptor) => ({
-        handle: (request: HttpRequest<any>) => interceptor.intercept(request, next)
-      }),
-      handler
-    );
-
-    return handler.handle(req);`,
+    return interceptClientRequest(req, (request) => next.handle(request), this.interceptorFns, this.clientContextToken, this.injector);`,
                 },
             ],
         });
 
         sourceFile.formatText();
         sourceFile.saveSync();
-    }
-
-    private capitalizeFirst(str: string): string {
-        return str.charAt(0).toUpperCase() + str.slice(1);
     }
 }

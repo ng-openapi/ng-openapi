@@ -11,12 +11,13 @@ Every generated client ships a provider function in its `providers.ts` that sets
 
 ```typescript
 import { provideDefaultClient } from "./api/providers"; // generated file in your output directory
-import { provideHttpClient } from "@angular/common/http";
+import { defaultClientInterceptor } from "./api/utils/base-interceptor";
+import { provideHttpClient, withInterceptors } from "@angular/common/http";
 import { ApplicationConfig } from "@angular/core";
 
 export const appConfig: ApplicationConfig = {
     providers: [
-        provideHttpClient(),
+        provideHttpClient(withInterceptors([defaultClientInterceptor])),
         provideDefaultClient({
             basePath: "https://api.example.com",
         }),
@@ -24,8 +25,22 @@ export const appConfig: ApplicationConfig = {
 };
 ```
 
+The generated `<clientName>ClientInterceptor` (e.g. `defaultClientInterceptor`) runs the client's scoped interceptor chain — the [date transformer](utilities/date-transformer.md) and everything passed via [`interceptors`](#interceptors) / [`interceptorFns`](#interceptorfns). Register it once with `withInterceptors([...])`; requests made by other clients or plain `HttpClient` calls pass through untouched.
+
 ::: info
 `provideNgOpenapi` still exists as a deprecated alias of `provideDefaultClient` for clients generated without a `clientName`.
+:::
+
+### DI-based registration
+
+Apps that still register interceptors through dependency injection can use the generated class variant instead. `provide<ClientName>Client` registers it on `HTTP_INTERCEPTORS` automatically, so enabling `withInterceptorsFromDi()` is enough:
+
+```typescript
+provideHttpClient(withInterceptorsFromDi());
+```
+
+::: warning
+Register exactly one of the two variants. Combining `withInterceptors([defaultClientInterceptor])` with `withInterceptorsFromDi()` runs the client's interceptor chain twice — duplicate auth headers, doubled logs. If your app needs `withInterceptorsFromDi()` for its own interceptors while this client's chain is registered functionally, disable the automatic class registration with [`registerDiInterceptor: false`](#registerdiinterceptor).
 :::
 
 ## Configuration Options
@@ -38,9 +53,9 @@ The base URL for your API. This is prepended to all API requests.
 
 ### `interceptors`
 
-**Type:** `(new () => HttpInterceptor)[]` | **Default:** `[]`
+**Type:** `(new (...args: any[]) => HttpInterceptor)[]` | **Default:** `[]`
 
-Apply client specific interceptors. Pass the interceptor **classes** (not instances) — the provider instantiates them for you. This is not going to replace the global interceptors configured in your application, but will be applied to requests made by the provided client.
+Apply client specific class-based interceptors. Pass the interceptor **classes** (not instances) — the provider resolves them through DI when they are provided (so constructor injection works), otherwise instantiates them directly **without constructor arguments**. A class with required dependencies must therefore be registered as a provider; an unprovided one is silently constructed with `undefined` dependencies. This is not going to replace the global interceptors configured in your application, but will be applied to requests made by the provided client.
 
 Interceptors can be re-used across different clients.
 
@@ -51,11 +66,54 @@ provideDefaultClient({
 });
 ```
 
+### `interceptorFns`
+
+**Type:** `HttpInterceptorFn[]` | **Default:** `[]`
+
+Apply client specific [functional interceptors](https://angular.dev/guide/http/interceptors). Like `interceptors`, they only run for requests made by this client. They run after the class-based `interceptors` and may use `inject()` in their body.
+
+```typescript
+const authInterceptor: HttpInterceptorFn = (req, next) => {
+    const token = inject(AuthStore).token();
+    return next(req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }));
+};
+
+provideDefaultClient({
+    basePath: "https://api.example.com",
+    interceptorFns: [authInterceptor],
+});
+```
+
+### `registerDiInterceptor`
+
+**Type:** `boolean` | **Default:** `true`
+
+Whether the provide function registers the class-based scoped interceptor on `HTTP_INTERCEPTORS`. That registration is dormant unless the app enables `withInterceptorsFromDi()` — but if it does, and this client's chain is *also* registered via `withInterceptors([defaultClientInterceptor])`, the chain runs twice. Set this to `false` in that situation:
+
+```typescript
+export const appConfig: ApplicationConfig = {
+    providers: [
+        // withInterceptorsFromDi() needed for the app's own DI-based interceptors
+        provideHttpClient(withInterceptors([defaultClientInterceptor]), withInterceptorsFromDi()),
+        provideDefaultClient({
+            basePath: "https://api.example.com",
+            registerDiInterceptor: false, // client chain comes from withInterceptors above
+        }),
+    ],
+};
+```
+
+Leave it at `true` (default) when the client chain should run through `withInterceptorsFromDi()` itself.
+
+::: warning
+If you set this to `false`, you **must** register the functional interceptor yourself via `provideHttpClient(withInterceptors([defaultClientInterceptor]))`. With neither variant registered, the client still resolves its base path and requests appear to work — but the entire scoped chain (date transform, `interceptors`, `interceptorFns`) silently does nothing: models typed as `Date` carry ISO strings, auth headers are missing.
+:::
+
 ### `enableDateTransform`
 
 **Type:** `boolean` | **Default:** `true`
 
-If disabled, [Date Transformer Interceptor](utilities/date-transformer.md) will not be applied to the HTTP client. This means date strings will not be automatically converted to `Date` objects.
+If disabled, [Date Transformer Interceptor](utilities/date-transformer.md) will not be applied to the HTTP client. This means date strings will not be automatically converted to `Date` objects. Only available when the client was generated with `dateType: 'Date'`.
 
 ### `dateTransformRegex`
 

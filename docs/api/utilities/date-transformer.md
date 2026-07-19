@@ -15,31 +15,50 @@ The interceptor will be applied automatically to your HTTP client, if you are us
 
 ### Manual Setup
 
-If you chose to configure the OpenAPI client [manually](../providers.md#manual-configuration) or want to add the Date Transformer interceptor separately, register the class-based `DateInterceptor` through the `HTTP_INTERCEPTORS` multi-provider in your `app.config.ts` (`withInterceptors` only accepts functional interceptors):
+If you chose to configure the OpenAPI client [manually](../providers.md#manual-configuration) or want to add the Date Transformer interceptor separately, register the functional `dateInterceptor` with `withInterceptors(...)` in your `app.config.ts`:
 
 ```typescript
 import { ApplicationConfig } from "@angular/core";
-import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from "@angular/common/http";
-import { DateInterceptor } from "./client/utils/date-transformer";
+import { provideHttpClient, withInterceptors } from "@angular/common/http";
+import { dateInterceptor } from "./client/utils/date-transformer";
 import { BASE_PATH } from "./client/tokens";
 
 export const appConfig: ApplicationConfig = {
     providers: [
-        provideHttpClient(withInterceptorsFromDi()),
-        { provide: HTTP_INTERCEPTORS, useClass: DateInterceptor, multi: true },
+        provideHttpClient(withInterceptors([dateInterceptor])),
         { provide: BASE_PATH, useValue: "https://api.example.com" },
     ],
 };
+```
+
+::: warning
+Registered this way, the date transform applies to **every** request made through `HttpClient`, including calls to third-party APIs. When registered through the [generated provider function](../providers.md), it only applies to this client's requests.
+:::
+
+The class-based `DateInterceptor` is still generated for DI-based setups (`withInterceptorsFromDi()` + the `HTTP_INTERCEPTORS` multi-provider):
+
+```typescript
+import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from "@angular/common/http";
+import { DateInterceptor } from "./client/utils/date-transformer";
+
+provideHttpClient(withInterceptorsFromDi());
+({ provide: HTTP_INTERCEPTORS, useClass: DateInterceptor, multi: true });
 ```
 
 ## Generated Source
 
 ```typescript
 // client/utils/date-transformer.ts
-import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest, HttpResponse } from "@angular/common/http";
+import {
+    HttpEvent,
+    HttpHandler,
+    HttpInterceptor,
+    HttpInterceptorFn,
+    HttpRequest,
+    HttpResponse,
+} from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable } from "rxjs";
-import { map } from "rxjs/operators";
+import { Observable, map } from "rxjs";
 
 export const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/;
 
@@ -72,20 +91,34 @@ export function transformDates(obj: any, dateRegex: RegExp = ISO_DATE_REGEX): an
     return obj;
 }
 
+function transformDateResponse(event: HttpEvent<any>, dateRegex: RegExp): HttpEvent<any> {
+    if (event instanceof HttpResponse && event.body) {
+        return event.clone({ body: transformDates(event.body, dateRegex) });
+    }
+    return event;
+}
+
+/**
+ * Builds a functional date interceptor for `provideHttpClient(withInterceptors([...]))`.
+ * @param dateRegex Optional override for the pattern used to detect ISO date strings.
+ */
+export function dateInterceptorWithRegex(dateRegex: RegExp = ISO_DATE_REGEX): HttpInterceptorFn {
+    return (req, next) => next(req).pipe(map((event) => transformDateResponse(event, dateRegex)));
+}
+
+/**
+ * Functional date interceptor using the default ISO_DATE_REGEX.
+ * Use dateInterceptorWithRegex(...) to customize the pattern.
+ */
+export const dateInterceptor: HttpInterceptorFn = dateInterceptorWithRegex();
+
 @Injectable()
 export class DateInterceptor implements HttpInterceptor {
     /** @param dateRegex Optional override for the pattern used to detect ISO date strings. */
     constructor(private readonly dateRegex: RegExp = ISO_DATE_REGEX) {}
 
     intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-        return next.handle(req).pipe(
-            map((event) => {
-                if (event instanceof HttpResponse && event.body) {
-                    return event.clone({ body: transformDates(event.body, this.dateRegex) });
-                }
-                return event;
-            }),
-        );
+        return next.handle(req).pipe(map((event) => transformDateResponse(event, this.dateRegex)));
     }
 }
 ```
@@ -119,10 +152,11 @@ provideDefaultClient({
 });
 ```
 
-Both `transformDates` and `DateInterceptor` accept the regex directly as well, for
-manual interceptor setups:
+`dateInterceptorWithRegex`, `transformDates`, and `DateInterceptor` accept the regex
+directly as well, for manual interceptor setups:
 
 ```typescript
-new DateInterceptor(/your-custom-pattern/);
+dateInterceptorWithRegex(/your-custom-pattern/); // functional
+new DateInterceptor(/your-custom-pattern/); // class-based
 transformDates(responseBody, /your-custom-pattern/);
 ```

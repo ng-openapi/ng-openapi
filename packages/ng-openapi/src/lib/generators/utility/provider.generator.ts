@@ -2,8 +2,10 @@ import { OptionalKind, Project, PropertySignatureStructure, SourceFile } from "t
 import * as path from "path";
 import {
     GeneratorConfig,
+    getBaseInterceptorClassName,
     getBasePathTokenName,
-    getInterceptorsTokenName,
+    getClientInterceptorFnName,
+    getInterceptorFnsTokenName,
     PROVIDER_GENERATOR_HEADER_COMMENT,
 } from "@ng-openapi/shared";
 
@@ -25,21 +27,21 @@ export class ProviderGenerator {
         sourceFile.insertText(0, PROVIDER_GENERATOR_HEADER_COMMENT);
 
         const basePathTokenName = getBasePathTokenName(this.clientName);
-        const interceptorsTokenName = getInterceptorsTokenName(this.clientName);
-        const baseInterceptorClassName = `${this.capitalizeFirst(this.clientName)}BaseInterceptor`;
+        const interceptorFnsTokenName = getInterceptorFnsTokenName(this.clientName);
+        const baseInterceptorClassName = getBaseInterceptorClassName(this.clientName);
 
         // Add imports
         sourceFile.addImportDeclarations([
             {
-                namedImports: ["EnvironmentProviders", "Provider", "makeEnvironmentProviders"],
+                namedImports: ["EnvironmentProviders", "Provider", "inject", "makeEnvironmentProviders"],
                 moduleSpecifier: "@angular/core",
             },
             {
-                namedImports: ["HTTP_INTERCEPTORS", "HttpInterceptor"],
+                namedImports: ["HTTP_INTERCEPTORS", "HttpInterceptor", "HttpInterceptorFn"],
                 moduleSpecifier: "@angular/common/http",
             },
             {
-                namedImports: [basePathTokenName, interceptorsTokenName],
+                namedImports: [basePathTokenName, interceptorFnsTokenName],
                 moduleSpecifier: "./tokens",
             },
             {
@@ -48,10 +50,10 @@ export class ProviderGenerator {
             },
         ]);
 
-        // Add conditional import for DateInterceptor
+        // Add conditional import for the date interceptor factory
         if (this.config.options.dateType === "Date") {
             sourceFile.addImportDeclaration({
-                namedImports: ["DateInterceptor"],
+                namedImports: ["dateInterceptorWithRegex"],
                 moduleSpecifier: "./utils/date-transformer",
             });
         }
@@ -64,29 +66,58 @@ export class ProviderGenerator {
                 docs: ["Base API URL"],
             },
             {
-                name: "enableDateTransform",
-                type: "boolean",
+                name: "interceptors",
+                type: "(new (...args: any[]) => HttpInterceptor)[]",
                 hasQuestionToken: true,
-                docs: ["Enable automatic date transformation (default: true)"],
+                docs: [
+                    "Class-based HTTP interceptors to apply to this client.",
+                    "Classes are resolved through DI when provided; classes that are not",
+                    "provided anywhere are instantiated without constructor arguments, so",
+                    "classes with required dependencies must be registered as providers.",
+                ],
             },
             {
-                name: "interceptors",
-                type: "(new (...args: HttpInterceptor[]) => HttpInterceptor)[]",
+                name: "interceptorFns",
+                type: "HttpInterceptorFn[]",
                 hasQuestionToken: true,
-                docs: ["Array of HTTP interceptor classes to apply to this client"],
+                docs: ["Functional HTTP interceptors to apply to this client. Run after class-based interceptors."],
+            },
+            {
+                name: "registerDiInterceptor",
+                type: "boolean",
+                hasQuestionToken: true,
+                docs: [
+                    "Register the class-based interceptor on HTTP_INTERCEPTORS (default: true).",
+                    "Set to false when your app needs withInterceptorsFromDi() for its own",
+                    "interceptors but this client's chain is registered functionally via",
+                    "withInterceptors([...]) — otherwise the chain would run twice.",
+                    "",
+                    "WARNING: with false you MUST register the functional interceptor yourself",
+                    "(provideHttpClient(withInterceptors([...]))); if neither variant is",
+                    "registered, this client's entire chain (date transform, interceptors,",
+                    "interceptorFns) silently does nothing.",
+                ],
             },
         ];
 
         if (this.config.options.dateType === "Date") {
-            configProperties.push({
-                name: "dateTransformRegex",
-                type: "RegExp",
-                hasQuestionToken: true,
-                docs: [
-                    "Override the pattern used to detect ISO date strings during date transformation.",
-                    "Defaults to the generated ISO_DATE_REGEX.",
-                ],
-            });
+            configProperties.push(
+                {
+                    name: "enableDateTransform",
+                    type: "boolean",
+                    hasQuestionToken: true,
+                    docs: ["Enable automatic date transformation (default: true)"],
+                },
+                {
+                    name: "dateTransformRegex",
+                    type: "RegExp",
+                    hasQuestionToken: true,
+                    docs: [
+                        "Override the pattern used to detect ISO date strings during date transformation.",
+                        "Defaults to the generated ISO_DATE_REGEX.",
+                    ],
+                },
+            );
         }
 
         sourceFile.addInterface({
@@ -97,7 +128,7 @@ export class ProviderGenerator {
         });
 
         // Add main provider function
-        this.addMainProviderFunction(sourceFile, basePathTokenName, interceptorsTokenName, baseInterceptorClassName);
+        this.addMainProviderFunction(sourceFile, basePathTokenName, interceptorFnsTokenName, baseInterceptorClassName);
 
         sourceFile.formatText();
         sourceFile.saveSync();
@@ -106,12 +137,26 @@ export class ProviderGenerator {
     private addMainProviderFunction(
         sourceFile: SourceFile,
         basePathTokenName: string,
-        interceptorsTokenName: string,
+        interceptorFnsTokenName: string,
         baseInterceptorClassName: string,
     ): void {
         const hasDateInterceptor = this.config.options.dateType === "Date";
         const functionName = `provide${this.capitalizeFirst(this.clientName)}Client`;
         const configTypeName = `${this.capitalizeFirst(this.clientName)}Config`;
+        const interceptorFnName = getClientInterceptorFnName(this.clientName);
+
+        const dateInterceptorBlock = hasDateInterceptor
+            ? `
+            // Date interceptor first: it runs first on requests (a no-op) and, being
+            // outermost, its response transform applies last — the other client
+            // interceptors see the raw body; only the service sees Date instances
+            if (config.enableDateTransform !== false) {
+                interceptorFns.push(dateInterceptorWithRegex(config.dateTransformRegex));
+            }
+`
+            : `
+            // Date transformation not available (dateType: 'string' was used in generation)
+`;
 
         const functionBody = `
 const providers: Provider[] = [
@@ -120,46 +165,36 @@ const providers: Provider[] = [
         provide: ${basePathTokenName},
         useValue: config.basePath
     },
-    // Base interceptor that handles client-specific interceptors
+    // This client's interceptor chain, normalized to functional interceptors
     {
-        provide: HTTP_INTERCEPTORS,
-        useClass: ${baseInterceptorClassName},
-        multi: true
+        provide: ${interceptorFnsTokenName},
+        useFactory: (): HttpInterceptorFn[] => {
+            const interceptorFns: HttpInterceptorFn[] = [];
+${dateInterceptorBlock}
+            // Class-based interceptors are resolved through DI when provided,
+            // otherwise instantiated directly, and adapted to functional form
+            for (const interceptorClass of config.interceptors ?? []) {
+                const instance = inject(interceptorClass, { optional: true }) ?? new interceptorClass();
+                interceptorFns.push((req, next) => instance.intercept(req, { handle: next }));
+            }
+
+            interceptorFns.push(...(config.interceptorFns ?? []));
+
+            return interceptorFns;
+        }
     }
 ];
 
-// Add client-specific interceptor instances
-if (config.interceptors && config.interceptors.length > 0) {
-    const interceptorInstances = config.interceptors.map(InterceptorClass => new InterceptorClass());
-    
-    ${
-        hasDateInterceptor
-            ? `// Add date interceptor if enabled (default: true)
-    if (config.enableDateTransform !== false) {
-        interceptorInstances.unshift(new DateInterceptor(config.dateTransformRegex));
-    }`
-            : `// Date transformation not available (dateType: 'string' was used in generation)`
-    }
-    
+// Class-based registration of the scoped chain; only active together with
+// withInterceptorsFromDi(). Disable it (registerDiInterceptor: false) when the
+// app uses withInterceptorsFromDi() for its own interceptors but this client's
+// chain is registered via withInterceptors([${interceptorFnName}]) —
+// otherwise the chain would run twice.
+if (config.registerDiInterceptor !== false) {
     providers.push({
-        provide: ${interceptorsTokenName},
-        useValue: interceptorInstances
-    });
-} ${
-            hasDateInterceptor
-                ? `else if (config.enableDateTransform !== false) {
-    // Only date interceptor enabled
-    providers.push({
-        provide: ${interceptorsTokenName},
-        useValue: [new DateInterceptor(config.dateTransformRegex)]
-    });
-}`
-                : ``
-        } else {
-    // No interceptors
-    providers.push({
-        provide: ${interceptorsTokenName},
-        useValue: []
+        provide: HTTP_INTERCEPTORS,
+        useClass: ${baseInterceptorClassName},
+        multi: true
     });
 }
 
@@ -174,13 +209,17 @@ return makeEnvironmentProviders(providers);`;
                 "@example",
                 "```typescript",
                 "// In your app.config.ts",
+                "import { provideHttpClient, withInterceptors } from '@angular/common/http';",
                 `import { ${functionName} } from './api/providers';`,
+                `import { ${interceptorFnName} } from './api/utils/base-interceptor';`,
                 "",
                 "export const appConfig: ApplicationConfig = {",
                 "  providers: [",
+                `    provideHttpClient(withInterceptors([${interceptorFnName}])),`,
                 `    ${functionName}({`,
                 "      basePath: 'https://api.example.com',",
-                "      interceptors: [AuthInterceptor, LoggingInterceptor] // Classes, not instances",
+                "      interceptors: [AuthInterceptor], // Classes, not instances",
+                "      interceptorFns: [loggingInterceptor] // Functional interceptors",
                 "    }),",
                 "    // other providers...",
                 "  ]",

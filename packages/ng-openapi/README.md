@@ -151,11 +151,13 @@ The simplest way to integrate ng-openapi is using the provider function:
 ```typescript
 // In your app.config.ts
 import { ApplicationConfig } from "@angular/core";
+import { provideHttpClient, withInterceptors } from "@angular/common/http";
 import { provideDefaultClient } from "./api/providers";
+import { defaultClientInterceptor } from "./api/utils/base-interceptor";
 
 export const appConfig: ApplicationConfig = {
     providers: [
-        // One-line setup with automatic interceptor configuration
+        provideHttpClient(withInterceptors([defaultClientInterceptor])),
         provideDefaultClient({
             basePath: "https://api.example.com",
         }),
@@ -164,12 +166,13 @@ export const appConfig: ApplicationConfig = {
 };
 ```
 
-> The provider function is named after your `clientName` (e.g. `clientName: "PetStore"` → `providePetStoreClient`); without a `clientName` it is `provideDefaultClient`.
+> The provider function is named after your `clientName` (e.g. `clientName: "PetStore"` → `providePetStoreClient`); without a `clientName` it is `provideDefaultClient`. The same goes for the functional interceptor (`petStoreClientInterceptor` / `defaultClientInterceptor`), which runs this client's scoped interceptor chain and leaves all other requests untouched.
 
-That's it! This automatically configures:
+That's it! This configures:
 
 - ✅ BASE_PATH token
-- ✅ Date transformation interceptor (if using Date type)
+- ✅ Client-scoped interceptor chain
+- ✅ Date transformation (if using Date type)
 
 ### Advanced Provider Options
 
@@ -180,10 +183,11 @@ provideDefaultClient({
     enableDateTransform: false,
 });
 
-// Client-specific interceptors (classes, not instances)
+// Client-specific interceptors: classes (not instances) and/or functional interceptors
 provideDefaultClient({
     basePath: "https://api.example.com",
     interceptors: [AuthInterceptor, LoggingInterceptor],
+    interceptorFns: [authInterceptorFn],
 });
 ```
 
