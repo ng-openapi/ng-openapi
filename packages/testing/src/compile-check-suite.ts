@@ -67,8 +67,8 @@ export function registerCompileCheckSuite(suiteName: string, buildConfig: Config
                     // this suite actually asserts the output is strict-clean.
                     for (const sourceFile of project.getSourceFiles()) {
                         const text = sourceFile.getFullText();
-                        if (text.includes("/* @ts-nocheck */")) {
-                            sourceFile.replaceWithText(text.replace("/* @ts-nocheck */\n", ""));
+                        if (text.includes("// @ts-nocheck")) {
+                            sourceFile.replaceWithText(text.replace("// @ts-nocheck\n", ""));
                         }
                     }
 

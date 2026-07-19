@@ -88,9 +88,6 @@ export class ZodGenerator implements IPluginGenerator {
 
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
 
-        // Add header comment
-        sourceFile.insertText(0, ZOD_PLUGIN_GENERATOR_HEADER_COMMENT(validatorName));
-
         // Add imports
         this.addImports(sourceFile, operations);
 
@@ -103,6 +100,8 @@ export class ZodGenerator implements IPluginGenerator {
 
         if (_statements.length > 0) {
             sourceFile.formatText();
+            // Add header comment
+            sourceFile.insertText(0, ZOD_PLUGIN_GENERATOR_HEADER_COMMENT(validatorName));
             sourceFile.saveSync();
         } else {
             // Nothing to validate for this controller: drop the file from the
