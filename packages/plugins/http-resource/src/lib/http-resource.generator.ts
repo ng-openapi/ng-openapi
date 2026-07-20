@@ -89,6 +89,7 @@ export class HttpResourceGenerator implements IPluginGenerator {
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
         this.addServiceClass(sourceFile, controllerName, operations);
         sourceFile.fixMissingImports().formatText(); //TODO: add models
+        sourceFile.insertText(0, HTTP_RESOURCE_GENERATOR_HEADER_COMMENT(getResourceClassName(controllerName, this.config.options.naming?.resources)));
         sourceFile.saveSync();
     }
 
@@ -97,8 +98,6 @@ export class HttpResourceGenerator implements IPluginGenerator {
         const basePathTokenName = getBasePathTokenName(this.config.clientName);
         const clientContextTokenName = getClientContextTokenName(this.config.clientName);
         const serviceDecorator = emitServiceDecorator(this.config.options);
-
-        sourceFile.insertText(0, HTTP_RESOURCE_GENERATOR_HEADER_COMMENT(className));
 
         sourceFile.addImportDeclarations([
             {
