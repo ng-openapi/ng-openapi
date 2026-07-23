@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { StructureKind } from "ts-morph";
-import type { SwaggerDefinition, TypeGenOptions } from "@ng-openapi/shared";
+import { normalizeSchema, type SwaggerDefinition, type TypeGenOptions } from "@ng-openapi/shared";
 import { escapeString, sanitizePropertyName, TypeResolver } from "../src/lib/generators/type/type-resolver";
 import { EnumBuilder, toEnumKey } from "../src/lib/generators/type/enum-builder";
 import { InterfaceBuilder } from "../src/lib/generators/type/interface-builder";
@@ -40,6 +40,20 @@ describe("TypeResolver", () => {
     it("maps binary to Blob and appends null for nullable schemas", () => {
         expect(resolver().resolve({ type: "string", format: "binary" })).toBe("Blob");
         expect(resolver().resolve({ type: "string", nullable: true })).toBe("string | null");
+    });
+
+    it("keeps | null on nullable strings with a format (#118)", () => {
+        expect(resolver().resolve({ type: "string", format: "uuid", nullable: true })).toBe("string | null");
+        expect(resolver().resolve({ type: "string", format: "email", nullable: true })).toBe("string | null");
+        expect(resolver().resolve({ type: "string", format: "uri", nullable: true })).toBe("string | null");
+        expect(resolver().resolve({ type: "string", format: "binary", nullable: true })).toBe("Blob | null");
+        expect(resolver().resolve({ type: "string", format: "uuid" })).toBe("string");
+        // 3.1 type array folded by the normalizer — the exact repro from #118
+        expect(
+            resolver().resolve(
+                normalizeSchema({ type: ["null", "string"], format: "uuid" } as unknown as SwaggerDefinition),
+            ),
+        ).toBe("string | null");
     });
 
     it("resolves $refs to pascal-cased names", () => {
