@@ -12,6 +12,7 @@ export interface WidgetDto {
     id: string;
     name: string;
     nickname?: string | null;
+    externalId?: string | null;
     weight?: number | null;
     kind?: WidgetKindDto;
     createdAt?: Date;

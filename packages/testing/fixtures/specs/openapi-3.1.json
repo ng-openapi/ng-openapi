@@ -87,6 +87,7 @@
                     "id": { "type": "string" },
                     "name": { "type": "string" },
                     "nickname": { "type": ["string", "null"] },
+                    "externalId": { "type": ["null", "string"], "format": "uuid" },
                     "weight": { "type": ["number", "null"] },
                     "kind": { "$ref": "#/components/schemas/WidgetKind" },
                     "createdAt": { "type": "string", "format": "date-time" },

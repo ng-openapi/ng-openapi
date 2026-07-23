@@ -920,8 +920,8 @@
     "semantic_hash": ""
   },
   "packages/testing/fixtures/specs/openapi-3.1.json": {
-    "mtime": 1783296715.4993057,
-    "ast_hash": "1d601c33e0f46bf80c5e1fb1dc1a66ad",
+    "mtime": 1784817210.42946,
+    "ast_hash": "33a085f5dd982e9f0dcd5e8028031845",
     "semantic_hash": ""
   },
   "packages/testing/fixtures/specs/swagger-2.0.json": {
