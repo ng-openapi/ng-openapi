@@ -5,6 +5,7 @@ import type { SwaggerDefinition, SwaggerSpec } from "../types/swagger.types";
 import type { NormalizedSpec } from "../model/spec.model";
 import { loadSpecContent } from "./spec-loader";
 import { parseSpecContent } from "./spec-format";
+import { inlineNestedRefs } from "./inline-nested-refs";
 import { normalizeSpec } from "./normalize";
 import { SpecParseError } from "../errors";
 
@@ -35,7 +36,9 @@ export class SwaggerParser {
     static async create(swaggerPathOrUrl: string, config: GeneratorConfig): Promise<SwaggerParser> {
         const swaggerContent = await loadSpecContent(swaggerPathOrUrl);
         const spec = parseSpecContent(swaggerContent, swaggerPathOrUrl);
-        return new SwaggerParser(spec, config);
+        // Inline deep-pointer $refs before any consumer (raw service reads and
+        // the normalized IR alike) sees them — see inline-nested-refs.ts.
+        return new SwaggerParser(inlineNestedRefs(spec), config);
     }
 
     /**
