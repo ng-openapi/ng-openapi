@@ -29,16 +29,22 @@ export class SwaggerParser {
     /**
      * Loads, parses and wraps a spec.
      *
+     * @param onWarning receives non-fatal spec problems found while parsing —
+     *   currently deep-pointer `$ref`s that cannot be inlined.
      * @throws SpecLoadError when the file/URL cannot be read.
      * @throws SpecParseError when the content cannot be parsed or the
      *   config's `validateInput` hook rejects the spec.
      */
-    static async create(swaggerPathOrUrl: string, config: GeneratorConfig): Promise<SwaggerParser> {
+    static async create(
+        swaggerPathOrUrl: string,
+        config: GeneratorConfig,
+        onWarning?: (message: string) => void,
+    ): Promise<SwaggerParser> {
         const swaggerContent = await loadSpecContent(swaggerPathOrUrl);
         const spec = parseSpecContent(swaggerContent, swaggerPathOrUrl);
         // Inline deep-pointer $refs before any consumer (raw service reads and
         // the normalized IR alike) sees them — see inline-nested-refs.ts.
-        return new SwaggerParser(inlineNestedRefs(spec), config);
+        return new SwaggerParser(inlineNestedRefs(spec, onWarning), config);
     }
 
     /**

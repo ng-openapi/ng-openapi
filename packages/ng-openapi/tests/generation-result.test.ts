@@ -114,4 +114,44 @@ describe("generateFromConfig result + reporter", () => {
             rmSync(config.input, { force: true });
         }
     });
+
+    it("reports a deep-pointer $ref that cannot be inlined", async () => {
+        const output = mkdtempSync(join(tmpRoot, "deep-ref-warn-"));
+        tempDirs.push(output);
+
+        const ref = "#/components/schemas/Missing/properties/nope";
+        const input = join(output, "unresolvable-deep-ref.json");
+        const { writeFileSync } = await import("node:fs");
+        writeFileSync(
+            input,
+            JSON.stringify({
+                openapi: "3.0.0",
+                info: { title: "deep", version: "1" },
+                paths: {
+                    "/x": {
+                        get: {
+                            operationId: "getX",
+                            responses: {
+                                "200": {
+                                    description: "ok",
+                                    content: { "application/json": { schema: { $ref: ref } } },
+                                },
+                            },
+                        },
+                    },
+                },
+                components: { schemas: {} },
+            }),
+        );
+
+        const reported: string[] = [];
+        const result = await generateFromConfig(
+            { ...buildConfig(output), input },
+            { onWarning: (message) => reported.push(message) },
+        );
+
+        // Parse-time warning, so it must reach both the reporter and the result.
+        expect(reported.some((message) => message.includes(ref))).toBe(true);
+        expect(result.warnings).toEqual(reported);
+    });
 });

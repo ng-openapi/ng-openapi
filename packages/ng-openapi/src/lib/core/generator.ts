@@ -105,7 +105,7 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
     });
 
     reporter.onPhase?.("processing-spec");
-    const swaggerParser = await SwaggerParser.create(config.input, config);
+    const swaggerParser = await SwaggerParser.create(config.input, config, onWarning);
 
     // Guard once here instead of in every generator/plugin constructor
     if (!swaggerParser.isValidSpec()) {
