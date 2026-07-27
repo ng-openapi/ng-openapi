@@ -12,6 +12,7 @@ export interface Widget {
     id: string;
     name: string;
     nickname?: string | null;
+    externalId?: string | null;
     weight?: number | null;
     kind?: WidgetKind;
     createdAt?: Date;

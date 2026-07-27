@@ -207,7 +207,7 @@
       "label": "transformPageData()",
       "file_type": "code",
       "source_file": "docs/.vitepress/config.ts",
-      "source_location": "L132",
+      "source_location": "L138",
       "_origin": "ast",
       "id": "docs_vitepress_config_transformpagedata",
       "community": 28,
@@ -217,7 +217,7 @@
       "label": "buildEnd()",
       "file_type": "code",
       "source_file": "docs/.vitepress/config.ts",
-      "source_location": "L388",
+      "source_location": "L394",
       "_origin": "ast",
       "id": "docs_vitepress_config_buildend",
       "community": 28,
@@ -310,7 +310,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "nx",
-      "community": 79,
+      "community": 46,
       "norm_label": "nx.json"
     },
     {
@@ -320,7 +320,7 @@
       "source_location": "L2",
       "_origin": "ast",
       "id": "nx_extends",
-      "community": 79,
+      "community": 46,
       "norm_label": "extends"
     },
     {
@@ -330,7 +330,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "nx_schema",
-      "community": 79,
+      "community": 46,
       "norm_label": "$schema"
     },
     {
@@ -340,18 +340,18 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "nx_defaultbase",
-      "community": 79,
+      "community": 46,
       "norm_label": "defaultbase"
     },
     {
-      "label": "nxCloudId",
+      "label": "neverConnectToCloud",
       "file_type": "code",
       "source_file": "nx.json",
       "source_location": "L5",
       "_origin": "ast",
-      "id": "nx_nxcloudid",
-      "community": 79,
-      "norm_label": "nxcloudid"
+      "id": "nx_neverconnecttocloud",
+      "community": 46,
+      "norm_label": "neverconnecttocloud"
     },
     {
       "label": "namedInputs",
@@ -360,7 +360,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "nx_namedinputs",
-      "community": 162,
+      "community": 46,
       "norm_label": "namedinputs"
     },
     {
@@ -370,7 +370,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "nx_namedinputs_sharedglobals",
-      "community": 162,
+      "community": 46,
       "norm_label": "sharedglobals"
     },
     {
@@ -380,7 +380,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "nx_namedinputs_default",
-      "community": 162,
+      "community": 46,
       "norm_label": "default"
     },
     {
@@ -400,7 +400,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "nx_targetdefaults_build",
-      "community": 98,
+      "community": 46,
       "norm_label": "build"
     },
     {
@@ -410,7 +410,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "nx_build_dependson",
-      "community": 98,
+      "community": 46,
       "norm_label": "dependson"
     },
     {
@@ -420,7 +420,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "nx_build_cache",
-      "community": 98,
+      "community": 46,
       "norm_label": "cache"
     },
     {
@@ -430,7 +430,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "nx_build_inputs",
-      "community": 98,
+      "community": 46,
       "norm_label": "inputs"
     },
     {
@@ -530,7 +530,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "nx_release",
-      "community": 79,
+      "community": 46,
       "norm_label": "release"
     },
     {
@@ -540,7 +540,7 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "nx_release_version",
-      "community": 79,
+      "community": 46,
       "norm_label": "version"
     },
     {
@@ -550,7 +550,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "nx_version_preversioncommand",
-      "community": 79,
+      "community": 46,
       "norm_label": "preversioncommand"
     },
     {
@@ -560,7 +560,7 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "nx_plugins",
-      "community": 79,
+      "community": 46,
       "norm_label": "plugins"
     },
     {
@@ -570,7 +570,7 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "nx_analytics",
-      "community": 79,
+      "community": 46,
       "norm_label": "analytics"
     },
     {
@@ -1160,7 +1160,7 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "package_devdependencies_nx",
-      "community": 79,
+      "community": 46,
       "norm_label": "nx"
     },
     {
@@ -1270,7 +1270,7 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "package_devdependencies_zod",
-      "community": 42,
+      "community": 9,
       "norm_label": "zod"
     },
     {
@@ -2190,7 +2190,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_core_config_validation",
-      "community": 51,
+      "community": 57,
       "norm_label": "config-validation.ts"
     },
     {
@@ -2200,7 +2200,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_core_config_validation_response_types",
-      "community": 51,
+      "community": 57,
       "norm_label": "response_types"
     },
     {
@@ -2210,7 +2210,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_core_config_validation_naming_keys",
-      "community": 51,
+      "community": 57,
       "norm_label": "naming_keys"
     },
     {
@@ -2220,7 +2220,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_core_config_validation_configvalidationerror",
-      "community": 51,
+      "community": 57,
       "norm_label": "configvalidationerror"
     },
     {
@@ -2230,7 +2230,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_core_config_validation_configvalidationerror_constructor",
-      "community": 51,
+      "community": 57,
       "norm_label": ".constructor()"
     },
     {
@@ -2240,7 +2240,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_core_config_validation_unknownshape",
-      "community": 51,
+      "community": 57,
       "norm_label": "unknownshape"
     },
     {
@@ -2250,7 +2250,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_core_config_validation_validategeneratorconfig",
-      "community": 51,
+      "community": 57,
       "norm_label": "validategeneratorconfig()"
     },
     {
@@ -2270,7 +2270,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_core_generator_validateinput",
-      "community": 0,
+      "community": 51,
       "norm_label": "validateinput()"
     },
     {
@@ -2280,7 +2280,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_core_generator_generatefromconfig",
-      "community": 26,
+      "community": 51,
       "norm_label": "generatefromconfig()"
     },
     {
@@ -2320,7 +2320,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_core_reporter_reporter",
-      "community": 26,
+      "community": 51,
       "norm_label": "reporter"
     },
     {
@@ -2330,7 +2330,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_core_reporter_reporter_onphase",
-      "community": 26,
+      "community": 51,
       "norm_label": ".onphase()"
     },
     {
@@ -2340,7 +2340,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_core_reporter_reporter_onwarning",
-      "community": 26,
+      "community": 51,
       "norm_label": ".onwarning()"
     },
     {
@@ -2370,7 +2370,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_index",
-      "community": 166,
+      "community": 60,
       "norm_label": "index.ts"
     },
     {
@@ -2380,7 +2380,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_request_params_generator",
-      "community": 166,
+      "community": 60,
       "norm_label": "request-params.generator.ts"
     },
     {
@@ -2390,7 +2390,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_request_params_generator_requestparamsgenerator",
-      "community": 165,
+      "community": 60,
       "norm_label": "requestparamsgenerator"
     },
     {
@@ -2400,7 +2400,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_request_params_generator_requestparamsgenerator_constructor",
-      "community": 165,
+      "community": 60,
       "norm_label": ".constructor()"
     },
     {
@@ -2410,7 +2410,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_request_params_generator_requestparamsgenerator_buildregistry",
-      "community": 165,
+      "community": 60,
       "norm_label": ".buildregistry()"
     },
     {
@@ -2420,7 +2420,7 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_request_params_generator_requestparamsgenerator_generate",
-      "community": 165,
+      "community": 60,
       "norm_label": ".generate()"
     },
     {
@@ -2430,7 +2430,7 @@
       "source_location": "L90",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_request_params_generator_requestparamsgenerator_addmissingimports",
-      "community": 165,
+      "community": 60,
       "norm_label": ".addmissingimports()"
     },
     {
@@ -2440,7 +2440,7 @@
       "source_location": "L113",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_request_params_generator_requestparamsgenerator_reserveinterfacename",
-      "community": 165,
+      "community": 60,
       "norm_label": ".reserveinterfacename()"
     },
     {
@@ -2450,7 +2450,7 @@
       "source_location": "L131",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_request_params_generator_requestparamsgenerator_addmodelsbarrelexport",
-      "community": 165,
+      "community": 60,
       "norm_label": ".addmodelsbarrelexport()"
     },
     {
@@ -2500,7 +2500,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_generator",
-      "community": 166,
+      "community": 60,
       "norm_label": "service-method.generator.ts"
     },
     {
@@ -2510,7 +2510,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_generator_servicemethodgenerator",
-      "community": 166,
+      "community": 60,
       "norm_label": "servicemethodgenerator"
     },
     {
@@ -2520,7 +2520,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_generator_servicemethodgenerator_constructor",
-      "community": 69,
+      "community": 60,
       "norm_label": ".constructor()"
     },
     {
@@ -2530,7 +2530,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_generator_servicemethodgenerator_addservicemethod",
-      "community": 166,
+      "community": 60,
       "norm_label": ".addservicemethod()"
     },
     {
@@ -2540,7 +2540,7 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_generator_servicemethodgenerator_generatesinglerequestparameters",
-      "community": 166,
+      "community": 60,
       "norm_label": ".generatesinglerequestparameters()"
     },
     {
@@ -2550,7 +2550,7 @@
       "source_location": "L57",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_generator_servicemethodgenerator_generatemethodname",
-      "community": 166,
+      "community": 60,
       "norm_label": ".generatemethodname()"
     },
     {
@@ -2560,7 +2560,7 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_generator_servicemethodgenerator_generatereturntype",
-      "community": 166,
+      "community": 60,
       "norm_label": ".generatereturntype()"
     },
     {
@@ -2570,7 +2570,7 @@
       "source_location": "L74",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_generator_servicemethodgenerator_defaultnamegenerator",
-      "community": 166,
+      "community": 60,
       "norm_label": ".defaultnamegenerator()"
     },
     {
@@ -2580,7 +2580,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_index",
-      "community": 166,
+      "community": 60,
       "norm_label": "index.ts"
     },
     {
@@ -2600,7 +2600,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_body_generator_servicemethodbodygenerator",
-      "community": 168,
+      "community": 60,
       "norm_label": "servicemethodbodygenerator"
     },
     {
@@ -2610,7 +2610,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_body_generator_servicemethodbodygenerator_constructor",
-      "community": 168,
+      "community": 60,
       "norm_label": ".constructor()"
     },
     {
@@ -2620,7 +2620,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_body_generator_servicemethodbodygenerator_generatemethodbody",
-      "community": 168,
+      "community": 60,
       "norm_label": ".generatemethodbody()"
     },
     {
@@ -2630,7 +2630,7 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_body_generator_servicemethodbodygenerator_generatemultipartformdata",
-      "community": 168,
+      "community": 60,
       "norm_label": ".generatemultipartformdata()"
     },
     {
@@ -2640,7 +2640,7 @@
       "source_location": "L81",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_body_generator_servicemethodbodygenerator_generateurlencodedformdata",
-      "community": 168,
+      "community": 60,
       "norm_label": ".generateurlencodedformdata()"
     },
     {
@@ -2660,7 +2660,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_overloads_generator",
-      "community": 166,
+      "community": 60,
       "norm_label": "service-method-overloads.generator.ts"
     },
     {
@@ -2670,7 +2670,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_overloads_generator_servicemethodoverloadsgenerator",
-      "community": 165,
+      "community": 60,
       "norm_label": "servicemethodoverloadsgenerator"
     },
     {
@@ -2680,7 +2680,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_overloads_generator_servicemethodoverloadsgenerator_constructor",
-      "community": 69,
+      "community": 60,
       "norm_label": ".constructor()"
     },
     {
@@ -2690,7 +2690,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_overloads_generator_servicemethodoverloadsgenerator_generatemethodoverloads",
-      "community": 165,
+      "community": 60,
       "norm_label": ".generatemethodoverloads()"
     },
     {
@@ -2700,7 +2700,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_overloads_generator_servicemethodoverloadsgenerator_generatemethodoverload",
-      "community": 165,
+      "community": 60,
       "norm_label": ".generatemethodoverload()"
     },
     {
@@ -2710,7 +2710,7 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_overloads_generator_servicemethodoverloadsgenerator_generatesinglerequestoverloadparameters",
-      "community": 165,
+      "community": 60,
       "norm_label": ".generatesinglerequestoverloadparameters()"
     },
     {
@@ -2720,7 +2720,7 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_overloads_generator_servicemethodoverloadsgenerator_generateoverloadparameters",
-      "community": 165,
+      "community": 60,
       "norm_label": ".generateoverloadparameters()"
     },
     {
@@ -2730,7 +2730,7 @@
       "source_location": "L75",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_overloads_generator_servicemethodoverloadsgenerator_addoverloadoptionsparameter",
-      "community": 165,
+      "community": 60,
       "norm_label": ".addoverloadoptionsparameter()"
     },
     {
@@ -2740,7 +2740,7 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_overloads_generator_servicemethodoverloadsgenerator_generateoverloadresponsetype",
-      "community": 165,
+      "community": 60,
       "norm_label": ".generateoverloadresponsetype()"
     },
     {
@@ -2750,7 +2750,7 @@
       "source_location": "L104",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_overloads_generator_servicemethodoverloadsgenerator_generateoverloadreturntype",
-      "community": 165,
+      "community": 60,
       "norm_label": ".generateoverloadreturntype()"
     },
     {
@@ -2760,7 +2760,7 @@
       "source_location": "L117",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_overloads_generator_servicemethodoverloadsgenerator_gethttprequestoptionsparameter",
-      "community": 165,
+      "community": 60,
       "norm_label": ".gethttprequestoptionsparameter()"
     },
     {
@@ -2770,7 +2770,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_params_generator",
-      "community": 166,
+      "community": 60,
       "norm_label": "service-method-params.generator.ts"
     },
     {
@@ -2780,7 +2780,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_params_generator_servicemethodparamsgenerator",
-      "community": 6,
+      "community": 60,
       "norm_label": "servicemethodparamsgenerator"
     },
     {
@@ -2790,7 +2790,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_params_generator_servicemethodparamsgenerator_constructor",
-      "community": 69,
+      "community": 60,
       "norm_label": ".constructor()"
     },
     {
@@ -2800,7 +2800,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_params_generator_servicemethodparamsgenerator_generatemethodparameters",
-      "community": 6,
+      "community": 60,
       "norm_label": ".generatemethodparameters()"
     },
     {
@@ -2810,7 +2810,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_params_generator_servicemethodparamsgenerator_generateapiparameters",
-      "community": 6,
+      "community": 2,
       "norm_label": ".generateapiparameters()"
     },
     {
@@ -2820,7 +2820,7 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_params_generator_servicemethodparamsgenerator_addoptionsparameter",
-      "community": 6,
+      "community": 60,
       "norm_label": ".addoptionsparameter()"
     },
     {
@@ -2830,7 +2830,7 @@
       "source_location": "L100",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_params_generator_servicemethodparamsgenerator_gethttprequestoptionsparameter",
-      "community": 6,
+      "community": 60,
       "norm_label": ".gethttprequestoptionsparameter()"
     },
     {
@@ -2840,7 +2840,7 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_params_generator_servicemethodparamsgenerator_getrequestbodytype",
-      "community": 6,
+      "community": 2,
       "norm_label": ".getrequestbodytype()"
     },
     {
@@ -2850,7 +2850,7 @@
       "source_location": "L130",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_params_generator_servicemethodparamsgenerator_convertobjecttosingleparams",
-      "community": 6,
+      "community": 2,
       "norm_label": ".convertobjecttosingleparams()"
     },
     {
@@ -2860,7 +2860,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_request_object_generator",
-      "community": 166,
+      "community": 60,
       "norm_label": "service-method-request-object.generator.ts"
     },
     {
@@ -2870,7 +2870,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_request_object_generator_requestobjectentry",
-      "community": 166,
+      "community": 60,
       "norm_label": "requestobjectentry"
     },
     {
@@ -2880,7 +2880,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_request_object_generator_servicemethodrequestobjectgenerator",
-      "community": 166,
+      "community": 60,
       "norm_label": "servicemethodrequestobjectgenerator"
     },
     {
@@ -2890,7 +2890,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_request_object_generator_servicemethodrequestobjectgenerator_dedupe",
-      "community": 165,
+      "community": 60,
       "norm_label": ".dedupe()"
     },
     {
@@ -2900,7 +2900,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_request_object_generator_servicemethodrequestobjectgenerator_createentry",
-      "community": 166,
+      "community": 60,
       "norm_label": ".createentry()"
     },
     {
@@ -2910,7 +2910,7 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_request_object_generator_servicemethodrequestobjectgenerator_torequestparameter",
-      "community": 166,
+      "community": 60,
       "norm_label": ".torequestparameter()"
     },
     {
@@ -2920,7 +2920,7 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_request_object_generator_servicemethodrequestobjectgenerator_tointerfaceproperties",
-      "community": 165,
+      "community": 60,
       "norm_label": ".tointerfaceproperties()"
     },
     {
@@ -2930,7 +2930,7 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_request_object_generator_servicemethodrequestobjectgenerator_todestructurestatement",
-      "community": 166,
+      "community": 60,
       "norm_label": ".todestructurestatement()"
     },
     {
@@ -2940,7 +2940,7 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_request_object_generator_servicemethodrequestobjectgenerator_resolvevarname",
-      "community": 166,
+      "community": 60,
       "norm_label": ".resolvevarname()"
     },
     {
@@ -2950,7 +2950,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_generator",
-      "community": 166,
+      "community": 60,
       "norm_label": "service.generator.ts"
     },
     {
@@ -3007,7 +3007,7 @@
       "label": ".addServiceClass()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/service/service.generator.ts",
-      "source_location": "L107",
+      "source_location": "L108",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_generator_servicegenerator_addserviceclass",
       "community": 169,
@@ -3037,7 +3037,7 @@
       "label": "EnumBuilder",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L22",
+      "source_location": "L24",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder",
       "community": 4,
@@ -3047,7 +3047,7 @@
       "label": ".constructor()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L26",
+      "source_location": "L28",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_constructor",
       "community": 4,
@@ -3057,7 +3057,7 @@
       "label": ".build()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L31",
+      "source_location": "L33",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_build",
       "community": 4,
@@ -3067,7 +3067,7 @@
       "label": ".buildEnumAsEnum()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L45",
+      "source_location": "L47",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_buildenumasenum",
       "community": 4,
@@ -3077,7 +3077,7 @@
       "label": ".buildEnumAsUnion()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L78",
+      "source_location": "L80",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_buildenumasunion",
       "community": 4,
@@ -3087,7 +3087,7 @@
       "label": ".buildEnumMembers()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L119",
+      "source_location": "L121",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_buildenummembers",
       "community": 4,
@@ -3407,7 +3407,7 @@
       "label": ".nullableType()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type-resolver.ts",
-      "source_location": "L220",
+      "source_location": "L217",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_type_type_resolver_typeresolver_nullabletype",
       "community": 4,
@@ -3440,7 +3440,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_constructor",
-      "community": 65,
+      "community": 4,
       "norm_label": ".constructor()"
     },
     {
@@ -3497,7 +3497,7 @@
       "label": ".finalize()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L142",
+      "source_location": "L140",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_finalize",
       "community": 4,
@@ -3507,7 +3507,7 @@
       "label": ".generatePerType()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L148",
+      "source_location": "L147",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_generatepertype",
       "community": 4,
@@ -3517,7 +3517,7 @@
       "label": ".writeModelFile()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L177",
+      "source_location": "L176",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writemodelfile",
       "community": 4,
@@ -3527,7 +3527,7 @@
       "label": ".buildCrossFileImports()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L194",
+      "source_location": "L193",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_buildcrossfileimports",
       "community": 4,
@@ -3537,7 +3537,7 @@
       "label": ".writeSdkTypesFile()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L221",
+      "source_location": "L220",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writesdktypesfile",
       "community": 4,
@@ -3547,7 +3547,7 @@
       "label": ".addSdkImports()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L228",
+      "source_location": "L227",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_addsdkimports",
       "community": 4,
@@ -3557,7 +3557,7 @@
       "label": ".writeModelsBarrel()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L237",
+      "source_location": "L236",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writemodelsbarrel",
       "community": 4,
@@ -3567,7 +3567,7 @@
       "label": ".createModelSourceFile()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L244",
+      "source_location": "L243",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_createmodelsourcefile",
       "community": 4,
@@ -3577,7 +3577,7 @@
       "label": ".finalizeModelSourceFile()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L255",
+      "source_location": "L254",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_finalizemodelsourcefile",
       "community": 4,
@@ -3590,7 +3590,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_utility_base_interceptor_generator",
-      "community": 57,
+      "community": 66,
       "norm_label": "base-interceptor.generator.ts"
     },
     {
@@ -3600,7 +3600,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_utility_base_interceptor_generator_baseinterceptorgenerator",
-      "community": 57,
+      "community": 66,
       "norm_label": "baseinterceptorgenerator"
     },
     {
@@ -3610,7 +3610,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_utility_base_interceptor_generator_baseinterceptorgenerator_constructor",
-      "community": 57,
+      "community": 66,
       "norm_label": ".constructor()"
     },
     {
@@ -3620,7 +3620,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_utility_base_interceptor_generator_baseinterceptorgenerator_generate",
-      "community": 57,
+      "community": 66,
       "norm_label": ".generate()"
     },
     {
@@ -3630,7 +3630,7 @@
       "source_location": "L108",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_utility_base_interceptor_generator_baseinterceptorgenerator_capitalizefirst",
-      "community": 57,
+      "community": 66,
       "norm_label": ".capitalizefirst()"
     },
     {
@@ -3720,7 +3720,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_utility_http_params_builder_generator",
-      "community": 66,
+      "community": 67,
       "norm_label": "http-params-builder.generator.ts"
     },
     {
@@ -3730,7 +3730,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_utility_http_params_builder_generator_httpparamsbuildergenerator",
-      "community": 66,
+      "community": 67,
       "norm_label": "httpparamsbuildergenerator"
     },
     {
@@ -3740,7 +3740,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_utility_http_params_builder_generator_httpparamsbuildergenerator_constructor",
-      "community": 66,
+      "community": 67,
       "norm_label": ".constructor()"
     },
     {
@@ -3750,7 +3750,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_utility_http_params_builder_generator_httpparamsbuildergenerator_generate",
-      "community": 66,
+      "community": 67,
       "norm_label": ".generate()"
     },
     {
@@ -3760,7 +3760,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_utility_http_params_builder_generator_httpparamsbuildergenerator_addmethods",
-      "community": 66,
+      "community": 67,
       "norm_label": ".addmethods()"
     },
     {
@@ -3780,7 +3780,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_utility_main_index_generator",
-      "community": 2,
+      "community": 51,
       "norm_label": "main-index.generator.ts"
     },
     {
@@ -3790,7 +3790,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_utility_main_index_generator_mainindexgenerator",
-      "community": 2,
+      "community": 51,
       "norm_label": "mainindexgenerator"
     },
     {
@@ -3800,7 +3800,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_utility_main_index_generator_mainindexgenerator_constructor",
-      "community": 2,
+      "community": 51,
       "norm_label": ".constructor()"
     },
     {
@@ -3810,7 +3810,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_utility_main_index_generator_mainindexgenerator_generatemainindex",
-      "community": 2,
+      "community": 51,
       "norm_label": ".generatemainindex()"
     },
     {
@@ -3857,7 +3857,7 @@
       "label": ".addMainProviderFunction()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/utility/provider.generator.ts",
-      "source_location": "L106",
+      "source_location": "L105",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_utility_provider_generator_providergenerator_addmainproviderfunction",
       "community": 172,
@@ -3867,7 +3867,7 @@
       "label": ".capitalizeFirst()",
       "file_type": "code",
       "source_file": "packages/ng-openapi/src/lib/generators/utility/provider.generator.ts",
-      "source_location": "L221",
+      "source_location": "L220",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_utility_provider_generator_providergenerator_capitalizefirst",
       "community": 172,
@@ -3920,7 +3920,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_ng_openapi_tests_config_validation_test",
-      "community": 51,
+      "community": 57,
       "norm_label": "config-validation.test.ts"
     },
     {
@@ -3930,7 +3930,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "packages_ng_openapi_tests_config_validation_test_validconfig",
-      "community": 51,
+      "community": 57,
       "norm_label": "validconfig"
     },
     {
@@ -3940,7 +3940,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "packages_ng_openapi_tests_config_validation_test_issuesof",
-      "community": 51,
+      "community": 57,
       "norm_label": "issuesof()"
     },
     {
@@ -4000,7 +4000,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_ng_openapi_tests_golden_test",
-      "community": 25,
+      "community": 26,
       "norm_label": "golden.test.ts"
     },
     {
@@ -4010,7 +4010,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "packages_ng_openapi_tests_golden_test_baseconfig",
-      "community": 25,
+      "community": 26,
       "norm_label": "baseconfig()"
     },
     {
@@ -4780,7 +4780,7 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_package_peerdependencies",
-      "community": 47,
+      "community": 9,
       "norm_label": "peerdependencies"
     },
     {
@@ -4790,7 +4790,7 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_package_peerdependencies_angular_core",
-      "community": 47,
+      "community": 9,
       "norm_label": "@angular/core"
     },
     {
@@ -4800,7 +4800,7 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_package_peerdependencies_angular_common",
-      "community": 47,
+      "community": 9,
       "norm_label": "@angular/common"
     },
     {
@@ -4810,7 +4810,7 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_package_peerdependencies_ng_openapi",
-      "community": 47,
+      "community": 9,
       "norm_label": "ng-openapi"
     },
     {
@@ -4820,7 +4820,7 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_package_peerdependencies_ts_morph",
-      "community": 47,
+      "community": 9,
       "norm_label": "ts-morph"
     },
     {
@@ -5300,7 +5300,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_generator",
-      "community": 69,
+      "community": 60,
       "norm_label": "http-resource-method.generator.ts"
     },
     {
@@ -5310,7 +5310,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_generator_httpresourcemethodgenerator",
-      "community": 69,
+      "community": 60,
       "norm_label": "httpresourcemethodgenerator"
     },
     {
@@ -5320,7 +5320,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_generator_httpresourcemethodgenerator_constructor",
-      "community": 69,
+      "community": 60,
       "norm_label": ".constructor()"
     },
     {
@@ -5330,7 +5330,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_generator_httpresourcemethodgenerator_addresourcemethod",
-      "community": 69,
+      "community": 60,
       "norm_label": ".addresourcemethod()"
     },
     {
@@ -5340,7 +5340,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_generator_httpresourcemethodgenerator_generatemethodname",
-      "community": 69,
+      "community": 60,
       "norm_label": ".generatemethodname()"
     },
     {
@@ -5350,7 +5350,7 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_generator_httpresourcemethodgenerator_defaultnamegenerator",
-      "community": 69,
+      "community": 60,
       "norm_label": ".defaultnamegenerator()"
     },
     {
@@ -5360,7 +5360,7 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_generator_httpresourcemethodgenerator_generatereturntype",
-      "community": 69,
+      "community": 60,
       "norm_label": ".generatereturntype()"
     },
     {
@@ -5370,7 +5370,7 @@
       "source_location": "L77",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_generator_httpresourcemethodgenerator_generatemethodoverload",
-      "community": 69,
+      "community": 60,
       "norm_label": ".generatemethodoverload()"
     },
     {
@@ -5390,7 +5390,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_http_resource_method_body_generator_httpresourcemethodbodygenerator",
-      "community": 77,
+      "community": 60,
       "norm_label": "httpresourcemethodbodygenerator"
     },
     {
@@ -5400,7 +5400,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_http_resource_method_body_generator_httpresourcemethodbodygenerator_constructor",
-      "community": 69,
+      "community": 60,
       "norm_label": ".constructor()"
     },
     {
@@ -5410,7 +5410,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_http_resource_method_body_generator_httpresourcemethodbodygenerator_generatemethodbody",
-      "community": 77,
+      "community": 60,
       "norm_label": ".generatemethodbody()"
     },
     {
@@ -5420,7 +5420,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_http_resource_method_body_generator_httpresourcemethodbodygenerator_generatedefaultheaders",
-      "community": 77,
+      "community": 60,
       "norm_label": ".generatedefaultheaders()"
     },
     {
@@ -5430,7 +5430,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_http_resource_method_body_generator_httpresourcemethodbodygenerator_defaultheaders",
-      "community": 77,
+      "community": 60,
       "norm_label": ".defaultheaders()"
     },
     {
@@ -5440,7 +5440,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_http_resource_method_body_generator_httpresourcemethodbodygenerator_generaterequestoptions",
-      "community": 77,
+      "community": 60,
       "norm_label": ".generaterequestoptions()"
     },
     {
@@ -5450,7 +5450,7 @@
       "source_location": "L74",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_http_resource_method_body_generator_httpresourcemethodbodygenerator_generatehttpresource",
-      "community": 77,
+      "community": 60,
       "norm_label": ".generatehttpresource()"
     },
     {
@@ -5460,7 +5460,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_http_resource_method_params_generator",
-      "community": 69,
+      "community": 60,
       "norm_label": "http-resource-method-params.generator.ts"
     },
     {
@@ -5470,7 +5470,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_http_resource_method_params_generator_httpresourcemethodparamsgenerator",
-      "community": 69,
+      "community": 60,
       "norm_label": "httpresourcemethodparamsgenerator"
     },
     {
@@ -5480,7 +5480,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_http_resource_method_params_generator_httpresourcemethodparamsgenerator_constructor",
-      "community": 69,
+      "community": 60,
       "norm_label": ".constructor()"
     },
     {
@@ -5490,7 +5490,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_http_resource_method_params_generator_httpresourcemethodparamsgenerator_generatemethodparameters",
-      "community": 69,
+      "community": 60,
       "norm_label": ".generatemethodparameters()"
     },
     {
@@ -5500,7 +5500,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_http_resource_method_params_generator_httpresourcemethodparamsgenerator_generateapiparameters",
-      "community": 69,
+      "community": 60,
       "norm_label": ".generateapiparameters()"
     },
     {
@@ -5510,7 +5510,7 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_http_resource_method_params_generator_httpresourcemethodparamsgenerator_addoptionsparameter",
-      "community": 69,
+      "community": 60,
       "norm_label": ".addoptionsparameter()"
     },
     {
@@ -5520,7 +5520,7 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_http_resource_method_params_generator_httpresourcemethodparamsgenerator_getapireturntype",
-      "community": 69,
+      "community": 60,
       "norm_label": ".getapireturntype()"
     },
     {
@@ -5530,7 +5530,7 @@
       "source_location": "L92",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_http_resource_method_params_generator_httpresourcemethodparamsgenerator_getresourcerawdatatype",
-      "community": 69,
+      "community": 60,
       "norm_label": ".getresourcerawdatatype()"
     },
     {
@@ -5540,7 +5540,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_index",
-      "community": 69,
+      "community": 60,
       "norm_label": "index.ts"
     },
     {
@@ -5550,7 +5550,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_generator",
-      "community": 2,
+      "community": 169,
       "norm_label": "http-resource.generator.ts"
     },
     {
@@ -5560,7 +5560,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_generator_httpresourcegenerator",
-      "community": 2,
+      "community": 60,
       "norm_label": "httpresourcegenerator"
     },
     {
@@ -5570,7 +5570,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_generator_httpresourcegenerator_constructor",
-      "community": 2,
+      "community": 60,
       "norm_label": ".constructor()"
     },
     {
@@ -5580,7 +5580,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_generator_httpresourcegenerator_generate",
-      "community": 2,
+      "community": 60,
       "norm_label": ".generate()"
     },
     {
@@ -5590,7 +5590,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_generator_httpresourcegenerator_grouppathsbycontroller",
-      "community": 2,
+      "community": 60,
       "norm_label": ".grouppathsbycontroller()"
     },
     {
@@ -5600,17 +5600,17 @@
       "source_location": "L85",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_generator_httpresourcegenerator_generateservicefile",
-      "community": 2,
+      "community": 60,
       "norm_label": ".generateservicefile()"
     },
     {
       "label": ".addServiceClass()",
       "file_type": "code",
       "source_file": "packages/plugins/http-resource/src/lib/http-resource.generator.ts",
-      "source_location": "L95",
+      "source_location": "L96",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_generator_httpresourcegenerator_addserviceclass",
-      "community": 2,
+      "community": 60,
       "norm_label": ".addserviceclass()"
     },
     {
@@ -5960,7 +5960,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_author",
-      "community": 94,
+      "community": 3,
       "norm_label": "author"
     },
     {
@@ -5970,7 +5970,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_author_name",
-      "community": 94,
+      "community": 3,
       "norm_label": "name"
     },
     {
@@ -5980,7 +5980,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_author_email",
-      "community": 94,
+      "community": 3,
       "norm_label": "email"
     },
     {
@@ -5990,7 +5990,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_author_url",
-      "community": 94,
+      "community": 3,
       "norm_label": "url"
     },
     {
@@ -6040,7 +6040,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_repository",
-      "community": 100,
+      "community": 3,
       "norm_label": "repository"
     },
     {
@@ -6050,7 +6050,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_repository_type",
-      "community": 100,
+      "community": 3,
       "norm_label": "type"
     },
     {
@@ -6060,7 +6060,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_repository_url",
-      "community": 100,
+      "community": 3,
       "norm_label": "url"
     },
     {
@@ -6070,7 +6070,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_repository_directory",
-      "community": 100,
+      "community": 3,
       "norm_label": "directory"
     },
     {
@@ -6080,7 +6080,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_funding",
-      "community": 106,
+      "community": 3,
       "norm_label": "funding"
     },
     {
@@ -6090,7 +6090,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_funding_type",
-      "community": 106,
+      "community": 3,
       "norm_label": "type"
     },
     {
@@ -6100,7 +6100,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_funding_url",
-      "community": 106,
+      "community": 3,
       "norm_label": "url"
     },
     {
@@ -6140,7 +6140,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_types",
-      "community": 99,
+      "community": 3,
       "norm_label": "types"
     },
     {
@@ -6150,7 +6150,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_exports",
-      "community": 99,
+      "community": 3,
       "norm_label": "exports"
     },
     {
@@ -6160,7 +6160,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_import",
-      "community": 99,
+      "community": 3,
       "norm_label": "import"
     },
     {
@@ -6170,7 +6170,7 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_require",
-      "community": 99,
+      "community": 3,
       "norm_label": "require"
     },
     {
@@ -6190,7 +6190,7 @@
       "source_location": "L56",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_scripts",
-      "community": 108,
+      "community": 3,
       "norm_label": "scripts"
     },
     {
@@ -6200,7 +6200,7 @@
       "source_location": "L57",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_scripts_prepublishonly",
-      "community": 108,
+      "community": 3,
       "norm_label": "prepublishonly"
     },
     {
@@ -6210,7 +6210,7 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_scripts_build",
-      "community": 108,
+      "community": 3,
       "norm_label": "build"
     },
     {
@@ -6220,7 +6220,7 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_peerdependencies",
-      "community": 47,
+      "community": 9,
       "norm_label": "peerdependencies"
     },
     {
@@ -6230,7 +6230,7 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_peerdependencies_ng_openapi",
-      "community": 47,
+      "community": 9,
       "norm_label": "ng-openapi"
     },
     {
@@ -6240,7 +6240,7 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_peerdependencies_ts_morph",
-      "community": 47,
+      "community": 9,
       "norm_label": "ts-morph"
     },
     {
@@ -6250,7 +6250,7 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_peerdependencies_zod",
-      "community": 47,
+      "community": 9,
       "norm_label": "zod"
     },
     {
@@ -6260,7 +6260,7 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_peerdependenciesmeta",
-      "community": 64,
+      "community": 3,
       "norm_label": "peerdependenciesmeta"
     },
     {
@@ -6270,7 +6270,7 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_peerdependenciesmeta_ng_openapi",
-      "community": 64,
+      "community": 3,
       "norm_label": "ng-openapi"
     },
     {
@@ -6280,7 +6280,7 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_ng_openapi_optional",
-      "community": 64,
+      "community": 3,
       "norm_label": "optional"
     },
     {
@@ -6290,7 +6290,7 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_peerdependenciesmeta_ts_morph",
-      "community": 64,
+      "community": 3,
       "norm_label": "ts-morph"
     },
     {
@@ -6300,7 +6300,7 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_ts_morph_optional",
-      "community": 64,
+      "community": 3,
       "norm_label": "optional"
     },
     {
@@ -6310,7 +6310,7 @@
       "source_location": "L72",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_peerdependenciesmeta_zod",
-      "community": 64,
+      "community": 3,
       "norm_label": "zod"
     },
     {
@@ -6320,7 +6320,7 @@
       "source_location": "L73",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_zod_optional",
-      "community": 64,
+      "community": 3,
       "norm_label": "optional"
     },
     {
@@ -6330,7 +6330,7 @@
       "source_location": "L76",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_engines",
-      "community": 105,
+      "community": 3,
       "norm_label": "engines"
     },
     {
@@ -6340,7 +6340,7 @@
       "source_location": "L77",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_engines_node",
-      "community": 105,
+      "community": 3,
       "norm_label": "node"
     },
     {
@@ -6350,7 +6350,7 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_engines_npm",
-      "community": 105,
+      "community": 3,
       "norm_label": "npm"
     },
     {
@@ -6360,7 +6360,7 @@
       "source_location": "L80",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_publishconfig",
-      "community": 107,
+      "community": 3,
       "norm_label": "publishconfig"
     },
     {
@@ -6370,7 +6370,7 @@
       "source_location": "L81",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_publishconfig_access",
-      "community": 107,
+      "community": 3,
       "norm_label": "access"
     },
     {
@@ -6380,7 +6380,7 @@
       "source_location": "L82",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_publishconfig_registry",
-      "community": 107,
+      "community": 3,
       "norm_label": "registry"
     },
     {
@@ -7070,7 +7070,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "packages_plugins_zod_src_lib_zod_generator_zodgenerator",
-      "community": 169,
+      "community": 65,
       "norm_label": "zodgenerator"
     },
     {
@@ -7080,7 +7080,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_constructor",
-      "community": 2,
+      "community": 65,
       "norm_label": ".constructor()"
     },
     {
@@ -7090,7 +7090,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_generate",
-      "community": 169,
+      "community": 65,
       "norm_label": ".generate()"
     },
     {
@@ -7100,7 +7100,7 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_grouppathsbycontroller",
-      "community": 169,
+      "community": 65,
       "norm_label": ".grouppathsbycontroller()"
     },
     {
@@ -7110,57 +7110,57 @@
       "source_location": "L85",
       "_origin": "ast",
       "id": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_generatevalidatorfile",
-      "community": 169,
+      "community": 65,
       "norm_label": ".generatevalidatorfile()"
     },
     {
       "label": ".addImports()",
       "file_type": "code",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L114",
+      "source_location": "L113",
       "_origin": "ast",
       "id": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_addimports",
-      "community": 169,
+      "community": 65,
       "norm_label": ".addimports()"
     },
     {
       "label": ".generateOperationValidators()",
       "file_type": "code",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L122",
+      "source_location": "L121",
       "_origin": "ast",
       "id": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_generateoperationvalidators",
-      "community": 169,
+      "community": 65,
       "norm_label": ".generateoperationvalidators()"
     },
     {
       "label": ".generateParameterValidators()",
       "file_type": "code",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L154",
+      "source_location": "L153",
       "_origin": "ast",
       "id": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_generateparametervalidators",
-      "community": 169,
+      "community": 65,
       "norm_label": ".generateparametervalidators()"
     },
     {
       "label": ".shouldGenerate()",
       "file_type": "code",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L201",
+      "source_location": "L200",
       "_origin": "ast",
       "id": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_shouldgenerate",
-      "community": 169,
+      "community": 65,
       "norm_label": ".shouldgenerate()"
     },
     {
       "label": ".getOperationName()",
       "file_type": "code",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L205",
+      "source_location": "L204",
       "_origin": "ast",
       "id": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_getoperationname",
-      "community": 169,
+      "community": 65,
       "norm_label": ".getoperationname()"
     },
     {
@@ -7740,7 +7740,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_src_config_constants",
-      "community": 2,
+      "community": 169,
       "norm_label": "constants.ts"
     },
     {
@@ -7750,7 +7750,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "packages_shared_src_config_constants_service_generator_header_comment",
-      "community": 2,
+      "community": 169,
       "norm_label": "service_generator_header_comment()"
     },
     {
@@ -7760,7 +7760,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "packages_shared_src_config_constants_base_interceptor_header_comment",
-      "community": 57,
+      "community": 169,
       "norm_label": "base_interceptor_header_comment()"
     },
     {
@@ -7770,7 +7770,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "packages_shared_src_config_constants_http_resource_generator_header_comment",
-      "community": 2,
+      "community": 169,
       "norm_label": "http_resource_generator_header_comment()"
     },
     {
@@ -7780,7 +7780,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "packages_shared_src_config_constants_zod_plugin_generator_header_comment",
-      "community": 2,
+      "community": 169,
       "norm_label": "zod_plugin_generator_header_comment()"
     },
     {
@@ -7790,7 +7790,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_src_config_define_config",
-      "community": 2,
+      "community": 169,
       "norm_label": "define-config.ts"
     },
     {
@@ -7800,7 +7800,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "packages_shared_src_config_define_config_defineconfig",
-      "community": 2,
+      "community": 169,
       "norm_label": "defineconfig()"
     },
     {
@@ -7810,7 +7810,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_src_config_index",
-      "community": 2,
+      "community": 169,
       "norm_label": "index.ts"
     },
     {
@@ -7820,7 +7820,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_src_core_index",
-      "community": 65,
+      "community": 169,
       "norm_label": "index.ts"
     },
     {
@@ -7830,7 +7830,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize",
-      "community": 65,
+      "community": 169,
       "norm_label": "normalize.ts"
     },
     {
@@ -7840,7 +7840,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_resolveref",
-      "community": 65,
+      "community": 169,
       "norm_label": "resolveref"
     },
     {
@@ -7850,7 +7850,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_normalizespec",
-      "community": 65,
+      "community": 169,
       "norm_label": "normalizespec()"
     },
     {
@@ -7860,7 +7860,7 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_normalizeschema",
-      "community": 65,
+      "community": 169,
       "norm_label": "normalizeschema()"
     },
     {
@@ -7870,7 +7870,7 @@
       "source_location": "L121",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_normalizeoperationschemas",
-      "community": 65,
+      "community": 169,
       "norm_label": "normalizeoperationschemas()"
     },
     {
@@ -7880,7 +7880,7 @@
       "source_location": "L141",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_normalizecontentschemas",
-      "community": 65,
+      "community": 169,
       "norm_label": "normalizecontentschemas()"
     },
     {
@@ -7890,7 +7890,7 @@
       "source_location": "L153",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_normalizeoperation",
-      "community": 65,
+      "community": 169,
       "norm_label": "normalizeoperation()"
     },
     {
@@ -7900,7 +7900,7 @@
       "source_location": "L183",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_resolvebodyschema",
-      "community": 65,
+      "community": 169,
       "norm_label": "resolvebodyschema()"
     },
     {
@@ -7910,7 +7910,7 @@
       "source_location": "L192",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_determineresponseinfo",
-      "community": 65,
+      "community": 169,
       "norm_label": "determineresponseinfo()"
     },
     {
@@ -7980,7 +7980,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_src_core_swagger_parser",
-      "community": 65,
+      "community": 78,
       "norm_label": "swagger-parser.ts"
     },
     {
@@ -7990,7 +7990,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "packages_shared_src_core_swagger_parser_swaggerparser",
-      "community": 65,
+      "community": 169,
       "norm_label": "swaggerparser"
     },
     {
@@ -8000,7 +8000,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "packages_shared_src_core_swagger_parser_swaggerparser_constructor",
-      "community": 65,
+      "community": 169,
       "norm_label": ".constructor()"
     },
     {
@@ -8010,7 +8010,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "packages_shared_src_core_swagger_parser_swaggerparser_create",
-      "community": 78,
+      "community": 51,
       "norm_label": ".create()"
     },
     {
@@ -8020,7 +8020,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "packages_shared_src_core_swagger_parser_swaggerparser_getnormalizedspec",
-      "community": 65,
+      "community": 169,
       "norm_label": ".getnormalizedspec()"
     },
     {
@@ -8030,7 +8030,7 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "packages_shared_src_core_swagger_parser_swaggerparser_getdefinitions",
-      "community": 65,
+      "community": 169,
       "norm_label": ".getdefinitions()"
     },
     {
@@ -8040,7 +8040,7 @@
       "source_location": "L57",
       "_origin": "ast",
       "id": "packages_shared_src_core_swagger_parser_swaggerparser_getdefinition",
-      "community": 65,
+      "community": 169,
       "norm_label": ".getdefinition()"
     },
     {
@@ -8050,7 +8050,7 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "packages_shared_src_core_swagger_parser_swaggerparser_resolvereference",
-      "community": 65,
+      "community": 169,
       "norm_label": ".resolvereference()"
     },
     {
@@ -8060,7 +8060,7 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "packages_shared_src_core_swagger_parser_swaggerparser_getalldefinitionnames",
-      "community": 65,
+      "community": 169,
       "norm_label": ".getalldefinitionnames()"
     },
     {
@@ -8070,7 +8070,7 @@
       "source_location": "L74",
       "_origin": "ast",
       "id": "packages_shared_src_core_swagger_parser_swaggerparser_getspec",
-      "community": 65,
+      "community": 169,
       "norm_label": ".getspec()"
     },
     {
@@ -8080,7 +8080,7 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "packages_shared_src_core_swagger_parser_swaggerparser_getpaths",
-      "community": 65,
+      "community": 169,
       "norm_label": ".getpaths()"
     },
     {
@@ -8090,7 +8090,7 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "packages_shared_src_core_swagger_parser_swaggerparser_isvalidspec",
-      "community": 65,
+      "community": 169,
       "norm_label": ".isvalidspec()"
     },
     {
@@ -8100,7 +8100,7 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "packages_shared_src_core_swagger_parser_swaggerparser_getspecversion",
-      "community": 65,
+      "community": 169,
       "norm_label": ".getspecversion()"
     },
     {
@@ -8390,7 +8390,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_src_index",
-      "community": 4,
+      "community": 60,
       "norm_label": "index.ts"
     },
     {
@@ -8400,7 +8400,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_src_model_index",
-      "community": 65,
+      "community": 169,
       "norm_label": "index.ts"
     },
     {
@@ -8410,7 +8410,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_src_model_operation_model",
-      "community": 65,
+      "community": 169,
       "norm_label": "operation.model.ts"
     },
     {
@@ -8420,7 +8420,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "packages_shared_src_model_operation_model_responsekind",
-      "community": 65,
+      "community": 169,
       "norm_label": "responsekind"
     },
     {
@@ -8430,7 +8430,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "packages_shared_src_model_operation_model_normalizedoperation",
-      "community": 169,
+      "community": 60,
       "norm_label": "normalizedoperation"
     },
     {
@@ -8440,7 +8440,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_src_model_spec_model",
-      "community": 65,
+      "community": 169,
       "norm_label": "spec.model.ts"
     },
     {
@@ -8450,7 +8450,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "packages_shared_src_model_spec_model_specversion",
-      "community": 65,
+      "community": 169,
       "norm_label": "specversion"
     },
     {
@@ -8480,7 +8480,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_src_types_config_types",
-      "community": 2,
+      "community": 169,
       "norm_label": "config.types.ts"
     },
     {
@@ -8500,7 +8500,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "packages_shared_src_types_config_types_namingoptions",
-      "community": 2,
+      "community": 169,
       "norm_label": "namingoptions"
     },
     {
@@ -8510,7 +8510,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "packages_shared_src_types_config_types_generatorconfig",
-      "community": 2,
+      "community": 169,
       "norm_label": "generatorconfig"
     },
     {
@@ -8540,7 +8540,7 @@
       "source_location": "L136",
       "_origin": "ast",
       "id": "packages_shared_src_types_config_types_methodgenoptions",
-      "community": 69,
+      "community": 60,
       "norm_label": "methodgenoptions"
     },
     {
@@ -8550,7 +8550,7 @@
       "source_location": "L153",
       "_origin": "ast",
       "id": "packages_shared_src_types_config_types_ngopenapiclientconfig",
-      "community": 2,
+      "community": 169,
       "norm_label": "ngopenapiclientconfig"
     },
     {
@@ -8560,7 +8560,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_src_types_generator_types",
-      "community": 2,
+      "community": 169,
       "norm_label": "generator.types.ts"
     },
     {
@@ -8570,7 +8570,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "packages_shared_src_types_generator_types_methodgenerationcontext",
-      "community": 2,
+      "community": 169,
       "norm_label": "methodgenerationcontext"
     },
     {
@@ -8580,7 +8580,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "packages_shared_src_types_generator_types_typeschema",
-      "community": 2,
+      "community": 169,
       "norm_label": "typeschema"
     },
     {
@@ -8590,7 +8590,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "packages_shared_src_types_generator_types_getmethodgenerationcontext",
-      "community": 2,
+      "community": 169,
       "norm_label": "getmethodgenerationcontext"
     },
     {
@@ -8600,7 +8600,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_src_types_index",
-      "community": 2,
+      "community": 169,
       "norm_label": "index.ts"
     },
     {
@@ -8610,7 +8610,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_src_types_plugin_types",
-      "community": 2,
+      "community": 169,
       "norm_label": "plugin.types.ts"
     },
     {
@@ -8620,7 +8620,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "packages_shared_src_types_plugin_types_plugingeneratorcontext",
-      "community": 2,
+      "community": 169,
       "norm_label": "plugingeneratorcontext"
     },
     {
@@ -8630,7 +8630,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "packages_shared_src_types_plugin_types_iplugingeneratorclass",
-      "community": 2,
+      "community": 169,
       "norm_label": "iplugingeneratorclass"
     },
     {
@@ -8640,7 +8640,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "packages_shared_src_types_plugin_types_iplugingenerator",
-      "community": 2,
+      "community": 169,
       "norm_label": "iplugingenerator"
     },
     {
@@ -8650,7 +8650,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "packages_shared_src_types_plugin_types_iplugingenerator_generate",
-      "community": 2,
+      "community": 169,
       "norm_label": ".generate()"
     },
     {
@@ -8660,7 +8660,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_src_types_swagger_types",
-      "community": 65,
+      "community": 169,
       "norm_label": "swagger.types.ts"
     },
     {
@@ -8670,7 +8670,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "packages_shared_src_types_swagger_types_parameter",
-      "community": 60,
+      "community": 169,
       "norm_label": "parameter"
     },
     {
@@ -8680,7 +8680,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "packages_shared_src_types_swagger_types_pathinfo",
-      "community": 65,
+      "community": 169,
       "norm_label": "pathinfo"
     },
     {
@@ -8690,7 +8690,7 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "packages_shared_src_types_swagger_types_requestbody",
-      "community": 65,
+      "community": 169,
       "norm_label": "requestbody"
     },
     {
@@ -8700,7 +8700,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "packages_shared_src_types_swagger_types_swaggerresponse",
-      "community": 65,
+      "community": 169,
       "norm_label": "swaggerresponse"
     },
     {
@@ -8710,7 +8710,7 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "packages_shared_src_types_swagger_types_openapisecurityscheme",
-      "community": 2,
+      "community": 169,
       "norm_label": "openapisecurityscheme"
     },
     {
@@ -8720,7 +8720,7 @@
       "source_location": "L81",
       "_origin": "ast",
       "id": "packages_shared_src_types_swagger_types_swaggerdefinition",
-      "community": 65,
+      "community": 4,
       "norm_label": "swaggerdefinition"
     },
     {
@@ -8730,7 +8730,7 @@
       "source_location": "L124",
       "_origin": "ast",
       "id": "packages_shared_src_types_swagger_types_swaggerspec",
-      "community": 65,
+      "community": 169,
       "norm_label": "swaggerspec"
     },
     {
@@ -8740,7 +8740,7 @@
       "source_location": "L152",
       "_origin": "ast",
       "id": "packages_shared_src_types_swagger_types_enumvalueobject",
-      "community": 2,
+      "community": 169,
       "norm_label": "enumvalueobject"
     },
     {
@@ -8840,7 +8840,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_src_utils_functions_extract_paths",
-      "community": 65,
+      "community": 169,
       "norm_label": "extract-paths.ts"
     },
     {
@@ -8850,7 +8850,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "packages_shared_src_utils_functions_extract_paths_rawoperation",
-      "community": 65,
+      "community": 169,
       "norm_label": "rawoperation"
     },
     {
@@ -8860,7 +8860,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "packages_shared_src_utils_functions_extract_paths_rawpathitem",
-      "community": 65,
+      "community": 169,
       "norm_label": "rawpathitem"
     },
     {
@@ -8870,7 +8870,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "packages_shared_src_utils_functions_extract_paths_extractpaths",
-      "community": 65,
+      "community": 169,
       "norm_label": "extractpaths()"
     },
     {
@@ -8880,7 +8880,7 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "packages_shared_src_utils_functions_extract_paths_parseparameters",
-      "community": 65,
+      "community": 169,
       "norm_label": "parseparameters()"
     },
     {
@@ -9030,7 +9030,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_src_utils_functions_is_url",
-      "community": 0,
+      "community": 78,
       "norm_label": "is-url.ts"
     },
     {
@@ -9190,7 +9190,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_tests_define_config_test",
-      "community": 2,
+      "community": 169,
       "norm_label": "define-config.test.ts"
     },
     {
@@ -9230,7 +9230,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_tests_extract_paths_test",
-      "community": 65,
+      "community": 169,
       "norm_label": "extract-paths.test.ts"
     },
     {
@@ -9260,7 +9260,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_tests_get_request_body_type_test",
-      "community": 4,
+      "community": 169,
       "norm_label": "get-request-body-type.test.ts"
     },
     {
@@ -9270,7 +9270,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "packages_shared_tests_get_request_body_type_test_config",
-      "community": 4,
+      "community": 169,
       "norm_label": "config"
     },
     {
@@ -9380,7 +9380,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_tests_normalize_test",
-      "community": 65,
+      "community": 169,
       "norm_label": "normalize.test.ts"
     },
     {
@@ -9390,7 +9390,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "packages_shared_tests_normalize_test_spec",
-      "community": 65,
+      "community": 169,
       "norm_label": "spec"
     },
     {
@@ -9400,7 +9400,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_tests_project_utils_test",
-      "community": 4,
+      "community": 2,
       "norm_label": "project.utils.test.ts"
     },
     {
@@ -9410,7 +9410,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "packages_shared_tests_project_utils_test_createproject",
-      "community": 4,
+      "community": 2,
       "norm_label": "createproject()"
     },
     {
@@ -9460,7 +9460,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_shared_tests_swagger_parser_test",
-      "community": 4,
+      "community": 169,
       "norm_label": "swagger-parser.test.ts"
     },
     {
@@ -9470,7 +9470,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "packages_shared_tests_swagger_parser_test_config",
-      "community": 4,
+      "community": 169,
       "norm_label": "config"
     },
     {
@@ -9480,7 +9480,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "packages_shared_tests_swagger_parser_test_v3spec",
-      "community": 4,
+      "community": 169,
       "norm_label": "v3spec"
     },
     {
@@ -9490,7 +9490,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "packages_shared_tests_swagger_parser_test_v2spec",
-      "community": 4,
+      "community": 169,
       "norm_label": "v2spec"
     },
     {
@@ -9500,7 +9500,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "packages_shared_tests_swagger_parser_test_tempdir",
-      "community": 4,
+      "community": 169,
       "norm_label": "tempdir"
     },
     {
@@ -9510,7 +9510,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "packages_shared_tests_swagger_parser_test_writetemp",
-      "community": 4,
+      "community": 169,
       "norm_label": "writetemp()"
     },
     {
@@ -11354,6 +11354,26 @@
       "norm_label": "readme.md"
     },
     {
+      "label": "about.md",
+      "file_type": "document",
+      "source_file": "docs/about.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_about",
+      "community": 79,
+      "norm_label": "about.md"
+    },
+    {
+      "label": "About",
+      "file_type": "document",
+      "source_file": "docs/about.md",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "docs_about_about",
+      "community": 79,
+      "norm_label": "about"
+    },
+    {
       "label": "cli.md",
       "file_type": "document",
       "source_file": "docs/api/cli.md",
@@ -11500,7 +11520,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "docs_api_configuration_configuration",
-      "community": 48,
+      "community": 47,
       "norm_label": "configuration"
     },
     {
@@ -11510,7 +11530,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "docs_api_configuration_usage",
-      "community": 48,
+      "community": 47,
       "norm_label": "usage"
     },
     {
@@ -11520,7 +11540,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "docs_api_configuration_properties_at_a_glance",
-      "community": 48,
+      "community": 47,
       "norm_label": "properties at a glance"
     },
     {
@@ -11530,7 +11550,7 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "docs_api_configuration_configuration_properties",
-      "community": 48,
+      "community": 47,
       "norm_label": "configuration properties"
     },
     {
@@ -11540,7 +11560,7 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "docs_api_configuration_input_configuration_input_md",
-      "community": 48,
+      "community": 47,
       "norm_label": "[input](configuration/input.md)"
     },
     {
@@ -11550,7 +11570,7 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "docs_api_configuration_output_configuration_output_md",
-      "community": 48,
+      "community": 47,
       "norm_label": "[output](configuration/output.md)"
     },
     {
@@ -11560,7 +11580,7 @@
       "source_location": "L72",
       "_origin": "ast",
       "id": "docs_api_configuration_options_configuration_options_md",
-      "community": 48,
+      "community": 47,
       "norm_label": "[options](configuration/options.md)"
     },
     {
@@ -11570,7 +11590,7 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "docs_api_configuration_client_name_configuration_client_name_md",
-      "community": 48,
+      "community": 47,
       "norm_label": "[client name](configuration/client-name.md)"
     },
     {
@@ -11580,7 +11600,7 @@
       "source_location": "L84",
       "_origin": "ast",
       "id": "docs_api_configuration_validate_input_configuration_validate_input_md",
-      "community": 48,
+      "community": 47,
       "norm_label": "[validate input](configuration/validate-input.md)"
     },
     {
@@ -11590,7 +11610,7 @@
       "source_location": "L90",
       "_origin": "ast",
       "id": "docs_api_configuration_plugins_configuration_plugins_md",
-      "community": 48,
+      "community": 47,
       "norm_label": "[plugins](configuration/plugins.md)"
     },
     {
@@ -11600,7 +11620,7 @@
       "source_location": "L96",
       "_origin": "ast",
       "id": "docs_api_configuration_compiler_options_configuration_compiler_options_md",
-      "community": 48,
+      "community": 47,
       "norm_label": "[compiler options](configuration/compiler-options.md)"
     },
     {
@@ -11610,7 +11630,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_api_configuration_client_name",
-      "community": 24,
+      "community": 91,
       "norm_label": "client-name.md"
     },
     {
@@ -11620,7 +11640,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "docs_api_configuration_client_name_clientname",
-      "community": 24,
+      "community": 91,
       "norm_label": "`clientname`"
     },
     {
@@ -11630,7 +11650,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "docs_api_configuration_client_name_usage",
-      "community": 24,
+      "community": 91,
       "norm_label": "usage"
     },
     {
@@ -11640,7 +11660,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "docs_api_configuration_client_name_notes",
-      "community": 24,
+      "community": 91,
       "norm_label": "notes"
     },
     {
@@ -11650,7 +11670,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_api_configuration_compiler_options",
-      "community": 68,
+      "community": 91,
       "norm_label": "compiler-options.md"
     },
     {
@@ -11660,7 +11680,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "docs_api_configuration_compiler_options_compileroptions",
-      "community": 68,
+      "community": 91,
       "norm_label": "`compileroptions`"
     },
     {
@@ -11670,7 +11690,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "docs_api_configuration_compiler_options_usage",
-      "community": 68,
+      "community": 91,
       "norm_label": "usage"
     },
     {
@@ -11680,7 +11700,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "docs_api_configuration_compiler_options_schema",
-      "community": 68,
+      "community": 91,
       "norm_label": "schema"
     },
     {
@@ -11690,7 +11710,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "docs_api_configuration_compiler_options_notes",
-      "community": 68,
+      "community": 91,
       "norm_label": "notes"
     },
     {
@@ -11820,7 +11840,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_api_configuration_options_customize_method_name",
-      "community": 50,
+      "community": 68,
       "norm_label": "customize-method-name.md"
     },
     {
@@ -11830,7 +11850,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "docs_api_configuration_options_customize_method_name_customizemethodname",
-      "community": 50,
+      "community": 68,
       "norm_label": "`customizemethodname`"
     },
     {
@@ -11840,7 +11860,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "docs_api_configuration_options_customize_method_name_usage",
-      "community": 50,
+      "community": 68,
       "norm_label": "usage"
     },
     {
@@ -11850,7 +11870,7 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "docs_api_configuration_options_customize_method_name_notes",
-      "community": 50,
+      "community": 68,
       "norm_label": "notes"
     },
     {
@@ -12130,7 +12150,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_api_configuration_options_model_file_structure",
-      "community": 109,
+      "community": 50,
       "norm_label": "model-file-structure.md"
     },
     {
@@ -12180,7 +12200,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_api_configuration_options_naming",
-      "community": 109,
+      "community": 50,
       "norm_label": "naming.md"
     },
     {
@@ -12190,7 +12210,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "docs_api_configuration_options_naming_naming",
-      "community": 109,
+      "community": 69,
       "norm_label": "`naming`"
     },
     {
@@ -12200,7 +12220,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "docs_api_configuration_options_naming_usage",
-      "community": 109,
+      "community": 69,
       "norm_label": "usage"
     },
     {
@@ -12210,7 +12230,7 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "docs_api_configuration_options_naming_example",
-      "community": 109,
+      "community": 69,
       "norm_label": "example"
     },
     {
@@ -12220,7 +12240,7 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "docs_api_configuration_options_naming_notes",
-      "community": 109,
+      "community": 69,
       "norm_label": "notes"
     },
     {
@@ -12320,7 +12340,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_api_configuration_options_use_single_request_parameter",
-      "community": 109,
+      "community": 50,
       "norm_label": "use-single-request-parameter.md"
     },
     {
@@ -12330,7 +12350,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "docs_api_configuration_options_use_single_request_parameter_usesinglerequestparameter",
-      "community": 109,
+      "community": 50,
       "norm_label": "`usesinglerequestparameter`"
     },
     {
@@ -12340,7 +12360,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "docs_api_configuration_options_use_single_request_parameter_usage",
-      "community": 109,
+      "community": 50,
       "norm_label": "usage"
     },
     {
@@ -12350,7 +12370,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "docs_api_configuration_options_use_single_request_parameter_example",
-      "community": 109,
+      "community": 50,
       "norm_label": "example"
     },
     {
@@ -12360,7 +12380,7 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "docs_api_configuration_options_use_single_request_parameter_notes",
-      "community": 109,
+      "community": 50,
       "norm_label": "notes"
     },
     {
@@ -12370,7 +12390,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_api_configuration_options_validation",
-      "community": 50,
+      "community": 77,
       "norm_label": "validation.md"
     },
     {
@@ -12380,7 +12400,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "docs_api_configuration_options_validation_validation",
-      "community": 50,
+      "community": 77,
       "norm_label": "`validation`"
     },
     {
@@ -12390,7 +12410,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "docs_api_configuration_options_validation_usage",
-      "community": 50,
+      "community": 77,
       "norm_label": "usage"
     },
     {
@@ -12400,7 +12420,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "docs_api_configuration_options_validation_resources",
-      "community": 50,
+      "community": 77,
       "norm_label": "resources"
     },
     {
@@ -12590,7 +12610,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "docs_api_configuration_validate_input_validateinput",
-      "community": 96,
+      "community": 91,
       "norm_label": "`validateinput`"
     },
     {
@@ -12600,7 +12620,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "docs_api_configuration_validate_input_usage",
-      "community": 96,
+      "community": 91,
       "norm_label": "usage"
     },
     {
@@ -12610,7 +12630,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "docs_api_configuration_validate_input_parameters",
-      "community": 96,
+      "community": 91,
       "norm_label": "parameters"
     },
     {
@@ -12620,7 +12640,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "docs_api_configuration_validate_input_return_value",
-      "community": 96,
+      "community": 91,
       "norm_label": "return value"
     },
     {
@@ -12630,7 +12650,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "docs_api_configuration_validate_input_notes",
-      "community": 96,
+      "community": 91,
       "norm_label": "notes"
     },
     {
@@ -12900,7 +12920,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_changelog_http_resource",
-      "community": 67,
+      "community": 9,
       "norm_label": "http-resource.md"
     },
     {
@@ -12910,7 +12930,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "docs_changelog_http_resource_ng_openapi_http_resource",
-      "community": 67,
+      "community": 9,
       "norm_label": "`@ng-openapi/http-resource`"
     },
     {
@@ -12920,7 +12940,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_changelog_index",
-      "community": 67,
+      "community": 9,
       "norm_label": "index.md"
     },
     {
@@ -12930,7 +12950,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "docs_changelog_index_changelog",
-      "community": 67,
+      "community": 9,
       "norm_label": "changelog"
     },
     {
@@ -12940,7 +12960,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_changelog_ng_openapi",
-      "community": 47,
+      "community": 9,
       "norm_label": "ng-openapi.md"
     },
     {
@@ -12950,7 +12970,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "docs_changelog_ng_openapi_ng_openapi",
-      "community": 47,
+      "community": 9,
       "norm_label": "`ng-openapi`"
     },
     {
@@ -12960,7 +12980,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_changelog_zod",
-      "community": 67,
+      "community": 9,
       "norm_label": "zod.md"
     },
     {
@@ -12970,7 +12990,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "docs_changelog_zod_ng_openapi_zod",
-      "community": 67,
+      "community": 9,
       "norm_label": "`@ng-openapi/zod`"
     },
     {
@@ -13060,7 +13080,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_getting_started_quick_start",
-      "community": 91,
+      "community": 24,
       "norm_label": "quick-start.md"
     },
     {
@@ -13070,7 +13090,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "docs_getting_started_quick_start_quick_start",
-      "community": 48,
+      "community": 64,
       "norm_label": "quick start"
     },
     {
@@ -13080,7 +13100,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "docs_getting_started_quick_start_step_1_prepare_your_openapi_specification",
-      "community": 48,
+      "community": 64,
       "norm_label": "step 1: prepare your openapi specification"
     },
     {
@@ -13090,7 +13110,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "docs_getting_started_quick_start_step_2_generate_api_client",
-      "community": 48,
+      "community": 64,
       "norm_label": "step 2: generate api client"
     },
     {
@@ -13100,7 +13120,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "docs_getting_started_quick_start_using_command_line",
-      "community": 48,
+      "community": 64,
       "norm_label": "using command line"
     },
     {
@@ -13110,7 +13130,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "docs_getting_started_quick_start_using_configuration_file",
-      "community": 48,
+      "community": 64,
       "norm_label": "using configuration file"
     },
     {
@@ -13120,7 +13140,7 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "docs_getting_started_quick_start_step_3_configure_your_angular_app",
-      "community": 48,
+      "community": 64,
       "norm_label": "step 3: configure your angular app"
     },
     {
@@ -13130,7 +13150,7 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "docs_getting_started_quick_start_step_4_use_generated_services",
-      "community": 48,
+      "community": 64,
       "norm_label": "step 4: use generated services"
     },
     {
@@ -13140,7 +13160,7 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "docs_getting_started_quick_start_generated_structure",
-      "community": 48,
+      "community": 64,
       "norm_label": "generated structure"
     },
     {
@@ -13150,7 +13170,7 @@
       "source_location": "L99",
       "_origin": "ast",
       "id": "docs_getting_started_quick_start_next_steps",
-      "community": 48,
+      "community": 64,
       "norm_label": "next steps"
     },
     {
@@ -13160,7 +13180,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_guide_angular_integration",
-      "community": 91,
+      "community": 24,
       "norm_label": "angular-integration.md"
     },
     {
@@ -13250,7 +13270,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_guide_cli_usage",
-      "community": 91,
+      "community": 24,
       "norm_label": "cli-usage.md"
     },
     {
@@ -13420,7 +13440,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_guide_date_handling",
-      "community": 48,
+      "community": 24,
       "norm_label": "date-handling.md"
     },
     {
@@ -13850,7 +13870,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_guide_guides",
-      "community": 91,
+      "community": 24,
       "norm_label": "guides.md"
     },
     {
@@ -13860,7 +13880,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "docs_guide_guides_guides",
-      "community": 48,
+      "community": 6,
       "norm_label": "guides"
     },
     {
@@ -13870,7 +13890,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "docs_guide_guides_setup",
-      "community": 48,
+      "community": 6,
       "norm_label": "setup"
     },
     {
@@ -13880,7 +13900,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "docs_guide_guides_cli_usage_cli_usage_md",
-      "community": 48,
+      "community": 6,
       "norm_label": "[cli usage](./cli-usage.md)"
     },
     {
@@ -13890,7 +13910,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "docs_guide_guides_angular_integration_angular_integration_md",
-      "community": 48,
+      "community": 6,
       "norm_label": "[angular integration](./angular-integration.md)"
     },
     {
@@ -13900,7 +13920,7 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "docs_guide_guides_generated_output_generated_code_md",
-      "community": 48,
+      "community": 6,
       "norm_label": "[generated output](./generated-code.md)"
     },
     {
@@ -13910,7 +13930,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "docs_guide_guides_features",
-      "community": 48,
+      "community": 6,
       "norm_label": "features"
     },
     {
@@ -13920,7 +13940,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "docs_guide_guides_multiple_clients_multiple_clients_md",
-      "community": 48,
+      "community": 6,
       "norm_label": "[multiple clients](./multiple-clients.md)"
     },
     {
@@ -13930,7 +13950,7 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "docs_guide_guides_date_handling_date_handling_md",
-      "community": 48,
+      "community": 6,
       "norm_label": "[date handling](./date-handling.md)"
     },
     {
@@ -13940,7 +13960,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "docs_guide_guides_file_downloads_file_download_md",
-      "community": 48,
+      "community": 6,
       "norm_label": "[file downloads](./file-download.md)"
     },
     {
@@ -13950,7 +13970,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "docs_guide_guides_schema_validation_schema_validation_md",
-      "community": 48,
+      "community": 6,
       "norm_label": "[schema validation](./schema-validation.md)"
     },
     {
@@ -13960,7 +13980,7 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "docs_guide_guides_plugins",
-      "community": 48,
+      "community": 6,
       "norm_label": "plugins"
     },
     {
@@ -13970,7 +13990,7 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "docs_guide_guides_http_resource_plugin_http_resource_md",
-      "community": 48,
+      "community": 6,
       "norm_label": "[http resource plugin](./http-resource.md)"
     },
     {
@@ -13980,7 +14000,7 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "docs_guide_guides_plugin_authoring_plugin_authoring_md",
-      "community": 48,
+      "community": 6,
       "norm_label": "[plugin authoring](./plugin-authoring.md)"
     },
     {
@@ -14130,7 +14150,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_guide_multiple_clients",
-      "community": 91,
+      "community": 24,
       "norm_label": "multiple-clients.md"
     },
     {
@@ -14330,7 +14350,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_guide_schema_validation",
-      "community": 91,
+      "community": 24,
       "norm_label": "schema-validation.md"
     },
     {
@@ -14340,7 +14360,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "docs_guide_schema_validation_schema_validation",
-      "community": 91,
+      "community": 24,
       "norm_label": "schema validation"
     },
     {
@@ -14350,7 +14370,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "docs_guide_schema_validation_overview",
-      "community": 91,
+      "community": 24,
       "norm_label": "overview"
     },
     {
@@ -14360,7 +14380,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "docs_guide_schema_validation_example_using_zod",
-      "community": 91,
+      "community": 24,
       "norm_label": "example using zod"
     },
     {
@@ -14504,10 +14524,40 @@
       "norm_label": "changelog"
     },
     {
-      "label": "[0.3.0](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.2.22...ng-openapi-v0.3.0) (2026-07-06)",
+      "label": "[0.3.1](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.3.0...ng-openapi-v0.3.1) (2026-07-06)",
       "file_type": "document",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
       "source_location": "L3",
+      "_origin": "ast",
+      "id": "packages_ng_openapi_changelog_0_3_1_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_v0_3_0_ng_openapi_v0_3_1_2026_07_06",
+      "community": 97,
+      "norm_label": "[0.3.1](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.3.0...ng-openapi-v0.3.1) (2026-07-06)"
+    },
+    {
+      "label": "Features",
+      "file_type": "document",
+      "source_file": "packages/ng-openapi/CHANGELOG.md",
+      "source_location": "L6",
+      "_origin": "ast",
+      "id": "packages_ng_openapi_changelog_features",
+      "community": 97,
+      "norm_label": "features"
+    },
+    {
+      "label": "Bug Fixes",
+      "file_type": "document",
+      "source_file": "packages/ng-openapi/CHANGELOG.md",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "packages_ng_openapi_changelog_bug_fixes",
+      "community": 97,
+      "norm_label": "bug fixes"
+    },
+    {
+      "label": "[0.3.0](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.2.22...ng-openapi-v0.3.0) (2026-07-06)",
+      "file_type": "document",
+      "source_file": "packages/ng-openapi/CHANGELOG.md",
+      "source_location": "L18",
       "_origin": "ast",
       "id": "packages_ng_openapi_changelog_0_3_0_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_v0_2_22_ng_openapi_v0_3_0_2026_07_06",
       "community": 97,
@@ -14517,7 +14567,7 @@
       "label": "\u26a0 BREAKING CHANGES",
       "file_type": "document",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L6",
+      "source_location": "L21",
       "_origin": "ast",
       "id": "packages_ng_openapi_changelog_breaking_changes",
       "community": 97,
@@ -14527,9 +14577,9 @@
       "label": "Features",
       "file_type": "document",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L10",
+      "source_location": "L25",
       "_origin": "ast",
-      "id": "packages_ng_openapi_changelog_features",
+      "id": "packages_ng_openapi_changelog_features_25",
       "community": 97,
       "norm_label": "features"
     },
@@ -14537,7 +14587,7 @@
       "label": "[0.2.22](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.2.21...ng-openapi-v0.2.22) (2026-07-05)",
       "file_type": "document",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L14",
+      "source_location": "L29",
       "_origin": "ast",
       "id": "packages_ng_openapi_changelog_0_2_22_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_v0_2_21_ng_openapi_v0_2_22_2026_07_05",
       "community": 97,
@@ -14547,9 +14597,9 @@
       "label": "Bug Fixes",
       "file_type": "document",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L17",
+      "source_location": "L32",
       "_origin": "ast",
-      "id": "packages_ng_openapi_changelog_bug_fixes",
+      "id": "packages_ng_openapi_changelog_bug_fixes_32",
       "community": 97,
       "norm_label": "bug fixes"
     },
@@ -14557,7 +14607,7 @@
       "label": "[0.2.21](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.2.20...ng-openapi-v0.2.21) (2026-07-05)",
       "file_type": "document",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L21",
+      "source_location": "L36",
       "_origin": "ast",
       "id": "packages_ng_openapi_changelog_0_2_21_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_v0_2_20_ng_openapi_v0_2_21_2026_07_05",
       "community": 97,
@@ -14567,9 +14617,9 @@
       "label": "Features",
       "file_type": "document",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L24",
+      "source_location": "L39",
       "_origin": "ast",
-      "id": "packages_ng_openapi_changelog_features_24",
+      "id": "packages_ng_openapi_changelog_features_39",
       "community": 97,
       "norm_label": "features"
     },
@@ -14577,7 +14627,7 @@
       "label": "[0.2.20](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.2.19...ng-openapi-v0.2.20) (2026-06-10)",
       "file_type": "document",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L28",
+      "source_location": "L43",
       "_origin": "ast",
       "id": "packages_ng_openapi_changelog_0_2_20_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_v0_2_19_ng_openapi_v0_2_20_2026_06_10",
       "community": 97,
@@ -14587,9 +14637,9 @@
       "label": "Features",
       "file_type": "document",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L31",
+      "source_location": "L46",
       "_origin": "ast",
-      "id": "packages_ng_openapi_changelog_features_31",
+      "id": "packages_ng_openapi_changelog_features_46",
       "community": 97,
       "norm_label": "features"
     },
@@ -14597,7 +14647,7 @@
       "label": "[0.2.19](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi@0.2.18...ng-openapi-v0.2.19) (2026-05-16)",
       "file_type": "document",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L36",
+      "source_location": "L51",
       "_origin": "ast",
       "id": "packages_ng_openapi_changelog_0_2_19_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_0_2_18_ng_openapi_v0_2_19_2026_05_16",
       "community": 97,
@@ -14607,9 +14657,9 @@
       "label": "Bug Fixes",
       "file_type": "document",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L38",
+      "source_location": "L53",
       "_origin": "ast",
-      "id": "packages_ng_openapi_changelog_bug_fixes_38",
+      "id": "packages_ng_openapi_changelog_bug_fixes_53",
       "community": 97,
       "norm_label": "bug fixes"
     },
@@ -14814,10 +14864,40 @@
       "norm_label": "changelog"
     },
     {
-      "label": "[0.1.0](https://github.com/ng-openapi/ng-openapi/compare/http-resource-v0.0.32...http-resource-v0.1.0) (2026-07-06)",
+      "label": "[0.1.1](https://github.com/ng-openapi/ng-openapi/compare/http-resource-v0.1.0...http-resource-v0.1.1) (2026-07-06)",
       "file_type": "document",
       "source_file": "packages/plugins/http-resource/CHANGELOG.md",
       "source_location": "L3",
+      "_origin": "ast",
+      "id": "packages_plugins_http_resource_changelog_0_1_1_https_github_com_ng_openapi_ng_openapi_compare_http_resource_v0_1_0_http_resource_v0_1_1_2026_07_06",
+      "community": 102,
+      "norm_label": "[0.1.1](https://github.com/ng-openapi/ng-openapi/compare/http-resource-v0.1.0...http-resource-v0.1.1) (2026-07-06)"
+    },
+    {
+      "label": "Features",
+      "file_type": "document",
+      "source_file": "packages/plugins/http-resource/CHANGELOG.md",
+      "source_location": "L6",
+      "_origin": "ast",
+      "id": "packages_plugins_http_resource_changelog_features",
+      "community": 102,
+      "norm_label": "features"
+    },
+    {
+      "label": "Bug Fixes",
+      "file_type": "document",
+      "source_file": "packages/plugins/http-resource/CHANGELOG.md",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "packages_plugins_http_resource_changelog_bug_fixes",
+      "community": 102,
+      "norm_label": "bug fixes"
+    },
+    {
+      "label": "[0.1.0](https://github.com/ng-openapi/ng-openapi/compare/http-resource-v0.0.32...http-resource-v0.1.0) (2026-07-06)",
+      "file_type": "document",
+      "source_file": "packages/plugins/http-resource/CHANGELOG.md",
+      "source_location": "L18",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_changelog_0_1_0_https_github_com_ng_openapi_ng_openapi_compare_http_resource_v0_0_32_http_resource_v0_1_0_2026_07_06",
       "community": 102,
@@ -14827,7 +14907,7 @@
       "label": "\u26a0 BREAKING CHANGES",
       "file_type": "document",
       "source_file": "packages/plugins/http-resource/CHANGELOG.md",
-      "source_location": "L6",
+      "source_location": "L21",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_changelog_breaking_changes",
       "community": 102,
@@ -14837,9 +14917,9 @@
       "label": "Features",
       "file_type": "document",
       "source_file": "packages/plugins/http-resource/CHANGELOG.md",
-      "source_location": "L10",
+      "source_location": "L25",
       "_origin": "ast",
-      "id": "packages_plugins_http_resource_changelog_features",
+      "id": "packages_plugins_http_resource_changelog_features_25",
       "community": 102,
       "norm_label": "features"
     },
@@ -14847,7 +14927,7 @@
       "label": "[0.0.32](https://github.com/ng-openapi/ng-openapi/compare/http-resource-v0.0.31...http-resource-v0.0.32) (2026-06-10)",
       "file_type": "document",
       "source_file": "packages/plugins/http-resource/CHANGELOG.md",
-      "source_location": "L14",
+      "source_location": "L29",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_changelog_0_0_32_https_github_com_ng_openapi_ng_openapi_compare_http_resource_v0_0_31_http_resource_v0_0_32_2026_06_10",
       "community": 102,
@@ -14857,9 +14937,9 @@
       "label": "Features",
       "file_type": "document",
       "source_file": "packages/plugins/http-resource/CHANGELOG.md",
-      "source_location": "L17",
+      "source_location": "L32",
       "_origin": "ast",
-      "id": "packages_plugins_http_resource_changelog_features_17",
+      "id": "packages_plugins_http_resource_changelog_features_32",
       "community": 102,
       "norm_label": "features"
     },
@@ -14867,7 +14947,7 @@
       "label": "0.0.31 (2026-05-16)",
       "file_type": "document",
       "source_file": "packages/plugins/http-resource/CHANGELOG.md",
-      "source_location": "L21",
+      "source_location": "L36",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_changelog_0_0_31_2026_05_16",
       "community": 102,
@@ -14994,10 +15074,40 @@
       "norm_label": "changelog"
     },
     {
-      "label": "[0.1.0](https://github.com/ng-openapi/ng-openapi/compare/zod-v0.0.10...zod-v0.1.0) (2026-07-06)",
+      "label": "[0.1.1](https://github.com/ng-openapi/ng-openapi/compare/zod-v0.1.0...zod-v0.1.1) (2026-07-06)",
       "file_type": "document",
       "source_file": "packages/plugins/zod/CHANGELOG.md",
       "source_location": "L3",
+      "_origin": "ast",
+      "id": "packages_plugins_zod_changelog_0_1_1_https_github_com_ng_openapi_ng_openapi_compare_zod_v0_1_0_zod_v0_1_1_2026_07_06",
+      "community": 103,
+      "norm_label": "[0.1.1](https://github.com/ng-openapi/ng-openapi/compare/zod-v0.1.0...zod-v0.1.1) (2026-07-06)"
+    },
+    {
+      "label": "Features",
+      "file_type": "document",
+      "source_file": "packages/plugins/zod/CHANGELOG.md",
+      "source_location": "L6",
+      "_origin": "ast",
+      "id": "packages_plugins_zod_changelog_features",
+      "community": 103,
+      "norm_label": "features"
+    },
+    {
+      "label": "Bug Fixes",
+      "file_type": "document",
+      "source_file": "packages/plugins/zod/CHANGELOG.md",
+      "source_location": "L12",
+      "_origin": "ast",
+      "id": "packages_plugins_zod_changelog_bug_fixes",
+      "community": 103,
+      "norm_label": "bug fixes"
+    },
+    {
+      "label": "[0.1.0](https://github.com/ng-openapi/ng-openapi/compare/zod-v0.0.10...zod-v0.1.0) (2026-07-06)",
+      "file_type": "document",
+      "source_file": "packages/plugins/zod/CHANGELOG.md",
+      "source_location": "L16",
       "_origin": "ast",
       "id": "packages_plugins_zod_changelog_0_1_0_https_github_com_ng_openapi_ng_openapi_compare_zod_v0_0_10_zod_v0_1_0_2026_07_06",
       "community": 103,
@@ -15007,7 +15117,7 @@
       "label": "\u26a0 BREAKING CHANGES",
       "file_type": "document",
       "source_file": "packages/plugins/zod/CHANGELOG.md",
-      "source_location": "L6",
+      "source_location": "L19",
       "_origin": "ast",
       "id": "packages_plugins_zod_changelog_breaking_changes",
       "community": 103,
@@ -15017,9 +15127,9 @@
       "label": "Features",
       "file_type": "document",
       "source_file": "packages/plugins/zod/CHANGELOG.md",
-      "source_location": "L10",
+      "source_location": "L23",
       "_origin": "ast",
-      "id": "packages_plugins_zod_changelog_features",
+      "id": "packages_plugins_zod_changelog_features_23",
       "community": 103,
       "norm_label": "features"
     },
@@ -15027,7 +15137,7 @@
       "label": "[0.0.10](https://github.com/ng-openapi/ng-openapi/compare/zod-v0.0.9...zod-v0.0.10) (2026-06-10)",
       "file_type": "document",
       "source_file": "packages/plugins/zod/CHANGELOG.md",
-      "source_location": "L14",
+      "source_location": "L27",
       "_origin": "ast",
       "id": "packages_plugins_zod_changelog_0_0_10_https_github_com_ng_openapi_ng_openapi_compare_zod_v0_0_9_zod_v0_0_10_2026_06_10",
       "community": 103,
@@ -15037,9 +15147,9 @@
       "label": "Features",
       "file_type": "document",
       "source_file": "packages/plugins/zod/CHANGELOG.md",
-      "source_location": "L17",
+      "source_location": "L30",
       "_origin": "ast",
-      "id": "packages_plugins_zod_changelog_features_17",
+      "id": "packages_plugins_zod_changelog_features_30",
       "community": 103,
       "norm_label": "features"
     },
@@ -15047,7 +15157,7 @@
       "label": "0.0.9 (2026-05-16)",
       "file_type": "document",
       "source_file": "packages/plugins/zod/CHANGELOG.md",
-      "source_location": "L21",
+      "source_location": "L34",
       "_origin": "ast",
       "id": "packages_plugins_zod_changelog_0_0_9_2026_05_16",
       "community": 103,
@@ -15993,7 +16103,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/.vitepress/config.ts",
-      "source_location": "L388",
+      "source_location": "L394",
       "weight": 1.0,
       "source": "docs_vitepress_config",
       "target": "docs_vitepress_config_buildend",
@@ -16063,7 +16173,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/.vitepress/config.ts",
-      "source_location": "L132",
+      "source_location": "L138",
       "weight": 1.0,
       "source": "docs_vitepress_config",
       "target": "docs_vitepress_config_transformpagedata",
@@ -16095,7 +16205,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "docs/.vitepress/config.ts",
-      "source_location": "L426",
+      "source_location": "L433",
       "weight": 1.0,
       "source": "docs_vitepress_config_buildend",
       "target": "docs_vitepress_config_pageurl",
@@ -16106,7 +16216,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "docs/.vitepress/config.ts",
-      "source_location": "L133",
+      "source_location": "L139",
       "weight": 1.0,
       "source": "docs_vitepress_config_transformpagedata",
       "target": "docs_vitepress_config_pageurl",
@@ -16118,7 +16228,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/.vitepress/config.ts",
-      "source_location": "L406",
+      "source_location": "L412",
       "weight": 1.0,
       "source": "docs_vitepress_config_buildend",
       "target": "docs_vitepress_config_llm_excluded"
@@ -16139,7 +16249,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "docs/.vitepress/config.ts",
-      "source_location": "L407",
+      "source_location": "L413",
       "weight": 1.0,
       "source": "docs_vitepress_config_buildend",
       "target": "docs_vitepress_config_sectionrank",
@@ -16150,7 +16260,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "docs/.vitepress/config.ts",
-      "source_location": "L405",
+      "source_location": "L411",
       "weight": 1.0,
       "source": "docs_vitepress_config_buildend",
       "target": "docs_vitepress_config_walkmarkdown",
@@ -16161,7 +16271,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "docs/.vitepress/config.ts",
-      "source_location": "L419",
+      "source_location": "L426",
       "weight": 1.0,
       "source": "docs_vitepress_config_buildend",
       "target": "docs_vitepress_config_resolveincludes",
@@ -16172,7 +16282,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "docs/.vitepress/config.ts",
-      "source_location": "L426",
+      "source_location": "L433",
       "weight": 1.0,
       "source": "docs_vitepress_config_buildend",
       "target": "docs_vitepress_config_stripfrontmatter",
@@ -16330,7 +16440,7 @@
       "source_location": "L5",
       "weight": 1.0,
       "source": "nx",
-      "target": "nx_nxcloudid",
+      "target": "nx_neverconnecttocloud",
       "confidence_score": 1.0
     },
     {
@@ -17272,7 +17382,7 @@
       "weight": 1.0,
       "context": "import",
       "source": "package_devdependencies_zod",
-      "target": "docs_api_configuration_plugins_zod",
+      "target": "docs_changelog_zod",
       "confidence_score": 1.0
     },
     {
@@ -21618,7 +21728,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/service/service.generator.ts",
-      "source_location": "L107",
+      "source_location": "L108",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_service_service_generator_servicegenerator",
       "target": "packages_ng_openapi_src_lib_generators_service_service_generator_servicegenerator_addserviceclass",
@@ -21786,6 +21896,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/ng-openapi/src/lib/generators/service/service.generator.ts",
+      "source_location": "L104",
+      "weight": 1.0,
+      "source": "packages_ng_openapi_src_lib_generators_service_service_generator_servicegenerator_generateservicefile",
+      "target": "packages_shared_src_config_constants_service_generator_header_comment"
+    },
+    {
       "relation": "references",
       "context": "parameter_type",
       "confidence": "EXTRACTED",
@@ -21813,18 +21934,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/ng-openapi/src/lib/generators/service/service.generator.ts",
-      "source_location": "L113",
-      "weight": 1.0,
-      "source": "packages_ng_openapi_src_lib_generators_service_service_generator_servicegenerator_addserviceclass",
-      "target": "packages_shared_src_config_constants_service_generator_header_comment"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "packages/ng-openapi/src/lib/generators/service/service.generator.ts",
-      "source_location": "L111",
+      "source_location": "L112",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_service_service_generator_servicegenerator_addserviceclass",
       "target": "packages_shared_src_emit_service_decorator_emit_emitservicedecorator"
@@ -21834,7 +21944,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/service/service.generator.ts",
-      "source_location": "L107",
+      "source_location": "L108",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_service_service_generator_servicegenerator_addserviceclass",
       "target": "packages_shared_src_model_operation_model_normalizedoperation",
@@ -21846,7 +21956,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/ng-openapi/src/lib/generators/service/service.generator.ts",
-      "source_location": "L108",
+      "source_location": "L109",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_service_service_generator_servicegenerator_addserviceclass",
       "target": "packages_shared_src_utils_functions_class_names_getserviceclassname"
@@ -21866,7 +21976,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L22",
+      "source_location": "L24",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder",
       "target": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder",
@@ -21956,7 +22066,7 @@
       "source_location": "L1",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder",
-      "target": "packages_shared_src_utils_string_utils_pascalcase",
+      "target": "packages_shared_src_utils_string_utils_pascalcaseforenums",
       "confidence_score": 1.0
     },
     {
@@ -21997,7 +22107,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L52",
+      "source_location": "L54",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_buildenumasenum",
       "target": "packages_ng_openapi_src_lib_generators_type_enum_builder_toenumkey",
@@ -22008,7 +22118,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L84",
+      "source_location": "L86",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_buildenumasunion",
       "target": "packages_ng_openapi_src_lib_generators_type_enum_builder_toenumkey",
@@ -22019,7 +22129,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L139",
+      "source_location": "L141",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_buildenummembers",
       "target": "packages_ng_openapi_src_lib_generators_type_enum_builder_toenumkey",
@@ -22031,10 +22141,10 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_toenumkey",
-      "target": "packages_shared_src_utils_string_utils_pascalcase"
+      "target": "packages_shared_src_utils_string_utils_pascalcaseforenums"
     },
     {
       "relation": "imports",
@@ -22051,7 +22161,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L31",
+      "source_location": "L33",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder",
       "target": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_build",
@@ -22061,7 +22171,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L45",
+      "source_location": "L47",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder",
       "target": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_buildenumasenum",
@@ -22071,7 +22181,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L78",
+      "source_location": "L80",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder",
       "target": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_buildenumasunion",
@@ -22081,7 +22191,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L119",
+      "source_location": "L121",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder",
       "target": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_buildenummembers",
@@ -22091,7 +22201,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L26",
+      "source_location": "L28",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder",
       "target": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_constructor",
@@ -22102,7 +22212,7 @@
       "context": "field",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L23",
+      "source_location": "L25",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder",
       "target": "packages_shared_src_types_config_types_typegenoptions",
@@ -22146,7 +22256,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L26",
+      "source_location": "L28",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_constructor",
       "target": "packages_shared_src_types_config_types_typegenoptions",
@@ -22157,7 +22267,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L39",
+      "source_location": "L41",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_build",
       "target": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_buildenumasenum",
@@ -22168,7 +22278,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L41",
+      "source_location": "L43",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_build",
       "target": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_buildenumasunion",
@@ -22179,7 +22289,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L31",
+      "source_location": "L33",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_build",
       "target": "packages_shared_src_types_swagger_types_swaggerdefinition",
@@ -22190,7 +22300,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L64",
+      "source_location": "L66",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_buildenumasenum",
       "target": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_buildenummembers",
@@ -22201,7 +22311,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L45",
+      "source_location": "L47",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_buildenumasenum",
       "target": "packages_shared_src_types_swagger_types_swaggerdefinition",
@@ -22213,7 +22323,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L87",
+      "source_location": "L89",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_buildenumasunion",
       "target": "packages_ng_openapi_src_lib_generators_type_type_resolver_escapestring"
@@ -22223,7 +22333,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L78",
+      "source_location": "L80",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_buildenumasunion",
       "target": "packages_shared_src_types_swagger_types_swaggerdefinition",
@@ -22234,7 +22344,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/enum-builder.ts",
-      "source_location": "L119",
+      "source_location": "L121",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_enum_builder_enumbuilder_buildenummembers",
       "target": "packages_shared_src_types_swagger_types_swaggerdefinition",
@@ -22673,7 +22783,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L194",
+      "source_location": "L193",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_buildcrossfileimports",
       "target": "packages_ng_openapi_src_lib_generators_type_model_file_registry_modelfileregistry",
@@ -22684,7 +22794,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L177",
+      "source_location": "L176",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writemodelfile",
       "target": "packages_ng_openapi_src_lib_generators_type_model_file_registry_modelfileregistry",
@@ -22695,7 +22805,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L237",
+      "source_location": "L236",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writemodelsbarrel",
       "target": "packages_ng_openapi_src_lib_generators_type_model_file_registry_modelfileregistry",
@@ -22718,7 +22828,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L158",
+      "source_location": "L157",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_generatepertype",
       "target": "packages_ng_openapi_src_lib_generators_type_model_file_registry_modelfileregistry_reserveexact"
@@ -22751,7 +22861,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L163",
+      "source_location": "L162",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_generatepertype",
       "target": "packages_ng_openapi_src_lib_generators_type_model_file_registry_modelfileregistry_reserveforschema"
@@ -22762,7 +22872,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L204",
+      "source_location": "L203",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_buildcrossfileimports",
       "target": "packages_ng_openapi_src_lib_generators_type_model_file_registry_modelfileregistry_filenamefor"
@@ -22773,7 +22883,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L183",
+      "source_location": "L182",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writemodelfile",
       "target": "packages_ng_openapi_src_lib_generators_type_model_file_registry_modelfileregistry_filenamefor"
@@ -22860,7 +22970,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L224",
+      "source_location": "L223",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writesdktypesfile",
       "target": "packages_ng_openapi_src_lib_generators_type_sdk_types_buildsdktypes"
@@ -23093,7 +23203,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type-resolver.ts",
-      "source_location": "L220",
+      "source_location": "L217",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_resolver_typeresolver",
       "target": "packages_ng_openapi_src_lib_generators_type_type_resolver_typeresolver_nullabletype",
@@ -23459,7 +23569,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L228",
+      "source_location": "L227",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_addsdkimports",
@@ -23499,7 +23609,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L194",
+      "source_location": "L193",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_buildcrossfileimports",
@@ -23529,7 +23639,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L244",
+      "source_location": "L243",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_createmodelsourcefile",
@@ -23539,7 +23649,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L142",
+      "source_location": "L140",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_finalize",
@@ -23549,7 +23659,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L255",
+      "source_location": "L254",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_finalizemodelsourcefile",
@@ -23569,7 +23679,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L148",
+      "source_location": "L147",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_generatepertype",
@@ -23579,7 +23689,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L177",
+      "source_location": "L176",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writemodelfile",
@@ -23589,7 +23699,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L237",
+      "source_location": "L236",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writemodelsbarrel",
@@ -23599,7 +23709,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L221",
+      "source_location": "L220",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writesdktypesfile",
@@ -23742,7 +23852,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L168",
+      "source_location": "L167",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_generatepertype",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_collecttypestructure",
@@ -23775,7 +23885,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L136",
+      "source_location": "L134",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_applybatchupdates",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_addsdkimports",
@@ -23786,7 +23896,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L170",
+      "source_location": "L169",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_generatepertype",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writemodelfile",
@@ -23797,7 +23907,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L174",
+      "source_location": "L173",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_generatepertype",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writemodelsbarrel",
@@ -23808,7 +23918,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L173",
+      "source_location": "L172",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_generatepertype",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writesdktypesfile",
@@ -23819,7 +23929,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L148",
+      "source_location": "L147",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_generatepertype",
       "target": "packages_shared_src_types_swagger_types_swaggerdefinition",
@@ -23830,7 +23940,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L186",
+      "source_location": "L185",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writemodelfile",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_buildcrossfileimports",
@@ -23841,7 +23951,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L184",
+      "source_location": "L183",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writemodelfile",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_createmodelsourcefile",
@@ -23852,21 +23962,10 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L191",
+      "source_location": "L190",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writemodelfile",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_finalizemodelsourcefile",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L223",
-      "weight": 1.0,
-      "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writesdktypesfile",
-      "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_addsdkimports",
       "confidence_score": 1.0
     },
     {
@@ -23877,6 +23976,17 @@
       "source_location": "L222",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writesdktypesfile",
+      "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_addsdkimports",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
+      "source_location": "L221",
+      "weight": 1.0,
+      "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writesdktypesfile",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_createmodelsourcefile",
       "confidence_score": 1.0
     },
@@ -23885,7 +23995,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L225",
+      "source_location": "L224",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writesdktypesfile",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_finalizemodelsourcefile",
@@ -23896,7 +24006,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/type/type.generator.ts",
-      "source_location": "L241",
+      "source_location": "L240",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_writemodelsbarrel",
       "target": "packages_ng_openapi_src_lib_generators_type_type_generator_typegenerator_finalizemodelsourcefile",
@@ -23980,7 +24090,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/utility/base-interceptor.generator.ts",
-      "source_location": "L49",
+      "source_location": "L47",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_utility_base_interceptor_generator_baseinterceptorgenerator_generate",
       "target": "packages_ng_openapi_src_lib_generators_utility_base_interceptor_generator_baseinterceptorgenerator_capitalizefirst",
@@ -23992,7 +24102,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/ng-openapi/src/lib/generators/utility/base-interceptor.generator.ts",
-      "source_location": "L24",
+      "source_location": "L102",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_utility_base_interceptor_generator_baseinterceptorgenerator_generate",
       "target": "packages_shared_src_config_constants_base_interceptor_header_comment"
@@ -24295,7 +24405,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/utility/provider.generator.ts",
-      "source_location": "L106",
+      "source_location": "L105",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_utility_provider_generator_providergenerator",
       "target": "packages_ng_openapi_src_lib_generators_utility_provider_generator_providergenerator_addmainproviderfunction",
@@ -24305,7 +24415,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/utility/provider.generator.ts",
-      "source_location": "L221",
+      "source_location": "L220",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_utility_provider_generator_providergenerator",
       "target": "packages_ng_openapi_src_lib_generators_utility_provider_generator_providergenerator_capitalizefirst",
@@ -24358,7 +24468,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/utility/provider.generator.ts",
-      "source_location": "L100",
+      "source_location": "L98",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_utility_provider_generator_providergenerator_generate",
       "target": "packages_ng_openapi_src_lib_generators_utility_provider_generator_providergenerator_addmainproviderfunction",
@@ -24369,7 +24479,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/utility/provider.generator.ts",
-      "source_location": "L29",
+      "source_location": "L27",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_utility_provider_generator_providergenerator_generate",
       "target": "packages_ng_openapi_src_lib_generators_utility_provider_generator_providergenerator_capitalizefirst",
@@ -24380,7 +24490,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/src/lib/generators/utility/provider.generator.ts",
-      "source_location": "L113",
+      "source_location": "L112",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_utility_provider_generator_providergenerator_addmainproviderfunction",
       "target": "packages_ng_openapi_src_lib_generators_utility_provider_generator_providergenerator_capitalizefirst",
@@ -24856,6 +24966,17 @@
       "weight": 1.0,
       "source": "packages_ng_openapi_tests_type_units_test",
       "target": "packages_ng_openapi_tests_type_units_test_resolver",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "packages/ng-openapi/tests/type-units.test.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "packages_ng_openapi_tests_type_units_test",
+      "target": "packages_shared_src_core_normalize_normalizeschema",
       "confidence_score": 1.0
     },
     {
@@ -27255,7 +27376,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/http-resource/src/lib/http-resource.generator.ts",
-      "source_location": "L95",
+      "source_location": "L96",
       "weight": 1.0,
       "source": "packages_plugins_http_resource_src_lib_http_resource_generator_httpresourcegenerator",
       "target": "packages_plugins_http_resource_src_lib_http_resource_generator_httpresourcegenerator_addserviceclass",
@@ -27434,6 +27555,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/plugins/http-resource/src/lib/http-resource.generator.ts",
+      "source_location": "L92",
+      "weight": 1.0,
+      "source": "packages_plugins_http_resource_src_lib_http_resource_generator_httpresourcegenerator_generateservicefile",
+      "target": "packages_shared_src_config_constants_http_resource_generator_header_comment"
+    },
+    {
       "relation": "references",
       "context": "parameter_type",
       "confidence": "EXTRACTED",
@@ -27443,6 +27575,17 @@
       "source": "packages_plugins_http_resource_src_lib_http_resource_generator_httpresourcegenerator_generateservicefile",
       "target": "packages_shared_src_model_operation_model_normalizedoperation",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "packages/plugins/http-resource/src/lib/http-resource.generator.ts",
+      "source_location": "L92",
+      "weight": 1.0,
+      "source": "packages_plugins_http_resource_src_lib_http_resource_generator_httpresourcegenerator_generateservicefile",
+      "target": "packages_shared_src_utils_functions_class_names_getresourceclassname"
     },
     {
       "relation": "calls",
@@ -27461,18 +27604,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/plugins/http-resource/src/lib/http-resource.generator.ts",
-      "source_location": "L101",
-      "weight": 1.0,
-      "source": "packages_plugins_http_resource_src_lib_http_resource_generator_httpresourcegenerator_addserviceclass",
-      "target": "packages_shared_src_config_constants_http_resource_generator_header_comment"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "packages/plugins/http-resource/src/lib/http-resource.generator.ts",
-      "source_location": "L99",
+      "source_location": "L100",
       "weight": 1.0,
       "source": "packages_plugins_http_resource_src_lib_http_resource_generator_httpresourcegenerator_addserviceclass",
       "target": "packages_shared_src_emit_service_decorator_emit_emitservicedecorator"
@@ -27482,7 +27614,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/http-resource/src/lib/http-resource.generator.ts",
-      "source_location": "L95",
+      "source_location": "L96",
       "weight": 1.0,
       "source": "packages_plugins_http_resource_src_lib_http_resource_generator_httpresourcegenerator_addserviceclass",
       "target": "packages_shared_src_model_operation_model_normalizedoperation",
@@ -27494,7 +27626,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/plugins/http-resource/src/lib/http-resource.generator.ts",
-      "source_location": "L96",
+      "source_location": "L97",
       "weight": 1.0,
       "source": "packages_plugins_http_resource_src_lib_http_resource_generator_httpresourcegenerator_addserviceclass",
       "target": "packages_shared_src_utils_functions_class_names_getresourceclassname"
@@ -27505,7 +27637,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/plugins/http-resource/src/lib/http-resource.generator.ts",
-      "source_location": "L174",
+      "source_location": "L173",
       "weight": 1.0,
       "source": "packages_plugins_http_resource_src_lib_http_resource_generator_httpresourcegenerator_addserviceclass",
       "target": "packages_shared_src_utils_functions_duplicate_function_name_hasduplicatefunctionnames"
@@ -28173,7 +28305,7 @@
       "weight": 1.0,
       "context": "import",
       "source": "packages_plugins_zod_package_peerdependencies_zod",
-      "target": "docs_api_configuration_plugins_zod",
+      "target": "docs_changelog_zod",
       "confidence_score": 1.0
     },
     {
@@ -30352,7 +30484,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L114",
+      "source_location": "L113",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator",
       "target": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_addimports",
@@ -30382,7 +30514,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L122",
+      "source_location": "L121",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator",
       "target": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_generateoperationvalidators",
@@ -30392,7 +30524,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L154",
+      "source_location": "L153",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator",
       "target": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_generateparametervalidators",
@@ -30412,7 +30544,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L205",
+      "source_location": "L204",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator",
       "target": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_getoperationname",
@@ -30432,7 +30564,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L201",
+      "source_location": "L200",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator",
       "target": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_shouldgenerate",
@@ -30542,7 +30674,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L95",
+      "source_location": "L92",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_generatevalidatorfile",
       "target": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_addimports",
@@ -30553,7 +30685,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L100",
+      "source_location": "L97",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_generatevalidatorfile",
       "target": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_generateoperationvalidators",
@@ -30565,7 +30697,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L92",
+      "source_location": "L104",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_generatevalidatorfile",
       "target": "packages_shared_src_config_constants_zod_plugin_generator_header_comment"
@@ -30597,7 +30729,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L114",
+      "source_location": "L113",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_addimports",
       "target": "packages_shared_src_model_operation_model_normalizedoperation",
@@ -30608,7 +30740,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L128",
+      "source_location": "L127",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_generateoperationvalidators",
       "target": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_generateparametervalidators",
@@ -30619,7 +30751,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L123",
+      "source_location": "L122",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_generateoperationvalidators",
       "target": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_getoperationname",
@@ -30630,7 +30762,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L127",
+      "source_location": "L126",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_generateoperationvalidators",
       "target": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_shouldgenerate",
@@ -30641,7 +30773,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L122",
+      "source_location": "L121",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_generateoperationvalidators",
       "target": "packages_shared_src_model_operation_model_normalizedoperation",
@@ -30652,7 +30784,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L163",
+      "source_location": "L162",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_generateparametervalidators",
       "target": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_shouldgenerate",
@@ -30663,7 +30795,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L154",
+      "source_location": "L153",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_generateparametervalidators",
       "target": "packages_shared_src_model_operation_model_normalizedoperation",
@@ -30674,7 +30806,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L205",
+      "source_location": "L204",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_getoperationname",
       "target": "packages_shared_src_model_operation_model_normalizedoperation",
@@ -30686,7 +30818,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L207",
+      "source_location": "L206",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_getoperationname",
       "target": "packages_shared_src_utils_string_utils_camelcase"
@@ -30697,7 +30829,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/plugins/zod/src/lib/zod.generator.ts",
-      "source_location": "L211",
+      "source_location": "L210",
       "weight": 1.0,
       "source": "packages_plugins_zod_src_lib_zod_generator_zodgenerator_getoperationname",
       "target": "packages_shared_src_utils_string_utils_pascalcase"
@@ -38024,6 +38156,16 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "docs/about.md",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "docs_about",
+      "target": "docs_about_about",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "docs/api/cli.md",
       "source_location": "L6",
       "weight": 1.0,
@@ -41525,7 +41667,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L36",
+      "source_location": "L51",
       "weight": 1.0,
       "source": "packages_ng_openapi_changelog_changelog",
       "target": "packages_ng_openapi_changelog_0_2_19_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_0_2_18_ng_openapi_v0_2_19_2026_05_16",
@@ -41535,7 +41677,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L28",
+      "source_location": "L43",
       "weight": 1.0,
       "source": "packages_ng_openapi_changelog_changelog",
       "target": "packages_ng_openapi_changelog_0_2_20_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_v0_2_19_ng_openapi_v0_2_20_2026_06_10",
@@ -41545,7 +41687,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L21",
+      "source_location": "L36",
       "weight": 1.0,
       "source": "packages_ng_openapi_changelog_changelog",
       "target": "packages_ng_openapi_changelog_0_2_21_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_v0_2_20_ng_openapi_v0_2_21_2026_07_05",
@@ -41555,7 +41697,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L14",
+      "source_location": "L29",
       "weight": 1.0,
       "source": "packages_ng_openapi_changelog_changelog",
       "target": "packages_ng_openapi_changelog_0_2_22_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_v0_2_21_ng_openapi_v0_2_22_2026_07_05",
@@ -41565,7 +41707,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L3",
+      "source_location": "L18",
       "weight": 1.0,
       "source": "packages_ng_openapi_changelog_changelog",
       "target": "packages_ng_openapi_changelog_0_3_0_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_v0_2_22_ng_openapi_v0_3_0_2026_07_06",
@@ -41575,7 +41717,37 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "packages_ng_openapi_changelog_changelog",
+      "target": "packages_ng_openapi_changelog_0_3_1_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_v0_3_0_ng_openapi_v0_3_1_2026_07_06",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "packages/ng-openapi/CHANGELOG.md",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "packages_ng_openapi_changelog_0_3_1_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_v0_3_0_ng_openapi_v0_3_1_2026_07_06",
+      "target": "packages_ng_openapi_changelog_bug_fixes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "packages/ng-openapi/CHANGELOG.md",
       "source_location": "L6",
+      "weight": 1.0,
+      "source": "packages_ng_openapi_changelog_0_3_1_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_v0_3_0_ng_openapi_v0_3_1_2026_07_06",
+      "target": "packages_ng_openapi_changelog_features",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "packages/ng-openapi/CHANGELOG.md",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "packages_ng_openapi_changelog_0_3_0_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_v0_2_22_ng_openapi_v0_3_0_2026_07_06",
       "target": "packages_ng_openapi_changelog_breaking_changes",
@@ -41585,50 +41757,50 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L10",
+      "source_location": "L25",
       "weight": 1.0,
       "source": "packages_ng_openapi_changelog_0_3_0_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_v0_2_22_ng_openapi_v0_3_0_2026_07_06",
-      "target": "packages_ng_openapi_changelog_features",
+      "target": "packages_ng_openapi_changelog_features_25",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L17",
+      "source_location": "L32",
       "weight": 1.0,
       "source": "packages_ng_openapi_changelog_0_2_22_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_v0_2_21_ng_openapi_v0_2_22_2026_07_05",
-      "target": "packages_ng_openapi_changelog_bug_fixes",
+      "target": "packages_ng_openapi_changelog_bug_fixes_32",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L24",
+      "source_location": "L39",
       "weight": 1.0,
       "source": "packages_ng_openapi_changelog_0_2_21_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_v0_2_20_ng_openapi_v0_2_21_2026_07_05",
-      "target": "packages_ng_openapi_changelog_features_24",
+      "target": "packages_ng_openapi_changelog_features_39",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L31",
+      "source_location": "L46",
       "weight": 1.0,
       "source": "packages_ng_openapi_changelog_0_2_20_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_v0_2_19_ng_openapi_v0_2_20_2026_06_10",
-      "target": "packages_ng_openapi_changelog_features_31",
+      "target": "packages_ng_openapi_changelog_features_46",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/ng-openapi/CHANGELOG.md",
-      "source_location": "L38",
+      "source_location": "L53",
       "weight": 1.0,
       "source": "packages_ng_openapi_changelog_0_2_19_https_github_com_ng_openapi_ng_openapi_compare_ng_openapi_0_2_18_ng_openapi_v0_2_19_2026_05_16",
-      "target": "packages_ng_openapi_changelog_bug_fixes_38",
+      "target": "packages_ng_openapi_changelog_bug_fixes_53",
       "confidence_score": 1.0
     },
     {
@@ -41815,7 +41987,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/http-resource/CHANGELOG.md",
-      "source_location": "L21",
+      "source_location": "L36",
       "weight": 1.0,
       "source": "packages_plugins_http_resource_changelog_changelog",
       "target": "packages_plugins_http_resource_changelog_0_0_31_2026_05_16",
@@ -41825,7 +41997,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/http-resource/CHANGELOG.md",
-      "source_location": "L14",
+      "source_location": "L29",
       "weight": 1.0,
       "source": "packages_plugins_http_resource_changelog_changelog",
       "target": "packages_plugins_http_resource_changelog_0_0_32_https_github_com_ng_openapi_ng_openapi_compare_http_resource_v0_0_31_http_resource_v0_0_32_2026_06_10",
@@ -41835,7 +42007,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/http-resource/CHANGELOG.md",
-      "source_location": "L3",
+      "source_location": "L18",
       "weight": 1.0,
       "source": "packages_plugins_http_resource_changelog_changelog",
       "target": "packages_plugins_http_resource_changelog_0_1_0_https_github_com_ng_openapi_ng_openapi_compare_http_resource_v0_0_32_http_resource_v0_1_0_2026_07_06",
@@ -41845,7 +42017,37 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/http-resource/CHANGELOG.md",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "packages_plugins_http_resource_changelog_changelog",
+      "target": "packages_plugins_http_resource_changelog_0_1_1_https_github_com_ng_openapi_ng_openapi_compare_http_resource_v0_1_0_http_resource_v0_1_1_2026_07_06",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "packages/plugins/http-resource/CHANGELOG.md",
+      "source_location": "L14",
+      "weight": 1.0,
+      "source": "packages_plugins_http_resource_changelog_0_1_1_https_github_com_ng_openapi_ng_openapi_compare_http_resource_v0_1_0_http_resource_v0_1_1_2026_07_06",
+      "target": "packages_plugins_http_resource_changelog_bug_fixes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "packages/plugins/http-resource/CHANGELOG.md",
       "source_location": "L6",
+      "weight": 1.0,
+      "source": "packages_plugins_http_resource_changelog_0_1_1_https_github_com_ng_openapi_ng_openapi_compare_http_resource_v0_1_0_http_resource_v0_1_1_2026_07_06",
+      "target": "packages_plugins_http_resource_changelog_features",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "packages/plugins/http-resource/CHANGELOG.md",
+      "source_location": "L21",
       "weight": 1.0,
       "source": "packages_plugins_http_resource_changelog_0_1_0_https_github_com_ng_openapi_ng_openapi_compare_http_resource_v0_0_32_http_resource_v0_1_0_2026_07_06",
       "target": "packages_plugins_http_resource_changelog_breaking_changes",
@@ -41855,20 +42057,20 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/http-resource/CHANGELOG.md",
-      "source_location": "L10",
+      "source_location": "L25",
       "weight": 1.0,
       "source": "packages_plugins_http_resource_changelog_0_1_0_https_github_com_ng_openapi_ng_openapi_compare_http_resource_v0_0_32_http_resource_v0_1_0_2026_07_06",
-      "target": "packages_plugins_http_resource_changelog_features",
+      "target": "packages_plugins_http_resource_changelog_features_25",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/http-resource/CHANGELOG.md",
-      "source_location": "L17",
+      "source_location": "L32",
       "weight": 1.0,
       "source": "packages_plugins_http_resource_changelog_0_0_32_https_github_com_ng_openapi_ng_openapi_compare_http_resource_v0_0_31_http_resource_v0_0_32_2026_06_10",
-      "target": "packages_plugins_http_resource_changelog_features_17",
+      "target": "packages_plugins_http_resource_changelog_features_32",
       "confidence_score": 1.0
     },
     {
@@ -41975,7 +42177,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/CHANGELOG.md",
-      "source_location": "L14",
+      "source_location": "L27",
       "weight": 1.0,
       "source": "packages_plugins_zod_changelog_changelog",
       "target": "packages_plugins_zod_changelog_0_0_10_https_github_com_ng_openapi_ng_openapi_compare_zod_v0_0_9_zod_v0_0_10_2026_06_10",
@@ -41985,7 +42187,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/CHANGELOG.md",
-      "source_location": "L21",
+      "source_location": "L34",
       "weight": 1.0,
       "source": "packages_plugins_zod_changelog_changelog",
       "target": "packages_plugins_zod_changelog_0_0_9_2026_05_16",
@@ -41995,7 +42197,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/CHANGELOG.md",
-      "source_location": "L3",
+      "source_location": "L16",
       "weight": 1.0,
       "source": "packages_plugins_zod_changelog_changelog",
       "target": "packages_plugins_zod_changelog_0_1_0_https_github_com_ng_openapi_ng_openapi_compare_zod_v0_0_10_zod_v0_1_0_2026_07_06",
@@ -42005,7 +42207,37 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/CHANGELOG.md",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "packages_plugins_zod_changelog_changelog",
+      "target": "packages_plugins_zod_changelog_0_1_1_https_github_com_ng_openapi_ng_openapi_compare_zod_v0_1_0_zod_v0_1_1_2026_07_06",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "packages/plugins/zod/CHANGELOG.md",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "packages_plugins_zod_changelog_0_1_1_https_github_com_ng_openapi_ng_openapi_compare_zod_v0_1_0_zod_v0_1_1_2026_07_06",
+      "target": "packages_plugins_zod_changelog_bug_fixes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "packages/plugins/zod/CHANGELOG.md",
       "source_location": "L6",
+      "weight": 1.0,
+      "source": "packages_plugins_zod_changelog_0_1_1_https_github_com_ng_openapi_ng_openapi_compare_zod_v0_1_0_zod_v0_1_1_2026_07_06",
+      "target": "packages_plugins_zod_changelog_features",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "packages/plugins/zod/CHANGELOG.md",
+      "source_location": "L19",
       "weight": 1.0,
       "source": "packages_plugins_zod_changelog_0_1_0_https_github_com_ng_openapi_ng_openapi_compare_zod_v0_0_10_zod_v0_1_0_2026_07_06",
       "target": "packages_plugins_zod_changelog_breaking_changes",
@@ -42015,20 +42247,20 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/CHANGELOG.md",
-      "source_location": "L10",
+      "source_location": "L23",
       "weight": 1.0,
       "source": "packages_plugins_zod_changelog_0_1_0_https_github_com_ng_openapi_ng_openapi_compare_zod_v0_0_10_zod_v0_1_0_2026_07_06",
-      "target": "packages_plugins_zod_changelog_features",
+      "target": "packages_plugins_zod_changelog_features_23",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/plugins/zod/CHANGELOG.md",
-      "source_location": "L17",
+      "source_location": "L30",
       "weight": 1.0,
       "source": "packages_plugins_zod_changelog_0_0_10_https_github_com_ng_openapi_ng_openapi_compare_zod_v0_0_9_zod_v0_0_10_2026_06_10",
-      "target": "packages_plugins_zod_changelog_features_17",
+      "target": "packages_plugins_zod_changelog_features_30",
       "confidence_score": 1.0
     },
     {
@@ -42301,5 +42533,5 @@
       "source_file": ".github/workflows/release.yml"
     }
   ],
-  "built_at_commit": "15487dc61084dd593628d1587ca41916ad1a948c"
+  "built_at_commit": "dcf8590d9900d0a0e85688e2866415508fe73035"
 }
