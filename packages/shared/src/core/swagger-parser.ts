@@ -18,11 +18,7 @@ export class SwaggerParser {
     private readonly spec: SwaggerSpec;
     private normalized?: NormalizedSpec;
 
-    private constructor(spec: SwaggerSpec, config: GeneratorConfig) {
-        const isInputValid = config.validateInput?.(spec) ?? true;
-        if (!isInputValid) {
-            throw new SpecParseError("Swagger spec is not valid. Check your `validateInput` condition.");
-        }
+    private constructor(spec: SwaggerSpec) {
         this.spec = spec;
     }
 
@@ -32,8 +28,8 @@ export class SwaggerParser {
      * @param onWarning receives non-fatal spec problems found while parsing —
      *   currently deep-pointer `$ref`s that cannot be inlined.
      * @throws SpecLoadError when the file/URL cannot be read.
-     * @throws SpecParseError when the content cannot be parsed or the
-     *   config's `validateInput` hook rejects the spec.
+     * @throws SpecParseError when the content cannot be parsed, `$ref` inlining
+     *   fails, or the config's `validateInput` hook rejects the spec.
      */
     static async create(
         swaggerPathOrUrl: string,
@@ -42,9 +38,32 @@ export class SwaggerParser {
     ): Promise<SwaggerParser> {
         const swaggerContent = await loadSpecContent(swaggerPathOrUrl);
         const spec = parseSpecContent(swaggerContent, swaggerPathOrUrl);
+        // Before inlining, so the hook sees the document as authored — a check
+        // that counts schemas or asserts on the user's own $refs would other-
+        // wise be judging a spec they never wrote.
+        const isInputValid = config.validateInput?.(spec) ?? true;
+        if (!isInputValid) {
+            throw new SpecParseError("Swagger spec is not valid. Check your `validateInput` condition.");
+        }
         // Inline deep-pointer $refs before any consumer (raw service reads and
         // the normalized IR alike) sees them — see inline-nested-refs.ts.
-        return new SwaggerParser(inlineNestedRefs(spec, onWarning), config);
+        // Inlining walks and clones attacker-shaped input, so anything it can
+        // still throw (a RangeError from a pathologically nested document, a
+        // DataCloneError out of structuredClone) is re-wrapped: callers branch
+        // on SpecLoadError/SpecParseError, and a bare RangeError would surface
+        // as "❌ Generation failed: Maximum call stack size exceeded" with no
+        // mention of which spec caused it.
+        let inlinedSpec: SwaggerSpec;
+        try {
+            inlinedSpec = inlineNestedRefs(spec, onWarning);
+        } catch (error) {
+            throw new SpecParseError(
+                `Failed to inline nested $refs in the spec: ${error instanceof Error ? error.message : String(error)}`,
+                swaggerPathOrUrl,
+                error,
+            );
+        }
+        return new SwaggerParser(inlinedSpec);
     }
 
     /**

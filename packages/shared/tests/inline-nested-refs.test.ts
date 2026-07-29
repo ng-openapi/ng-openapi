@@ -49,6 +49,15 @@ function responseSchema(spec: SwaggerSpec): unknown {
     return spec.paths["/x"].get?.responses?.["200"]?.content?.["application/json"]?.schema;
 }
 
+/** Overwrites the schema `specWithResponseRef` built, for the odd shapes below. */
+function setResponseSchema(spec: SwaggerSpec, schema: unknown): void {
+    const mediaType = spec.paths["/x"].get?.responses?.["200"]?.content?.["application/json"] as Record<
+        string,
+        unknown
+    >;
+    mediaType["schema"] = schema;
+}
+
 describe("inlineNestedRefs", () => {
     it("inlines a deep-pointer $ref in an operation response with a copy of the target", () => {
         const spec = {
@@ -151,7 +160,283 @@ describe("inlineNestedRefs", () => {
         expect(responseSchema(result)).toEqual({ $ref: ref });
         expect(warnings).toHaveLength(1);
         expect(warnings[0]).toContain(ref);
-        expect(warnings[0]).toContain("will not compile");
+        // Not "will not compile": generated files ship @ts-nocheck, so the
+        // consumer's build stays green and the type is merely wrong.
+        expect(warnings[0]).toContain("silently wrong type");
+        expect(warnings[0]).not.toContain("will not compile");
+    });
+
+    it("keeps keys sitting next to a deep $ref, and lets them win over the target's", () => {
+        const spec = specWithResponseRef("#/components/schemas/PolicyEntry/properties/namespaces", policyEntrySchemas);
+        setResponseSchema(spec, {
+            $ref: "#/components/schemas/PolicyEntry/properties/namespaces",
+            description: "Only the namespaces this token may touch.",
+            nullable: true,
+        });
+
+        expect(responseSchema(inlineNestedRefs(spec))).toEqual({
+            type: "array",
+            items: { type: "string" },
+            // Local annotation wins over the target's own description.
+            description: "Only the namespaces this token may touch.",
+            nullable: true,
+        });
+    });
+
+    it("inlines a deep $ref sitting in a sibling key of another deep $ref", () => {
+        const spec = specWithResponseRef("#/components/schemas/A/properties/n", {
+            A: { type: "object", properties: { n: { type: "array" } } },
+            B: { type: "object", properties: { m: { type: "string" } } },
+        });
+        setResponseSchema(spec, {
+            $ref: "#/components/schemas/A/properties/n",
+            items: { $ref: "#/components/schemas/B/properties/m" },
+        });
+
+        // The sibling is walked, not copied verbatim.
+        expect(responseSchema(inlineNestedRefs(spec))).toEqual({
+            type: "array",
+            items: { type: "string" },
+        });
+    });
+
+    it("resolves `~0`/`~1` escapes in a pointer segment per RFC 6901", () => {
+        const spec = specWithResponseRef("#/components/schemas/A/properties/a~1b~0c", {
+            A: { type: "object", properties: { "a/b~c": { type: "array", items: { type: "string" } } } },
+        });
+        const warnings: string[] = [];
+
+        const result = inlineNestedRefs(spec, (message) => warnings.push(message));
+
+        expect(result.paths["/x"].get?.responses?.["200"]?.content?.["application/json"]?.schema).toEqual({
+            type: "array",
+            items: { type: "string" },
+        });
+        expect(warnings).toEqual([]);
+    });
+
+    it("ignores a non-string $ref instead of treating it as a pointer", () => {
+        // A malformed spec can hold anything here; `typeof ref === "string"` is
+        // what keeps the walk from calling String methods on it.
+        const spec = specWithResponseRef("#/components/schemas/A/properties/n", {
+            A: { type: "object", properties: { n: { $ref: 42 } } },
+        });
+        const warnings: string[] = [];
+
+        const result = inlineNestedRefs(spec, (message) => warnings.push(message));
+
+        expect(responseSchema(result)).toEqual({ $ref: 42 });
+        expect(warnings).toEqual([]);
+    });
+
+    it('leaves a pointer at a scalar in place and warns — `.../type` is the string "array"', () => {
+        const ref = "#/components/schemas/PolicyEntry/properties/namespaces/type";
+        const spec = specWithResponseRef(ref, policyEntrySchemas);
+        const warnings: string[] = [];
+
+        const result = inlineNestedRefs(spec, (message) => warnings.push(message));
+
+        // Inlining the bare string would make it read as a *type name* downstream.
+        expect(responseSchema(result)).toEqual({ $ref: ref });
+        expect(warnings).toHaveLength(1);
+        expect(warnings[0]).toContain(ref);
+        expect(warnings[0]).toContain("string");
+    });
+
+    it("leaves a pointer resolving to null in place — inlining it would emit Observable<any>", () => {
+        const ref = "#/components/schemas/A/properties/n/example";
+        const spec = specWithResponseRef(ref, {
+            A: { type: "object", properties: { n: { type: "array", example: null } } },
+        });
+        const warnings: string[] = [];
+
+        const result = inlineNestedRefs(spec, (message) => warnings.push(message));
+
+        expect(responseSchema(result)).toEqual({ $ref: ref });
+        expect(warnings[0]).toContain("null");
+        expect(warnings[0]).toContain("not a schema");
+    });
+
+    it("leaves a pointer resolving to an array in place and names the kind", () => {
+        // `.../enum` is an array of values, not a schema.
+        const ref = "#/components/schemas/A/properties/status/enum";
+        const spec = specWithResponseRef(ref, {
+            A: { type: "object", properties: { status: { type: "string", enum: ["on", "off"] } } },
+        });
+        const warnings: string[] = [];
+
+        const result = inlineNestedRefs(spec, (message) => warnings.push(message));
+
+        expect(responseSchema(result)).toEqual({ $ref: ref });
+        expect(warnings[0]).toContain("resolves to an array, not a schema");
+    });
+
+    it("names the class when a pointer resolves to a Date js-yaml produced", () => {
+        // `example: 2020-01-01` unquoted is a Date, not a schema — and not a
+        // plain object either, so `transform` could not rebuild it.
+        const ref = "#/components/schemas/A/properties/n/example";
+        const spec = specWithResponseRef(ref, {
+            A: { type: "object", properties: { n: { type: "string", example: new Date("2020-01-01") } } },
+        });
+        const warnings: string[] = [];
+
+        const result = inlineNestedRefs(spec, (message) => warnings.push(message));
+
+        expect(responseSchema(result)).toEqual({ $ref: ref });
+        expect(warnings[0]).toContain("resolves to a Date, not a schema");
+    });
+
+    it("falls back to a generic kind for an object with no named constructor", () => {
+        // No parser produces this; `inlineNestedRefs` is exported, so a
+        // programmatic caller can hand it one. Reading `.name` off the missing
+        // constructor unguarded would throw here.
+        const odd = Object.create(Object.create(null)) as object;
+        const ref = "#/components/schemas/A/properties/n/example";
+        const spec = specWithResponseRef(ref, {
+            A: { type: "object", properties: { n: { type: "string", example: odd } } },
+        });
+        const warnings: string[] = [];
+
+        const result = inlineNestedRefs(spec, (message) => warnings.push(message));
+
+        expect(responseSchema(result)).toEqual({ $ref: ref });
+        expect(warnings[0]).toContain("resolves to a non-plain object, not a schema");
+    });
+
+    it("inlines a target holding an array, keeping it an array in the copy", () => {
+        const spec = specWithResponseRef("#/components/schemas/A/properties/status", {
+            A: { type: "object", properties: { status: { type: "string", enum: ["on", "off"] } } },
+        });
+
+        expect(responseSchema(inlineNestedRefs(spec))).toEqual({ type: "string", enum: ["on", "off"] });
+    });
+
+    it("inlines a boolean target — `true`/`false` are legal schemas in OpenAPI 3.1", () => {
+        const ref = "#/components/schemas/A/properties/anything";
+        const spec = specWithResponseRef(ref, { A: { type: "object", properties: { anything: true } } });
+        const warnings: string[] = [];
+
+        const result = inlineNestedRefs(spec, (message) => warnings.push(message));
+
+        expect(responseSchema(result)).toBe(true);
+        expect(warnings).toEqual([]);
+    });
+
+    it("warns when keys sit next to a $ref whose target is a boolean schema — nowhere to merge them", () => {
+        const ref = "#/components/schemas/A/properties/anything";
+        const spec = specWithResponseRef(ref, { A: { type: "object", properties: { anything: true } } });
+        setResponseSchema(spec, { $ref: ref, description: "free-form" });
+        const warnings: string[] = [];
+
+        const result = inlineNestedRefs(spec, (message) => warnings.push(message));
+
+        expect(responseSchema(result)).toBe(true);
+        expect(warnings).toHaveLength(1);
+        expect(warnings[0]).toContain("description");
+        expect(warnings[0]).toContain("dropped");
+    });
+
+    it("ignores a $ref into another document, deep pointer or not", () => {
+        const ref = "./common.yaml#/components/schemas/A/properties/n";
+        const spec = specWithResponseRef(ref, policyEntrySchemas);
+        const warnings: string[] = [];
+
+        // Not "#/…": external refs are out of scope, and must not be warned about.
+        expect(responseSchema(inlineNestedRefs(spec, (message) => warnings.push(message)))).toEqual({ $ref: ref });
+        expect(warnings).toEqual([]);
+    });
+
+    it("ignores a deep pointer into a component kind other than schemas", () => {
+        const ref = "#/components/parameters/Limit/schema";
+        const spec = specWithResponseRef(ref, policyEntrySchemas);
+        const warnings: string[] = [];
+
+        // Only schema definitions get the last-segment-becomes-a-type-name
+        // treatment downstream, so only they need inlining.
+        expect(responseSchema(inlineNestedRefs(spec, (message) => warnings.push(message)))).toEqual({ $ref: ref });
+        expect(warnings).toEqual([]);
+    });
+
+    it("keeps a schema literally named `__proto__` as an own key instead of hijacking the prototype", () => {
+        // JSON.parse produces "__proto__" as a real own, enumerable key, so a
+        // spec can carry one; `result[key] = next` would invoke the inherited
+        // setter, dropping the key and re-prototyping the rebuilt node.
+        // Built from JSON text, not an object literal: `__proto__:` in a
+        // literal sets the prototype, while JSON.parse makes it an own key.
+        const spec = JSON.parse(`{
+            "openapi": "3.0.0",
+            "info": { "title": "t", "version": "1" },
+            "paths": {
+                "/x": { "get": { "responses": { "200": {
+                    "description": "ok",
+                    "content": { "application/json": {
+                        "schema": { "$ref": "#/components/schemas/A/properties/n" }
+                    } }
+                } } } }
+            },
+            "components": { "schemas": {
+                "__proto__": { "type": "object" },
+                "A": { "type": "object", "properties": { "n": { "type": "array", "items": { "type": "string" } } } },
+                "B": { "type": "object", "properties": {
+                    "q": { "$ref": "#/components/schemas/A/properties/n" }
+                } }
+            } }
+        }`) as SwaggerSpec;
+        // Guard the premise: the parsed input really has the own key.
+        expect(Object.keys(spec.components?.schemas ?? {})).toContain("__proto__");
+
+        const result = inlineNestedRefs(spec);
+        const schemas = result.components?.schemas as Record<string, unknown>;
+
+        expect(responseSchema(result)).toEqual({ type: "array", items: { type: "string" } });
+        // `B` holds a deep ref, so the schemas map itself is rebuilt — the case
+        // where a `__proto__` sibling would be lost.
+        expect((schemas["B"] as { properties: Record<string, unknown> }).properties["q"]).toEqual({
+            type: "array",
+            items: { type: "string" },
+        });
+        // Survives the rebuild of the branch that changed, as an own data key…
+        expect(Object.keys(schemas)).toContain("__proto__");
+        expect(Object.prototype.hasOwnProperty.call(schemas, "__proto__")).toBe(true);
+        // …and the rebuilt node keeps a plain prototype.
+        expect(Object.getPrototypeOf(schemas)).toBe(Object.prototype);
+    });
+
+    it("bounds an acyclic fan-out chain instead of expanding it combinatorially", () => {
+        // Each level references the previous one twice: N levels would expand
+        // 2^N nodes. The cycle guard never fires — no pointer re-enters itself.
+        const levels = 40;
+        const schemas: Record<string, unknown> = { S0: { properties: { p: { type: "string" } } } };
+        for (let index = 1; index <= levels; index++) {
+            const previous = `#/components/schemas/S${index - 1}/properties/p`;
+            schemas[`S${index}`] = { properties: { p: { a: { $ref: previous }, b: { $ref: previous } } } };
+        }
+        const spec = specWithResponseRef(`#/components/schemas/S${levels}/properties/p`, schemas);
+        const warnings: string[] = [];
+
+        const result = inlineNestedRefs(spec, (message) => warnings.push(message));
+
+        // Unbounded, this is ~30 MB and ~18 s at N=20 alone.
+        expect(JSON.stringify(result).length).toBeLessThan(20_000_000);
+        expect(warnings.some((message) => message.includes("budget"))).toBe(true);
+        expect(warnings.some((message) => message.includes("cyclic"))).toBe(false);
+    }, 20_000);
+
+    it("stops a chain deeper than the pointer-hop limit and warns", () => {
+        // A linear chain: no fan-out, so the node budget never fires — the
+        // depth cap is what keeps recursion (and the stack) bounded.
+        const levels = 200;
+        const schemas: Record<string, unknown> = { S0: { type: "string" } };
+        for (let index = 1; index <= levels; index++) {
+            schemas[`S${index}`] = { properties: { p: { $ref: `#/components/schemas/S${index - 1}/properties/p` } } };
+        }
+        schemas["S1"] = { properties: { p: { type: "string" } } };
+        const spec = specWithResponseRef(`#/components/schemas/S${levels}/properties/p`, schemas);
+        const warnings: string[] = [];
+
+        inlineNestedRefs(spec, (message) => warnings.push(message));
+
+        expect(warnings.some((message) => message.includes("hops deep"))).toBe(true);
     });
 
     it("warns once per ref, however many sites use it", () => {

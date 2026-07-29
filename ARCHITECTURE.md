@@ -23,7 +23,13 @@ Every generation run flows through the same stages:
   their target — downstream a `$ref` becomes a type name taken from its last
   segment, which for these matches no model. Parse time is upstream of *both*
   raw-spec readers and the IR, so one pass fixes every consumer; top-level refs
-  are left alone to keep generating imported models.
+  are left alone to keep generating imported models; keys sitting next to a
+  deep `$ref` are kept and win over the target's. `validateInput` runs *before*
+  this pass, so the hook judges the document as authored. A pointer it refuses —
+  unresolvable, cyclic, aimed at a non-schema value, or past the expansion
+  depth/node caps that bound combinatorial fan-out — stays in place and reports
+  through `onWarning`; anything the pass can still throw is re-wrapped as
+  `SpecParseError` so hosts keep branching on the typed errors.
 - **Normalize** (`normalize.ts`) — resolves *every* Swagger 2.0 vs OpenAPI 3.x
   difference exactly once and precomputes what generators would otherwise
   re-derive (`pathParams`, `queryParams`, `hasBody`, `isMultipart`,
