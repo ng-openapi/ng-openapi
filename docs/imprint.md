@@ -12,7 +12,7 @@ lastUpdated: false
 Jami IT<br/>
 Inhaber: Tareq Jami<br/>
 Tilsiterstraße 142<br/>
-22049 Hamburg<br/>
+22047 Hamburg<br/>
 Deutschland
 
 ## Kontakt
@@ -28,7 +28,7 @@ DE406600643
 
 Tareq Jami<br/>
 Tilsiterstraße 142<br/>
-22049 Hamburg
+22047 Hamburg
 
 ## Verbraucherstreitbeilegung / Universalschlichtungsstelle
 
