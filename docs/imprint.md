@@ -11,8 +11,8 @@ lastUpdated: false
 
 Jami IT<br/>
 Inhaber: Tareq Jami<br/>
-Walddörferstraße 104<br/>
-22041 Hamburg<br/>
+Tilsiterstraße 142<br/>
+22049 Hamburg<br/>
 Deutschland
 
 ## Kontakt
@@ -27,8 +27,8 @@ DE406600643
 ## Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV
 
 Tareq Jami<br/>
-Walddörferstraße 104<br/>
-22041 Hamburg
+Tilsiterstraße 142<br/>
+22049 Hamburg
 
 ## Verbraucherstreitbeilegung / Universalschlichtungsstelle
 
