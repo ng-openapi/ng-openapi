@@ -185,8 +185,46 @@ function resolveBodySchema(
     contentType: string,
     resolveRef: ResolveRef,
 ): SwaggerDefinition | undefined {
-    const schema = requestBody?.content?.[contentType]?.schema;
-    return schema?.$ref ? resolveRef(schema.$ref) : schema;
+    return flattenBodySchema(requestBody?.content?.[contentType]?.schema, resolveRef);
+}
+
+/**
+ * Resolves $refs and flattens allOf compositions into a single schema with
+ * merged `properties`/`required`, so formDataFields/urlEncodedFields see every
+ * field. Swashbuckle emits multipart bodies with multiple [FromForm]
+ * parameters as an inline allOf of object schemas; without flattening, the
+ * generators saw zero fields and emitted a request referencing an undeclared
+ * `formData` (#72).
+ */
+function flattenBodySchema(
+    schema: SwaggerDefinition | undefined,
+    resolveRef: ResolveRef,
+    seenRefs: Set<string> = new Set(),
+): SwaggerDefinition | undefined {
+    if (!schema) return schema;
+    if (schema.$ref) {
+        // A repeated ref contributes nothing new (its properties merged on
+        // first sight) and guards against cyclic definitions.
+        if (seenRefs.has(schema.$ref)) return undefined;
+        seenRefs.add(schema.$ref);
+        return flattenBodySchema(resolveRef(schema.$ref), resolveRef, seenRefs);
+    }
+    if (!schema.allOf?.length) return schema;
+
+    const { allOf, ...flattened } = schema;
+    const properties = { ...schema.properties };
+    const required = [...(schema.required ?? [])];
+    for (const member of allOf) {
+        const resolved = flattenBodySchema(member, resolveRef, seenRefs);
+        if (!resolved) continue;
+        Object.assign(properties, resolved.properties);
+        required.push(...(resolved.required ?? []).filter((name) => !required.includes(name)));
+    }
+
+    if (Object.keys(properties).length > 0) flattened.properties = properties;
+    if (required.length > 0) flattened.required = required;
+    flattened.type ??= "object";
+    return flattened;
 }
 
 function determineResponseInfo(operation: PathInfo): ResponseTypeInfo {
