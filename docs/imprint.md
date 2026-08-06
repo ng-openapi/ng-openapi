@@ -9,7 +9,7 @@ lastUpdated: false
 
 ## Angaben gemäß § 5 DDG
 
-Jami IT<br/>
+[Jami IT](https://jami-it.de)<br/>
 Inhaber: Tareq Jami<br/>
 Tilsiterstraße 142<br/>
 22047 Hamburg<br/>

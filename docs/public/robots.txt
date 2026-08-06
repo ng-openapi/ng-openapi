@@ -1,11 +1,63 @@
 # docs/public/robots.txt
+# ng-openapi documentation — https://ng-openapi.dev
+# Maintained by Tareq Jami of Jami IT (https://jami-it.de).
+#
+# Machine-readable entry points, all intentionally crawlable:
+#   /llms.txt        index + usage rules for AI assistants
+#   /llms-full.txt   the whole documentation in one file
+#   /context7.json   Context7 library descriptor
+#   /<page>.md       raw markdown next to every HTML page
+
+# One group per user-agent: the previous file had two "User-agent: *" blocks,
+# which crawlers merge but which read as if the second replaced the first.
 User-agent: *
 Allow: /
-Sitemap: https://ng-openapi.dev/sitemap.xml
-
-# Block development/staging URLs
-User-agent: *
+Allow: /context7.json
 Disallow: /preview/
+# Search index shards and other build artefacts; the .md sources stay allowed.
+Disallow: /assets/
 Disallow: /*.json$
+
+# --- AI assistants and answer engines -------------------------------------
+# The docs exist to be read, including by assistants answering on a
+# developer's behalf, so these are allowed explicitly rather than by default.
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+Sitemap: https://ng-openapi.dev/sitemap.xml
 
 # Algolia-Crawler-Verif: 74E7170704B87107
