@@ -11,12 +11,25 @@ Every generation run flows through the same stages:
    load ─────────► parse ─────────► normalize ─────────► generate ─────────► emit
    spec-loader     spec-format      normalize.ts          generators          ts-morph Project
    (fs / http)     (JSON / YAML)    → NormalizedSpec      (core + plugins)    formatText() + save
+                   $ref inlining
 ```
 
 - **Load** (`packages/shared/src/core/spec-loader.ts`) — raw content from a file
   or URL. Pure I/O; throws `SpecLoadError`.
 - **Parse** (`spec-format.ts`) — format detection + JSON/YAML parsing into a raw
   `SwaggerSpec`. Pure functions; throws `SpecParseError`.
+  `SwaggerParser.create` then runs `inline-nested-refs.ts` once: deep-pointer
+  `$ref`s (`#/components/schemas/X/properties/y`) are replaced by a copy of
+  their target — downstream a `$ref` becomes a type name taken from its last
+  segment, which for these matches no model. Parse time is upstream of *both*
+  raw-spec readers and the IR, so one pass fixes every consumer; top-level refs
+  are left alone to keep generating imported models; keys sitting next to a
+  deep `$ref` are kept and win over the target's. `validateInput` runs *before*
+  this pass, so the hook judges the document as authored. A pointer it refuses —
+  unresolvable, cyclic, aimed at a non-schema value, or past the expansion
+  depth/node caps that bound combinatorial fan-out — stays in place and reports
+  through `onWarning`; anything the pass can still throw is re-wrapped as
+  `SpecParseError` so hosts keep branching on the typed errors.
 - **Normalize** (`normalize.ts`) — resolves *every* Swagger 2.0 vs OpenAPI 3.x
   difference exactly once and precomputes what generators would otherwise
   re-derive (`pathParams`, `queryParams`, `hasBody`, `isMultipart`,
@@ -85,6 +98,10 @@ User-facing failures are typed (`packages/shared/src/errors.ts`):
 `ConfigValidationError` (invalid config, collects all issues). Hosts branch on
 `instanceof`, never on message text — messages are presentation.
 
+Problems the run survives go to the `onWarning` sink (an unresolvable `$ref`, a
+skipped definition): output is still produced, so the user must be told which
+construct won't compile. Silent degradation is never acceptable.
+
 ### Plugin contract
 
 Plugins are classes constructed with a single `PluginGeneratorContext`
@@ -126,5 +143,7 @@ otherwise it would show up in indexes and `filesWritten`.
 | A new output file kind for the core | a generator under `packages/ng-openapi/src/lib/generators/` |
 | An alternative client flavor | a plugin package implementing `PluginGeneratorContext` |
 | A new user-facing failure mode | a typed error in `packages/shared/src/errors.ts` (or extend an existing one) |
+| A degradation the run survives | a message through the `onWarning` sink — never a silent fallback |
+| A raw-spec fixup every consumer needs | a parse-time pass in `packages/shared/src/core/`, run from `SwaggerParser.create` (see `inline-nested-refs.ts`) |
 | A string/name helper | `packages/shared/src/utils/` — and export it from the barrel only if consumers outside shared need it |
 | Console output | `cli.ts`. Nowhere else. |
