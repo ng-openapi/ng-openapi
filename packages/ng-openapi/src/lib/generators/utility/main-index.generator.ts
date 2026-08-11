@@ -1,6 +1,15 @@
 import { Project } from "ts-morph";
 import * as path from "path";
-import { GeneratorConfig, listGeneratedFileNames, MAIN_INDEX_GENERATOR_HEADER_COMMENT } from "@ng-openapi/shared";
+import {
+    GeneratorConfig,
+    listGeneratedBarrelDirs,
+    listGeneratedFileNames,
+    MAIN_INDEX_GENERATOR_HEADER_COMMENT,
+} from "@ng-openapi/shared";
+
+// Top-level directories the core generators own; everything else with an
+// index.ts barrel under the output root came from a plugin
+const CORE_BARREL_DIRS = new Set(["models", "services", "tokens", "utils"]);
 
 export class MainIndexGenerator {
     private project: Project;
@@ -59,6 +68,17 @@ export class MainIndexGenerator {
                 });
             }
         }
+
+        // Export plugin barrels (e.g. resources/ from @ng-openapi/http-resource,
+        // validators/ from @ng-openapi/zod) — regardless of generateServices,
+        // since plugins like zod also emit for path-less, models-only specs
+        listGeneratedBarrelDirs(this.project, outputRoot)
+            .filter((dir) => !CORE_BARREL_DIRS.has(dir))
+            .forEach((dir) => {
+                sourceFile.addExportDeclaration({
+                    moduleSpecifier: `./${dir}`,
+                });
+            });
 
         sourceFile.formatText();
         sourceFile.saveSync();

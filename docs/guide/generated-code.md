@@ -86,7 +86,7 @@ The `provide<ClientName>Client()` function (e.g. `provideDefaultClient`) plus it
 
 ### `index.ts`
 
-Barrel export of everything above, so consumers can import from the output root.
+Barrel export of everything above — including any plugin directories (e.g. `resources/`, `validators/`) — so consumers can import from the output root.
 
 ## Regeneration Notes
 

@@ -10,8 +10,8 @@
     "semantic_hash": ""
   },
   ".release-please-manifest.json": {
-    "mtime": 1784488141.5432856,
-    "ast_hash": "f1c4ce2c5260c1ef35753707d5029e4b",
+    "mtime": 1786466973.855626,
+    "ast_hash": "1fecba9d6f90269cfa48b9d4ae8589a8",
     "semantic_hash": ""
   },
   ".vscode/extensions.json": {
@@ -20,8 +20,8 @@
     "semantic_hash": "f1654637abe04c1cff0d00835c879c4d"
   },
   "docs/.vitepress/config.ts": {
-    "mtime": 1784488141.8627174,
-    "ast_hash": "4ffc64e0f88203d51d4bfabe19ccfc1d",
+    "mtime": 1786466973.8576272,
+    "ast_hash": "f21a1dc2b86d994af561608ca04cf08a",
     "semantic_hash": ""
   },
   "docs/.vitepress/theme/index.ts": {
@@ -55,8 +55,8 @@
     "semantic_hash": ""
   },
   "packages/ng-openapi/package.json": {
-    "mtime": 1784488141.5739293,
-    "ast_hash": "fdcd5d52d52e92e2ea39750683d9bf27",
+    "mtime": 1786466973.8754497,
+    "ast_hash": "76b9266e4d07b97d16d82d59ea9854dc",
     "semantic_hash": ""
   },
   "packages/ng-openapi/project.json": {
@@ -175,8 +175,8 @@
     "semantic_hash": "77b2faaccb74d31f5809bd483e72c6b6"
   },
   "packages/ng-openapi/src/lib/generators/utility/main-index.generator.ts": {
-    "mtime": 1783300756.930625,
-    "ast_hash": "2dfb3967804c4860d3f9fb46c4450b05",
+    "mtime": 1786468129.5895262,
+    "ast_hash": "43b5da78c53c8ce0945704e8570e234e",
     "semantic_hash": ""
   },
   "packages/ng-openapi/src/lib/generators/utility/provider.generator.ts": {
@@ -210,8 +210,8 @@
     "semantic_hash": ""
   },
   "packages/plugins/http-resource/package.json": {
-    "mtime": 1784488141.6448119,
-    "ast_hash": "5cb10617641d1a6439f09a8b0cc5e640",
+    "mtime": 1786466973.8866782,
+    "ast_hash": "cc3b3267583fb136f45f4bb7e214194c",
     "semantic_hash": ""
   },
   "packages/plugins/http-resource/project.json": {
@@ -285,8 +285,8 @@
     "semantic_hash": ""
   },
   "packages/plugins/zod/package.json": {
-    "mtime": 1784488141.6943603,
-    "ast_hash": "0b25ec1bc82b353aa39d00a7b1e5c751",
+    "mtime": 1786466973.8926785,
+    "ast_hash": "fabf9753e60248c0de8f2228095e7327",
     "semantic_hash": ""
   },
   "packages/plugins/zod/project.json": {
@@ -380,18 +380,18 @@
     "semantic_hash": ""
   },
   "packages/shared/src/core/index.ts": {
-    "mtime": 1783296715.465305,
+    "mtime": 1786466973.8960946,
     "ast_hash": "44503d03c8b9652563e90a1e23559c47",
     "semantic_hash": ""
   },
   "packages/shared/src/core/swagger-parser.ts": {
-    "mtime": 1783296715.468304,
+    "mtime": 1786466973.8970993,
     "ast_hash": "cdc6ed1f28a06173ced57156e2c066d1",
     "semantic_hash": ""
   },
   "packages/shared/src/index.ts": {
-    "mtime": 1784488141.7043567,
-    "ast_hash": "1b4af2de8c67a184dd0a5e185990dc0a",
+    "mtime": 1786468118.4395473,
+    "ast_hash": "4c1b7556aa94c031bc17d06cf5c422e9",
     "semantic_hash": ""
   },
   "packages/shared/src/types/config.types.ts": {
@@ -465,8 +465,8 @@
     "semantic_hash": "bae95882ce0cb919d8e781ee775efc27"
   },
   "packages/shared/src/utils/index.ts": {
-    "mtime": 1784488141.7123594,
-    "ast_hash": "d1d3fe8ec4ea2453987ced43a3f15433",
+    "mtime": 1786468117.1572034,
+    "ast_hash": "09b53aad7b1dd447a5957f0164bb2482",
     "semantic_hash": ""
   },
   "packages/shared/src/utils/string.utils.ts": {
@@ -805,8 +805,8 @@
     "semantic_hash": ""
   },
   "docs/imprint.md": {
-    "mtime": 1783296715.1610527,
-    "ast_hash": "63f29339b5ddfc116d44dc4fdce18085",
+    "mtime": 1786466973.8603494,
+    "ast_hash": "4bb23d3d5b62b364a0fcf65b2e55a769",
     "semantic_hash": ""
   },
   "docs/index.md": {
@@ -815,23 +815,23 @@
     "semantic_hash": ""
   },
   "docs/public/robots.txt": {
-    "mtime": 1783300756.9141066,
-    "ast_hash": "673b7d391787efd0aac53ef800b03d8b",
+    "mtime": 1786466973.8624494,
+    "ast_hash": "58f9125f8b8e3ff5ca0c40962ef068a3",
     "semantic_hash": ""
   },
   "packages/ng-openapi/CHANGELOG.md": {
-    "mtime": 1784488141.5713973,
-    "ast_hash": "1bc02f75606aa207f9b5d6bd28650439",
+    "mtime": 1786466973.8734493,
+    "ast_hash": "487b8b535387d0e915b144a67ff1599c",
     "semantic_hash": ""
   },
   "packages/ng-openapi/README.md": {
-    "mtime": 1784488141.5729127,
-    "ast_hash": "2a3a38e6cfd51de6e1d57502dba743b3",
+    "mtime": 1786466973.8734493,
+    "ast_hash": "13e579c2430e294c4328f5534b049b06",
     "semantic_hash": ""
   },
   "packages/plugins/http-resource/CHANGELOG.md": {
-    "mtime": 1784488141.6437838,
-    "ast_hash": "159e034a6aad231630201dba5fa86d5f",
+    "mtime": 1786466973.8856783,
+    "ast_hash": "cbe0fa9f2d41c1c1f35eb9a59b2506d4",
     "semantic_hash": ""
   },
   "packages/plugins/http-resource/README.md": {
@@ -840,8 +840,8 @@
     "semantic_hash": ""
   },
   "packages/plugins/zod/CHANGELOG.md": {
-    "mtime": 1784488141.6933572,
-    "ast_hash": "e3f6946a8524253ffe341a20e3dd72ad",
+    "mtime": 1786466973.8916783,
+    "ast_hash": "90337ca534ec9bc9bc12fad10c798b7c",
     "semantic_hash": ""
   },
   "packages/plugins/zod/README.md": {
@@ -920,7 +920,7 @@
     "semantic_hash": ""
   },
   "packages/testing/fixtures/specs/openapi-3.1.json": {
-    "mtime": 1784817210.42946,
+    "mtime": 1786466973.8991017,
     "ast_hash": "33a085f5dd982e9f0dcd5e8028031845",
     "semantic_hash": ""
   },
@@ -1180,7 +1180,7 @@
     "semantic_hash": ""
   },
   "packages/ng-openapi/src/lib/generators/type/type-resolver.ts": {
-    "mtime": 1784815784.1365578,
+    "mtime": 1786466973.876449,
     "ast_hash": "5f405397136f76f185e0c6d4abc90f6b",
     "semantic_hash": ""
   },
@@ -1190,7 +1190,7 @@
     "semantic_hash": ""
   },
   "packages/ng-openapi/tests/type-units.test.ts": {
-    "mtime": 1784815807.7828145,
+    "mtime": 1786466973.8846776,
     "ast_hash": "c26cf538d269951120bd9d962c28efa4",
     "semantic_hash": ""
   },
@@ -1225,8 +1225,8 @@
     "semantic_hash": ""
   },
   "docs/guide/plugin-authoring.md": {
-    "mtime": 1783296715.1600547,
-    "ast_hash": "ca103d26ae0c488a78d27680186c1b33",
+    "mtime": 1786468162.1513848,
+    "ast_hash": "a0d30d70840b6a7a58176114bfcb291c",
     "semantic_hash": ""
   },
   "packages/testing/eslint.config.mjs": {
@@ -1290,8 +1290,8 @@
     "semantic_hash": ""
   },
   "docs/public/llms.txt": {
-    "mtime": 1784488230.5466487,
-    "ast_hash": "f70f4f2258a332b764b655761b82450f",
+    "mtime": 1786466973.861444,
+    "ast_hash": "3c4cfcefdd7d68f1189eff44f4788f67",
     "semantic_hash": ""
   },
   "docs/public/og-image.png": {
@@ -1300,8 +1300,8 @@
     "semantic_hash": ""
   },
   "packages/shared/src/utils/project.utils.ts": {
-    "mtime": 1783300757.0001152,
-    "ast_hash": "afceb926a8e932898c49439ea5aa0a04",
+    "mtime": 1786468115.7431922,
+    "ast_hash": "fc664344b6f8ee783a1af06f2bb7e5be",
     "semantic_hash": ""
   },
   "packages/testing/fixtures/specs/models-only.json": {
@@ -1365,8 +1365,8 @@
     "semantic_hash": ""
   },
   "packages/shared/tests/project.utils.test.ts": {
-    "mtime": 1783300757.0011122,
-    "ast_hash": "a2f2f1b99e2285fe9c93eeae31e6a67c",
+    "mtime": 1786468152.4882991,
+    "ast_hash": "388951f9868b8be0b548611eabd1638c",
     "semantic_hash": ""
   },
   "docs/api/configuration/options/naming.md": {
@@ -1570,8 +1570,8 @@
     "semantic_hash": ""
   },
   "docs/about.md": {
-    "mtime": 1784488107.1262596,
-    "ast_hash": "039a19c26fc1e2e2c6bf32fba7d5e334",
+    "mtime": 1786466973.8586268,
+    "ast_hash": "190ee7fc8d0553b1644851db2ab16e42",
     "semantic_hash": ""
   }
 }
