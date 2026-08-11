@@ -175,8 +175,8 @@
     "semantic_hash": ""
   },
   "packages/ng-openapi/src/lib/generators/utility/main-index.generator.ts": {
-    "mtime": 1786484469.0972898,
-    "ast_hash": "3193428516b419accfcdf471925ac0dd",
+    "mtime": 1786488753.1299534,
+    "ast_hash": "5d27e0b22109e7b0202f19a8687b8365",
     "semantic_hash": ""
   },
   "packages/ng-openapi/src/lib/generators/utility/provider.generator.ts": {
@@ -780,8 +780,8 @@
     "semantic_hash": ""
   },
   "docs/guide/generated-code.md": {
-    "mtime": 1786484474.0818462,
-    "ast_hash": "348c2ef0e4b55af7d13e19b9667b388e",
+    "mtime": 1786488761.4442546,
+    "ast_hash": "820e505992adf9e18ed4e3d6ca03cf66",
     "semantic_hash": ""
   },
   "docs/guide/guides.md": {
@@ -1225,8 +1225,8 @@
     "semantic_hash": ""
   },
   "docs/guide/plugin-authoring.md": {
-    "mtime": 1786484472.5939054,
-    "ast_hash": "6dd8adbb20c74d21dd9f0a6e3b5cb8da",
+    "mtime": 1786488758.5875888,
+    "ast_hash": "d4c16e69ea726d9693d473fa84897956",
     "semantic_hash": ""
   },
   "packages/testing/eslint.config.mjs": {

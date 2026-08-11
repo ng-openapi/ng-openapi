@@ -7,9 +7,13 @@ import {
     MAIN_INDEX_GENERATOR_HEADER_COMMENT,
 } from "@ng-openapi/shared";
 
-// Top-level directories the core generators own; everything else with an
-// index.ts barrel under the output root came from a plugin
-const CORE_BARREL_DIRS = new Set(["models", "services", "tokens", "utils"]);
+// Top-level names the core generators own; a plugin barrel matching one of
+// these is skipped. models/services/tokens are already exported explicitly
+// below, so listing them prevents a duplicate export declaration; providers is
+// a file (providers.ts) that would shadow a plugin's providers/index.ts under
+// the same specifier; utils has no barrel today, but its files are exported
+// individually. Add any new core directory that gets an index.ts.
+const CORE_BARREL_DIRS = new Set(["models", "providers", "services", "tokens", "utils"]);
 
 export class MainIndexGenerator {
     private project: Project;
@@ -72,7 +76,10 @@ export class MainIndexGenerator {
         // Export plugin barrels (e.g. resources/ from @ng-openapi/http-resource,
         // validators/ from @ng-openapi/zod). Outside the generateServices gate
         // above because plugins run unconditionally, so a generateServices:false
-        // run can still emit self-contained plugin output
+        // run can still emit plugin directories that need re-exporting. Whether
+        // that output stands on its own is the plugin's concern: zod imports
+        // only "zod", while http-resource imports ../tokens and
+        // ../utils/http-params-builder, neither of which exists in that mode
         listGeneratedBarrelDirs(this.project, outputRoot)
             .filter((dir) => !CORE_BARREL_DIRS.has(dir))
             .forEach((dir) => {

@@ -164,6 +164,15 @@
   "162": "funding",
   "163": "publishConfig",
   "164": "scripts",
+  "165": "`validateInput`",
+  "166": "`responseTypeMapping`",
+  "167": "`serviceDecorator`",
+  "168": "`useSingleRequestParameter`",
   "169": "ServiceGenerator",
-  "172": "ProviderGenerator"
+  "170": "`customizeMethodName`",
+  "171": "`generateServices`",
+  "172": "ProviderGenerator",
+  "173": "`options`",
+  "174": "`validation`",
+  "175": "`HttpResourcePlugin`"
 }
