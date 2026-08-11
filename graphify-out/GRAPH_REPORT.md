@@ -1,7 +1,7 @@
 # Graph Report - ng-openapi  (2026-08-11)
 
 ## Corpus Check
-- 229 files · ~65,802 words
+- 229 files · ~65,892 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `9c677f50`
+- Built from commit: `96a3ce7f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -207,7 +207,7 @@
 ## Communities (167 total, 51 thin omitted)
 
 ### Community 0 - "Core Generation Pipeline"
-Cohesion: 0.17
+Cohesion: 0.16
 Nodes (4): RequestParamsGenerator, ServiceMethodParamsGenerator, RequestObjectEntry, ServiceMethodRequestObjectGenerator
 
 ### Community 1 - "Service Method Generators"
@@ -463,7 +463,7 @@ Cohesion: 0.14
 Nodes (3): BaseInterceptorGenerator, DateTransformerGenerator, FileDownloadGenerator
 
 ### Community 68 - "Config/Metadata Fragment"
-Cohesion: 0.22
+Cohesion: 0.24
 Nodes (4): HttpResourceGenerator, HttpResourceMethodGenerator, HttpResourceMethodBodyGenerator, NormalizedOperation
 
 ### Community 69 - "Config/Metadata Fragment"

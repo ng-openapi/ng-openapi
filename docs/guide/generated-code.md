@@ -36,7 +36,7 @@ Plugins add their own directories next to these:
 - `validators/` — Zod schemas, one file per controller ([Zod plugin](../api/configuration/plugins/zod.md))
 - `resources/` — `httpResource`-based services ([HTTP Resource plugin](../api/configuration/plugins/http-resource.md))
 
-With [`generateServices: false`](../api/configuration/options/generate-services.md) only `models/` and the main `index.ts` are generated.
+With [`generateServices: false`](../api/configuration/options/generate-services.md) only `models/`, the main `index.ts`, and any plugin directories are generated — plugins run regardless of this option.
 
 ## File by File
 

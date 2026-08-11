@@ -70,8 +70,9 @@ export class MainIndexGenerator {
         }
 
         // Export plugin barrels (e.g. resources/ from @ng-openapi/http-resource,
-        // validators/ from @ng-openapi/zod) — regardless of generateServices,
-        // since plugins like zod also emit for path-less, models-only specs
+        // validators/ from @ng-openapi/zod). Outside the generateServices gate
+        // above because plugins run unconditionally, so a generateServices:false
+        // run can still emit self-contained plugin output
         listGeneratedBarrelDirs(this.project, outputRoot)
             .filter((dir) => !CORE_BARREL_DIRS.has(dir))
             .forEach((dir) => {

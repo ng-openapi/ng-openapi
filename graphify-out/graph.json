@@ -2790,7 +2790,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "packages_ng_openapi_src_lib_generators_service_service_method_service_method_params_generator_servicemethodparamsgenerator_constructor",
-      "community": 96,
+      "community": 0,
       "norm_label": ".constructor()"
     },
     {
@@ -5330,7 +5330,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "packages_plugins_http_resource_src_lib_http_resource_method_generator_httpresourcemethodgenerator_constructor",
-      "community": 68,
+      "community": 96,
       "norm_label": ".constructor()"
     },
     {
@@ -24433,7 +24433,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/ng-openapi/src/lib/generators/utility/main-index.generator.ts",
-      "source_location": "L76",
+      "source_location": "L77",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_utility_main_index_generator_mainindexgenerator_generatemainindex",
       "target": "packages_ng_openapi_src_lib_generators_utility_main_index_generator_core_barrel_dirs"
@@ -24486,7 +24486,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/ng-openapi/src/lib/generators/utility/main-index.generator.ts",
-      "source_location": "L75",
+      "source_location": "L76",
       "weight": 1.0,
       "source": "packages_ng_openapi_src_lib_generators_utility_main_index_generator_mainindexgenerator_generatemainindex",
       "target": "packages_shared_src_utils_project_utils_listgeneratedbarreldirs"
@@ -42768,5 +42768,5 @@
       "source_file": ".github/workflows/release.yml"
     }
   ],
-  "built_at_commit": "9c677f50bff5a8ede34f8970671bc51453f1a701"
+  "built_at_commit": "96a3ce7f991cebcdcbdc0cc6148f9fda5558c035"
 }
