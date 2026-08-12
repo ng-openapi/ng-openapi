@@ -22,19 +22,31 @@ import type { SwaggerSpec } from "../types/swagger.types";
  *
  * Plain top-level refs (`#/components/schemas/Pet`, `#/definitions/Pet`) are
  * left untouched so they keep generating an imported model. A deep pointer that
- * cannot be inlined — unresolvable, cyclic, aimed at something that is not a
- * schema, or past the expansion limits below — is left in place rather than
- * thrown on (destroying the ref would lose information), but each cause is
- * reported once through `onWarning`: `@ts-nocheck` means a wrong type is not
- * self-announcing, so the warning is the only signal the user gets.
+ * cannot be inlined — unresolvable, cyclic, resolving to a non-schema value,
+ * not addressing a schema *position*, or past the expansion limits below — is
+ * left in place rather than thrown on (destroying the ref would lose
+ * information), but each cause is reported once per ref through `onWarning`:
+ * `@ts-nocheck` means a wrong type is not self-announcing, so the warning is
+ * the only signal the user gets.
  *
  * Keys sitting next to a deep `$ref` are kept and win over the target's own,
  * per JSON Schema 2020-12, where `$ref` is an ordinary applicator rather than
  * an object replacement. OpenAPI 3.0 says such siblings are ignored, but
  * dropping an author's `description`/`nullable` silently is the worse reading.
+ * A sibling that *overrides* a type-bearing key of the target is the one place
+ * where that choice changes the emitted TypeScript, so it is warned about by
+ * name; overriding an annotation-only key (`description`, `example`) is the
+ * ordinary authoring shape and stays silent.
  */
 export function inlineNestedRefs(spec: SwaggerSpec, onWarning?: (message: string) => void): SwaggerSpec {
-    return transform(spec, { root: spec, onWarning, warned: new Set(), budget: MAX_INLINED_NODES }, []) as SwaggerSpec;
+    const ctx: InlineContext = {
+        root: spec,
+        onWarning,
+        warned: new Set(),
+        budget: MAX_INLINED_NODES,
+        budgetExhausted: false,
+    };
+    return transform(spec, ctx, []) as SwaggerSpec;
 }
 
 /**
@@ -64,6 +76,14 @@ interface InlineContext {
     readonly warned: Set<string>;
     /** Nodes the run may still materialize by inlining; see MAX_INLINED_NODES. */
     budget: number;
+    /**
+     * Set once the budget has been overrun. Sticky, so exhaustion is terminal:
+     * without it a ref smaller than the remainder still slips through after a
+     * bigger one was refused, making which refs survive depend on `Object.
+     * entries` order — i.e. on the spec's byte order — and making the warning's
+     * "and every deep $ref after it" false.
+     */
+    budgetExhausted: boolean;
 }
 
 /**
@@ -107,16 +127,35 @@ function transform(node: unknown, ctx: InlineContext, chain: string[]): unknown 
         }
         // A pointer may address any node in the document, most of which are not
         // schemas: `.../properties/n/type` is the string "array", `.../example`
-        // may be null, `.../properties` is a map of schemas. Inlining those
-        // produces a silently wrong type (`Observable<any>`, or a raw TypeError
-        // out of TypeResolver on null) instead of a loud failure, so they are
-        // refused here. Booleans are legal schemas in OpenAPI 3.1.
+        // may be null. Inlining those produces a silently wrong type
+        // (`Observable<any>`, or a raw TypeError out of TypeResolver on null)
+        // instead of a loud failure, so they are refused here. Booleans are
+        // legal schemas in OpenAPI 3.1.
         if (!isPlainObject(target) && typeof target !== "boolean") {
             warnOnce(
                 ctx,
                 `not-a-schema:${ref}`,
                 `Nested $ref "${ref}" resolves to ${describeKind(target)}, not a schema — ` +
                     `point it at a schema object. ${WRONG_TYPE_SUFFIX}`,
+            );
+            return node;
+        }
+        // The value check above cannot catch a non-schema *plain object*:
+        // `.../properties` is a map of schemas, `.../externalDocs`,
+        // `.../discriminator/mapping` and an object-valued `.../example` are not
+        // schemas either, yet all four are plain objects. Inlined, they yield a
+        // schema with no `type` and no `$ref`, which `getTypeScriptType` bottoms
+        // out at `any` — silently, where the un-inlined ref at least emitted a
+        // dangling type name the repo's compile check catches. So the pointer
+        // must also *address* a schema-valued position.
+        const nonSchemaSegment = firstNonSchemaSegment(ref);
+        if (nonSchemaSegment !== undefined) {
+            warnOnce(
+                ctx,
+                `not-a-schema-position:${ref}`,
+                `Nested $ref "${ref}" does not address a schema — its "${nonSchemaSegment}" segment is not a ` +
+                    `schema-valued position (expected one of properties/<name>, items, additionalProperties, ` +
+                    `allOf|anyOf|oneOf/<index>, not, $defs/<name>). ${WRONG_TYPE_SUFFIX}`,
             );
             return node;
         }
@@ -129,16 +168,29 @@ function transform(node: unknown, ctx: InlineContext, chain: string[]): unknown 
             );
             return node;
         }
+        // Once the budget has been overrun the run stops inlining altogether —
+        // see InlineContext.budgetExhausted. Every ref left behind is named, so
+        // no broken ref goes unmentioned under `@ts-nocheck`.
+        if (ctx.budgetExhausted) {
+            warnOnce(
+                ctx,
+                `budget:${ref}`,
+                `Nested $ref "${ref}" was left uninlined: the ${MAX_INLINED_NODES}-node expansion budget was ` +
+                    `already exhausted earlier in this spec. ${WRONG_TYPE_SUFFIX}`,
+            );
+            return node;
+        }
         // Charge the target's size before cloning it. Each nested expansion
         // charges in turn, so the total charged is the total materialized —
         // which is what an acyclic fan-out chain blows up, not the depth.
         const cost = countNodes(target);
         if (cost > ctx.budget) {
+            ctx.budgetExhausted = true;
             warnOnce(
                 ctx,
-                "budget",
+                `budget:${ref}`,
                 `Inlining nested $refs exceeded the ${MAX_INLINED_NODES}-node expansion budget at "${ref}" — ` +
-                    `this and any later deep $ref were left uninlined. The spec expands combinatorially; ` +
+                    `it and every deep $ref after it were left uninlined. The spec expands combinatorially; ` +
                     `restructure the repeated targets as named definitions. ${WRONG_TYPE_SUFFIX}`,
             );
             return node;
@@ -202,10 +254,71 @@ function mergeSiblings(
         );
         return inlined;
     }
+    // An *additive* sibling (a key the target does not define) is harmless
+    // either way, and so is one that only restates the target's own value. What
+    // is left — a sibling that *overrides* a key the target defines — is the
+    // single case where the 3.0-vs-2020-12 reading changes the emitted
+    // TypeScript: `type: "string"` next to a ref at `{ type: "array", items: … }`
+    // emits `string` for a `string[]` field, and `Object.fromEntries` resolves
+    // it silently by keeping the last entry. Name the keys and say which won.
+    const conflicts = siblings
+        .filter(
+            ([key, value]) =>
+                !ANNOTATION_ONLY_KEYS.has(key) &&
+                Object.prototype.hasOwnProperty.call(inlined, key) &&
+                !sameValue(value, inlined[key]),
+        )
+        .map(([key]) => key);
+    if (conflicts.length > 0) {
+        warnOnce(
+            ctx,
+            `sibling-conflict:${ref}`,
+            `Nested $ref "${ref}" sits next to key(s) (${conflicts.join(", ")}) that its target also defines — ` +
+                `the local value won and the target's was dropped, per JSON Schema 2020-12, where $ref composes ` +
+                `with its siblings; OpenAPI 3.0 would have ignored the local one instead. The generated type ` +
+                `follows the sibling, not the target — drop it if the target's value was meant to apply.`,
+        );
+    }
     return Object.fromEntries([
         ...Object.entries(inlined),
         ...siblings.map(([key, value]) => [key, transform(value, ctx, chain)] as const),
     ]);
+}
+
+/**
+ * Keys a sibling may override without changing a single character of the
+ * emitted TypeScript: nothing downstream reads them for a type. The type-
+ * bearing set is what `getTypeScriptType` and `TypeResolver` actually read —
+ * `$ref`, `type`, `format`, `enum`/`const`, `items`, `nullable`,
+ * `allOf`/`anyOf`/`oneOf`, `additionalProperties`, `properties`, `required`,
+ * `readOnly` — and overriding one of those is what the warning is for.
+ *
+ * Deliberately a deny-list rather than an allow-list of the type-bearing keys:
+ * a keyword this repo starts generating from later then warns by default
+ * instead of silently going unreported, which is the direction this whole pass
+ * exists to protect. Overriding a ref'd property's `description` is the
+ * ordinary authoring shape and must not produce noise.
+ */
+const ANNOTATION_ONLY_KEYS = new Set([
+    "description",
+    "title",
+    "summary",
+    "example",
+    "examples",
+    "externalDocs",
+    "deprecated",
+    "xml",
+    "$comment",
+]);
+
+/**
+ * Whether a sibling merely restates what the target already says, in which case
+ * neither reading of the spec produces a different type and there is nothing to
+ * report. Compared against the *inlined* target, so a value this pass rewrote
+ * reads as different and warns — the safe direction.
+ */
+function sameValue(a: unknown, b: unknown): boolean {
+    return a === b || JSON.stringify(a) === JSON.stringify(b);
 }
 
 function warnOnce(ctx: InlineContext, key: string, message: string): void {
@@ -269,6 +382,98 @@ function isDeepSchemaPointer(ref: string): boolean {
 }
 
 /**
+ * Where a pointer segment can land, tracked while walking a deep pointer:
+ * at a schema, at a map of schemas (`properties`), at an array of them
+ * (`allOf`), or at a keyword that is either a schema or an array of schemas
+ * (`items` — draft-04/07 allow the tuple form).
+ */
+type SchemaPosition = "schema" | "schema-map" | "schema-list" | "schema-or-list";
+
+/** Keywords whose value is a single schema. `additionalProperties` may be a boolean, which is one. */
+const SCHEMA_KEYWORDS = new Set([
+    "not",
+    "additionalProperties",
+    "unevaluatedItems",
+    "unevaluatedProperties",
+    "contains",
+    "propertyNames",
+    "contentSchema",
+    "if",
+    "then",
+    "else",
+]);
+/** Keywords whose value is a `name -> schema` map. */
+const SCHEMA_MAP_KEYWORDS = new Set(["properties", "patternProperties", "dependentSchemas", "$defs", "definitions"]);
+/** Keywords whose value is an array of schemas. */
+const SCHEMA_LIST_KEYWORDS = new Set(["allOf", "anyOf", "oneOf", "prefixItems"]);
+/** Keywords whose value is a schema, or — pre-2020-12 — an array of them. */
+const SCHEMA_OR_LIST_KEYWORDS = new Set(["items", "additionalItems"]);
+
+/**
+ * The first segment of a deep pointer that does not address a schema, or
+ * `undefined` when the whole pointer does.
+ *
+ * The value-kind guard in `transform` cannot stand in for this: a `properties`
+ * map, an `externalDocs`, a `discriminator/mapping` and an object-valued
+ * `example` are all plain objects, so they pass a "looks like a schema" test
+ * and inline as a schema with neither `type` nor `$ref` — `any`, silently.
+ * Checking the *position* is what distinguishes them, and it is syntactic:
+ * every segment past `components/schemas/<Name>` (or `definitions/<Name>`) must
+ * be a schema-valued keyword, a name inside a schema map, or an index into a
+ * schema array. A pointer ending on a map or a list (`.../properties`,
+ * `.../allOf`) fails on its own last segment.
+ */
+function firstNonSchemaSegment(ref: string): string | undefined {
+    const segments = pointerSegments(ref);
+    // isDeepSchemaPointer is the gate for this call: `#/definitions/<Name>/…`
+    // or `#/components/schemas/<Name>/…`, so the schema root is at 2 or 3.
+    const rest = segments.slice(segments[0] === "definitions" ? 2 : 3);
+
+    let position: SchemaPosition = "schema";
+    for (const segment of rest) {
+        if (position === "schema-map") {
+            position = "schema";
+            continue;
+        }
+        if (position === "schema-list") {
+            if (toArrayIndex(segment) === undefined) {
+                return segment;
+            }
+            position = "schema";
+            continue;
+        }
+        // In the tuple reading of `items`, an index selects a schema; anything
+        // else is read against the single-schema form, i.e. as from a schema.
+        if (position === "schema-or-list" && toArrayIndex(segment) !== undefined) {
+            position = "schema";
+            continue;
+        }
+        // At a schema: only a schema-valued keyword may follow.
+        if (SCHEMA_KEYWORDS.has(segment)) {
+            position = "schema";
+        } else if (SCHEMA_MAP_KEYWORDS.has(segment)) {
+            position = "schema-map";
+        } else if (SCHEMA_LIST_KEYWORDS.has(segment)) {
+            position = "schema-list";
+        } else if (SCHEMA_OR_LIST_KEYWORDS.has(segment)) {
+            position = "schema-or-list";
+        } else {
+            return segment;
+        }
+    }
+    // Ending on a container is ending on a non-schema: name that last segment.
+    return position === "schema" || position === "schema-or-list" ? undefined : rest[rest.length - 1];
+}
+
+/** Splits a same-document pointer into segments, unescaping `~1`/`~0` per RFC 6901. */
+function pointerSegments(ref: string): string[] {
+    return ref
+        .slice(2)
+        .split("/")
+        .map((segment) => segment.replace(/~1/g, "/").replace(/~0/g, "~"));
+}
+
+/**
  * Resolves a same-document JSON pointer to the node it addresses. Array
  * segments are indices per RFC 6901 (`.../allOf/0/properties/bar`), so
  * composition keywords are traversable. Lookups are own-property only:
@@ -278,12 +483,8 @@ function isDeepSchemaPointer(ref: string): boolean {
  * warning names the real problem (unresolvable) rather than the symptom.
  */
 function resolvePointer(root: SwaggerSpec, ref: string): unknown {
-    const segments = ref
-        .slice(2)
-        .split("/")
-        .map((segment) => segment.replace(/~1/g, "/").replace(/~0/g, "~"));
-
     let current: unknown = root;
+    const segments = pointerSegments(ref);
     for (const segment of segments) {
         if (Array.isArray(current)) {
             const index = toArrayIndex(segment);
