@@ -38,7 +38,7 @@ export type { NormalizedOperation, NormalizedSpec, ResponseKind, SpecVersion } f
 export { normalizeSchema, normalizeSpec, SwaggerParser } from "./core";
 
 // Typed pipeline errors — branch on these, not on message text
-export { NgOpenApiError, SpecLoadError, SpecParseError } from "./errors";
+export { InvalidIdentifierError, NgOpenApiError, SpecLoadError, SpecParseError } from "./errors";
 
 // Emission helpers (method-body fragments shared by core + plugins)
 export {
@@ -67,6 +67,7 @@ export {
     getClientContextTokenName,
     getInterceptorsTokenName,
     getModelTypeName,
+    getOperationMethodName,
     getRequestBodyType,
     getResourceClassName,
     getResponseInfoFromResponse,
@@ -79,6 +80,7 @@ export {
     isDataTypeInterface,
     isPrimitiveType,
     isUrl,
+    isValidIdentifier,
     kebabCase,
     listGeneratedBarrelDirs,
     listGeneratedFileNames,

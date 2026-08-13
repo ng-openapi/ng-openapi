@@ -44,10 +44,22 @@ Given an OpenAPI spec like this:
 }
 ```
 
-This generates a method named `getPetById` in the `PetsService` instead of the default `Pets_GetPetById`.
+This generates a method named `getPetById` in the `PetsService` instead of the default `petsGetPetById`.
 
 ## Notes
 
 - `OperationId`s must be unique across the OpenAPI specification
 - Usually includes the controller name and action name
 - The customization function allows you to modify this to fit your naming conventions
+
+## Return a valid identifier
+
+Your function replaces the built-in conversion outright, so nothing sanitizes
+its result. It must return a valid TypeScript identifier — letters, digits, `_`
+and `$`, not starting with a digit. Generation fails with an
+`InvalidIdentifierError` naming the offending operation otherwise.
+
+You do **not** need this option just to cope with awkward characters in an
+`operationId`: the default conversion already drops anything illegal in an
+identifier, so `groups_{group_id}_delete` becomes `groupsGroupIdDelete` on its
+own.

@@ -6,7 +6,7 @@ import {
     ServiceMethodParamsGenerator,
     ServiceMethodRequestObjectGenerator,
 } from "./service-method";
-import { camelCase, MethodGenOptions, NormalizedOperation, pascalCase } from "@ng-openapi/shared";
+import { getOperationMethodName, MethodGenOptions, NormalizedOperation } from "@ng-openapi/shared";
 
 export class ServiceMethodGenerator {
     private config: MethodGenOptions;
@@ -55,33 +55,10 @@ export class ServiceMethodGenerator {
     }
 
     generateMethodName(operation: NormalizedOperation): string {
-        if (this.config.options.customizeMethodName) {
-            if (operation.operationId == null) {
-                throw new Error(
-                    `Operation ID is required for method name customization of operation: (${operation.method}) ${operation.path}`,
-                );
-            }
-            return this.config.options.customizeMethodName(operation.operationId);
-        } else {
-            return this.defaultNameGenerator(operation);
-        }
+        return getOperationMethodName(operation, this.config);
     }
 
     generateReturnType(): string {
         return "Observable<any>";
-    }
-
-    defaultNameGenerator(operation: NormalizedOperation): string {
-        if (operation.operationId) {
-            return camelCase(operation.operationId);
-        }
-
-        const method = pascalCase(operation.method.toLowerCase());
-        const pathParts = operation.path.split("/").map((str) => {
-            return pascalCase(pascalCase(str).replace(/[^a-zA-Z0-9]/g, ""));
-        });
-        const resource = pathParts.join("") || "resource";
-
-        return `${camelCase(resource)}${method}`;
     }
 }

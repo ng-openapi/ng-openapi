@@ -1,5 +1,12 @@
 // String casing
-export { camelCase, kebabCase, pascalCase, pascalCaseForEnums, screamingSnakeCase } from "./string.utils";
+export {
+    camelCase,
+    isValidIdentifier,
+    kebabCase,
+    pascalCase,
+    pascalCaseForEnums,
+    screamingSnakeCase,
+} from "./string.utils";
 // Swagger/OpenAPI → TypeScript type mapping
 export { escapeString, getTypeScriptType, nullableType } from "./type.utils";
 // Content-type constants
@@ -14,6 +21,7 @@ export {
     getClientContextTokenName,
     getInterceptorsTokenName,
     getModelTypeName,
+    getOperationMethodName,
     getRequestBodyType,
     getResourceClassName,
     getServiceClassName,

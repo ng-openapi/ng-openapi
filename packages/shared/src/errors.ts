@@ -47,3 +47,21 @@ export class SpecParseError extends NgOpenApiError {
         this.source = source;
     }
 }
+
+/**
+ * A name destined for generated code is not a usable TypeScript identifier.
+ * The built-in conversions cannot produce one (see `string.utils.ts`), so this
+ * only ever reports a name that came from a user hook — today
+ * `customizeMethodName`. Raised instead of emitting the name, because a broken
+ * identifier surfaces downstream as an opaque ts-morph manipulation error that
+ * says nothing about which operation caused it.
+ */
+export class InvalidIdentifierError extends NgOpenApiError {
+    /** The rejected name, verbatim. */
+    readonly identifier: string;
+
+    constructor(message: string, identifier: string) {
+        super(message);
+        this.identifier = identifier;
+    }
+}

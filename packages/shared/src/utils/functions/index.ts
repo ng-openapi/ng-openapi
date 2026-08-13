@@ -2,6 +2,7 @@
 // listed here is internal and free to refactor.
 export { getBasePathTokenName, getClientContextTokenName, getInterceptorsTokenName } from "./token-names";
 export { getModelTypeName, getResourceClassName, getServiceClassName } from "./class-names";
+export { getOperationMethodName } from "./method-names";
 export { hasDuplicateFunctionNames } from "./duplicate-function-name";
 export { extractPaths } from "./extract-paths";
 export {

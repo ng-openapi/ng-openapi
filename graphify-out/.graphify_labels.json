@@ -171,8 +171,5 @@
   "169": "ServiceGenerator",
   "170": "`customizeMethodName`",
   "171": "`generateServices`",
-  "172": "ProviderGenerator",
-  "173": "`options`",
-  "174": "`validation`",
-  "175": "`HttpResourcePlugin`"
+  "172": "ProviderGenerator"
 }
