@@ -1,4 +1,4 @@
-/* @ts-nocheck */
+// @ts-nocheck
 /* eslint-disable */
 /* @noformat */
 /* @formatter:off */

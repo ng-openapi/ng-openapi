@@ -21,8 +21,6 @@ export class BaseInterceptorGenerator {
 
         const sourceFile = this.#project.createSourceFile(filePath, "", { overwrite: true });
 
-        sourceFile.insertText(0, BASE_INTERCEPTOR_HEADER_COMMENT(this.#clientName));
-
         const interceptorsTokenName = getInterceptorsTokenName(this.#clientName);
         const clientContextTokenName = getClientContextTokenName(this.#clientName);
 
@@ -100,6 +98,8 @@ export class BaseInterceptorGenerator {
                 },
             ],
         });
+
+        sourceFile.insertText(0, BASE_INTERCEPTOR_HEADER_COMMENT(this.#clientName));
 
         sourceFile.formatText();
         sourceFile.saveSync();

@@ -131,8 +131,6 @@ export class TypeGenerator {
     }
 
     private applyBatchUpdates(): void {
-        this.sourceFile.insertText(0, TYPE_GENERATOR_HEADER_COMMENT);
-
         this.addSdkImports(this.sourceFile);
 
         // Add all statements in a single operation
@@ -142,6 +140,7 @@ export class TypeGenerator {
     private async finalize(): Promise<void> {
         // Format only once at the end
         this.sourceFile.formatText();
+        this.sourceFile.insertText(0, TYPE_GENERATOR_HEADER_COMMENT)
         await this.sourceFile.save();
     }
 

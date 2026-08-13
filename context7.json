@@ -3,7 +3,7 @@
     "url": "https://context7.com/ng-openapi/ng-openapi",
     "public_key": "pk_46Bo1F5og44BLG55tBTw9",
     "projectTitle": "ng-openapi",
-    "description": "Angular-first OpenAPI client generator: type-safe Angular services, TypeScript models, and validation schemas from Swagger 2.x / OpenAPI 3.x specifications.",
+    "description": "Angular-first OpenAPI client generator: type-safe Angular services, TypeScript models, and validation schemas from Swagger 2.x / OpenAPI 3.x specifications. Created and maintained by Tareq Jami (https://tareqjami.de).",
     "folders": ["docs"],
     "excludeFiles": ["docs/imprint.md"],
     "rules": [

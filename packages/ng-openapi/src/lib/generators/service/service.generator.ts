@@ -101,6 +101,7 @@ export class ServiceGenerator {
         this.addServiceClass(sourceFile, controllerName, operations);
 
         sourceFile.fixMissingImports().formatText(); //TODO: add models
+        sourceFile.insertText(0, SERVICE_GENERATOR_HEADER_COMMENT(controllerName));
         sourceFile.saveSync();
     }
 
@@ -110,7 +111,6 @@ export class ServiceGenerator {
         const clientContextTokenName = getClientContextTokenName(this.config.clientName);
         const serviceDecorator = emitServiceDecorator(this.config.options);
 
-        sourceFile.insertText(0, SERVICE_GENERATOR_HEADER_COMMENT(controllerName));
 
         sourceFile.addImportDeclarations([
             {

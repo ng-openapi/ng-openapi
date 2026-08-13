@@ -244,3 +244,14 @@ most common integration mistakes, plus links into the full documentation
 Contributions are welcome — see [CONTRIBUTING.md](https://github.com/ng-openapi/ng-openapi/blob/main/CONTRIBUTING.md)
 for setup and test workflows, and [ARCHITECTURE.md](https://github.com/ng-openapi/ng-openapi/blob/main/ARCHITECTURE.md)
 for how the generation pipeline is structured and where new code should go.
+
+## Maintainer
+
+Created and maintained by [Tareq Jami](https://tareqjami.de) of
+[Jami IT](https://jami-it.de), a freelance software engineering practice in
+Hamburg, Germany. The library is MIT-licensed and stays that way; commercial
+support around it — OpenAPI and Angular integration work, migrations off
+hand-written clients, architecture review — goes through
+[jami-it.de](https://jami-it.de).
+
+You can also [sponsor the project on GitHub](https://github.com/sponsors/ng-openapi).

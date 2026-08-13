@@ -21,13 +21,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: ['20', 'latest']
+        node: ['22', 'latest']
     env:
-      # Spec URLs are read from repository variables. If you'd rather keep them
-      # private, define matching secrets and remove the `vars.` fallback.
-      OPENAPI_SPEC_V2_URL: ${{ vars.OPENAPI_SPEC_V2_URL || secrets.OPENAPI_SPEC_V2_URL }}
-      OPENAPI_SPEC_V3_URL: ${{ vars.OPENAPI_SPEC_V3_URL || secrets.OPENAPI_SPEC_V3_URL }}
-      OPENAPI_SPEC_V3_1_URL: ${{ vars.OPENAPI_SPEC_V3_1_URL || secrets.OPENAPI_SPEC_V3_1_URL }}
+      # Spec URLs are read from repository variables, with the public GitHub
+      # Pages URLs as literal fallbacks: variables and secrets are NOT passed
+      # to pull_request runs from forks, and fork PRs must still be testable.
+      OPENAPI_SPEC_V2_URL: ${{ vars.OPENAPI_SPEC_V2_URL || secrets.OPENAPI_SPEC_V2_URL || 'https://ng-openapi.github.io/openapi-spec/specs/v2-swagger.yaml' }}
+      OPENAPI_SPEC_V3_URL: ${{ vars.OPENAPI_SPEC_V3_URL || secrets.OPENAPI_SPEC_V3_URL || 'https://ng-openapi.github.io/openapi-spec/specs/v3.0-openapi.yaml' }}
+      OPENAPI_SPEC_V3_1_URL: ${{ vars.OPENAPI_SPEC_V3_1_URL || secrets.OPENAPI_SPEC_V3_1_URL || 'https://ng-openapi.github.io/openapi-spec/specs/v3.1-openapi.yaml' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,7 +67,7 @@ jobs:
         run: npm run test:coverage
 
       - name: Upload coverage report
-        if: matrix.node == '20'
+        if: matrix.node == '22'
         uses: actions/upload-artifact@v4
         with:
           name: coverage

@@ -115,6 +115,19 @@ export default defineConfig({
                 author: {
                     "@type": "Person",
                     name: "Tareq Jami",
+                    url: "https://tareqjami.de",
+                    affiliation: {
+                        "@type": "Organization",
+                        "@id": "https://jami-it.de/#organization",
+                        name: "Jami IT",
+                        url: "https://jami-it.de",
+                    },
+                },
+                maintainer: {
+                    "@type": "Person",
+                    name: "Tareq Jami",
+                    url: "https://tareqjami.de",
+                    affiliation: { "@id": "https://jami-it.de/#organization" },
                 },
                 softwareVersion: packageJson.version,
                 datePublished: "2024-01-01",
@@ -362,7 +375,7 @@ export default defineConfig({
 
         footer: {
             message:
-                'Released under the MIT License.<br/>This site is powered by <a href="https://www.netlify.com" target="_blank" rel="noopener noreferrer">Netlify</a><br/><a href="/imprint">Impressum</a>',
+                'Released under the MIT License.<br/>This site is powered by <a href="https://www.netlify.com" target="_blank" rel="noopener noreferrer">Netlify</a><br/><a href="/about">About</a> · <a href="/imprint">Impressum</a>',
             copyright: "Copyright © 2026 Tareq Jami",
         },
 
@@ -410,6 +423,8 @@ export default defineConfig({
             "# ng-openapi — full documentation",
             "",
             "> Concatenated documentation of ng-openapi (https://ng-openapi.dev)," +
+                " an Angular-first OpenAPI client generator created and maintained by Tareq Jami (https://tareqjami.de)" +
+                " of Jami IT (https://jami-it.de)," +
                 " generated from the same sources as the website." +
                 " See https://ng-openapi.dev/llms.txt for the index and usage rules.",
         ];

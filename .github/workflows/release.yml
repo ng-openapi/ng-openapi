@@ -179,9 +179,15 @@ jobs:
         with:
           script: |
             const comment = `## ⚠️ PR Prerelease Skipped\n\nThis PR was not published to NPM because the author does not have maintainer permissions. Only repository maintainers (with write, maintain, or admin access) can trigger automatic PR prereleases.`;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
+            // Best-effort: fork PRs get a read-only GITHUB_TOKEN, so posting
+            // the comment 403s there — never fail the check over it.
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } catch (error) {
+              core.notice(`Prerelease skipped (author is not a maintainer); could not post PR comment: ${error.message}`);
+            }

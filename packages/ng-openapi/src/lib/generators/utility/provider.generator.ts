@@ -22,8 +22,6 @@ export class ProviderGenerator {
         const filePath = path.join(outputDir, "providers.ts");
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
 
-        sourceFile.insertText(0, PROVIDER_GENERATOR_HEADER_COMMENT);
-
         const basePathTokenName = getBasePathTokenName(this.clientName);
         const interceptorsTokenName = getInterceptorsTokenName(this.clientName);
         const baseInterceptorClassName = `${this.capitalizeFirst(this.clientName)}BaseInterceptor`;
@@ -99,6 +97,7 @@ export class ProviderGenerator {
         // Add main provider function
         this.addMainProviderFunction(sourceFile, basePathTokenName, interceptorsTokenName, baseInterceptorClassName);
 
+        sourceFile.insertText(0, PROVIDER_GENERATOR_HEADER_COMMENT);
         sourceFile.formatText();
         sourceFile.saveSync();
     }
