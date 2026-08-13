@@ -29,6 +29,39 @@ const spec = {
                 responses: { "201": { description: "created" } },
             },
         },
+        "/documents": {
+            post: {
+                operationId: "uploadDocument",
+                requestBody: {
+                    content: {
+                        "multipart/form-data": {
+                            schema: {
+                                allOf: [
+                                    { $ref: "#/components/schemas/UploadForm" },
+                                    {
+                                        type: "object",
+                                        required: ["category"],
+                                        properties: { category: { type: "string" } },
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                },
+                responses: { "201": { description: "created" } },
+            },
+        },
+        "/documents/composed": {
+            post: {
+                operationId: "uploadComposedDocument",
+                requestBody: {
+                    content: {
+                        "multipart/form-data": { schema: { $ref: "#/components/schemas/ComposedUploadForm" } },
+                    },
+                },
+                responses: { "201": { description: "created" } },
+            },
+        },
         "/token": {
             post: {
                 operationId: "token",
@@ -47,7 +80,14 @@ const spec = {
         schemas: {
             UploadForm: {
                 type: "object",
+                required: ["file"],
                 properties: { file: { type: "string", format: "binary" }, note: { type: "string" } },
+            },
+            ComposedUploadForm: {
+                allOf: [
+                    { $ref: "#/components/schemas/UploadForm" },
+                    { type: "object", properties: { tags: { type: "array", items: { type: "string" } } } },
+                ],
             },
         },
     },
@@ -66,7 +106,7 @@ describe("normalizeSpec", () => {
     });
 
     it("unifies definitions across spec versions", () => {
-        expect(Object.keys(normalized.definitions)).toEqual(["UploadForm"]);
+        expect(Object.keys(normalized.definitions)).toEqual(["UploadForm", "ComposedUploadForm"]);
         const v2 = normalizeSpec({ swagger: "2.0", definitions: { Pet: { type: "object" } }, paths: {} } as never);
         expect(Object.keys(v2.definitions)).toEqual(["Pet"]);
     });
@@ -92,6 +132,51 @@ describe("normalizeSpec", () => {
         expect(op.formDataSchema?.properties?.file).toMatchObject({ type: "string", format: "binary" });
         expect(op.urlEncodedFields).toEqual([]);
         expect(op.urlEncodedSchema).toBeUndefined();
+    });
+
+    it("flattens inline allOf multipart schemas into merged form fields (#72)", () => {
+        const op = normalized.operations.find((o) => o.operationId === "uploadDocument")!;
+        expect(op.isMultipart).toBe(true);
+        expect(op.formDataFields).toEqual(["file", "note", "category"]);
+        expect(op.formDataSchema?.properties?.file).toMatchObject({ type: "string", format: "binary" });
+        expect(op.formDataSchema?.properties?.category).toMatchObject({ type: "string" });
+        expect(op.formDataSchema?.required).toEqual(["file", "category"]);
+        expect(op.formDataSchema?.type).toBe("object");
+    });
+
+    it("flattens allOf multipart schemas behind a $ref (#72)", () => {
+        const op = normalized.operations.find((o) => o.operationId === "uploadComposedDocument")!;
+        expect(op.formDataFields).toEqual(["file", "note", "tags"]);
+        expect(op.formDataSchema?.required).toEqual(["file"]);
+    });
+
+    it("survives cyclic allOf refs without recursing forever", () => {
+        const cyclic = normalizeSpec({
+            openapi: "3.0.3",
+            info: { title: "t", version: "1" },
+            paths: {
+                "/loop": {
+                    post: {
+                        operationId: "loop",
+                        requestBody: {
+                            content: { "multipart/form-data": { schema: { $ref: "#/components/schemas/A" } } },
+                        },
+                        responses: { "200": { description: "ok" } },
+                    },
+                },
+            },
+            components: {
+                schemas: {
+                    A: {
+                        allOf: [
+                            { $ref: "#/components/schemas/A" },
+                            { type: "object", properties: { name: { type: "string" } } },
+                        ],
+                    },
+                },
+            },
+        } as unknown as SwaggerSpec);
+        expect(cyclic.operations[0].formDataFields).toEqual(["name"]);
     });
 
     it("precomputes urlencoded context from inline schemas", () => {

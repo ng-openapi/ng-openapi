@@ -83,6 +83,11 @@ export interface TokenResponseDto {
     refreshToken?: string | null;
 }
 
+export interface ImportRequestDto {
+    source: string;
+    overwrite?: boolean;
+}
+
 export interface FileInfoDto {
     id: string;
     fileName: string;

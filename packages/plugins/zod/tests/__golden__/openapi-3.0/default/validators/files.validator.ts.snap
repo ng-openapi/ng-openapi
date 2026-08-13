@@ -21,3 +21,12 @@ export const uploadFile201Response = z.object({
     "contentType": z.string().optional()
 });
 export type UploadFile201Response = z.infer<typeof uploadFile201Response>;
+export const importFileBody = z.any();
+export type ImportFileBody = z.infer<typeof importFileBody>;
+export const importFile201Response = z.object({
+    "id": z.string(),
+    "fileName": z.string(),
+    "size": z.number().int(),
+    "contentType": z.string().optional()
+});
+export type ImportFile201Response = z.infer<typeof importFile201Response>;
