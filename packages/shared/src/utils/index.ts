@@ -5,7 +5,7 @@ export { escapeString, getTypeScriptType, nullableType } from "./type.utils";
 // Content-type constants
 export { CONTENT_TYPES } from "./content-types.constants";
 // ts-morph Project queries
-export { listGeneratedFileNames } from "./project.utils";
+export { listGeneratedBarrelDirs, listGeneratedFileNames } from "./project.utils";
 // Helper functions (path extraction, response typing, token names, ...)
 export {
     extractPaths,
