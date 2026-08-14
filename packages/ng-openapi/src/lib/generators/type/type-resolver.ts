@@ -192,10 +192,7 @@ export class TypeResolver {
                     const dateType = this.config.options.dateType === "Date" ? "Date" : "string";
                     return this.nullableType(dateType, isNullable);
                 }
-                if (format === "binary") return "Blob";
-                if (format === "uuid") return "string";
-                if (format === "email") return "string";
-                if (format === "uri") return "string";
+                if (format === "binary") return this.nullableType("Blob", isNullable);
                 return this.nullableType("string", isNullable);
             case "number":
             case "integer":

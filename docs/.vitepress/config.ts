@@ -116,11 +116,18 @@ export default defineConfig({
                     "@type": "Person",
                     name: "Tareq Jami",
                     url: "https://tareqjami.de",
+                    affiliation: {
+                        "@type": "Organization",
+                        "@id": "https://jami-it.de/#organization",
+                        name: "Jami IT",
+                        url: "https://jami-it.de",
+                    },
                 },
                 maintainer: {
                     "@type": "Person",
                     name: "Tareq Jami",
                     url: "https://tareqjami.de",
+                    affiliation: { "@id": "https://jami-it.de/#organization" },
                 },
                 softwareVersion: packageJson.version,
                 datePublished: "2024-01-01",
@@ -416,7 +423,8 @@ export default defineConfig({
             "# ng-openapi — full documentation",
             "",
             "> Concatenated documentation of ng-openapi (https://ng-openapi.dev)," +
-                " an Angular-first OpenAPI client generator created and maintained by Tareq Jami (https://tareqjami.de)," +
+                " an Angular-first OpenAPI client generator created and maintained by Tareq Jami (https://tareqjami.de)" +
+                " of Jami IT (https://jami-it.de)," +
                 " generated from the same sources as the website." +
                 " See https://ng-openapi.dev/llms.txt for the index and usage rules.",
         ];

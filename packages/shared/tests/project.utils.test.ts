@@ -1,6 +1,6 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { listGeneratedFileNames } from "../src";
+import { listGeneratedBarrelDirs, listGeneratedFileNames } from "../src";
 
 const createProject = () => new Project({ useInMemoryFileSystem: true });
 
@@ -48,5 +48,38 @@ describe("listGeneratedFileNames", () => {
 
         expect(kept.wasForgotten()).toBe(false);
         expect(listGeneratedFileNames(project, "/out/services", ".service.ts")).toEqual(["kept"]);
+    });
+});
+
+describe("listGeneratedBarrelDirs", () => {
+    it("returns [] for a root the project never wrote to", () => {
+        const project = createProject();
+        expect(listGeneratedBarrelDirs(project, "/out")).toEqual([]);
+    });
+
+    it("lists only direct child directories that have an index.ts", () => {
+        const project = createProject();
+        project.createSourceFile("/out/index.ts", "");
+        project.createSourceFile("/out/resources/index.ts", "");
+        project.createSourceFile("/out/resources/users.resource.ts", "");
+        project.createSourceFile("/out/utils/date-transformer.ts", "");
+
+        expect(listGeneratedBarrelDirs(project, "/out")).toEqual(["resources"]);
+    });
+
+    it("does not surface index.ts files nested deeper than one level", () => {
+        const project = createProject();
+        project.createSourceFile("/out/models/nested/index.ts", "");
+
+        expect(listGeneratedBarrelDirs(project, "/out")).toEqual([]);
+    });
+
+    it("sorts the result for deterministic output", () => {
+        const project = createProject();
+        project.createSourceFile("/out/validators/index.ts", "");
+        project.createSourceFile("/out/resources/index.ts", "");
+        project.createSourceFile("/out/models/index.ts", "");
+
+        expect(listGeneratedBarrelDirs(project, "/out")).toEqual(["models", "resources", "validators"]);
     });
 });
