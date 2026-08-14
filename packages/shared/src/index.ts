@@ -80,6 +80,7 @@ export {
     isPrimitiveType,
     isUrl,
     kebabCase,
+    listGeneratedBarrelDirs,
     listGeneratedFileNames,
     nullableType,
     pascalCase,
