@@ -1,6 +1,7 @@
 // Concrete-module imports (not barrels) to keep the core <-> types/utils
 // import graph cycle-free — see swagger-parser.ts for the same rule.
 import { CONTENT_TYPES } from "../utils/content-types.constants";
+import { resolveArgumentNames } from "../utils/functions/argument-names";
 import { extractPaths } from "../utils/functions/extract-paths";
 import { getResponseInfoFromResponse } from "../utils/functions/extract-swagger-response-type";
 import type { ResponseTypeInfo } from "../utils/functions/extract-swagger-response-type";
@@ -164,17 +165,30 @@ function normalizeOperation(operation: PathInfo, resolveRef: ResolveRef): Normal
 
     const responseInfo = determineResponseInfo(operation);
 
+    const pathParams = operation.parameters?.filter((p) => p.in === "path") || [];
+    const queryParams = operation.parameters?.filter((p) => p.in === "query") || [];
+    const formDataFields = Object.keys(formDataSchema?.properties || {});
+    const urlEncodedFields = Object.keys(urlEncodedSchema?.properties || {});
+
     return {
         ...operation,
-        pathParams: operation.parameters?.filter((p) => p.in === "path") || [],
-        queryParams: operation.parameters?.filter((p) => p.in === "query") || [],
+        pathParams,
+        queryParams,
         hasBody: !!operation.requestBody,
         isMultipart,
         isUrlEncoded,
         formDataSchema,
-        formDataFields: Object.keys(formDataSchema?.properties || {}),
+        formDataFields,
         urlEncodedSchema,
-        urlEncodedFields: Object.keys(urlEncodedSchema?.properties || {}),
+        urlEncodedFields,
+        // Same order the generators emit parameters in, so the first
+        // declaration of a colliding name keeps the unsuffixed identifier.
+        argumentNames: resolveArgumentNames([
+            ...pathParams.map((p) => p.name),
+            ...formDataFields,
+            ...urlEncodedFields,
+            ...queryParams.map((p) => p.name),
+        ]),
         responseType: responseInfo.responseType,
         acceptHeader: responseInfo.acceptHeader,
     };

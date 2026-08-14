@@ -6,12 +6,12 @@ import {
     getBasePathTokenName,
     getClientContextTokenName,
     getResourceClassName,
+    groupOperationsByController,
     hasDuplicateFunctionNames,
     HTTP_RESOURCE_GENERATOR_HEADER_COMMENT,
     IPluginGenerator,
     NormalizedOperation,
-    NormalizedSpec,
-    pascalCase,
+    NormalizedSpec,
     PluginGeneratorContext,
 } from "@ng-openapi/shared";
 import * as path from "path";
@@ -45,41 +45,18 @@ export class HttpResourceGenerator implements IPluginGenerator {
             return;
         }
 
-        const controllerGroups = this.groupPathsByController(paths);
+        const controllerGroups = groupOperationsByController(paths, this.onWarning);
 
         await Promise.all(
-            Object.entries(controllerGroups).map(([controllerName, operations]) => {
-                this.generateServiceFile(controllerName, operations, outputDir);
-            }),
+            // Must return the promise: without it Promise.all awaits [undefined],
+            // and a generateServiceFile rejection escapes as an unhandled
+            // rejection while generation reports success.
+            Object.entries(controllerGroups).map(([controllerName, operations]) =>
+                this.generateServiceFile(controllerName, operations, outputDir),
+            ),
         );
 
         this.indexGenerator.generateIndex(outputRoot);
-    }
-
-    private groupPathsByController(paths: NormalizedOperation[]): Record<string, NormalizedOperation[]> {
-        const groups: Record<string, NormalizedOperation[]> = {};
-
-        paths.forEach((path) => {
-            let controllerName = "Default";
-
-            if (path.tags && path.tags.length > 0) {
-                controllerName = path.tags[0];
-            } else {
-                // Extract from path (e.g., "/api/users/{id}" -> "Users")
-                const pathParts = path.path.split("/").filter((p) => p && !p.startsWith("{"));
-                if (pathParts.length > 1) {
-                    controllerName = pascalCase(pathParts[1]);
-                }
-            }
-            controllerName = pascalCase(controllerName);
-
-            if (!groups[controllerName]) {
-                groups[controllerName] = [];
-            }
-            groups[controllerName].push(path);
-        });
-
-        return groups;
     }
 
     private async generateServiceFile(controllerName: string, operations: NormalizedOperation[], outputDir: string) {

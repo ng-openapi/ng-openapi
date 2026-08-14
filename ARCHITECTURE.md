@@ -56,6 +56,15 @@ Generators never see `definitions` vs `components.schemas`, body parameters vs
 generator needs a new per-operation fact, **add it to `NormalizedOperation` in
 the normalizer**, don't re-derive it at the call site.
 
+`argumentNames` is the sharpest case of that rule. A parameter's TypeScript
+identifier is needed where the parameter is declared *and* at every use site
+(`emit/url.emit.ts`, `emit/query-params.emit.ts`, the form-data blocks), and it
+cannot be derived one name at a time: wire names are free-form, so `filter[name]`
+and `filter.name` both camelCase onto `filterName`, and `options[]` collides
+with the method's own `options` parameter. Resolving the whole operation at
+once is what keeps them distinct — read `operation.argumentNames` (via
+`argumentNameOf`), never `camelCase(param.name)`.
+
 ### Shared emission layer
 
 All string-template fragments used by more than one method-body generator live

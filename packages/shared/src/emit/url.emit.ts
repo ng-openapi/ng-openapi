@@ -1,5 +1,5 @@
 import type { Parameter } from "../types/swagger.types";
-import { camelCase } from "../utils/string.utils";
+import { argumentNameOf } from "../utils/functions/argument-names";
 
 /** Identity read: the parameter identifier is a plain value. */
 export function plainParamValue(identifier: string): string {
@@ -13,23 +13,27 @@ export function signalAwareParamValue(identifier: string): string {
 
 /**
  * Builds the request-URL template literal, substituting `{param}` placeholders
- * with the (camelCased) method parameter identifiers.
+ * with the method parameter identifiers `argumentNames` assigned.
  */
 export function emitUrlExpression(
     path: string,
     pathParams: Parameter[],
+    argumentNames: Record<string, string>,
     paramValue: (identifier: string) => string = plainParamValue,
 ): string {
     let urlExpression = `\`\${this.basePath}${path}\``;
 
     pathParams.forEach((param) => {
-        urlExpression = urlExpression.replace(`{${param.name}}`, `\${${paramValue(camelCase(param.name))}}`);
+        urlExpression = urlExpression.replace(
+            `{${param.name}}`,
+            `\${${paramValue(argumentNameOf(argumentNames, param.name))}}`,
+        );
     });
 
     return urlExpression;
 }
 
 /** `const url = …;` statement used by the core service method body. */
-export function emitUrlConstruction(path: string, pathParams: Parameter[]): string {
-    return `const url = ${emitUrlExpression(path, pathParams)};`;
+export function emitUrlConstruction(path: string, pathParams: Parameter[], argumentNames: Record<string, string>): string {
+    return `const url = ${emitUrlExpression(path, pathParams, argumentNames)};`;
 }

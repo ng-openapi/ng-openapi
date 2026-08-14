@@ -15,6 +15,7 @@ export { CONTENT_TYPES } from "./content-types.constants";
 export { listGeneratedBarrelDirs, listGeneratedFileNames } from "./project.utils";
 // Helper functions (path extraction, response typing, token names, ...)
 export {
+    argumentNameOf,
     extractPaths,
     generateParseRequestTypeParams,
     getBasePathTokenName,
@@ -28,10 +29,12 @@ export {
     getResponseInfoFromResponse,
     getResponseType,
     getResponseTypeFromResponse,
+    groupOperationsByController,
     hasDuplicateFunctionNames,
     inferResponseTypeFromContentType,
     isDataTypeInterface,
     isPrimitiveType,
     isUrl,
+    resolveArgumentNames,
 } from "./functions";
 export type { ResponseTypeInfo } from "./functions";

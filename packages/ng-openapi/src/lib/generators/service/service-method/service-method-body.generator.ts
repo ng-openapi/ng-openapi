@@ -1,4 +1,5 @@
 import {
+    argumentNameOf,
     camelCase,
     CONTENT_TYPES,
     emitHeaders,
@@ -21,8 +22,8 @@ export class ServiceMethodBodyGenerator {
 
     generateMethodBody(operation: NormalizedOperation): string {
         const bodyParts = [
-            emitUrlConstruction(operation.path, operation.pathParams),
-            emitQueryParams(operation.queryParams),
+            emitUrlConstruction(operation.path, operation.pathParams, operation.argumentNames),
+            emitQueryParams(operation.queryParams, operation.argumentNames),
             emitHeaders({
                 optionsExpression: "options",
                 customHeaders: this.config.options.customHeaders,
@@ -49,6 +50,9 @@ export class ServiceMethodBodyGenerator {
                 const fieldSchema = properties[field];
                 const isFile = fieldSchema?.type === "string" && fieldSchema?.format === "binary";
                 const isArray = fieldSchema?.type === "array";
+                // `field` is the wire name and stays inside the append literal;
+                // only `arg` may appear in expression position (#125).
+                const arg = argumentNameOf(operation.argumentNames, field);
 
                 if (isArray) {
                     const itemSchema = Array.isArray(fieldSchema.items) ? fieldSchema.items[0] : fieldSchema.items;
@@ -56,17 +60,17 @@ export class ServiceMethodBodyGenerator {
 
                     const valueExpression = isFileArray ? "item" : "String(item)";
 
-                    return `if (${field} !== undefined && Array.isArray(${field})) {
-                  ${field}.forEach((item) => {
+                    return `if (${arg} !== undefined && Array.isArray(${arg})) {
+                  ${arg}.forEach((item) => {
                     if (item !== undefined && item !== null) {
                       formData.append('${field}', ${valueExpression});
                     }
                   });
                 }`;
                 } else {
-                    const valueExpression = isFile ? field : `String(${field})`;
+                    const valueExpression = isFile ? arg : `String(${arg})`;
 
-                    return `if (${field} !== undefined) {
+                    return `if (${arg} !== undefined) {
                   formData.append('${field}', ${valueExpression});
                 }`;
                 }
@@ -89,18 +93,19 @@ ${formDataAppends}`;
             .map((field) => {
                 const fieldSchema = properties[field];
                 const isArray = fieldSchema?.type === "array";
+                const arg = argumentNameOf(operation.argumentNames, field);
 
                 if (isArray) {
-                    return `if (${field} !== undefined && Array.isArray(${field})) {
-                  ${field}.forEach((item) => {
+                    return `if (${arg} !== undefined && Array.isArray(${arg})) {
+                  ${arg}.forEach((item) => {
                     if (item !== undefined && item !== null) {
                       formBody.append('${field}', String(item));
                     }
                   });
                 }`;
                 } else {
-                    return `if (${field} !== undefined && ${field} !== null) {
-                  formBody.append('${field}', String(${field}));
+                    return `if (${arg} !== undefined && ${arg} !== null) {
+                  formBody.append('${field}', String(${arg}));
                 }`;
                 }
             })

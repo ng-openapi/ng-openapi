@@ -1,23 +1,23 @@
 import type { Parameter } from "../types/swagger.types";
-import { camelCase } from "../utils/string.utils";
+import { argumentNameOf } from "../utils/functions/argument-names";
 import { signalAwareParamValue } from "./url.emit";
 
 /**
  * Emits the `HttpParams` accumulation block for the core service method body.
  * Returns "" when the operation has no query parameters.
  */
-export function emitQueryParams(queryParams: Parameter[]): string {
+export function emitQueryParams(queryParams: Parameter[], argumentNames: Record<string, string>): string {
     if (queryParams.length === 0) {
         return "";
     }
 
     const paramMappings = queryParams
-        .map(
-            (param) =>
-                `if (${camelCase(param.name)} != null) {
-  params = HttpParamsBuilder.addToHttpParams(params, ${camelCase(param.name)}, '${param.name}');
-}`,
-        )
+        .map((param) => {
+            const identifier = argumentNameOf(argumentNames, param.name);
+            return `if (${identifier} != null) {
+  params = HttpParamsBuilder.addToHttpParams(params, ${identifier}, '${param.name}');
+}`;
+        })
         .join("\n");
 
     return `
@@ -29,19 +29,19 @@ ${paramMappings}`;
  * Signal-aware variant for the http-resource plugin: each parameter may be a
  * signal, so its value is read once before the null check.
  */
-export function emitSignalAwareQueryParams(queryParams: Parameter[]): string {
+export function emitSignalAwareQueryParams(queryParams: Parameter[], argumentNames: Record<string, string>): string {
     if (queryParams.length === 0) {
         return "";
     }
 
     const paramMappings = queryParams
-        .map(
-            (param) =>
-                `const ${camelCase(param.name)}Value = ${signalAwareParamValue(camelCase(param.name))};
-                if (${camelCase(param.name)}Value != null) {
-                    params = HttpParamsBuilder.addToHttpParams(params, ${camelCase(param.name)}Value, '${param.name}');
-                }`,
-        )
+        .map((param) => {
+            const identifier = argumentNameOf(argumentNames, param.name);
+            return `const ${identifier}Value = ${signalAwareParamValue(identifier)};
+                if (${identifier}Value != null) {
+                    params = HttpParamsBuilder.addToHttpParams(params, ${identifier}Value, '${param.name}');
+                }`;
+        })
         .join("\n");
 
     return `

@@ -45,7 +45,7 @@ export class HttpResourceMethodBodyGenerator {
 
     private generateRequestOptions(operation: NormalizedOperation): string {
         const entries: string[] = [];
-        const url = emitUrlExpression(operation.path, operation.pathParams, signalAwareParamValue);
+        const url = emitUrlExpression(operation.path, operation.pathParams, operation.argumentNames, signalAwareParamValue);
 
         // Computed entries come after the spread so that caller-supplied
         // request options cannot clobber the merged headers, the accumulated
@@ -73,7 +73,7 @@ export class HttpResourceMethodBodyGenerator {
 
     private generateHttpResource(operation: NormalizedOperation): string {
         const resourceOptions = this.generateRequestOptions(operation);
-        const queryParams = emitSignalAwareQueryParams(operation.queryParams);
+        const queryParams = emitSignalAwareQueryParams(operation.queryParams, operation.argumentNames);
         let httpResource = "httpResource";
         switch (operation.responseType) {
             case "blob":

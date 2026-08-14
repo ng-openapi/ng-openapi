@@ -1,0 +1,62 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { afterAll, expect, it } from "vitest";
+import { generateFromConfig } from "ng-openapi";
+import { ZodPlugin } from "../src";
+
+// Must live outside node_modules: the generator resolves auto-imports through
+// the TypeScript language service, which ignores files under node_modules.
+const tmpRoot = join(process.cwd(), "tmp", "ng-openapi-tests");
+mkdirSync(tmpRoot, { recursive: true });
+const tempDirs: string[] = [];
+
+afterAll(() => {
+    for (const dir of tempDirs) {
+        try {
+            rmSync(dir, { recursive: true, force: true });
+        } catch {
+            // best-effort cleanup
+        }
+    }
+});
+
+it("fails on two operationIds that normalize onto one validator name", async () => {
+    const output = mkdtempSync(join(tmpRoot, "zod-dup-"));
+    tempDirs.push(output);
+
+    const input = join(output, "spec.json");
+    // Both give "groupsGroupIdDelete" once illegal characters are separators,
+    // which used to emit two `export const groupsGroupIdDeleteQueryParams`
+    // into one file. The service generator throws on the equivalent method
+    // collision; zod had no such guard and wrote uncompilable output.
+    const operationIds = ["groups_{group_id}_delete", "groups.group.id-delete"];
+    writeFileSync(
+        input,
+        JSON.stringify({
+            openapi: "3.0.0",
+            info: { title: "t", version: "1.0.0" },
+            paths: Object.fromEntries(
+                operationIds.map((operationId, index) => [
+                    `/p${index}`,
+                    {
+                        get: {
+                            tags: ["Groups"],
+                            operationId,
+                            parameters: [{ name: "q", in: "query", schema: { type: "string" } }],
+                            responses: { "200": { description: "OK" } },
+                        },
+                    },
+                ]),
+            ),
+        }),
+    );
+
+    await expect(
+        generateFromConfig({
+            input,
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: false },
+            plugins: [ZodPlugin],
+        }),
+    ).rejects.toThrow(/Duplicate validator names found in groups\.validator\.ts/);
+});

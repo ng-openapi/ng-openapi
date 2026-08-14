@@ -1,7 +1,8 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { existsSync } from "node:fs";
 import { afterAll, expect, it } from "vitest";
-import { generateFromConfig } from "ng-openapi";
+import { generateFromConfig, InvalidIdentifierError } from "ng-openapi";
 import { HttpResourcePlugin } from "../src";
 
 /**
@@ -66,4 +67,44 @@ it("generates resources from tags and operationIds that are not identifiers (#12
     expect(readFileSync(join(output, "resources", "index.ts"), "utf8")).toContain(
         `export { GroupsYesResource } from "./groupsYes.resource";`,
     );
+});
+
+it("surfaces a generator failure instead of resolving successfully", async () => {
+    const output = mkdtempSync(join(tmpRoot, "hr-error-"));
+    tempDirs.push(output);
+
+    const input = join(output, "spec.json");
+    writeFileSync(
+        input,
+        JSON.stringify({
+            openapi: "3.0.0",
+            info: { title: "t", version: "1.0.0" },
+            paths: {
+                "/groups": {
+                    get: { tags: ["Groups"], operationId: "x_get", responses: { "200": { description: "OK" } } },
+                },
+            },
+        }),
+    );
+
+    // The resource files were generated inside a `Promise.all` over a
+    // block-bodied arrow that returned nothing, so every rejection — including
+    // this one — escaped as an unhandled rejection while generateFromConfig
+    // resolved and the CLI reported success.
+    await expect(
+        generateFromConfig({
+            input,
+            output,
+            options: {
+                dateType: "string",
+                enumStyle: "union",
+                generateServices: false,
+                customizeMethodName: () => "groups{x}Delete",
+            },
+            plugins: [HttpResourcePlugin],
+        }),
+    ).rejects.toBeInstanceOf(InvalidIdentifierError);
+
+    // A failed run must not leave a barrel exporting a file it never wrote.
+    expect(existsSync(join(output, "resources", "index.ts"))).toBe(false);
 });

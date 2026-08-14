@@ -58,6 +58,7 @@ export type { HeadersEmitOptions, ServiceDecoratorEmit, ServiceDecoratorEmitOpti
 
 // Utilities
 export {
+    argumentNameOf,
     camelCase,
     CONTENT_TYPES,
     escapeString,
@@ -75,6 +76,7 @@ export {
     getResponseTypeFromResponse,
     getServiceClassName,
     getTypeScriptType,
+    groupOperationsByController,
     hasDuplicateFunctionNames,
     inferResponseTypeFromContentType,
     isDataTypeInterface,
@@ -87,6 +89,7 @@ export {
     nullableType,
     pascalCase,
     pascalCaseForEnums,
+    resolveArgumentNames,
     screamingSnakeCase,
 } from "./utils";
 export type { ResponseTypeInfo } from "./utils";

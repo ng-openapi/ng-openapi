@@ -5,15 +5,49 @@
  * on message text, which is presentation and not part of the API contract.
  */
 
+/**
+ * Marks an error as ng-openapi's across copies of this module.
+ *
+ * `@ng-openapi/shared` is a private, bundled-in package (never published), so
+ * each plugin's published bundle inlines its own copy of these classes. A
+ * plugin-thrown error is therefore not `instanceof` the class a host imported
+ * from `ng-openapi`. The brand is a plain string property, so it survives
+ * bundling and identifies the error regardless of which copy created it —
+ * hence `Symbol.hasInstance` below, which makes `instanceof` honour it.
+ */
+const NG_OPENAPI_ERROR_BRAND = "__ngOpenApiError";
+
 /** Base class of every error ng-openapi raises deliberately. */
 export class NgOpenApiError extends Error {
     /** The underlying error that caused this one, when there is one. */
     readonly cause?: unknown;
 
+    /** Set to the concrete class name; see NG_OPENAPI_ERROR_BRAND. */
+    readonly [NG_OPENAPI_ERROR_BRAND]: string;
+
     constructor(message: string, cause?: unknown) {
         super(message);
         this.name = new.target.name;
         this.cause = cause;
+        this[NG_OPENAPI_ERROR_BRAND] = new.target.name;
+    }
+
+    /**
+     * Recognizes branded errors from another bundled copy of this module, so
+     * `error instanceof SpecLoadError` works for a plugin-thrown error too.
+     * Falls back to the prototype chain for anything unbranded.
+     */
+    static override [Symbol.hasInstance](value: unknown): boolean {
+        if (typeof value !== "object" || value === null) {
+            return false;
+        }
+        const brand = (value as Record<string, unknown>)[NG_OPENAPI_ERROR_BRAND];
+        if (typeof brand === "string") {
+            // `this` is the class instanceof was called on: the base matches any
+            // branded error, a subclass only its own name.
+            return this === NgOpenApiError || brand === this.name;
+        }
+        return Object.prototype.isPrototypeOf.call(this.prototype, value);
     }
 }
 

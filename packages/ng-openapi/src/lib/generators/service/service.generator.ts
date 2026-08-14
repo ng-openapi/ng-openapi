@@ -6,9 +6,9 @@ import {
     getBasePathTokenName,
     getClientContextTokenName,
     getServiceClassName,
+    groupOperationsByController,
     hasDuplicateFunctionNames,
-    NormalizedOperation,
-    pascalCase,
+    NormalizedOperation,
     SERVICE_GENERATOR_HEADER_COMMENT,
     SwaggerParser,
 } from "@ng-openapi/shared";
@@ -47,7 +47,7 @@ export class ServiceGenerator {
             return;
         }
 
-        const controllerGroups = this.groupPathsByController(paths);
+        const controllerGroups = groupOperationsByController(paths, this.onWarning);
 
         if (this.config.options.useSingleRequestParameter) {
             const requestParamsGenerator = new RequestParamsGenerator(this.project, this.config);
@@ -63,33 +63,6 @@ export class ServiceGenerator {
                 this.generateServiceFile(controllerName, operations, outputDir),
             ),
         );
-    }
-
-    private groupPathsByController(paths: NormalizedOperation[]): Record<string, NormalizedOperation[]> {
-        const groups: Record<string, NormalizedOperation[]> = {};
-
-        paths.forEach((path) => {
-            let controllerName = "Default";
-
-            if (path.tags && path.tags.length > 0) {
-                controllerName = path.tags[0];
-            } else {
-                // Extract from path (e.g., "/api/users/{id}" -> "Users")
-                const pathParts = path.path.split("/").filter((p) => p && !p.startsWith("{"));
-                if (pathParts.length > 1) {
-                    controllerName = pascalCase(pathParts[1]);
-                }
-            }
-
-            controllerName = pascalCase(controllerName);
-
-            if (!groups[controllerName]) {
-                groups[controllerName] = [];
-            }
-            groups[controllerName].push(path);
-        });
-
-        return groups;
     }
 
     private async generateServiceFile(controllerName: string, operations: NormalizedOperation[], outputDir: string) {

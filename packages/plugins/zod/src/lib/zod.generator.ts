@@ -2,8 +2,9 @@ import { Project, SourceFile } from "ts-morph";
 import * as path from "path";
 import {
     camelCase,
+    groupOperationsByController,
     GeneratorConfig,
-    IPluginGenerator,
+    IPluginGenerator,
     pascalCase,
     NormalizedOperation,
     NormalizedSpec,
@@ -44,7 +45,7 @@ export class ZodGenerator implements IPluginGenerator {
             return;
         }
 
-        const controllerGroups = this.groupPathsByController(paths);
+        const controllerGroups = groupOperationsByController(paths, this.onWarning);
 
         await Promise.all(
             Object.entries(controllerGroups).map(([validatorName, operations]) => {
@@ -53,33 +54,6 @@ export class ZodGenerator implements IPluginGenerator {
         );
 
         this.indexGenerator.generateIndex(outputRoot);
-    }
-
-    private groupPathsByController(paths: NormalizedOperation[]): Record<string, NormalizedOperation[]> {
-        const groups: Record<string, NormalizedOperation[]> = {};
-
-        paths.forEach((path) => {
-            let controllerName = "Default";
-
-            if (path.tags && path.tags.length > 0) {
-                controllerName = path.tags[0];
-            } else {
-                // Extract from path
-                const pathParts = path.path.split("/").filter((p) => p && !p.startsWith("{"));
-                if (pathParts.length > 1) {
-                    controllerName = pascalCase(pathParts[1]);
-                }
-            }
-
-            controllerName = pascalCase(controllerName);
-
-            if (!groups[controllerName]) {
-                groups[controllerName] = [];
-            }
-            groups[controllerName].push(path);
-        });
-
-        return groups;
     }
 
     private async generateValidatorFile(validatorName: string, operations: NormalizedOperation[], outputDir: string) {
@@ -99,6 +73,20 @@ export class ZodGenerator implements IPluginGenerator {
         }
 
         if (_statements.length > 0) {
+            // Two operationIds can normalize onto one name ("groups_{group_id}_delete"
+            // and "groups.group.id-delete" both give "groupsGroupIdDelete"), which
+            // would emit colliding `export const`s. The service generator throws on
+            // the equivalent method-name collision; do the same here rather than
+            // write a file that cannot compile.
+            const declaredNames = sourceFile.getVariableDeclarations().map((declaration) => declaration.getName());
+            const duplicates = [...new Set(declaredNames.filter((name, i) => declaredNames.indexOf(name) !== i))];
+            if (duplicates.length > 0) {
+                throw new Error(
+                    `Duplicate validator names found in ${fileName}: ${duplicates.join(", ")}. ` +
+                        `Ensure each operationId maps to a unique name.`,
+                );
+            }
+
             sourceFile.formatText();
             // Add header comment
             sourceFile.insertText(0, ZOD_PLUGIN_GENERATOR_HEADER_COMMENT(validatorName));

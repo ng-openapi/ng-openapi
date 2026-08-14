@@ -53,6 +53,51 @@ const HOSTILE_SPEC = {
     },
 };
 
+/**
+ * OpenAPI 3 counterpart for the shapes that only exist there. Every name here
+ * is legal in a spec and illegal (or ambiguous) as a TypeScript identifier:
+ * a multipart field with a dash, two query params that camelCase onto one
+ * name, and one that collides with the generator's own `options` parameter.
+ */
+const HOSTILE_OAS3_SPEC = {
+    openapi: "3.0.0",
+    info: { title: "t", version: "1.0.0" },
+    paths: {
+        "/upload": {
+            post: {
+                tags: ["Files"],
+                operationId: "upload",
+                requestBody: {
+                    content: {
+                        "multipart/form-data": {
+                            schema: {
+                                type: "object",
+                                properties: {
+                                    "user-name": { type: "string" },
+                                    file: { type: "string", format: "binary" },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: { "200": { description: "OK" } },
+            },
+        },
+        "/search": {
+            get: {
+                tags: ["Search"],
+                operationId: "search",
+                parameters: [
+                    { name: "filter[name]", in: "query", schema: { type: "string" } },
+                    { name: "filter.name", in: "query", schema: { type: "string" } },
+                    { name: "options[]", in: "query", schema: { type: "string" } },
+                ],
+                responses: { "200": { description: "OK" } },
+            },
+        },
+    },
+};
+
 function writeSpec(dir: string, spec: unknown): string {
     const input = join(dir, "spec.json");
     writeFileSync(input, JSON.stringify(spec));
@@ -138,6 +183,84 @@ describe("specs whose names are illegal TypeScript identifiers (#125)", () => {
         });
 
         expectCompiles(output);
+    });
+
+    it("sanitizes multipart field names, which never reach the params generator as identifiers", async () => {
+        const output = outputDir("names-multipart-");
+        await generateFromConfig({
+            input: writeSpec(output, HOSTILE_OAS3_SPEC),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        const files = readFileSync(join(output, "services", "files.service.ts"), "utf8");
+        expect(files).toContain("upload(userName?: string");
+        // The wire name stays intact inside the append call — only the
+        // expression position gets the identifier.
+        expect(files).toContain("formData.append('user-name', String(userName))");
+
+        expectCompiles(output);
+    });
+
+    it("keeps colliding query params distinct instead of losing one", async () => {
+        const output = outputDir("names-collide-");
+        await generateFromConfig({
+            input: writeSpec(output, HOSTILE_OAS3_SPEC),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        const search = readFileSync(join(output, "services", "search.service.ts"), "utf8");
+        // `filter[name]` and `filter.name` both camelCase to `filterName`; each
+        // must keep its own argument, or one wire param is unreachable forever.
+        expect(search).toContain("params, filterName, 'filter[name]'");
+        expect(search).toContain("params, filterName2, 'filter.name'");
+        // `options[]` must not capture the generator's own `options` parameter,
+        // which carries headers/reportProgress/withCredentials.
+        expect(search).toContain("params, options2, 'options[]'");
+        expect(search).toContain("options?: RequestOptions<");
+        expect(search).toContain("headers = new HttpHeaders(options?.headers)");
+
+        expectCompiles(output);
+    });
+
+    it("warns when two distinct tags normalize onto one controller", async () => {
+        const output = outputDir("names-tagmerge-");
+        const result = await generateFromConfig({
+            input: writeSpec(
+                output,
+                {
+                    openapi: "3.0.0",
+                    info: { title: "t", version: "1.0.0" },
+                    paths: {
+                        "/a": { get: { tags: ["Groups (yes)"], operationId: "a_get", responses: { "200": { description: "OK" } } } },
+                        "/b": { get: { tags: ["Groups-yes"], operationId: "b_get", responses: { "200": { description: "OK" } } } },
+                    },
+                },
+            ),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        // Merging beats dropping, but it must not be silent.
+        expect(result.warnings.join("\n")).toMatch(/"Groups \(yes\)" and "Groups-yes" both map to the controller "GroupsYes"/);
+    });
+
+    it("rejects `constructor`, which is a valid identifier but not a usable method name", async () => {
+        const output = outputDir("names-ctor-");
+
+        await expect(
+            generateFromConfig({
+                input: writeSpec(output, HOSTILE_SPEC),
+                output,
+                options: {
+                    dateType: "string",
+                    enumStyle: "union",
+                    generateServices: true,
+                    customizeMethodName: () => "constructor",
+                },
+            }),
+        ).rejects.toBeInstanceOf(InvalidIdentifierError);
     });
 
     it("rejects a customizeMethodName result that is not an identifier", async () => {
