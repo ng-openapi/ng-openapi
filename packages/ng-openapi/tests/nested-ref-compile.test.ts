@@ -4,12 +4,16 @@ import { ModuleKind, Project, ScriptTarget } from "ts-morph";
 import { afterAll, describe, expect, it } from "vitest";
 import { generateFromConfig } from "ng-openapi";
 
-// Regression for the deep-pointer $ref bug: an operation schema that is a
-// `$ref` to a *nested property* of another schema
-// (`#/components/schemas/PolicyEntry/properties/namespaces`) used to emit an
-// undefined, unimported type `Namespaces` → `error TS2304: Cannot find name
-// 'Namespaces'`. The reference is now inlined at parse time (string[]), so the
-// generated service must compile clean.
+// Regression for the deep-pointer $ref bug: a `$ref` to a *nested property* of
+// another schema (`#/components/schemas/PolicyEntry/properties/namespaces`)
+// used to emit an undefined, unimported type `Namespaces` → `error TS2304:
+// Cannot find name 'Namespaces'`. The reference is now inlined at parse time
+// (string[]), so the generated code must compile clean.
+//
+// Both consumer families are covered here, because the fix claims to fix both:
+// the deep ref appears in *operation* positions (response + request body, read
+// off the raw spec by the service generator) and in a *model* position
+// (a property of `PolicyView`, which goes through the type generator).
 const REPRO_SPEC = {
     openapi: "3.0.0",
     info: { title: "nested-ref repro", version: "1" },
@@ -51,6 +55,21 @@ const REPRO_SPEC = {
                 responses: { "204": { description: "updated" } },
             },
         },
+        "/api/2/policies/{policyId}": {
+            get: {
+                tags: ["Policies"],
+                operationId: "getPolicy",
+                parameters: [{ name: "policyId", in: "path", required: true, schema: { type: "string" } }],
+                responses: {
+                    "200": {
+                        description: "ok",
+                        // A plain top-level ref: the deep pointer under test
+                        // sits inside the *model*, not in this operation.
+                        content: { "application/json": { schema: { $ref: "#/components/schemas/PolicyView" } } },
+                    },
+                },
+            },
+        },
     },
     components: {
         schemas: {
@@ -62,6 +81,15 @@ const REPRO_SPEC = {
                         description: "Namespace patterns this policy entry applies to.",
                         items: { type: "string" },
                     },
+                },
+            },
+            PolicyView: {
+                type: "object",
+                properties: {
+                    id: { type: "string" },
+                    // The model-generator half of the bug: this used to emit
+                    // `namespaces?: Namespaces` in the generated interface.
+                    namespaces: { $ref: "#/components/schemas/PolicyEntry/properties/namespaces" },
                 },
             },
         },
@@ -113,9 +141,7 @@ describe("nested-property $ref", () => {
         const globPath = `${outputDir.replace(/\\/g, "/")}/**/*.ts`;
         project.addSourceFilesAtPaths(globPath);
 
-        const serviceFile = project
-            .getSourceFiles()
-            .find((file) => file.getFilePath().includes("policies.service"));
+        const serviceFile = project.getSourceFiles().find((file) => file.getFilePath().includes("policies.service"));
         if (!serviceFile) {
             throw new Error("policies service was not generated");
         }
@@ -124,6 +150,16 @@ describe("nested-property $ref", () => {
         const serviceText = serviceFile.getFullText();
         expect(serviceText).not.toMatch(/\bNamespaces\b/);
         expect(serviceText).toMatch(/Array<string>|string\[\]/);
+
+        // The model path: `PolicyView.namespaces` must be the inlined array,
+        // not a reference to a type nothing declares.
+        const modelFile = project.getSourceFiles().find((file) => file.getFullText().includes("interface PolicyView"));
+        if (!modelFile) {
+            throw new Error("PolicyView model was not generated");
+        }
+        const modelText = modelFile.getFullText();
+        expect(modelText).not.toMatch(/\bNamespaces\b/);
+        expect(modelText).toMatch(/namespaces\??:\s*(Array<string>|string\[\])/);
 
         // Strip the insurance @ts-nocheck so the compile check is real.
         for (const sourceFile of project.getSourceFiles()) {

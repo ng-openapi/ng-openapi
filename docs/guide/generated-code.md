@@ -96,8 +96,10 @@ Barrel export of everything above, so consumers can import from the output root.
 An unresolvable or cyclic property `$ref` is left as-is and warned about:
 
 ```
-⚠️ Could not resolve nested $ref "#/components/schemas/Missing/properties/nope" — the generated type for this schema will not compile.
+⚠️ Could not resolve nested $ref "#/components/schemas/Missing/properties/nope". The generated type will not match the spec (generated files ship @ts-nocheck, so this surfaces as a silently wrong type rather than a compile error).
 ```
+
+Your build stays green — that is the point of the warning. Generated files carry `@ts-nocheck`, so the dangling type name degrades to `any` instead of failing compilation, and the warning is the only signal that the API surface is wrong.
 
 Fix the spec: promote the target to a named schema and reference that.
 
