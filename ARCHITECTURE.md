@@ -11,13 +11,38 @@ Every generation run flows through the same stages:
    load ─────────► parse ─────────► normalize ─────────► generate ─────────► emit
    spec-loader     spec-format      normalize.ts          generators          ts-morph Project
    (fs / http)     (JSON / YAML)    → NormalizedSpec      (core + plugins)    formatText() + save
+                   $ref inlining
 ```
 
 - **Load** (`packages/shared/src/core/spec-loader.ts`) — raw content from a file
   or URL. Pure I/O; throws `SpecLoadError`.
 - **Parse** (`spec-format.ts`) — format detection + JSON/YAML parsing into a raw
   `SwaggerSpec`. Pure functions; throws `SpecParseError`.
-- **Normalize** (`normalize.ts`) — resolves *every* Swagger 2.0 vs OpenAPI 3.x
+  `SwaggerParser.create` then runs `inline-nested-refs.ts` once: deep-pointer
+  `$ref`s (`#/components/schemas/X/properties/y`) are replaced by a copy of
+  their target — downstream a `$ref` becomes a type name taken from its last
+  segment, which for these matches no model. Parse time is upstream of _both_
+  raw-spec readers and the IR, so one pass fixes every consumer; top-level refs
+  are left alone to keep generating imported models; keys sitting next to a
+  deep `$ref` are kept and win over the target's — with a warning when one
+  overrides a _type-bearing_ key the target defines, the one case where that
+  choice changes the emitted type; an annotation-only override (`description`,
+  `example`) is the ordinary authoring shape and stays silent.
+  `validateInput` runs _before_ this pass, so the hook judges the document as
+  authored. A pointer it refuses — unresolvable, cyclic, aimed at a non-schema
+  value, not addressing a schema _position_ (`.../properties` is a plain object
+  but a map, not a schema), or past the expansion depth/node caps that bound
+  combinatorial fan-out — stays in place and reports through `onWarning`, once
+  per cause _and_ ref (plus, for sibling findings, per colliding key set, since
+  _which_ siblings collide belongs to the use site, not the ref). A refusal does
+  not stop the walk, so refs nested under a broken one are still reached, and
+  past ten messages per cause the remaining refs are named in a single tail —
+  the cap bounds line count, never which refs the user is told about. Payload
+  positions (`example`, `default`, `enum`, …) are not walked at all: their
+  contents are the user's data, and a `$ref`-shaped example is not a reference.
+  Anything the pass can still throw is re-wrapped as `SpecParseError` so hosts
+  keep branching on the typed errors.
+- **Normalize** (`normalize.ts`) — resolves _every_ Swagger 2.0 vs OpenAPI 3.x
   difference exactly once and precomputes what generators would otherwise
   re-derive (`pathParams`, `queryParams`, `hasBody`, `isMultipart`,
   `responseType`, resolved `$ref`s, …). Output: **`NormalizedSpec`** /
@@ -35,12 +60,12 @@ Every generation run flows through the same stages:
 Boundaries are enforced by `@nx/enforce-module-boundaries` (scope tags, see
 `eslint.config.mjs`); a violation fails lint.
 
-| Package | Tag | May depend on |
-|---|---|---|
-| `packages/shared` | `scope:shared` | nothing internal |
-| `packages/ng-openapi` | `scope:core` | shared |
-| `packages/plugins/*` | `scope:plugin` | shared |
-| `packages/testing` | `scope:testing` | everything |
+| Package               | Tag             | May depend on    |
+| --------------------- | --------------- | ---------------- |
+| `packages/shared`     | `scope:shared`  | nothing internal |
+| `packages/ng-openapi` | `scope:core`    | shared           |
+| `packages/plugins/*`  | `scope:plugin`  | shared           |
+| `packages/testing`    | `scope:testing` | everything       |
 
 `@ng-openapi/shared` is **bundled, not published**: tsup inlines its sources
 into each publishable package. Its public API is the explicit export list in
@@ -85,6 +110,13 @@ User-facing failures are typed (`packages/shared/src/errors.ts`):
 `ConfigValidationError` (invalid config, collects all issues). Hosts branch on
 `instanceof`, never on message text — messages are presentation.
 
+Problems the run survives go to the `onWarning` sink (an unresolvable `$ref`, a
+skipped definition): output is still produced, so the user must be told which
+construct is wrong. Say what the consumer will actually see — generated files
+ship `@ts-nocheck`, so these degrade to a silently wrong type rather than a
+compile error, and a warning promising "will not compile" is false. Silent
+degradation is never acceptable.
+
 ### Plugin contract
 
 Plugins are classes constructed with a single `PluginGeneratorContext`
@@ -118,13 +150,15 @@ otherwise it would show up in indexes and `filesWritten`.
 
 ## Where does X go?
 
-| You're adding… | It goes… |
-|---|---|
-| A new per-operation derived fact | `normalize.ts` + `NormalizedOperation` |
-| A code fragment used by ≥2 generators | `packages/shared/src/emit/` |
-| A new generator option | `GeneratorConfig` + the narrow view that consumes it + `config-validation.ts` |
-| A new output file kind for the core | a generator under `packages/ng-openapi/src/lib/generators/` |
-| An alternative client flavor | a plugin package implementing `PluginGeneratorContext` |
-| A new user-facing failure mode | a typed error in `packages/shared/src/errors.ts` (or extend an existing one) |
-| A string/name helper | `packages/shared/src/utils/` — and export it from the barrel only if consumers outside shared need it |
-| Console output | `cli.ts`. Nowhere else. |
+| You're adding…                        | It goes…                                                                                                        |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| A new per-operation derived fact      | `normalize.ts` + `NormalizedOperation`                                                                          |
+| A code fragment used by ≥2 generators | `packages/shared/src/emit/`                                                                                     |
+| A new generator option                | `GeneratorConfig` + the narrow view that consumes it + `config-validation.ts`                                   |
+| A new output file kind for the core   | a generator under `packages/ng-openapi/src/lib/generators/`                                                     |
+| An alternative client flavor          | a plugin package implementing `PluginGeneratorContext`                                                          |
+| A new user-facing failure mode        | a typed error in `packages/shared/src/errors.ts` (or extend an existing one)                                    |
+| A degradation the run survives        | a message through the `onWarning` sink — never a silent fallback                                                |
+| A raw-spec fixup every consumer needs | a parse-time pass in `packages/shared/src/core/`, run from `SwaggerParser.create` (see `inline-nested-refs.ts`) |
+| A string/name helper                  | `packages/shared/src/utils/` — and export it from the barrel only if consumers outside shared need it           |
+| Console output                        | `cli.ts`. Nowhere else.                                                                                         |

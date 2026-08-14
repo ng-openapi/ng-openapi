@@ -34,7 +34,10 @@ export type {
 // Normalized spec model (version-free view consumed by generators)
 export type { NormalizedOperation, NormalizedSpec, ResponseKind, SpecVersion } from "./model";
 
-// Spec loading and access
+// Spec loading and access. `inlineNestedRefs` is deliberately *not* re-exported:
+// it runs inside `SwaggerParser.create` and has no consumer outside this
+// package, so exporting it would freeze a parse-internal signature as public
+// API. Tests import it from `../src/core`.
 export { normalizeSchema, normalizeSpec, SwaggerParser } from "./core";
 
 // Typed pipeline errors — branch on these, not on message text

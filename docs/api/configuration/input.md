@@ -42,4 +42,5 @@ const config: GeneratorConfig = {
 
 - The specification must be a valid Swagger 2.x or OpenAPI 3.x document
 - Remote URLs must be accessible and return valid JSON/YAML content
+- Same-document `$ref`s are resolved — see [Schema References](../../guide/generated-code.md#schema-references)
 - Consider [`validateInput`](./validate-input.md) to guard against unexpected spec changes when generating from a URL

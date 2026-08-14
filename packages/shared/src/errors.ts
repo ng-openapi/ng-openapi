@@ -35,8 +35,10 @@ export class SpecLoadError extends NgOpenApiError {
 
 /**
  * The spec content was read but could not be used: malformed JSON/YAML,
- * undeterminable format, an unsupported spec version, or a spec rejected
- * by the user's `validateInput` hook.
+ * undeterminable format, an unsupported spec version, a spec rejected by the
+ * user's `validateInput` hook, or a document pathological enough to break
+ * `$ref` inlining (`core/inline-nested-refs.ts`) — `source` is the spec path
+ * or URL in that last case.
  */
 export class SpecParseError extends NgOpenApiError {
     /** The file path or URL the content came from, when known. */
