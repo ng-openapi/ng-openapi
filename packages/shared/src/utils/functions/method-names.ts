@@ -1,4 +1,4 @@
-import { InvalidIdentifierError } from "../../errors";
+import { describeOperation, InvalidIdentifierError } from "../../errors";
 import type { NormalizedOperation } from "../../model";
 import type { MethodGenOptions } from "../../types";
 import { camelCase, isValidIdentifier, pascalCase } from "../string.utils";
@@ -18,14 +18,18 @@ const RESERVED_MEMBER_NAMES = new Set(["constructor"]);
  * running both) must get the same method names.
  */
 export function getOperationMethodName(operation: NormalizedOperation, config: MethodGenOptions): string {
+    // Takes the whole MethodGenOptions rather than the hook alone so callers can
+    // pass the config they already hold, matching the other name helpers.
     const customize = config.options.customizeMethodName;
     if (!customize) {
         return defaultOperationMethodName(operation);
     }
 
     if (operation.operationId == null) {
-        throw new Error(
-            `Operation ID is required for method name customization of operation: (${operation.method}) ${operation.path}`,
+        throw new InvalidIdentifierError(
+            `customizeMethodName needs an operationId, and ${describeOperation(operation)} has none. ` +
+                `Add one to the spec, or drop customizeMethodName to use the derived name.`,
+            operation,
         );
     }
 
@@ -35,10 +39,10 @@ export function getOperationMethodName(operation: NormalizedOperation, config: M
     // would leave the user's config and the generated client disagreeing.
     if (!isValidIdentifier(customName) || RESERVED_MEMBER_NAMES.has(customName)) {
         throw new InvalidIdentifierError(
-            `customizeMethodName returned "${customName}" for operation "${operation.operationId}" ` +
-                `((${operation.method}) ${operation.path}), which is not a usable TypeScript method name. ` +
-                `Return an identifier — letters, digits, "_" and "$", not starting with a digit — ` +
-                `and not "constructor".`,
+            `customizeMethodName returned "${customName}" for ${describeOperation(operation)}, ` +
+                `which is not a usable TypeScript method name. Return an identifier — letters, digits, ` +
+                `"_" and "$", not starting with a digit — and not "constructor".`,
+            operation,
             customName,
         );
     }
@@ -49,7 +53,7 @@ export function getOperationMethodName(operation: NormalizedOperation, config: M
  * `operationId` when the spec supplies one, otherwise a name built from the
  * path and HTTP method (`GET /pets/{id}` → `petsIdGet`).
  */
-export function defaultOperationMethodName(operation: NormalizedOperation): string {
+function defaultOperationMethodName(operation: NormalizedOperation): string {
     if (operation.operationId) {
         const name = camelCase(operation.operationId);
         // Derived names are sanitized rather than rejected: the spec is valid,

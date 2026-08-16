@@ -56,14 +56,20 @@ Generators never see `definitions` vs `components.schemas`, body parameters vs
 generator needs a new per-operation fact, **add it to `NormalizedOperation` in
 the normalizer**, don't re-derive it at the call site.
 
-`argumentNames` is the sharpest case of that rule. A parameter's TypeScript
-identifier is needed where the parameter is declared *and* at every use site
-(`emit/url.emit.ts`, `emit/query-params.emit.ts`, the form-data blocks), and it
-cannot be derived one name at a time: wire names are free-form, so `filter[name]`
-and `filter.name` both camelCase onto `filterName`, and `options[]` collides
-with the method's own `options` parameter. Resolving the whole operation at
-once is what keeps them distinct — read `operation.argumentNames` (via
-`argumentNameOf`), never `camelCase(param.name)`.
+Argument identifiers are the counter-example that sharpens the rule. A
+parameter's TypeScript identifier is needed where the parameter is declared
+*and* at every use site (`emit/url.emit.ts`, `emit/query-params.emit.ts`, the
+form-data blocks), and it cannot be derived one name at a time: wire names are
+free-form, so `filter[name]` and `filter.name` both camelCase onto
+`filterName`, and `options[]` collides with the method's own `options`
+parameter. But *which* names are already taken is a property of the code being
+emitted, not of the spec — the core service binds `observe`/`options`, the
+httpResource plugin binds `resourceOptions`/`requestOptions`. So this one is
+**not** on `NormalizedOperation`: each generator calls
+`resolveArgumentNames(operation, config, <its own reserved set>)`, a pure
+function, and every call site of that generator gets the same answer. Read the
+returned map (`names.of(wireName)`, `names.body`); never `camelCase(param.name)`
+in a generator.
 
 ### Shared emission layer
 

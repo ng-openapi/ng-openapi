@@ -2,9 +2,12 @@ import { Project, SourceFile } from "ts-morph";
 import * as path from "path";
 import {
     camelCase,
+    describeOperation,
+    DuplicateGeneratedNameError,
     groupOperationsByController,
     GeneratorConfig,
-    IPluginGenerator,
+    IPluginGenerator,
+
     pascalCase,
     NormalizedOperation,
     NormalizedSpec,
@@ -47,6 +50,12 @@ export class ZodGenerator implements IPluginGenerator {
 
         const controllerGroups = groupOperationsByController(paths, this.onWarning);
 
+        // Operation names are checked across the whole run, not per file: the
+        // validators barrel re-exports every file with `export *`, so two
+        // controllers producing one name drop a symbol just as silently as two
+        // operations in one file would.
+        this.assertDistinctOperationNames(controllerGroups);
+
         await Promise.all(
             Object.entries(controllerGroups).map(([validatorName, operations]) => {
                 return this.generateValidatorFile(validatorName, operations, outputDir);
@@ -54,6 +63,38 @@ export class ZodGenerator implements IPluginGenerator {
         );
 
         this.indexGenerator.generateIndex(outputRoot);
+    }
+
+    private assertDistinctOperationNames(controllerGroups: Record<string, NormalizedOperation[]>): void {
+        const byName = new Map<string, NormalizedOperation[]>();
+        for (const operations of Object.values(controllerGroups)) {
+            for (const operation of operations) {
+                const name = this.getOperationName(operation);
+                const existing = byName.get(name);
+                if (existing) {
+                    existing.push(operation);
+                } else {
+                    byName.set(name, [operation]);
+                }
+            }
+        }
+
+        const collisions = [...byName.entries()].filter(([, operations]) => operations.length > 1);
+        if (collisions.length === 0) {
+            return;
+        }
+
+        // Report the operations, not the generated `const`s: the operationId is
+        // what the user has to change.
+        const detail = collisions
+            .map(([name, operations]) => `"${name}" from ${operations.map(describeOperation).join(" and ")}`)
+            .join("; ");
+        throw new DuplicateGeneratedNameError(
+            `Operations map to the same zod validator name: ${detail}. ` +
+                `Ensure each operationId maps to a unique name.`,
+            collisions.map(([name]) => name),
+            collisions.flatMap(([, operations]) => operations),
+        );
     }
 
     private async generateValidatorFile(validatorName: string, operations: NormalizedOperation[], outputDir: string) {
@@ -73,20 +114,6 @@ export class ZodGenerator implements IPluginGenerator {
         }
 
         if (_statements.length > 0) {
-            // Two operationIds can normalize onto one name ("groups_{group_id}_delete"
-            // and "groups.group.id-delete" both give "groupsGroupIdDelete"), which
-            // would emit colliding `export const`s. The service generator throws on
-            // the equivalent method-name collision; do the same here rather than
-            // write a file that cannot compile.
-            const declaredNames = sourceFile.getVariableDeclarations().map((declaration) => declaration.getName());
-            const duplicates = [...new Set(declaredNames.filter((name, i) => declaredNames.indexOf(name) !== i))];
-            if (duplicates.length > 0) {
-                throw new Error(
-                    `Duplicate validator names found in ${fileName}: ${duplicates.join(", ")}. ` +
-                        `Ensure each operationId maps to a unique name.`,
-                );
-            }
-
             sourceFile.formatText();
             // Add header comment
             sourceFile.insertText(0, ZOD_PLUGIN_GENERATOR_HEADER_COMMENT(validatorName));

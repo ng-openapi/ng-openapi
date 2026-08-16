@@ -15,3 +15,10 @@ export interface ListThingsParams {
 export interface GetMiscByIdParams {
     id: string;
 }
+
+export interface ReportsReportIdGetParams {
+    reportId: string;
+    filterName?: string;
+    filterName2?: string;
+    options2?: string;
+}

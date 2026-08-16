@@ -1,6 +1,7 @@
 import { Project, Scope, SourceFile } from "ts-morph";
 import {
     camelCase,
+    describeOperation,
     emitServiceDecorator,
     GeneratorConfig,
     getBasePathTokenName,
@@ -8,7 +9,10 @@ import {
     getServiceClassName,
     groupOperationsByController,
     hasDuplicateFunctionNames,
-    NormalizedOperation,
+    resolveArgumentNames,
+    SERVICE_RESERVED_ARGUMENT_NAMES,
+    NormalizedOperation,
+
     SERVICE_GENERATOR_HEADER_COMMENT,
     SwaggerParser,
 } from "@ng-openapi/shared";
@@ -76,6 +80,23 @@ export class ServiceGenerator {
         sourceFile.fixMissingImports().formatText(); //TODO: add models
         sourceFile.insertText(0, SERVICE_GENERATOR_HEADER_COMMENT(controllerName));
         sourceFile.saveSync();
+    }
+
+    /**
+     * A renamed argument is part of the method's public signature, and the
+     * suffix depends on which other arguments the operation has — so adding or
+     * removing one renumbers the survivor and breaks call sites. Silent is the
+     * one thing that must not happen.
+     */
+    private warnAboutRenamedArguments(operation: NormalizedOperation): void {
+        const { renamed } = resolveArgumentNames(operation, this.config, SERVICE_RESERVED_ARGUMENT_NAMES);
+        for (const { source, identifier } of renamed) {
+            this.onWarning?.(
+                `Parameter "${source}" of ${describeOperation(operation)} is exposed as "${identifier}" — ` +
+                    `its natural name is already taken by another parameter or by the method itself. ` +
+                    `Renaming it in the spec keeps the generated signature stable.`,
+            );
+        }
     }
 
     private addServiceClass(sourceFile: SourceFile, controllerName: string, operations: NormalizedOperation[]): void {
@@ -164,6 +185,7 @@ return context.set(this.clientContextToken, '${this.config.clientName || "defaul
 
         // Generate methods for each operation
         operations.forEach((operation) => {
+            this.warnAboutRenamedArguments(operation);
             this.methodGenerator.addServiceMethod(serviceClass, operation, this.requestObjects?.get(operation));
         });
 

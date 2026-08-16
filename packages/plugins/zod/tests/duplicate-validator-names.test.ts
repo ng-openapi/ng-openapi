@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, expect, it } from "vitest";
-import { generateFromConfig } from "ng-openapi";
+import { DuplicateGeneratedNameError, generateFromConfig } from "ng-openapi";
 import { ZodPlugin } from "../src";
 
 // Must live outside node_modules: the generator resolves auto-imports through
@@ -58,5 +58,48 @@ it("fails on two operationIds that normalize onto one validator name", async () 
             options: { dateType: "string", enumStyle: "union", generateServices: false },
             plugins: [ZodPlugin],
         }),
-    ).rejects.toThrow(/Duplicate validator names found in groups\.validator\.ts/);
+    ).rejects.toBeInstanceOf(DuplicateGeneratedNameError);
+});
+
+it("names the colliding operations, not the generated consts", async () => {
+    const output = mkdtempSync(join(tmpRoot, "zod-dup-msg-"));
+    tempDirs.push(output);
+
+    const input = join(output, "spec.json");
+    // Different tags, so the collision spans two files: the validators barrel
+    // re-exports both with `export *`, silently dropping one symbol.
+    writeFileSync(
+        input,
+        JSON.stringify({
+            openapi: "3.0.0",
+            info: { title: "t", version: "1.0.0" },
+            paths: {
+                "/a": {
+                    get: {
+                        tags: ["Alpha"],
+                        operationId: "list-things",
+                        parameters: [{ name: "q", in: "query", schema: { type: "string" } }],
+                        responses: { "200": { description: "OK" } },
+                    },
+                },
+                "/b": {
+                    get: {
+                        tags: ["Beta"],
+                        operationId: "list_things",
+                        parameters: [{ name: "q", in: "query", schema: { type: "string" } }],
+                        responses: { "200": { description: "OK" } },
+                    },
+                },
+            },
+        }),
+    );
+
+    await expect(
+        generateFromConfig({
+            input,
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: false },
+            plugins: [ZodPlugin],
+        }),
+    ).rejects.toThrow(/list-things .*and list_things /);
 });

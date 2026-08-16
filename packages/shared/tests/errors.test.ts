@@ -29,13 +29,30 @@ describe("typed errors", () => {
     it("recognizes a branded error from another bundled copy of the module", () => {
         const fromPluginBundle = Object.assign(new Error("customizeMethodName returned …"), {
             name: "InvalidIdentifierError",
-            __ngOpenApiError: "InvalidIdentifierError",
+            // The lineage, not one name, so ancestors match too.
+            __ngOpenApiError: ["InvalidIdentifierError", "NgOpenApiError"],
             identifier: "groups{x}Delete",
         });
 
         expect(fromPluginBundle).toBeInstanceOf(InvalidIdentifierError);
         expect(fromPluginBundle).toBeInstanceOf(NgOpenApiError);
         expect(fromPluginBundle).not.toBeInstanceOf(SpecLoadError);
+    });
+
+    it("matches a caller's own subclass through the prototype chain", () => {
+        class TighterSpecLoadError extends SpecLoadError {}
+        const error = new TighterSpecLoadError("x", "./s");
+
+        expect(error).toBeInstanceOf(TighterSpecLoadError);
+        expect(error).toBeInstanceOf(SpecLoadError);
+        expect(error).toBeInstanceOf(NgOpenApiError);
+    });
+
+    it("keeps the brand out of serialized output", () => {
+        const error = new SpecLoadError("could not read", "./spec.json");
+
+        expect(Object.keys(error)).not.toContain("__ngOpenApiError");
+        expect(JSON.stringify(error)).not.toContain("__ngOpenApiError");
     });
 
     it("leaves unbranded values alone", () => {

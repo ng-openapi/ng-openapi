@@ -14,6 +14,7 @@ models/user-profile.ts
 providers.ts
 services/index.ts
 services/noTags.service.ts
+services/oddNamesV2.service.ts
 services/things.service.ts
 tokens/index.ts
 utils/base-interceptor.ts

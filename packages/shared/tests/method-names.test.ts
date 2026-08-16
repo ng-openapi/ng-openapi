@@ -56,6 +56,8 @@ describe("getOperationMethodName with a customize hook", () => {
     });
 
     it("requires an operationId when a customize hook is configured", () => {
-        expect(() => getOperationMethodName(operation(), config((id) => id))).toThrow(/Operation ID is required/);
+        // Typed, not a bare Error: hosts branch on the class, never on text.
+        expect(() => getOperationMethodName(operation(), config((id) => id))).toThrow(InvalidIdentifierError);
+        expect(() => getOperationMethodName(operation(), config((id) => id))).toThrow(/needs an operationId/);
     });
 });

@@ -1,6 +1,7 @@
 import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
 import {
-    argumentNameOf,
+    resolveArgumentNames,
+    RESOURCE_RESERVED_ARGUMENT_NAMES,
     getResponseType,
     getTypeScriptType,
     MethodGenOptions,
@@ -37,6 +38,7 @@ export class HttpResourceMethodParamsGenerator {
 
     generateApiParameters(operation: NormalizedOperation): OptionalKind<ParameterDeclarationStructure>[] {
         const params: OptionalKind<ParameterDeclarationStructure>[] = [];
+        const argumentNames = resolveArgumentNames(operation, this.config, RESOURCE_RESERVED_ARGUMENT_NAMES);
 
         // Path parameters
         operation.pathParams.forEach((param) => {
@@ -46,7 +48,7 @@ export class HttpResourceMethodParamsGenerator {
             const paramType = getTypeScriptType(param.schema || { ...param }, this.config);
             const signalParamType = param.required ? `Signal<${paramType}>` : `Signal<${paramType} | undefined>`;
             params.push({
-                name: argumentNameOf(operation.argumentNames, param.name),
+                name: argumentNames.of(param.name),
                 type: `${signalParamType} | ${paramType}`,
                 hasQuestionToken: !param.required,
             });
@@ -57,7 +59,7 @@ export class HttpResourceMethodParamsGenerator {
             const paramType = getTypeScriptType(param.schema || { ...param }, this.config);
             const signalParamType = param.required ? `Signal<${paramType}>` : `Signal<${paramType} | undefined>`;
             params.push({
-                name: argumentNameOf(operation.argumentNames, param.name),
+                name: argumentNames.of(param.name),
                 type: `${signalParamType} | ${paramType}`,
                 hasQuestionToken: !param.required,
             });

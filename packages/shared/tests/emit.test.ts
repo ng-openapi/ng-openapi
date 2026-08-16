@@ -8,15 +8,22 @@ import {
     emitUrlConstruction,
     emitUrlExpression,
     joinRequestOptionEntries,
-    resolveArgumentNames,
     signalAwareParamValue,
 } from "@ng-openapi/shared";
-import type { Parameter } from "@ng-openapi/shared";
+import { camelCase } from "@ng-openapi/shared";
+import type { ArgumentNames, Parameter } from "@ng-openapi/shared";
 
 const pathParam = (name: string): Parameter => ({ name, in: "path" }) as Parameter;
 const queryParam = (name: string): Parameter => ({ name, in: "query" }) as Parameter;
-/** The argument-name map the normalizer would resolve for these wire names. */
-const names = (...wireNames: string[]) => resolveArgumentNames(wireNames);
+/** A resolved argument-name map for the given wire names, identity-mapped. */
+const names = (...wireNames: string[]): ArgumentNames => {
+    const identifiers = new Map(wireNames.map((wireName) => [wireName, camelCase(wireName)]));
+    return {
+        of: (wireName) => identifiers.get(wireName) ?? camelCase(wireName),
+        all: [...identifiers.values()],
+        renamed: [],
+    };
+};
 
 describe("url emission", () => {
     it("substitutes path params with camelCased identifiers", () => {

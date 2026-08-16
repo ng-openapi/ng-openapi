@@ -11,43 +11,53 @@
  * `@ng-openapi/shared` is a private, bundled-in package (never published), so
  * each plugin's published bundle inlines its own copy of these classes. A
  * plugin-thrown error is therefore not `instanceof` the class a host imported
- * from `ng-openapi`. The brand is a plain string property, so it survives
+ * from `ng-openapi`. The brand is a plain data property, so it survives
  * bundling and identifies the error regardless of which copy created it —
  * hence `Symbol.hasInstance` below, which makes `instanceof` honour it.
+ *
+ * It holds the full lineage, not one name, so a subclass still matches its
+ * ancestors. Both the brand and the classes' `brand` statics are written from
+ * string literals rather than read off `constructor.name`, because a minifier
+ * rewrites class names — which is exactly the case this mechanism exists for.
  */
 const NG_OPENAPI_ERROR_BRAND = "__ngOpenApiError";
 
 /** Base class of every error ng-openapi raises deliberately. */
 export class NgOpenApiError extends Error {
+    /** Minifier-stable identity of this class, compared against the brand. */
+    static readonly brand: string = "NgOpenApiError";
+
     /** The underlying error that caused this one, when there is one. */
     readonly cause?: unknown;
 
-    /** Set to the concrete class name; see NG_OPENAPI_ERROR_BRAND. */
-    readonly [NG_OPENAPI_ERROR_BRAND]: string;
-
-    constructor(message: string, cause?: unknown) {
+    constructor(message: string, lineage: readonly string[], cause?: unknown) {
         super(message);
-        this.name = new.target.name;
+        this.name = lineage[0];
         this.cause = cause;
-        this[NG_OPENAPI_ERROR_BRAND] = new.target.name;
+        // Non-enumerable: an enumerable brand leaks into JSON.stringify(error)
+        // and structured logs, where it is noise.
+        Object.defineProperty(this, NG_OPENAPI_ERROR_BRAND, {
+            value: lineage,
+            enumerable: false,
+            writable: false,
+        });
     }
 
     /**
      * Recognizes branded errors from another bundled copy of this module, so
      * `error instanceof SpecLoadError` works for a plugin-thrown error too.
-     * Falls back to the prototype chain for anything unbranded.
+     * The prototype chain is checked first, so a caller's own subclass of these
+     * classes still matches even though it carries no lineage entry.
      */
     static override [Symbol.hasInstance](value: unknown): boolean {
         if (typeof value !== "object" || value === null) {
             return false;
         }
-        const brand = (value as Record<string, unknown>)[NG_OPENAPI_ERROR_BRAND];
-        if (typeof brand === "string") {
-            // `this` is the class instanceof was called on: the base matches any
-            // branded error, a subclass only its own name.
-            return this === NgOpenApiError || brand === this.name;
+        if (Object.prototype.isPrototypeOf.call(this.prototype, value)) {
+            return true;
         }
-        return Object.prototype.isPrototypeOf.call(this.prototype, value);
+        const lineage = (value as Record<string, unknown>)[NG_OPENAPI_ERROR_BRAND];
+        return Array.isArray(lineage) && lineage.includes((this as typeof NgOpenApiError).brand);
     }
 }
 
@@ -58,11 +68,13 @@ export class NgOpenApiError extends Error {
  * which hints to print.
  */
 export class SpecLoadError extends NgOpenApiError {
+    static override readonly brand = "SpecLoadError";
+
     /** The file path or URL that failed to load. */
     readonly source: string;
 
     constructor(message: string, source: string, cause?: unknown) {
-        super(message, cause);
+        super(message, ["SpecLoadError", "NgOpenApiError"], cause);
         this.source = source;
     }
 }
@@ -73,29 +85,73 @@ export class SpecLoadError extends NgOpenApiError {
  * by the user's `validateInput` hook.
  */
 export class SpecParseError extends NgOpenApiError {
+    static override readonly brand = "SpecParseError";
+
     /** The file path or URL the content came from, when known. */
     readonly source?: string;
 
     constructor(message: string, source?: string, cause?: unknown) {
-        super(message, cause);
+        super(message, ["SpecParseError", "NgOpenApiError"], cause);
         this.source = source;
     }
+}
+
+/** Identifies the operation an emission-time error came from. */
+export interface OperationRef {
+    /** The operationId, when the spec declares one. */
+    operationId?: string;
+    method: string;
+    path: string;
+}
+
+/** `(GET) /pets/{id}` — or `getPet ((GET) /pets/{id})` when the spec names it. */
+export function describeOperation(operation: OperationRef): string {
+    const location = `(${operation.method}) ${operation.path}`;
+    return operation.operationId ? `${operation.operationId} (${location})` : location;
 }
 
 /**
  * A name destined for generated code is not a usable TypeScript identifier.
  * The built-in conversions cannot produce one (see `string.utils.ts`), so this
  * only ever reports a name that came from a user hook — today
- * `customizeMethodName`. Raised instead of emitting the name, because a broken
- * identifier surfaces downstream as an opaque ts-morph manipulation error that
- * says nothing about which operation caused it.
+ * `customizeMethodName` — or an operation missing the `operationId` that hook
+ * needs. Raised instead of emitting the name, because a broken identifier
+ * surfaces downstream as an opaque ts-morph manipulation error that says
+ * nothing about which operation caused it.
  */
 export class InvalidIdentifierError extends NgOpenApiError {
-    /** The rejected name, verbatim. */
-    readonly identifier: string;
+    static override readonly brand = "InvalidIdentifierError";
 
-    constructor(message: string, identifier: string) {
-        super(message);
+    /** The rejected name, verbatim; absent when no name could be derived. */
+    readonly identifier?: string;
+
+    /** The operation whose name was being derived. */
+    readonly operation: OperationRef;
+
+    constructor(message: string, operation: OperationRef, identifier?: string) {
+        super(message, ["InvalidIdentifierError", "NgOpenApiError"]);
+        this.operation = operation;
         this.identifier = identifier;
+    }
+}
+
+/**
+ * Two operations produced the same generated name, which would emit colliding
+ * declarations. Distinct from InvalidIdentifierError: each name is valid on its
+ * own, they just cannot coexist.
+ */
+export class DuplicateGeneratedNameError extends NgOpenApiError {
+    static override readonly brand = "DuplicateGeneratedNameError";
+
+    /** The colliding generated names. */
+    readonly names: readonly string[];
+
+    /** The operations that produced them, when known. */
+    readonly operations: readonly OperationRef[];
+
+    constructor(message: string, names: readonly string[], operations: readonly OperationRef[] = []) {
+        super(message, ["DuplicateGeneratedNameError", "NgOpenApiError"]);
+        this.names = names;
+        this.operations = operations;
     }
 }

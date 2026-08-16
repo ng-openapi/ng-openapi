@@ -25,15 +25,6 @@ export interface NormalizedOperation extends PathInfo {
     urlEncodedSchema?: SwaggerDefinition;
     /** field names of urlEncodedSchema's properties */
     urlEncodedFields: string[];
-    /**
-     * Wire name → the TypeScript identifier the generated method binds it to,
-     * resolved across the whole operation so colliding wire names
-     * (`filter[name]` vs `filter.name`) and names shadowing the method's own
-     * `observe`/`options`/locals stay distinct. Generators must read this
-     * rather than camelCasing a wire name themselves — see
-     * `utils/functions/argument-names.ts`.
-     */
-    argumentNames: Record<string, string>;
     /** derived from the first success response (200/201/202/204/206) */
     responseType: ResponseKind;
     /**

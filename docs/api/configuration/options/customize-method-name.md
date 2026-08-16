@@ -56,8 +56,12 @@ This generates a method named `getPetById` in the `PetsService` instead of the d
 
 Your function replaces the built-in conversion outright, so nothing sanitizes
 its result. It must return a valid TypeScript identifier — letters, digits, `_`
-and `$`, not starting with a digit. Generation fails with an
-`InvalidIdentifierError` naming the offending operation otherwise.
+and `$`, not starting with a digit — and not `constructor`, which is a valid
+identifier but declares a class constructor rather than a method. Generation
+fails with an `InvalidIdentifierError` naming the offending operation otherwise.
+
+The same error is raised when an operation has no `operationId` at all, since
+there is nothing to pass your function.
 
 You do **not** need this option just to cope with awkward characters in an
 `operationId`: the default conversion already drops anything illegal in an

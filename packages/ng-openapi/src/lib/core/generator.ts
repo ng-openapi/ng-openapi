@@ -70,7 +70,15 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
     const generateServices = config.options.generateServices ?? true;
 
     const warnings: string[] = [];
+    const seenWarnings = new Set<string>();
     const onWarning = (message: string): void => {
+        // Deduplicated: the core generator and each plugin independently group
+        // operations by controller, so a spec-level observation like two tags
+        // merging would otherwise be reported once per generator.
+        if (seenWarnings.has(message)) {
+            return;
+        }
+        seenWarnings.add(message);
         warnings.push(message);
         reporter.onWarning?.(message);
     };

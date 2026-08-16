@@ -108,3 +108,57 @@ it("surfaces a generator failure instead of resolving successfully", async () =>
     // A failed run must not leave a barrel exporting a file it never wrote.
     expect(existsSync(join(output, "resources", "index.ts"))).toBe(false);
 });
+
+it("keeps signal-aware query params and their derived locals distinct", async () => {
+    const output = mkdtempSync(join(tmpRoot, "hr-collide-"));
+    tempDirs.push(output);
+
+    const input = join(output, "spec.json");
+    writeFileSync(
+        input,
+        JSON.stringify({
+            openapi: "3.0.0",
+            info: { title: "t", version: "1.0.0" },
+            paths: {
+                "/search": {
+                    get: {
+                        tags: ["Search"],
+                        operationId: "search",
+                        parameters: [
+                            // Collide with each other, with the plugin's own
+                            // parameter, and with the `<id>Value` temp the
+                            // signal-aware block declares.
+                            { name: "filter[name]", in: "query", schema: { type: "string" } },
+                            { name: "filter.name", in: "query", schema: { type: "string" } },
+                            { name: "request-options", in: "query", schema: { type: "string" } },
+                            { name: "foo", in: "query", schema: { type: "string" } },
+                            { name: "fooValue", in: "query", schema: { type: "string" } },
+                        ],
+                        responses: { "200": { description: "OK" } },
+                    },
+                },
+            },
+        }),
+    );
+
+    await generateFromConfig({
+        input,
+        output,
+        options: { dateType: "string", enumStyle: "union", generateServices: false },
+        plugins: [HttpResourcePlugin],
+    });
+
+    const resource = readFileSync(join(output, "resources", "search.resource.ts"), "utf8");
+    // Every wire name still reaches the request, each from its own argument.
+    expect(resource).toContain("params, filterNameValue, 'filter[name]'");
+    expect(resource).toContain("params, filterName2Value, 'filter.name'");
+    expect(resource).toContain("params, requestOptions2Value, 'request-options'");
+    // The plugin's own parameters survive.
+    expect(resource).toContain("requestOptions?: Omit<HttpResourceRequest");
+    // The parameters keep their natural names, so `foo`'s derived temp is the
+    // one that yields: it must not shadow the `fooValue` parameter.
+    expect(resource).toContain("const fooValue2 = typeof foo === 'function' ? foo() : foo;");
+    expect(resource).toContain("const fooValueValue = typeof fooValue === 'function'");
+    expect(resource).toContain("params, fooValue2, 'foo'");
+    expect(resource).toContain("params, fooValueValue, 'fooValue'");
+});

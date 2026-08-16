@@ -11,23 +11,26 @@ import { pascalCase } from "../string.utils";
  * name AND a file name, and the barrel generators re-derive the class name
  * from the file name.
  *
- * `onWarning` fires when two distinct tags normalize onto one controller
+ * `onWarning` fires when two distinct *tags* normalize onto one controller
  * ("Groups (yes)" and "Groups-yes" both become "GroupsYes"). They are merged
  * into a single file rather than dropped, but silently merging two documented
- * tags is worth saying out loud.
+ * tags is worth saying out loud. Path-derived names are excluded: a tagged
+ * `Users` operation next to an untagged `/users/...` one is the ordinary
+ * partially-tagged spec, and merging them is the intended behaviour.
  */
 export function groupOperationsByController(
     operations: NormalizedOperation[],
     onWarning?: (message: string) => void,
 ): Record<string, NormalizedOperation[]> {
     const groups: Record<string, NormalizedOperation[]> = {};
-    const sourceNames = new Map<string, string>();
+    const tagSpellings = new Map<string, Set<string>>();
 
     operations.forEach((operation) => {
+        const tag = operation.tags?.[0];
         let rawName = "Default";
 
-        if (operation.tags && operation.tags.length > 0) {
-            rawName = operation.tags[0];
+        if (tag !== undefined) {
+            rawName = tag;
         } else {
             // Extract from path (e.g., "/api/users/{id}" -> "Users")
             const pathParts = operation.path.split("/").filter((part) => part && !part.startsWith("{"));
@@ -36,18 +39,15 @@ export function groupOperationsByController(
             }
         }
 
-        const controllerName = pascalCase(rawName);
+        // pascalCase("") is "" and an empty tag is legal in a spec; without
+        // this the controller would emit the dotfile `.service.ts`, which `ls`
+        // hides and most ignore globs skip.
+        const controllerName = pascalCase(rawName) || "Default";
 
-        const firstSource = sourceNames.get(controllerName);
-        if (firstSource === undefined) {
-            sourceNames.set(controllerName, rawName);
-        } else if (firstSource !== rawName) {
-            onWarning?.(
-                `Tags "${firstSource}" and "${rawName}" both map to the controller "${controllerName}" — ` +
-                    `their operations are generated into one file. Rename one tag to keep them apart.`,
-            );
-            // Recorded so a third distinct spelling warns against the first too
-            sourceNames.set(controllerName, firstSource);
+        if (tag !== undefined) {
+            const spellings = tagSpellings.get(controllerName) ?? new Set<string>();
+            spellings.add(tag);
+            tagSpellings.set(controllerName, spellings);
         }
 
         if (!groups[controllerName]) {
@@ -55,6 +55,16 @@ export function groupOperationsByController(
         }
         groups[controllerName].push(operation);
     });
+
+    for (const [controllerName, spellings] of tagSpellings) {
+        if (spellings.size > 1) {
+            onWarning?.(
+                `Tags ${[...spellings].map((name) => `"${name}"`).join(" and ")} all map to the controller ` +
+                    `"${controllerName}" — their operations are generated into one file. ` +
+                    `Rename one tag to keep them apart.`,
+            );
+        }
+    }
 
     return groups;
 }

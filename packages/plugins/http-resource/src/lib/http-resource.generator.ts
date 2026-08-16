@@ -1,6 +1,7 @@
 import { Project, Scope, SourceFile } from "ts-morph";
 import {
     camelCase,
+    describeOperation,
     emitServiceDecorator,
     GeneratorConfig,
     getBasePathTokenName,
@@ -8,10 +9,13 @@ import {
     getResourceClassName,
     groupOperationsByController,
     hasDuplicateFunctionNames,
+    resolveArgumentNames,
+    RESOURCE_RESERVED_ARGUMENT_NAMES,
     HTTP_RESOURCE_GENERATOR_HEADER_COMMENT,
     IPluginGenerator,
     NormalizedOperation,
-    NormalizedSpec,
+    NormalizedSpec,
+
     PluginGeneratorContext,
 } from "@ng-openapi/shared";
 import * as path from "path";
@@ -144,6 +148,13 @@ return context.set(this.clientContextToken, '${this.config.clientName || "defaul
 
         // Generate methods for each operation
         operations.forEach((operation) => {
+            const { renamed } = resolveArgumentNames(operation, this.config, RESOURCE_RESERVED_ARGUMENT_NAMES);
+            for (const { source, identifier } of renamed) {
+                this.onWarning?.(
+                    `Parameter "${source}" of ${describeOperation(operation)} is exposed as "${identifier}" — ` +
+                        `its natural name is already taken by another parameter or by the resource method itself.`,
+                );
+            }
             this.methodGenerator.addResourceMethod(serviceClass, operation);
         });
 

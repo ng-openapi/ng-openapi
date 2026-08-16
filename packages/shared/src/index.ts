@@ -38,7 +38,15 @@ export type { NormalizedOperation, NormalizedSpec, ResponseKind, SpecVersion } f
 export { normalizeSchema, normalizeSpec, SwaggerParser } from "./core";
 
 // Typed pipeline errors — branch on these, not on message text
-export { InvalidIdentifierError, NgOpenApiError, SpecLoadError, SpecParseError } from "./errors";
+export {
+    describeOperation,
+    DuplicateGeneratedNameError,
+    InvalidIdentifierError,
+    NgOpenApiError,
+    SpecLoadError,
+    SpecParseError,
+} from "./errors";
+export type { OperationRef } from "./errors";
 
 // Emission helpers (method-body fragments shared by core + plugins)
 export {
@@ -58,7 +66,6 @@ export type { HeadersEmitOptions, ServiceDecoratorEmit, ServiceDecoratorEmitOpti
 
 // Utilities
 export {
-    argumentNameOf,
     camelCase,
     CONTENT_TYPES,
     escapeString,
@@ -89,10 +96,12 @@ export {
     nullableType,
     pascalCase,
     pascalCaseForEnums,
+    RESOURCE_RESERVED_ARGUMENT_NAMES,
     resolveArgumentNames,
     screamingSnakeCase,
+    SERVICE_RESERVED_ARGUMENT_NAMES,
 } from "./utils";
-export type { ResponseTypeInfo } from "./utils";
+export type { ArgumentNames, RenamedArgument, ResponseTypeInfo } from "./utils";
 
 // Typed config-file helper (user-facing)
 export { defineConfig } from "./config";

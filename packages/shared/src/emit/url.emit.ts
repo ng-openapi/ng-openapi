@@ -1,5 +1,5 @@
 import type { Parameter } from "../types/swagger.types";
-import { argumentNameOf } from "../utils/functions/argument-names";
+import type { ArgumentNames } from "../utils/functions/argument-names";
 
 /** Identity read: the parameter identifier is a plain value. */
 export function plainParamValue(identifier: string): string {
@@ -18,7 +18,7 @@ export function signalAwareParamValue(identifier: string): string {
 export function emitUrlExpression(
     path: string,
     pathParams: Parameter[],
-    argumentNames: Record<string, string>,
+    argumentNames: ArgumentNames,
     paramValue: (identifier: string) => string = plainParamValue,
 ): string {
     let urlExpression = `\`\${this.basePath}${path}\``;
@@ -26,7 +26,7 @@ export function emitUrlExpression(
     pathParams.forEach((param) => {
         urlExpression = urlExpression.replace(
             `{${param.name}}`,
-            `\${${paramValue(argumentNameOf(argumentNames, param.name))}}`,
+            `\${${paramValue(argumentNames.of(param.name))}}`,
         );
     });
 
@@ -34,6 +34,6 @@ export function emitUrlExpression(
 }
 
 /** `const url = …;` statement used by the core service method body. */
-export function emitUrlConstruction(path: string, pathParams: Parameter[], argumentNames: Record<string, string>): string {
+export function emitUrlConstruction(path: string, pathParams: Parameter[], argumentNames: ArgumentNames): string {
     return `const url = ${emitUrlExpression(path, pathParams, argumentNames)};`;
 }

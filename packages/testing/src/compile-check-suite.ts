@@ -1,8 +1,8 @@
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { ModuleKind, Project, ScriptTarget } from "ts-morph";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, it } from "vitest";
 import { generateFromConfig, GeneratorConfig } from "ng-openapi";
+import { expectGeneratedCodeCompiles } from "./compile-generated";
 
 const SPEC_SOURCES = [
     { label: "OpenAPI 2.0", envVar: "OPENAPI_SPEC_V2_URL" },
@@ -42,40 +42,7 @@ export function registerCompileCheckSuite(suiteName: string, buildConfig: Config
 
                     await generateFromConfig(buildConfig(specUrl as string, outputDir));
 
-                    const project = new Project({
-                        compilerOptions: {
-                            target: ScriptTarget.ES2022,
-                            module: ModuleKind.Preserve,
-                            strict: true,
-                            noImplicitAny: true,
-                            skipLibCheck: true,
-                            lib: ["lib.es2022.d.ts", "lib.dom.d.ts"],
-                            experimentalDecorators: true,
-                            emitDecoratorMetadata: true,
-                            noEmit: true,
-                        },
-                    });
-
-                    const globPath = `${outputDir.replace(/\\/g, "/")}/**/*.ts`;
-                    project.addSourceFilesAtPaths(globPath);
-
-                    // Guard against a broken glob silently checking nothing
-                    expect(project.getSourceFiles().length, "no generated files found").toBeGreaterThan(0);
-
-                    // The shipped header carries @ts-nocheck as insurance for
-                    // consumers with exotic compiler settings; strip it here so
-                    // this suite actually asserts the output is strict-clean.
-                    for (const sourceFile of project.getSourceFiles()) {
-                        const text = sourceFile.getFullText();
-                        if (text.includes("// @ts-nocheck")) {
-                            sourceFile.replaceWithText(text.replace("// @ts-nocheck\n", ""));
-                        }
-                    }
-
-                    const diagnostics = project.getPreEmitDiagnostics();
-                    const formatted = project.formatDiagnosticsWithColorAndContext(diagnostics);
-
-                    expect(formatted, `Generated ${label} code failed to compile:\n${formatted}`).toBe("");
+                    expectGeneratedCodeCompiles(outputDir, `${label} code`);
                 },
                 120_000,
             );

@@ -1,7 +1,7 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { ModuleKind, Project, ScriptTarget } from "ts-morph";
 import { afterAll, describe, expect, it } from "vitest";
+import { createOutputDirs, expectGeneratedCodeCompiles } from "@ng-openapi/testing";
 import { generateFromConfig, InvalidIdentifierError } from "ng-openapi";
 
 /**
@@ -12,21 +12,8 @@ import { generateFromConfig, InvalidIdentifierError } from "ng-openapi";
  * `Groups(yes)Service` with a method named `groups{groupId}Delete`.
  */
 
-// Must live outside node_modules: the generator resolves auto-imports through
-// the TypeScript language service, which ignores files under node_modules.
-const tmpRoot = join(process.cwd(), "tmp", "ng-openapi-tests");
-mkdirSync(tmpRoot, { recursive: true });
-const tempDirs: string[] = [];
-
-afterAll(() => {
-    for (const dir of tempDirs) {
-        try {
-            rmSync(dir, { recursive: true, force: true });
-        } catch {
-            // best-effort cleanup
-        }
-    }
-});
+const outputDirs = createOutputDirs();
+afterAll(outputDirs.cleanup);
 
 /** The spec from the issue, plus a tag and an operationId per hostile shape. */
 const HOSTILE_SPEC = {
@@ -104,46 +91,9 @@ function writeSpec(dir: string, spec: unknown): string {
     return input;
 }
 
-function outputDir(prefix: string): string {
-    const dir = mkdtempSync(join(tmpRoot, prefix));
-    tempDirs.push(dir);
-    return dir;
-}
-
-/** Fails with the formatted diagnostics when the generated output is not strict-clean. */
-function expectCompiles(dir: string): void {
-    const project = new Project({
-        compilerOptions: {
-            target: ScriptTarget.ES2022,
-            module: ModuleKind.Preserve,
-            strict: true,
-            noImplicitAny: true,
-            skipLibCheck: true,
-            lib: ["lib.es2022.d.ts", "lib.dom.d.ts"],
-            experimentalDecorators: true,
-            emitDecoratorMetadata: true,
-            noEmit: true,
-        },
-    });
-    project.addSourceFilesAtPaths(`${dir.replace(/\\/g, "/")}/**/*.ts`);
-    expect(project.getSourceFiles().length, "no generated files found").toBeGreaterThan(0);
-
-    // The shipped header carries @ts-nocheck for consumers with exotic compiler
-    // settings; strip it so this actually asserts the output is strict-clean.
-    for (const sourceFile of project.getSourceFiles()) {
-        const text = sourceFile.getFullText();
-        if (text.includes("// @ts-nocheck")) {
-            sourceFile.replaceWithText(text.replace("// @ts-nocheck\n", ""));
-        }
-    }
-
-    const formatted = project.formatDiagnosticsWithColorAndContext(project.getPreEmitDiagnostics());
-    expect(formatted, `Generated code failed to compile:\n${formatted}`).toBe("");
-}
-
 describe("specs whose names are illegal TypeScript identifiers (#125)", () => {
     it("generates compilable services and matching barrel exports", async () => {
-        const output = outputDir("names-");
+        const output = outputDirs.create("names-");
         await generateFromConfig({
             input: writeSpec(output, HOSTILE_SPEC),
             output,
@@ -166,11 +116,11 @@ describe("specs whose names are illegal TypeScript identifiers (#125)", () => {
         expect(reports).toContain("_2faReportList(");
         expect(reports).toContain("filterName");
 
-        expectCompiles(output);
+        expectGeneratedCodeCompiles(output);
     });
 
     it("generates compilable request-parameter interfaces from the same names", async () => {
-        const output = outputDir("names-req-");
+        const output = outputDirs.create("names-req-");
         await generateFromConfig({
             input: writeSpec(output, HOSTILE_SPEC),
             output,
@@ -182,11 +132,11 @@ describe("specs whose names are illegal TypeScript identifiers (#125)", () => {
             },
         });
 
-        expectCompiles(output);
+        expectGeneratedCodeCompiles(output);
     });
 
     it("sanitizes multipart field names, which never reach the params generator as identifiers", async () => {
-        const output = outputDir("names-multipart-");
+        const output = outputDirs.create("names-multipart-");
         await generateFromConfig({
             input: writeSpec(output, HOSTILE_OAS3_SPEC),
             output,
@@ -199,11 +149,11 @@ describe("specs whose names are illegal TypeScript identifiers (#125)", () => {
         // expression position gets the identifier.
         expect(files).toContain("formData.append('user-name', String(userName))");
 
-        expectCompiles(output);
+        expectGeneratedCodeCompiles(output);
     });
 
     it("keeps colliding query params distinct instead of losing one", async () => {
-        const output = outputDir("names-collide-");
+        const output = outputDirs.create("names-collide-");
         await generateFromConfig({
             input: writeSpec(output, HOSTILE_OAS3_SPEC),
             output,
@@ -221,11 +171,11 @@ describe("specs whose names are illegal TypeScript identifiers (#125)", () => {
         expect(search).toContain("options?: RequestOptions<");
         expect(search).toContain("headers = new HttpHeaders(options?.headers)");
 
-        expectCompiles(output);
+        expectGeneratedCodeCompiles(output);
     });
 
     it("warns when two distinct tags normalize onto one controller", async () => {
-        const output = outputDir("names-tagmerge-");
+        const output = outputDirs.create("names-tagmerge-");
         const result = await generateFromConfig({
             input: writeSpec(
                 output,
@@ -243,11 +193,13 @@ describe("specs whose names are illegal TypeScript identifiers (#125)", () => {
         });
 
         // Merging beats dropping, but it must not be silent.
-        expect(result.warnings.join("\n")).toMatch(/"Groups \(yes\)" and "Groups-yes" both map to the controller "GroupsYes"/);
+        const merges = result.warnings.filter((warning) => warning.includes("map to the controller"));
+        expect(merges).toHaveLength(1); // once, not once per generator
+        expect(merges[0]).toMatch(/"Groups \(yes\)" and "Groups-yes" all map to the controller "GroupsYes"/);
     });
 
     it("rejects `constructor`, which is a valid identifier but not a usable method name", async () => {
-        const output = outputDir("names-ctor-");
+        const output = outputDirs.create("names-ctor-");
 
         await expect(
             generateFromConfig({
@@ -264,7 +216,7 @@ describe("specs whose names are illegal TypeScript identifiers (#125)", () => {
     });
 
     it("rejects a customizeMethodName result that is not an identifier", async () => {
-        const output = outputDir("names-hook-");
+        const output = outputDirs.create("names-hook-");
 
         await expect(
             generateFromConfig({
@@ -283,7 +235,7 @@ describe("specs whose names are illegal TypeScript identifiers (#125)", () => {
     });
 
     it("accepts a customizeMethodName result that is an identifier", async () => {
-        const output = outputDir("names-hook-ok-");
+        const output = outputDirs.create("names-hook-ok-");
         await generateFromConfig({
             input: writeSpec(output, HOSTILE_SPEC),
             output,
@@ -297,6 +249,115 @@ describe("specs whose names are illegal TypeScript identifiers (#125)", () => {
 
         const groups = readFileSync(join(output, "services", "groupsYes.service.ts"), "utf8");
         expect(groups).toContain("groupsgroupiddelete(");
-        expectCompiles(output);
+        expectGeneratedCodeCompiles(output);
+    });
+});
+
+describe("argument names that only one code path produces", () => {
+    /**
+     * urlencoded bodies take a different branch from multipart in the body
+     * generator, so sanitizing only the multipart branch left this broken.
+     */
+    it("sanitizes x-www-form-urlencoded field names", async () => {
+        const output = outputDirs.create("names-urlenc-");
+        await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/login": {
+                        post: {
+                            tags: ["Auth"],
+                            operationId: "login",
+                            requestBody: {
+                                content: {
+                                    "application/x-www-form-urlencoded": {
+                                        schema: {
+                                            type: "object",
+                                            properties: {
+                                                "grant-type": { type: "string" },
+                                                scopes: { type: "array", items: { type: "string" } },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                            responses: { "200": { description: "OK" } },
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        const auth = readFileSync(join(output, "services", "auth.service.ts"), "utf8");
+        expect(auth).toContain("login(grantType?: string");
+        expect(auth).toContain("formBody.append('grant-type', String(grantType))");
+        expectGeneratedCodeCompiles(output);
+    });
+
+    /**
+     * `operationId: "constructor"` is a valid identifier, so it passes every
+     * name check and only fails inside ts-morph. The derived path sanitizes it
+     * rather than rejecting it — the spec is valid.
+     */
+    it("renames an operation whose derived name would be `constructor`", async () => {
+        const output = outputDirs.create("names-derived-ctor-");
+        await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/x": {
+                        get: { tags: ["X"], operationId: "constructor", responses: { "200": { description: "OK" } } },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        expect(readFileSync(join(output, "services", "x.service.ts"), "utf8")).toContain("_constructor(");
+        expectGeneratedCodeCompiles(output);
+    });
+
+    /**
+     * Wire names are untrusted spec text. Indexing a plain object with them
+     * resolves `constructor`/`toString` off Object.prototype, which dropped the
+     * other parameters and interpolated a function into the emitted source.
+     */
+    it("handles wire names that collide with Object.prototype members", async () => {
+        const output = outputDirs.create("names-proto-");
+        await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/probe": {
+                        get: {
+                            tags: ["Probe"],
+                            operationId: "probe",
+                            parameters: [
+                                { name: "constructor", in: "query", schema: { type: "string" } },
+                                { name: "toString", in: "query", schema: { type: "string" } },
+                                { name: "__proto__", in: "query", schema: { type: "string" } },
+                                { name: "normal", in: "query", schema: { type: "string" } },
+                            ],
+                            responses: { "200": { description: "OK" } },
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        const probe = readFileSync(join(output, "services", "probe.service.ts"), "utf8");
+        for (const wireName of ["constructor", "toString", "__proto__", "normal"]) {
+            expect(probe, `${wireName} lost`).toContain(`'${wireName}');`);
+        }
+        expect(probe).not.toContain("[native code]");
+        expectGeneratedCodeCompiles(output);
     });
 });
