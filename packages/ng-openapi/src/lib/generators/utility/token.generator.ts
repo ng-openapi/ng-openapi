@@ -113,7 +113,6 @@ export class TokenGenerator {
         }
 
         sourceFile.formatText();
-        sourceFile.saveSync();
     }
 
     private getBasePathTokenName(): string {

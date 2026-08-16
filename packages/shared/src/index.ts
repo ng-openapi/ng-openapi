@@ -96,12 +96,12 @@ export {
     nullableType,
     pascalCase,
     pascalCaseForEnums,
-    RESOURCE_RESERVED_ARGUMENT_NAMES,
+    RESOURCE_ARGUMENT_PROFILE,
     resolveArgumentNames,
     screamingSnakeCase,
-    SERVICE_RESERVED_ARGUMENT_NAMES,
+    SERVICE_ARGUMENT_PROFILE,
 } from "./utils";
-export type { ArgumentNames, RenamedArgument, ResponseTypeInfo } from "./utils";
+export type { ArgumentNameProfile, ArgumentNames, RenamedArgument, ResponseTypeInfo } from "./utils";
 
 // Typed config-file helper (user-facing)
 export { defineConfig } from "./config";

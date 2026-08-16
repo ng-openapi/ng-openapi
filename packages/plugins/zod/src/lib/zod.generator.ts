@@ -117,7 +117,6 @@ export class ZodGenerator implements IPluginGenerator {
             sourceFile.formatText();
             // Add header comment
             sourceFile.insertText(0, ZOD_PLUGIN_GENERATOR_HEADER_COMMENT(validatorName));
-            sourceFile.saveSync();
         } else {
             // Nothing to validate for this controller: drop the file from the
             // Project so it neither reaches the index nor filesWritten

@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { join } from "node:path";
 import { existsSync } from "node:fs";
 import { afterAll, expect, it } from "vitest";
+import { expectGeneratedCodeCompiles } from "@ng-openapi/testing";
 import { generateFromConfig, InvalidIdentifierError } from "ng-openapi";
 import { HttpResourcePlugin } from "../src";
 
@@ -67,6 +68,10 @@ it("generates resources from tags and operationIds that are not identifiers (#12
     expect(readFileSync(join(output, "resources", "index.ts"), "utf8")).toContain(
         `export { GroupsYesResource } from "./groupsYes.resource";`,
     );
+
+    // This PR reshapes the resource signature, and nothing else in a default
+    // run typechecks plugin output — compile-check.test.ts is env-gated.
+    expectGeneratedCodeCompiles(output, "httpResource output");
 });
 
 it("surfaces a generator failure instead of resolving successfully", async () => {
@@ -144,7 +149,9 @@ it("keeps signal-aware query params and their derived locals distinct", async ()
     await generateFromConfig({
         input,
         output,
-        options: { dateType: "string", enumStyle: "union", generateServices: false },
+        // generateServices: true — the resource imports ../tokens and
+        // ../utils/http-params-builder, which only the core client emits.
+        options: { dateType: "string", enumStyle: "union", generateServices: true },
         plugins: [HttpResourcePlugin],
     });
 
@@ -161,4 +168,6 @@ it("keeps signal-aware query params and their derived locals distinct", async ()
     expect(resource).toContain("const fooValueValue = typeof fooValue === 'function'");
     expect(resource).toContain("params, fooValue2, 'foo'");
     expect(resource).toContain("params, fooValueValue, 'fooValue'");
+
+    expectGeneratedCodeCompiles(output, "httpResource output");
 });

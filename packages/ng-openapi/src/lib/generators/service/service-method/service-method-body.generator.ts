@@ -9,7 +9,7 @@ import {
     MethodGenOptions,
     NormalizedOperation,
     resolveArgumentNames,
-    SERVICE_RESERVED_ARGUMENT_NAMES,
+    SERVICE_ARGUMENT_PROFILE,
 } from "@ng-openapi/shared";
 
 export class ServiceMethodBodyGenerator {
@@ -23,7 +23,7 @@ export class ServiceMethodBodyGenerator {
         // Resolved here rather than read off the operation: which names are
         // already taken depends on what this generator emits, and the params
         // generator resolves the same pure function to the same answer.
-        const argumentNames = resolveArgumentNames(operation, this.config, SERVICE_RESERVED_ARGUMENT_NAMES);
+        const argumentNames = resolveArgumentNames(operation, this.config, SERVICE_ARGUMENT_PROFILE);
         const bodyParts = [
             emitUrlConstruction(operation.path, operation.pathParams, argumentNames),
             emitQueryParams(operation.queryParams, argumentNames),

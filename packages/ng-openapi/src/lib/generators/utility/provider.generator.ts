@@ -99,7 +99,6 @@ export class ProviderGenerator {
 
         sourceFile.insertText(0, PROVIDER_GENERATOR_HEADER_COMMENT);
         sourceFile.formatText();
-        sourceFile.saveSync();
     }
 
     private addMainProviderFunction(

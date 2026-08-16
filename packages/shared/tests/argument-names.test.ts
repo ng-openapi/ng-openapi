@@ -3,9 +3,9 @@ import {
     MethodGenOptions,
     NormalizedOperation,
     Parameter,
-    RESOURCE_RESERVED_ARGUMENT_NAMES,
+    RESOURCE_ARGUMENT_PROFILE,
     resolveArgumentNames,
-    SERVICE_RESERVED_ARGUMENT_NAMES,
+    SERVICE_ARGUMENT_PROFILE,
 } from "../src";
 
 const config: MethodGenOptions = { options: { dateType: "string" } };
@@ -26,7 +26,7 @@ const operation = (overrides: Partial<NormalizedOperation> = {}): NormalizedOper
         ...overrides,
     }) as NormalizedOperation;
 
-const service = (op: NormalizedOperation) => resolveArgumentNames(op, config, SERVICE_RESERVED_ARGUMENT_NAMES);
+const service = (op: NormalizedOperation) => resolveArgumentNames(op, config, SERVICE_ARGUMENT_PROFILE);
 
 describe("resolveArgumentNames", () => {
     it("camelCases wire names that do not collide", () => {
@@ -60,7 +60,7 @@ describe("resolveArgumentNames", () => {
     it("uses the caller's reserved set, not a shared union", () => {
         const withRequestOptions = operation({ queryParams: [param("request-options"), param("options")] });
 
-        const resource = resolveArgumentNames(withRequestOptions, config, RESOURCE_RESERVED_ARGUMENT_NAMES);
+        const resource = resolveArgumentNames(withRequestOptions, config, RESOURCE_ARGUMENT_PROFILE);
         expect(resource.of("request-options")).toBe("requestOptions2");
         expect(resource.of("options")).toBe("options");
 

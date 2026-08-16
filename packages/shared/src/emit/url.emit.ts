@@ -24,10 +24,12 @@ export function emitUrlExpression(
     let urlExpression = `\`\${this.basePath}${path}\``;
 
     pathParams.forEach((param) => {
-        urlExpression = urlExpression.replace(
-            `{${param.name}}`,
-            `\${${paramValue(argumentNames.of(param.name))}}`,
-        );
+        const replacement = `\${${paramValue(argumentNames.of(param.name))}}`;
+        // A replacer function, not a replacement string: `$` is legal in an
+        // identifier (`$top`, and `camelCase` preserves it deliberately), and
+        // in a replacement string `$$`/`$&`/`` $` `` are substitution patterns —
+        // a `{a$$b}` path parameter would emit `${a$b}` and not compile.
+        urlExpression = urlExpression.replace(`{${param.name}}`, () => replacement);
     });
 
     return urlExpression;

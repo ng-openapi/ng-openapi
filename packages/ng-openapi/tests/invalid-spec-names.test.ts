@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { createOutputDirs, expectGeneratedCodeCompiles } from "@ng-openapi/testing";
@@ -359,5 +359,143 @@ describe("argument names that only one code path produces", () => {
         }
         expect(probe).not.toContain("[native code]");
         expectGeneratedCodeCompiles(output);
+    });
+});
+
+describe("names that are valid identifiers but still unusable", () => {
+    /**
+     * `camelCase` guarantees an identifier, which is weaker than "usable as a
+     * parameter name": `class` is a legal member name but a syntax error in
+     * binding position — the same ts-morph failure as #125.
+     */
+    it("renames reserved words used as parameters", async () => {
+        const output = outputDirs.create("names-reserved-");
+        await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/probe": {
+                        get: {
+                            tags: ["Probe"],
+                            operationId: "probe",
+                            parameters: ["class", "function", "new", "this", "await"].map((name) => ({
+                                name,
+                                in: "query",
+                                schema: { type: "string" },
+                            })),
+                            responses: { "200": { description: "OK" } },
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        const probe = readFileSync(join(output, "services", "probe.service.ts"), "utf8");
+        for (const word of ["class", "function", "new", "this", "await"]) {
+            expect(probe, `${word} lost`).toContain(`'${word}');`);
+            expect(probe, `${word} used as a binding`).toContain(`${word}2`);
+        }
+        expectGeneratedCodeCompiles(output);
+    });
+
+    /**
+     * `$` is legal in an identifier and `camelCase` preserves it (OData `$top`),
+     * but `$$`/`$&` are substitution patterns in a String.replace replacement.
+     */
+    it("handles $ in a path parameter name", async () => {
+        const output = outputDirs.create("names-dollar-");
+        await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/d/{a$$b}": {
+                        get: {
+                            tags: ["Dollar"],
+                            operationId: "dollar",
+                            parameters: [{ name: "a$$b", in: "path", required: true, schema: { type: "string" } }],
+                            responses: { "200": { description: "OK" } },
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        const dollar = readFileSync(join(output, "services", "dollar.service.ts"), "utf8");
+        expect(dollar).toContain("dollar(a$$b: string");
+        // Not `${a$b}`: the replacement pattern would have eaten one `$`.
+        expect(dollar).toContain("${a$$b}");
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("warns when a tag contains nothing usable in a name", async () => {
+        const output = outputDirs.create("names-nameless-");
+        const result = await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/x": { get: { tags: ["{}"], operationId: "x_get", responses: { "200": { description: "OK" } } } },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        // Not `_.service.ts` / `_Service`, and not silent.
+        expect(readFileSync(join(output, "services", "index.ts"), "utf8")).toContain("DefaultService");
+        expect(result.warnings.join("\n")).toMatch(/Tag "\{\}" contains no characters usable in a name/);
+    });
+
+    it("warns when one wire name is declared in two locations", async () => {
+        const output = outputDirs.create("names-merged-");
+        const result = await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/things/{id}": {
+                        get: {
+                            tags: ["Things"],
+                            operationId: "get_thing",
+                            parameters: [
+                                { name: "id", in: "path", required: true, schema: { type: "string" } },
+                                { name: "id", in: "query", schema: { type: "integer" } },
+                            ],
+                            responses: { "200": { description: "OK" } },
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        expect(result.warnings.join("\n")).toMatch(/"id".*is declared in more than one location/);
+    });
+
+    it("leaves the output directory untouched when generation fails", async () => {
+        const output = outputDirs.create("names-atomic-");
+
+        await expect(
+            generateFromConfig({
+                input: writeSpec(output, HOSTILE_SPEC),
+                output,
+                options: {
+                    dateType: "string",
+                    enumStyle: "union",
+                    generateServices: true,
+                    customizeMethodName: () => "not an identifier",
+                },
+            }),
+        ).rejects.toBeInstanceOf(InvalidIdentifierError);
+
+        // Only the spec we wrote; no half-generated client, no barrel.
+        expect(readdirSync(output)).toEqual(["spec.json"]);
     });
 });

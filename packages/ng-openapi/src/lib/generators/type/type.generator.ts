@@ -137,11 +137,12 @@ export class TypeGenerator {
         this.sourceFile.addStatements(this.statements);
     }
 
-    private async finalize(): Promise<void> {
+    private finalize(): void {
         // Format only once at the end
         this.sourceFile.formatText();
-        this.sourceFile.insertText(0, TYPE_GENERATOR_HEADER_COMMENT)
-        await this.sourceFile.save();
+        this.sourceFile.insertText(0, TYPE_GENERATOR_HEADER_COMMENT);
+        // No save here: generateFromConfig writes the whole Project once, after
+        // every generator has succeeded.
     }
 
     private generatePerType(definitions: Record<string, SwaggerDefinition>): void {
@@ -254,6 +255,5 @@ export class TypeGenerator {
     private finalizeModelSourceFile(sourceFile: SourceFile): void {
         sourceFile.formatText();
         sourceFile.insertText(0, TYPE_GENERATOR_HEADER_COMMENT);
-        sourceFile.saveSync();
     }
 }

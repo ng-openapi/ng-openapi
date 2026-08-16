@@ -27,7 +27,6 @@ export class HttpParamsBuilderGenerator {
         this.addMethods(classDeclaration);
 
         sourceFile.formatText();
-        sourceFile.saveSync();
     }
 
     private addMethods(classDeclaration: ClassDeclaration): void {

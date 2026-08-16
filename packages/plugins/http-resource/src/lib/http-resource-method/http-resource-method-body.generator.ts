@@ -6,7 +6,7 @@ import {
     joinRequestOptionEntries,
     MethodGenOptions,
     NormalizedOperation,
-    RESOURCE_RESERVED_ARGUMENT_NAMES,
+    RESOURCE_ARGUMENT_PROFILE,
     resolveArgumentNames,
     signalAwareParamValue,
 } from "@ng-openapi/shared";
@@ -24,7 +24,7 @@ export class HttpResourceMethodBodyGenerator {
      * `requestOptions` query parameter capture the plugin's own parameter.
      */
     private argumentNames(operation: NormalizedOperation): ArgumentNames {
-        return resolveArgumentNames(operation, this.config, RESOURCE_RESERVED_ARGUMENT_NAMES);
+        return resolveArgumentNames(operation, this.config, RESOURCE_ARGUMENT_PROFILE);
     }
 
     generateMethodBody(operation: NormalizedOperation): string {

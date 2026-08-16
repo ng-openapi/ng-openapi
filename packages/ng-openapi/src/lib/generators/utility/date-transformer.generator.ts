@@ -131,6 +131,5 @@ export class DateTransformerGenerator {
         });
 
         sourceFile.formatText();
-        sourceFile.saveSync();
     }
 }

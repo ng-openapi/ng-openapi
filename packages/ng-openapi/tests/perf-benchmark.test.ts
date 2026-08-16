@@ -30,8 +30,8 @@ function buildLargeSpec(): object {
         };
         // Cross-references keep the resolver honest
         if (i > 0) {
-            properties.parent = { $ref: `#/components/schemas/Entity${i - 1}` };
-            properties.related = { type: "array", items: { $ref: `#/components/schemas/Entity${Math.floor(i / 2)}` } };
+            properties["parent"] = { $ref: `#/components/schemas/Entity${i - 1}` };
+            properties["related"] = { type: "array", items: { $ref: `#/components/schemas/Entity${Math.floor(i / 2)}` } };
         }
         schemas[`Entity${i}`] = {
             type: "object",

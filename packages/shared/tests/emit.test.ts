@@ -22,6 +22,7 @@ const names = (...wireNames: string[]): ArgumentNames => {
         of: (wireName) => identifiers.get(wireName) ?? camelCase(wireName),
         all: [...identifiers.values()],
         renamed: [],
+        merged: [],
     };
 };
 
@@ -33,7 +34,7 @@ describe("url emission", () => {
     });
 
     it("leaves paths without params untouched", () => {
-        expect(emitUrlExpression("/pets", [], {})).toBe("`${this.basePath}/pets`");
+        expect(emitUrlExpression("/pets", [], names())).toBe("`${this.basePath}/pets`");
     });
 
     it("supports the signal-aware read for path params", () => {
@@ -45,8 +46,8 @@ describe("url emission", () => {
 
 describe("query-params emission", () => {
     it("returns empty string for no query params", () => {
-        expect(emitQueryParams([], {})).toBe("");
-        expect(emitSignalAwareQueryParams([], {})).toBe("");
+        expect(emitQueryParams([], names())).toBe("");
+        expect(emitSignalAwareQueryParams([], names())).toBe("");
     });
 
     it("emits an HttpParamsBuilder block per param", () => {

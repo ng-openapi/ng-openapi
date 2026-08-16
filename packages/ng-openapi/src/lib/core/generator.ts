@@ -180,6 +180,13 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
     const mainIndexGenerator = new MainIndexGenerator(project, config);
     mainIndexGenerator.generateMainIndex(outputPath);
 
+    // The single write of the run. Generators only build files in the Project;
+    // saving here means a failure anywhere above leaves the output directory
+    // untouched rather than half-written — previously each controller wrote
+    // itself as it finished, so a throw left the controllers that had already
+    // completed on disk, without a barrel and not compiling.
+    await project.save();
+
     return {
         client: config.clientName,
         filesWritten: project.getSourceFiles().map((sourceFile) => sourceFile.getFilePath() as string),

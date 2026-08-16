@@ -24,6 +24,7 @@ export function groupOperationsByController(
 ): Record<string, NormalizedOperation[]> {
     const groups: Record<string, NormalizedOperation[]> = {};
     const tagSpellings = new Map<string, Set<string>>();
+    const namelessTags = new Set<string>();
 
     operations.forEach((operation) => {
         const tag = operation.tags?.[0];
@@ -39,12 +40,19 @@ export function groupOperationsByController(
             }
         }
 
-        // pascalCase("") is "" and an empty tag is legal in a spec; without
-        // this the controller would emit the dotfile `.service.ts`, which `ls`
-        // hides and most ignore globs skip.
-        const controllerName = pascalCase(rawName) || "Default";
+        // A tag carrying no identifier characters at all ("", "{}", "   ") is
+        // legal in a spec but names nothing: pascalCase yields "" or the "_"
+        // placeholder, which emitted a `.service.ts` dotfile or a bare
+        // `_Service`. Fall back to the untagged bucket and say so.
+        const sanitized = pascalCase(rawName);
+        const isNameless = sanitized === "" || sanitized === "_";
+        const controllerName = isNameless ? "Default" : sanitized;
 
-        if (tag !== undefined) {
+        if (tag !== undefined && isNameless) {
+            namelessTags.add(tag);
+        } else if (tag !== undefined) {
+            // Nameless tags are excluded: they all land in "Default" by
+            // construction, and their own warning already says so.
             const spellings = tagSpellings.get(controllerName) ?? new Set<string>();
             spellings.add(tag);
             tagSpellings.set(controllerName, spellings);
@@ -55,6 +63,13 @@ export function groupOperationsByController(
         }
         groups[controllerName].push(operation);
     });
+
+    for (const tag of namelessTags) {
+        onWarning?.(
+            `Tag "${tag}" contains no characters usable in a name — its operations are generated into the ` +
+                `"Default" controller. Rename the tag to give them a file of their own.`,
+        );
+    }
 
     for (const [controllerName, spellings] of tagSpellings) {
         if (spellings.size > 1) {

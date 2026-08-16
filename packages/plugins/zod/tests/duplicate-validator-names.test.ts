@@ -1,6 +1,7 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, expect, it } from "vitest";
+import { expectGeneratedCodeCompiles } from "@ng-openapi/testing";
 import { DuplicateGeneratedNameError, generateFromConfig } from "ng-openapi";
 import { ZodPlugin } from "../src";
 
@@ -102,4 +103,49 @@ it("names the colliding operations, not the generated consts", async () => {
             plugins: [ZodPlugin],
         }),
     ).rejects.toThrow(/list-things .*and list_things /);
+});
+
+it("keeps a __proto__ parameter in the emitted schema", async () => {
+    const output = mkdtempSync(join(tmpRoot, "zod-proto-"));
+    tempDirs.push(output);
+
+    const input = join(output, "spec.json");
+    writeFileSync(
+        input,
+        JSON.stringify({
+            openapi: "3.0.0",
+            info: { title: "t", version: "1.0.0" },
+            paths: {
+                "/probe": {
+                    get: {
+                        tags: ["Probe"],
+                        operationId: "probe",
+                        parameters: [
+                            // Assigning this key on an object literal hits the
+                            // prototype setter and creates no own property, so
+                            // the parameter vanished from the schema entirely.
+                            { name: "__proto__", in: "query", required: true, schema: { type: "string" } },
+                            { name: "constructor", in: "query", required: true, schema: { type: "string" } },
+                            { name: "normal", in: "query", required: true, schema: { type: "string" } },
+                        ],
+                        responses: { "200": { description: "OK" } },
+                    },
+                },
+            },
+        }),
+    );
+
+    await generateFromConfig({
+        input,
+        output,
+        options: { dateType: "string", enumStyle: "union", generateServices: false },
+        plugins: [ZodPlugin],
+    });
+
+    const validator = readFileSync(join(output, "validators", "probe.validator.ts"), "utf8");
+    for (const wireName of ["__proto__", "constructor", "normal"]) {
+        expect(validator, `${wireName} missing from the schema`).toContain(`"${wireName}":`);
+    }
+
+    expectGeneratedCodeCompiles(output, "zod output");
 });

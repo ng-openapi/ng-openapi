@@ -77,7 +77,6 @@ export class RequestParamsGenerator {
         this.addMissingImports(sourceFile);
         sourceFile.formatText();
         sourceFile.insertText(0, REQUEST_PARAMS_GENERATOR_HEADER_COMMENT);
-        sourceFile.saveSync();
 
         this.addModelsBarrelExport(outputRoot);
     }
@@ -135,6 +134,5 @@ export class RequestParamsGenerator {
         }
         modelsIndex.addExportDeclaration({ moduleSpecifier: "./request-params" });
         modelsIndex.formatText();
-        modelsIndex.saveSync();
     }
 }

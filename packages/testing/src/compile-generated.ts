@@ -72,20 +72,32 @@ export function expectGeneratedCodeCompiles(outputDir: string, label = "generate
     const sourceFiles = project.getSourceFiles();
     expect(sourceFiles.length, `no generated files found for ${label}`).toBeGreaterThan(0);
 
+    // Removes the whole directive line, whatever trails the token: an exact
+    // `"// @ts-nocheck\n"` match silently no-ops against a header like
+    // `// @ts-nocheck -- generated`, leaving the directive in force and every
+    // assertion below vacuous.
     let stripped = 0;
     for (const sourceFile of sourceFiles) {
         const text = sourceFile.getFullText();
-        if (text.includes("// @ts-nocheck")) {
-            sourceFile.replaceWithText(text.replace("// @ts-nocheck\n", ""));
+        const withoutDirective = text.replace(/^[ \t]*\/\/[ \t]*@ts-nocheck.*$\n?/gm, "");
+        if (withoutDirective !== text) {
+            sourceFile.replaceWithText(withoutDirective);
             stripped++;
         }
     }
 
-    // Guards the guard: generated files carry the header, so zero strips means
-    // the header changed and these assertions stopped checking anything.
+    // Guards the guard, and counts only strips that actually changed the text.
     expect(stripped, `no @ts-nocheck header found to strip in ${label} — is the header still emitted?`).toBeGreaterThan(
         0,
     );
+
+    // Belt and braces: one surviving directive suppresses that file's
+    // diagnostics entirely, so the suite must not proceed with any left.
+    const unstripped = project
+        .getSourceFiles()
+        .filter((sourceFile) => sourceFile.getFullText().includes("@ts-nocheck"))
+        .map((sourceFile) => sourceFile.getBaseName());
+    expect(unstripped, `@ts-nocheck survived the strip in ${label}, so nothing would be checked`).toEqual([]);
 
     const diagnostics = project.getPreEmitDiagnostics();
     const formatted = project.formatDiagnosticsWithColorAndContext(diagnostics);

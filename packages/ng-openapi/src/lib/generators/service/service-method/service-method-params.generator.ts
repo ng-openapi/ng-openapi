@@ -7,7 +7,7 @@ import {
     NormalizedOperation,
     RequestBody,
     resolveArgumentNames,
-    SERVICE_RESERVED_ARGUMENT_NAMES,
+    SERVICE_ARGUMENT_PROFILE,
     SwaggerDefinition,
 } from "@ng-openapi/shared";
 import { ServiceMethodRequestObjectGenerator } from "./service-method-request-object.generator";
@@ -29,7 +29,7 @@ export class ServiceMethodParamsGenerator {
 
     generateApiParameters(operation: NormalizedOperation): OptionalKind<ParameterDeclarationStructure>[] {
         const params: OptionalKind<ParameterDeclarationStructure>[] = [];
-        const argumentNames = resolveArgumentNames(operation, this.config, SERVICE_RESERVED_ARGUMENT_NAMES);
+        const argumentNames = resolveArgumentNames(operation, this.config, SERVICE_ARGUMENT_PROFILE);
 
         // Path parameters
         operation.pathParams.forEach((param) => {

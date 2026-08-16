@@ -28,7 +28,10 @@ export class ZodSchemaGenerator {
     }
 
     async generateParametersValidator(parameters: Parameter[], operationName: string, suffix: string): Promise<string> {
-        const properties: Record<string, string> = {};
+        // A Map, not an object literal: wire names are untrusted spec text, and
+        // `properties["__proto__"] = …` hits the prototype setter and creates no
+        // own property, silently dropping the parameter from the schema.
+        const properties = new Map<string, string>();
         const requiredFields: string[] = [];
 
         for (const param of parameters) {
@@ -43,7 +46,7 @@ export class ZodSchemaGenerator {
                 },
             );
 
-            properties[param.name] = zodSchema;
+            properties.set(param.name, zodSchema);
             if (param.required) {
                 requiredFields.push(param.name);
             }
@@ -161,12 +164,12 @@ export class ZodSchemaGenerator {
         return statements;
     }
 
-    private generateObjectValidator(name: string, properties: Record<string, string>): string {
-        if (Object.keys(properties).length === 0) {
+    private generateObjectValidator(name: string, properties: ReadonlyMap<string, string>): string {
+        if (properties.size === 0) {
             return `export const ${name} = z.object({});`;
         }
 
-        const props = Object.entries(properties)
+        const props = [...properties]
             .map(([key, schema]) => `  "${key}": ${schema}`)
             .join(",\n");
 

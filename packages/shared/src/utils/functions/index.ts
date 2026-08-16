@@ -4,11 +4,11 @@ export { getBasePathTokenName, getClientContextTokenName, getInterceptorsTokenNa
 export { getModelTypeName, getResourceClassName, getServiceClassName } from "./class-names";
 export {
     deriveLocalName,
-    RESOURCE_RESERVED_ARGUMENT_NAMES,
+    RESOURCE_ARGUMENT_PROFILE,
     resolveArgumentNames,
-    SERVICE_RESERVED_ARGUMENT_NAMES,
+    SERVICE_ARGUMENT_PROFILE,
 } from "./argument-names";
-export type { ArgumentNames, RenamedArgument } from "./argument-names";
+export type { ArgumentNameProfile, ArgumentNames, RenamedArgument } from "./argument-names";
 export { groupOperationsByController } from "./controller-groups";
 export { getOperationMethodName } from "./method-names";
 export { hasDuplicateFunctionNames } from "./duplicate-function-name";

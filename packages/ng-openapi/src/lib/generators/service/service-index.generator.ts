@@ -41,6 +41,5 @@ export class ServiceIndexGenerator {
             });
         });
 
-        sourceFile.saveSync();
     }
 }

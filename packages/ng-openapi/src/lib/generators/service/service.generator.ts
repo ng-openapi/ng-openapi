@@ -1,4 +1,4 @@
-import { Project, Scope, SourceFile } from "ts-morph";
+import { ClassDeclaration, Project, Scope, SourceFile } from "ts-morph";
 import {
     camelCase,
     describeOperation,
@@ -8,9 +8,9 @@ import {
     getClientContextTokenName,
     getServiceClassName,
     groupOperationsByController,
-    hasDuplicateFunctionNames,
+    DuplicateGeneratedNameError,
     resolveArgumentNames,
-    SERVICE_RESERVED_ARGUMENT_NAMES,
+    SERVICE_ARGUMENT_PROFILE,
     NormalizedOperation,
 
     SERVICE_GENERATOR_HEADER_COMMENT,
@@ -79,7 +79,6 @@ export class ServiceGenerator {
 
         sourceFile.fixMissingImports().formatText(); //TODO: add models
         sourceFile.insertText(0, SERVICE_GENERATOR_HEADER_COMMENT(controllerName));
-        sourceFile.saveSync();
     }
 
     /**
@@ -89,12 +88,19 @@ export class ServiceGenerator {
      * one thing that must not happen.
      */
     private warnAboutRenamedArguments(operation: NormalizedOperation): void {
-        const { renamed } = resolveArgumentNames(operation, this.config, SERVICE_RESERVED_ARGUMENT_NAMES);
+        const { renamed, merged } = resolveArgumentNames(operation, this.config, SERVICE_ARGUMENT_PROFILE);
         for (const { source, identifier } of renamed) {
             this.onWarning?.(
                 `Parameter "${source}" of ${describeOperation(operation)} is exposed as "${identifier}" — ` +
                     `its natural name is already taken by another parameter or by the method itself. ` +
                     `Renaming it in the spec keeps the generated signature stable.`,
+            );
+        }
+        for (const wireName of merged) {
+            this.onWarning?.(
+                `Parameter "${wireName}" of ${describeOperation(operation)} is declared in more than one ` +
+                    `location; they collapse into one argument, so the first declaration's type wins and the ` +
+                    `same value is sent for both.`,
             );
         }
     }
@@ -189,10 +195,37 @@ return context.set(this.clientContextToken, '${this.config.clientName || "defaul
             this.methodGenerator.addServiceMethod(serviceClass, operation, this.requestObjects?.get(operation));
         });
 
-        if (hasDuplicateFunctionNames(serviceClass.getMethods())) {
-            throw new Error(
-                `Duplicate method names found in service class ${className}. Please ensure unique method names for each operation.`,
-            );
+        this.assertDistinctMethodNames(serviceClass, className, operations);
+    }
+
+    /**
+     * Typed and specific: the bare Error this replaced named only the class,
+     * leaving the user to work out which two operationIds collided.
+     */
+    private assertDistinctMethodNames(
+        serviceClass: ClassDeclaration,
+        className: string,
+        operations: NormalizedOperation[],
+    ): void {
+        const methodNames = serviceClass.getMethods().map((method) => method.getName());
+        const duplicates = [...new Set(methodNames.filter((name, index) => methodNames.indexOf(name) !== index))];
+        if (duplicates.length === 0) {
+            return;
         }
+
+        const byName = new Map(duplicates.map((name) => [name, [] as NormalizedOperation[]]));
+        for (const operation of operations) {
+            byName.get(this.methodGenerator.generateMethodName(operation))?.push(operation);
+        }
+        const detail = [...byName]
+            .map(([name, ops]) => `"${name}" from ${ops.map(describeOperation).join(" and ")}`)
+            .join("; ");
+
+        throw new DuplicateGeneratedNameError(
+            `Operations map to the same method name in ${className}: ${detail}. ` +
+                `Ensure each operationId maps to a unique name.`,
+            duplicates,
+            [...byName.values()].flat(),
+        );
     }
 }

@@ -37,9 +37,12 @@ export class NgOpenApiError extends Error {
         // Non-enumerable: an enumerable brand leaks into JSON.stringify(error)
         // and structured logs, where it is noise.
         Object.defineProperty(this, NG_OPENAPI_ERROR_BRAND, {
-            value: lineage,
+            // Frozen: the brand decides `instanceof`, so it must not be
+            // reshaped after construction.
+            value: Object.freeze([...lineage]),
             enumerable: false,
             writable: false,
+            configurable: false,
         });
     }
 
@@ -56,8 +59,25 @@ export class NgOpenApiError extends Error {
         if (Object.prototype.isPrototypeOf.call(this.prototype, value)) {
             return true;
         }
-        const lineage = (value as Record<string, unknown>)[NG_OPENAPI_ERROR_BRAND];
-        return Array.isArray(lineage) && lineage.includes((this as typeof NgOpenApiError).brand);
+
+        // A subclass that does not declare its own `brand` inherits this one,
+        // which would make every parent instance look like an instance of it.
+        // Without an own brand, the prototype check above is the only answer.
+        if (!Object.prototype.hasOwnProperty.call(this, "brand")) {
+            return false;
+        }
+
+        // Read the descriptor rather than the property: an inherited value must
+        // not count (the same prototype-chain read fixed elsewhere in this
+        // module), a getter must not run — `instanceof` must never throw or
+        // execute foreign code — and the brand this class sets is deliberately
+        // non-enumerable, so an enumerable one came from somewhere else, such
+        // as JSON.parse.
+        const descriptor = Object.getOwnPropertyDescriptor(value, NG_OPENAPI_ERROR_BRAND);
+        if (!descriptor || descriptor.enumerable || !("value" in descriptor)) {
+            return false;
+        }
+        return Array.isArray(descriptor.value) && descriptor.value.includes((this as typeof NgOpenApiError).brand);
     }
 }
 

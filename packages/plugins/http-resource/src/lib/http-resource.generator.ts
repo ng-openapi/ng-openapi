@@ -8,9 +8,9 @@ import {
     getClientContextTokenName,
     getResourceClassName,
     groupOperationsByController,
-    hasDuplicateFunctionNames,
+    DuplicateGeneratedNameError,
     resolveArgumentNames,
-    RESOURCE_RESERVED_ARGUMENT_NAMES,
+    RESOURCE_ARGUMENT_PROFILE,
     HTTP_RESOURCE_GENERATOR_HEADER_COMMENT,
     IPluginGenerator,
     NormalizedOperation,
@@ -71,7 +71,6 @@ export class HttpResourceGenerator implements IPluginGenerator {
         this.addServiceClass(sourceFile, controllerName, operations);
         sourceFile.fixMissingImports().formatText(); //TODO: add models
         sourceFile.insertText(0, HTTP_RESOURCE_GENERATOR_HEADER_COMMENT(getResourceClassName(controllerName, this.config.options.naming?.resources)));
-        sourceFile.saveSync();
     }
 
     private addServiceClass(sourceFile: SourceFile, controllerName: string, operations: NormalizedOperation[]): void {
@@ -148,7 +147,7 @@ return context.set(this.clientContextToken, '${this.config.clientName || "defaul
 
         // Generate methods for each operation
         operations.forEach((operation) => {
-            const { renamed } = resolveArgumentNames(operation, this.config, RESOURCE_RESERVED_ARGUMENT_NAMES);
+            const { renamed } = resolveArgumentNames(operation, this.config, RESOURCE_ARGUMENT_PROFILE);
             for (const { source, identifier } of renamed) {
                 this.onWarning?.(
                     `Parameter "${source}" of ${describeOperation(operation)} is exposed as "${identifier}" — ` +
@@ -158,9 +157,24 @@ return context.set(this.clientContextToken, '${this.config.clientName || "defaul
             this.methodGenerator.addResourceMethod(serviceClass, operation);
         });
 
-        if (hasDuplicateFunctionNames(serviceClass.getMethods())) {
-            throw new Error(
-                `Duplicate method names found in service class ${className}. Please ensure unique method names for each operation.`,
+        const methodNames = serviceClass.getMethods().map((method) => method.getName());
+        const duplicates = [...new Set(methodNames.filter((name, index) => methodNames.indexOf(name) !== index))];
+        if (duplicates.length > 0) {
+            // Names the operations, not just the class: the operationId is what
+            // the user has to change.
+            const byName = new Map(duplicates.map((name) => [name, [] as NormalizedOperation[]]));
+            for (const operation of operations) {
+                byName.get(this.methodGenerator.generateMethodName(operation))?.push(operation);
+            }
+            const detail = [...byName]
+                .map(([name, ops]) => `"${name}" from ${ops.map(describeOperation).join(" and ")}`)
+                .join("; ");
+
+            throw new DuplicateGeneratedNameError(
+                `Operations map to the same method name in ${className}: ${detail}. ` +
+                    `Ensure each operationId maps to a unique name.`,
+                duplicates,
+                [...byName.values()].flat(),
             );
         }
     }

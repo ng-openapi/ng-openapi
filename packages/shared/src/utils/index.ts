@@ -34,8 +34,8 @@ export {
     isDataTypeInterface,
     isPrimitiveType,
     isUrl,
-    RESOURCE_RESERVED_ARGUMENT_NAMES,
+    RESOURCE_ARGUMENT_PROFILE,
     resolveArgumentNames,
-    SERVICE_RESERVED_ARGUMENT_NAMES,
+    SERVICE_ARGUMENT_PROFILE,
 } from "./functions";
-export type { ArgumentNames, RenamedArgument, ResponseTypeInfo } from "./functions";
+export type { ArgumentNameProfile, ArgumentNames, RenamedArgument, ResponseTypeInfo } from "./functions";

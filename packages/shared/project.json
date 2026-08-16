@@ -3,12 +3,14 @@
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "packages/shared/src",
     "projectType": "library",
-    "tags": ["scope:shared"],
+    "tags": [
+        "scope:shared"
+    ],
     "targets": {
         "typecheck": {
             "executor": "nx:run-commands",
             "options": {
-                "command": "npx tsc -p {projectRoot}/tsconfig.lib.json --noEmit"
+                "command": "npx tsc -p {projectRoot}/tsconfig.lib.json --noEmit && npx tsc -p {projectRoot}/tsconfig.spec.json --noEmit"
             }
         },
         "test": {

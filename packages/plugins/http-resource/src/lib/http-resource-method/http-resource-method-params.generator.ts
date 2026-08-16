@@ -1,7 +1,7 @@
 import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
 import {
     resolveArgumentNames,
-    RESOURCE_RESERVED_ARGUMENT_NAMES,
+    RESOURCE_ARGUMENT_PROFILE,
     getResponseType,
     getTypeScriptType,
     MethodGenOptions,
@@ -38,7 +38,7 @@ export class HttpResourceMethodParamsGenerator {
 
     generateApiParameters(operation: NormalizedOperation): OptionalKind<ParameterDeclarationStructure>[] {
         const params: OptionalKind<ParameterDeclarationStructure>[] = [];
-        const argumentNames = resolveArgumentNames(operation, this.config, RESOURCE_RESERVED_ARGUMENT_NAMES);
+        const argumentNames = resolveArgumentNames(operation, this.config, RESOURCE_ARGUMENT_PROFILE);
 
         // Path parameters
         operation.pathParams.forEach((param) => {

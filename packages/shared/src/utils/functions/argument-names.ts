@@ -6,29 +6,52 @@ import { getRequestBodyType } from "./get-request-body-type";
 import { isDataTypeInterface } from "./is-data-type-interface";
 
 /**
- * Identifiers the core service method already binds: `observe`/`options` are
- * its trailing parameters, the rest are locals its body declares (see
- * `emit/url.emit.ts`, `emit/query-params.emit.ts`, `emit/headers.emit.ts` and
- * the form-data blocks of `service-method-body.generator.ts`).
+ * Words that cannot name a binding. Unlike class members — where `class() {}`
+ * is legal, which is why the method-name check only rejects `constructor` —
+ * a parameter named `class` is a syntax error. `camelCase` guarantees a valid
+ * *identifier*, which is a weaker property than "usable as a parameter name".
+ * Includes the strict-mode reserved words, since generated code is a module.
  */
-export const SERVICE_RESERVED_ARGUMENT_NAMES = [
-    "observe",
-    "options",
-    "url",
-    "params",
-    "headers",
-    "formData",
-    "formBody",
+const RESERVED_WORDS = [
+    "arguments", "await", "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete",
+    "do", "else", "enum", "eval", "export", "extends", "false", "finally", "for", "function", "if", "implements",
+    "import", "in", "instanceof", "interface", "let", "new", "null", "package", "private", "protected", "public",
+    "return", "static", "super", "switch", "this", "throw", "true", "try", "typeof", "var", "void", "while", "with",
+    "yield",
 ] as const;
+
+/** What a generator binds besides its arguments, and whether it takes a body. */
+export interface ArgumentNameProfile {
+    /** Identifiers the emitted method already binds. */
+    readonly reserved: readonly string[];
+    /** Whether the emitted method takes the JSON request body as a parameter. */
+    readonly bindsRequestBody: boolean;
+}
+
+/**
+ * The core service method: `observe`/`options` are its trailing parameters,
+ * the rest are locals its body declares (see `emit/url.emit.ts`,
+ * `emit/query-params.emit.ts`, `emit/headers.emit.ts` and the form-data blocks
+ * of `service-method-body.generator.ts`).
+ */
+export const SERVICE_ARGUMENT_PROFILE: ArgumentNameProfile = {
+    reserved: ["observe", "options", "url", "params", "headers", "formData", "formBody"],
+    bindsRequestBody: true,
+};
 
 /**
  * The httpResource plugin's equivalent. Deliberately a different set, not a
- * copy: the plugin's trailing parameters are `resourceOptions`/`requestOptions`
- * and it emits no `url`/`formData`/`formBody` locals. Reserving the core's
- * names here would rename plugin parameters for no reason; reserving only the
- * core's would let a `requestOptions` query parameter capture the plugin's own.
+ * copy: its trailing parameters are `resourceOptions`/`requestOptions` and it
+ * emits no `url`/`formData`/`formBody` locals. Reserving the core's names here
+ * would rename plugin parameters for no reason; reserving only the core's would
+ * let a `requestOptions` query parameter capture the plugin's own. It also
+ * wraps GETs only and never binds a request body, so reserving a body name
+ * would burn an identifier no emitted parameter uses.
  */
-export const RESOURCE_RESERVED_ARGUMENT_NAMES = ["resourceOptions", "requestOptions", "params", "headers"] as const;
+export const RESOURCE_ARGUMENT_PROFILE: ArgumentNameProfile = {
+    reserved: ["resourceOptions", "requestOptions", "params", "headers"],
+    bindsRequestBody: false,
+};
 
 /** Key of the JSON request-body argument, which has no wire name of its own. */
 const REQUEST_BODY_KEY = Symbol("requestBody");
@@ -50,6 +73,12 @@ export interface ArgumentNames {
     /** Every identifier assigned, for emitters that derive locals from them. */
     readonly all: readonly string[];
     readonly renamed: readonly RenamedArgument[];
+    /**
+     * Wire names declared in more than one location (a path *and* a query
+     * `id`). They collapse to a single parameter, so the later declaration's
+     * type is discarded and one value is sent to both — worth a warning.
+     */
+    readonly merged: readonly string[];
 }
 
 /**
@@ -70,7 +99,7 @@ export interface ArgumentNames {
 export function resolveArgumentNames(
     operation: NormalizedOperation,
     config: MethodGenOptions,
-    reservedNames: readonly string[],
+    profile: ArgumentNameProfile,
 ): ArgumentNames {
     const entries: { key: ArgumentKey; base: string }[] = [
         ...operation.pathParams.map((param) => ({ key: param.name, base: camelCase(param.name) })),
@@ -78,7 +107,7 @@ export function resolveArgumentNames(
         ...operation.urlEncodedFields.map((field) => ({ key: field, base: camelCase(field) })),
     ];
 
-    const bodyBase = jsonBodyIdentifier(operation, config);
+    const bodyBase = profile.bindsRequestBody ? jsonBodyIdentifier(operation, config) : undefined;
     if (bodyBase !== undefined) {
         entries.push({ key: REQUEST_BODY_KEY, base: bodyBase });
     }
@@ -90,13 +119,17 @@ export function resolveArgumentNames(
     // Object.prototype — dropping the argument and emitting a function into the
     // generated source.
     const identifiers = new Map<ArgumentKey, string>();
-    const used = new Set<string>(reservedNames);
+    const used = new Set<string>([...profile.reserved, ...RESERVED_WORDS]);
     const renamed: RenamedArgument[] = [];
+    const merged = new Set<string>();
 
     for (const { key, base } of entries) {
         // The same wire name in two locations (a path and a query `id`) is one
         // argument, as the generators' dedupe has always treated it.
         if (identifiers.has(key)) {
+            if (typeof key === "string") {
+                merged.add(key);
+            }
             continue;
         }
 
@@ -119,6 +152,7 @@ export function resolveArgumentNames(
         body: identifiers.get(REQUEST_BODY_KEY),
         all: [...identifiers.values()],
         renamed,
+        merged: [...merged],
     };
 }
 
