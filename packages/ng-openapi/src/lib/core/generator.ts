@@ -131,7 +131,12 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
     await typeGenerator.generate();
     reporter.onPhase?.("types-generated");
 
-    if (generateServices) {
+    // The client runtime (tokens, HttpParamsBuilder, providers, interceptor) is
+    // not service-specific: the httpResource plugin's resources import
+    // ../tokens and ../utils/http-params-builder too, so gating it on
+    // generateServices alone made plugin-only output reference files that were
+    // never emitted — non-compiling, and hidden from the user by @ts-nocheck.
+    if (generateServices || config.plugins?.length) {
         // Generate tokens first
         const tokenGenerator = new TokenGenerator(project, config.clientName);
         tokenGenerator.generate(outputPath);
@@ -156,7 +161,9 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
 
         const baseInterceptorGenerator = new BaseInterceptorGenerator(project, config.clientName);
         baseInterceptorGenerator.generate(outputPath);
+    }
 
+    if (generateServices) {
         // Generate services using the refactored ServiceGenerator
         const serviceGenerator = new ServiceGenerator(swaggerParser, project, config, onWarning);
         await serviceGenerator.generate(outputPath);

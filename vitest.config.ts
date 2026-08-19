@@ -9,6 +9,8 @@ export default defineConfig({
             { find: /^@ng-openapi\/shared$/, replacement: r("packages/shared/src/index.ts") },
             { find: /^@ng-openapi\/shared\/(.*)$/, replacement: r("packages/shared/$1") },
             { find: /^@ng-openapi\/testing$/, replacement: r("packages/testing/src/index.ts") },
+            { find: /^@ng-openapi\/http-resource$/, replacement: r("packages/plugins/http-resource/src/index.ts") },
+            { find: /^@ng-openapi\/zod$/, replacement: r("packages/plugins/zod/src/index.ts") },
             { find: /^ng-openapi$/, replacement: r("packages/ng-openapi/src/index.ts") },
         ],
     },

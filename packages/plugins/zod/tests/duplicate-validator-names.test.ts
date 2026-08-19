@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { afterAll, expect, it } from "vitest";
 import { expectGeneratedCodeCompiles } from "@ng-openapi/testing";
 import { DuplicateGeneratedNameError, generateFromConfig } from "ng-openapi";
+import { z } from "zod";
 import { ZodPlugin } from "../src";
 
 // Must live outside node_modules: the generator resolves auto-imports through
@@ -143,9 +144,16 @@ it("keeps a __proto__ parameter in the emitted schema", async () => {
     });
 
     const validator = readFileSync(join(output, "validators", "probe.validator.ts"), "utf8");
-    for (const wireName of ["__proto__", "constructor", "normal"]) {
-        expect(validator, `${wireName} missing from the schema`).toContain(`"${wireName}":`);
-    }
+
+    // Asserting on the emitted text was itself the bug in the first version of
+    // this test: a quoted "__proto__" key appears in the source either way, but
+    // in an object literal it invokes the prototype setter and creates no own
+    // property, so the field is absent from the shape at the client's runtime
+    // where nothing can catch it. Evaluate the emitted literal with the real zod
+    // and inspect the shape that actually results.
+    const literal = validator.slice(validator.indexOf("z.object("), validator.indexOf("});") + 2);
+    const build = new Function("z", `return ${literal};`) as (zod: typeof z) => { shape: Record<string, unknown> };
+    expect(Object.keys(build(z).shape).sort()).toEqual(["__proto__", "constructor", "normal"]);
 
     expectGeneratedCodeCompiles(output, "zod output");
 });

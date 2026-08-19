@@ -1,5 +1,6 @@
 import type { Parameter } from "../types/swagger.types";
 import { deriveLocalName } from "../utils/functions/argument-names";
+import { quoteLiteral } from "./literal.emit";
 import type { ArgumentNames } from "../utils/functions/argument-names";
 import { signalAwareParamValue } from "./url.emit";
 
@@ -16,7 +17,7 @@ export function emitQueryParams(queryParams: Parameter[], argumentNames: Argumen
         .map((param) => {
             const identifier = argumentNames.of(param.name);
             return `if (${identifier} != null) {
-  params = HttpParamsBuilder.addToHttpParams(params, ${identifier}, '${param.name}');
+  params = HttpParamsBuilder.addToHttpParams(params, ${identifier}, ${quoteLiteral(param.name)});
 }`;
         })
         .join("\n");
@@ -45,7 +46,7 @@ export function emitSignalAwareQueryParams(queryParams: Parameter[], argumentNam
             const local = deriveLocalName(`${identifier}Value`, argumentNames.all);
             return `const ${local} = ${signalAwareParamValue(identifier)};
                 if (${local} != null) {
-                    params = HttpParamsBuilder.addToHttpParams(params, ${local}, '${param.name}');
+                    params = HttpParamsBuilder.addToHttpParams(params, ${local}, ${quoteLiteral(param.name)});
                 }`;
         })
         .join("\n");

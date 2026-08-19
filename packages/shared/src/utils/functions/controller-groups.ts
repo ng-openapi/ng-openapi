@@ -40,12 +40,13 @@ export function groupOperationsByController(
             }
         }
 
-        // A tag carrying no identifier characters at all ("", "{}", "   ") is
-        // legal in a spec but names nothing: pascalCase yields "" or the "_"
-        // placeholder, which emitted a `.service.ts` dotfile or a bare
-        // `_Service`. Fall back to the untagged bucket and say so.
+        // A tag carrying nothing usable in a name ("", "{}", "   ", "$", "1") is
+        // legal in a spec but names nothing: it emitted a `.service.ts` dotfile,
+        // a bare `_Service`, or `$Service`/`_1Service`. Detected by asking
+        // whether any letter survived rather than by listing pascalCase's
+        // placeholder outputs, which only ever caught two of them.
         const sanitized = pascalCase(rawName);
-        const isNameless = sanitized === "" || sanitized === "_";
+        const isNameless = !/\p{L}/u.test(sanitized);
         const controllerName = isNameless ? "Default" : sanitized;
 
         if (tag !== undefined && isNameless) {

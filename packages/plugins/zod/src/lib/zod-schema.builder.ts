@@ -1,4 +1,4 @@
-import { NormalizedSpec, pascalCase, SwaggerDefinition, TypeMappingConfig } from "@ng-openapi/shared";
+import { emitObjectKey, NormalizedSpec, pascalCase, SwaggerDefinition, TypeMappingConfig } from "@ng-openapi/shared";
 import { BuildOptions, ZodPluginOptions } from "./utils/types";
 import { isReferenceObject } from "./utils/is-reference-object";
 
@@ -256,7 +256,9 @@ export class ZodSchemaBuilder {
                     `${name}${pascalCase(propName)}`,
                     { ...buildOptions, required: isRequired },
                 );
-                properties.push(`  "${propName}": ${propZodSchema}`);
+                // Computed key: see zod-schema.generator.ts — a "__proto__"
+                // property key mutates the prototype instead of being a key.
+                properties.push(`  ${emitObjectKey(propName)}: ${propZodSchema}`);
             }
 
             let objectSchema = `z.object({\n${properties.join(",\n")}\n})`;

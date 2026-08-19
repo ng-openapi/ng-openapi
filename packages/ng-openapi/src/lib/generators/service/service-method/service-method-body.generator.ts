@@ -6,6 +6,7 @@ import {
     emitResponseTypeOption,
     emitUrlConstruction,
     joinRequestOptionEntries,
+    quoteLiteral,
     MethodGenOptions,
     NormalizedOperation,
     resolveArgumentNames,
@@ -66,7 +67,7 @@ export class ServiceMethodBodyGenerator {
                     return `if (${arg} !== undefined && Array.isArray(${arg})) {
                   ${arg}.forEach((item) => {
                     if (item !== undefined && item !== null) {
-                      formData.append('${field}', ${valueExpression});
+                      formData.append(${quoteLiteral(field)}, ${valueExpression});
                     }
                   });
                 }`;
@@ -74,7 +75,7 @@ export class ServiceMethodBodyGenerator {
                     const valueExpression = isFile ? arg : `String(${arg})`;
 
                     return `if (${arg} !== undefined) {
-                  formData.append('${field}', ${valueExpression});
+                  formData.append(${quoteLiteral(field)}, ${valueExpression});
                 }`;
                 }
             })
@@ -102,13 +103,13 @@ ${formDataAppends}`;
                     return `if (${arg} !== undefined && Array.isArray(${arg})) {
                   ${arg}.forEach((item) => {
                     if (item !== undefined && item !== null) {
-                      formBody.append('${field}', String(item));
+                      formBody.append(${quoteLiteral(field)}, String(item));
                     }
                   });
                 }`;
                 } else {
                     return `if (${arg} !== undefined && ${arg} !== null) {
-                  formBody.append('${field}', String(${arg}));
+                  formBody.append(${quoteLiteral(field)}, String(${arg}));
                 }`;
                 }
             })

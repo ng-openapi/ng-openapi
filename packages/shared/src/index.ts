@@ -39,12 +39,14 @@ export { normalizeSchema, normalizeSpec, SwaggerParser } from "./core";
 
 // Typed pipeline errors — branch on these, not on message text
 export {
+    ConfigValidationError,
     describeOperation,
     DuplicateGeneratedNameError,
     InvalidIdentifierError,
     NgOpenApiError,
     SpecLoadError,
     SpecParseError,
+    UnresolvedPathTemplateError,
 } from "./errors";
 export type { OperationRef } from "./errors";
 
@@ -58,6 +60,10 @@ export {
     emitSignalAwareQueryParams,
     emitUrlConstruction,
     emitUrlExpression,
+    emitObjectKey,
+    escapeSingleQuoted,
+    escapeTemplateLiteral,
+    quoteLiteral,
     joinRequestOptionEntries,
     plainParamValue,
     signalAwareParamValue,

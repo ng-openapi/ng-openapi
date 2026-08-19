@@ -1,4 +1,7 @@
-import { SwaggerDefinition, SwaggerParser, TYPE_GENERATOR_HEADER_COMMENT, TypeGenOptions } from "@ng-openapi/shared";
+import { SwaggerDefinition, SwaggerParser, TYPE_GENERATOR_HEADER_COMMENT, TypeGenOptions,
+    NgOpenApiError,
+    SpecParseError,
+} from "@ng-openapi/shared";
 import { ImportDeclarationStructure, OptionalKind, Project, SourceFile, StatementStructures, StructureKind } from "ts-morph";
 import { EnumBuilder } from "./enum-builder";
 import { InterfaceBuilder } from "./interface-builder";
@@ -71,7 +74,12 @@ export class TypeGenerator {
             // Phase 4: Format and save
             await this.finalize();
         } catch (error) {
-            throw new Error(`Failed to generate types: ${error instanceof Error ? error.message : "Unknown error"}`);
+            // Rethrow typed errors untouched — wrapping one in a bare Error
+            // strips both its class and its cause, which the CLI needs.
+            if (error instanceof NgOpenApiError) {
+                throw error;
+            }
+            throw new SpecParseError("Failed to generate types from the specification", undefined, error);
         }
     }
 

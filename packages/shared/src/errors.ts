@@ -175,3 +175,43 @@ export class DuplicateGeneratedNameError extends NgOpenApiError {
         this.operations = operations;
     }
 }
+
+/**
+ * A path template contains a `{placeholder}` with no matching parameter. Raised
+ * rather than emitted: the unsubstituted placeholder used to ship as literal
+ * text in every request URL, which compiles and so escapes every compile-time
+ * check the suite has.
+ */
+export class UnresolvedPathTemplateError extends NgOpenApiError {
+    static override readonly brand = "UnresolvedPathTemplateError";
+
+    /** The path as written in the spec. */
+    readonly path: string;
+
+    /** Placeholder names with no declared parameter. */
+    readonly placeholders: readonly string[];
+
+    constructor(message: string, path: string, placeholders: readonly string[]) {
+        super(message, ["UnresolvedPathTemplateError", "NgOpenApiError"]);
+        this.path = path;
+        this.placeholders = [...placeholders];
+    }
+}
+
+/**
+ * The user-supplied config is structurally invalid. Collects every issue
+ * instead of failing on the first, so a config file can be fixed in one pass.
+ */
+export class ConfigValidationError extends NgOpenApiError {
+    static override readonly brand = "ConfigValidationError";
+
+    readonly issues: readonly string[];
+
+    constructor(issues: readonly string[]) {
+        super(
+            `Invalid ng-openapi configuration:\n${issues.map((issue) => `  - ${issue}`).join("\n")}`,
+            ["ConfigValidationError", "NgOpenApiError"],
+        );
+        this.issues = [...issues];
+    }
+}

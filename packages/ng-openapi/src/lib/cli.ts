@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { GeneratorConfig, isUrl, SpecLoadError } from "@ng-openapi/shared";
+import { GeneratorConfig, isUrl, SpecLoadError, SpecParseError } from "@ng-openapi/shared";
 import { Command } from "commander";
 import * as fs from "fs";
 import * as path from "path";
@@ -87,7 +87,7 @@ async function loadConfigFile(configPath: string): Promise<GeneratorConfig> {
 
         return config;
     } catch (error) {
-        throw new Error(`Failed to load configuration file: ${error instanceof Error ? error.message : error}`);
+        throw new SpecParseError(`Failed to load configuration file: ${configPath}`, configPath, error);
     }
 }
 
@@ -131,6 +131,14 @@ async function generateFromOptions(options: CliOptions): Promise<void> {
         console.log("✨ Generation completed successfully!");
     } catch (error) {
         console.error("❌ Generation failed:", error instanceof Error ? error.message : error);
+
+        // The underlying failure is often the only actionable part (an ENOENT
+        // path, a JSON parse position), and it was being collected on `cause`
+        // and then never shown.
+        for (let cause = (error as { cause?: unknown } | undefined)?.cause, depth = 0; cause && depth < 3; depth++) {
+            console.error("   caused by:", cause instanceof Error ? cause.message : cause);
+            cause = (cause as { cause?: unknown }).cause;
+        }
 
         // Typed hint mapping: branch on the error class, never on message text
         if (error instanceof SpecLoadError && isUrl(error.source)) {

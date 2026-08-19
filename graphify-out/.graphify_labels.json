@@ -158,10 +158,15 @@
   "156": "author",
   "157": "README.md",
   "158": "exports",
+  "159": "build",
+  "160": "author",
+  "161": "exports",
+  "162": "repository",
+  "163": "namedInputs",
+  "164": "engines",
   "165": "`responseTypeMapping`",
   "166": "`responseTypeMapping`",
   "167": "`serviceDecorator`",
   "168": "`useSingleRequestParameter`",
-  "169": "`options`",
-  "170": "`validation`"
+  "169": "`options`"
 }

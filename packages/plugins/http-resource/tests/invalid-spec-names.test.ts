@@ -171,3 +171,80 @@ it("keeps signal-aware query params and their derived locals distinct", async ()
 
     expectGeneratedCodeCompiles(output, "httpResource output");
 });
+
+it("compiles httpResource output when no services are generated", async () => {
+    const output = mkdtempSync(join(tmpRoot, "hr-only-"));
+    tempDirs.push(output);
+
+    const input = join(output, "spec.json");
+    writeFileSync(
+        input,
+        JSON.stringify({
+            openapi: "3.0.0",
+            info: { title: "t", version: "1.0.0" },
+            paths: {
+                "/things": {
+                    get: {
+                        tags: ["Things"],
+                        operationId: "listThings",
+                        parameters: [{ name: "q", in: "query", schema: { type: "string" } }],
+                        responses: { "200": { description: "OK" } },
+                    },
+                },
+            },
+        }),
+    );
+
+    // The resources import ../tokens and ../utils/http-params-builder, which
+    // used to be emitted only when generateServices was on — so plugin-only
+    // output referenced files that were never written, and @ts-nocheck hid it.
+    await generateFromConfig({
+        input,
+        output,
+        options: { dateType: "string", enumStyle: "union", generateServices: false },
+        plugins: [HttpResourcePlugin],
+    });
+
+    expectGeneratedCodeCompiles(output, "plugin-only httpResource output");
+});
+
+it("does not reserve a request-body name the resource never binds", async () => {
+    const output = mkdtempSync(join(tmpRoot, "hr-body-"));
+    tempDirs.push(output);
+
+    const input = join(output, "spec.json");
+    // A GET carrying a JSON body is legal in OAS3. The resource emits no body
+    // parameter, so reserving "requestBody" for it would rename an unrelated
+    // query parameter and warn about a parameter that does not exist.
+    writeFileSync(
+        input,
+        JSON.stringify({
+            openapi: "3.0.0",
+            info: { title: "t", version: "1.0.0" },
+            paths: {
+                "/search": {
+                    get: {
+                        tags: ["Search"],
+                        operationId: "search",
+                        requestBody: { content: { "application/json": { schema: { type: "object" } } } },
+                        parameters: [{ name: "request_body", in: "query", schema: { type: "string" } }],
+                        responses: { "200": { description: "OK" } },
+                    },
+                },
+            },
+        }),
+    );
+
+    const result = await generateFromConfig({
+        input,
+        output,
+        options: { dateType: "string", enumStyle: "union", generateServices: true },
+        plugins: [HttpResourcePlugin],
+    });
+
+    const resource = readFileSync(join(output, "resources", "search.resource.ts"), "utf8");
+    expect(resource).toContain("search(requestBody");
+    expect(resource).not.toContain("requestBody2");
+    // The core service does bind a body, so it legitimately renames there.
+    expect(result.warnings.filter((w) => w.includes("resource method itself"))).toEqual([]);
+});

@@ -7,7 +7,7 @@ const validConfig = {
     options: { dateType: "string", enumStyle: "union" },
 };
 
-const issuesOf = (config: unknown): string[] => {
+const issuesOf = (config: unknown): readonly string[] => {
     try {
         validateGeneratorConfig(config);
         return [];

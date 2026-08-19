@@ -4,6 +4,7 @@ import {
     TypeMappingConfig,
     Parameter,
     pascalCase,
+    emitObjectKey,
     PathInfo,
     RequestBody,
     SwaggerDefinition,
@@ -13,27 +14,23 @@ import {
 import { ZodSchemaBuilder } from "./zod-schema.builder";
 import { ZodPluginOptions } from "./utils/types";
 import { isReferenceObject } from "./utils/is-reference-object";
-
 export class ZodSchemaGenerator {
     private spec: NormalizedSpec;
     private config: TypeMappingConfig;
     private options: ZodPluginOptions;
     private schemaBuilder: ZodSchemaBuilder;
-
     constructor(spec: NormalizedSpec, config: TypeMappingConfig, options: ZodPluginOptions) {
         this.spec = spec;
         this.config = config;
         this.options = options;
         this.schemaBuilder = new ZodSchemaBuilder(spec, config, options);
     }
-
     async generateParametersValidator(parameters: Parameter[], operationName: string, suffix: string): Promise<string> {
         // A Map, not an object literal: wire names are untrusted spec text, and
         // `properties["__proto__"] = …` hits the prototype setter and creates no
         // own property, silently dropping the parameter from the schema.
         const properties = new Map<string, string>();
         const requiredFields: string[] = [];
-
         for (const param of parameters) {
             const schema = this.resolveParameterSchema(param);
             const zodSchema = await this.schemaBuilder.buildSchema(
@@ -45,33 +42,25 @@ export class ZodSchemaGenerator {
                     strict: this.isStrict(param.in as "path" | "query" | "header"),
                 },
             );
-
             properties.set(param.name, zodSchema);
             if (param.required) {
                 requiredFields.push(param.name);
             }
         }
-
         return this.generateObjectValidator(operationName + suffix, properties);
     }
-
     async generateBodyValidator(operation: PathInfo, operationName: string): Promise<string[]> {
         const statements: string[] = [];
-
         if (!operation.requestBody) {
             return statements;
         }
-
         const requestBody = this.resolveRequestBody(operation.requestBody);
         const content = requestBody.content?.[CONTENT_TYPES.JSON] || requestBody.content?.["multipart/form-data"];
-
         if (!content?.schema) {
             return statements;
         }
-
         const schema = this.resolveSchema(content.schema);
         const bodyName = `${operationName}Body`;
-
         // Check if it's an array
         if (schema.type === "array" && schema.items) {
             const itemSchema = this.resolveSchema(schema.items as SwaggerDefinition);
@@ -80,9 +69,7 @@ export class ZodSchemaGenerator {
                 coerce: this.shouldCoerce("body"),
                 strict: this.isStrict("body"),
             });
-
             statements.push(`export const ${bodyName}Item = ${itemValidator};`);
-
             let arrayValidator = `z.array(${bodyName}Item)`;
             if (schema.minItems !== undefined) {
                 arrayValidator += `.min(${schema.minItems})`;
@@ -90,7 +77,6 @@ export class ZodSchemaGenerator {
             if (schema.maxItems !== undefined) {
                 arrayValidator += `.max(${schema.maxItems})`;
             }
-
             statements.push(`export const ${bodyName} = ${arrayValidator};`);
             statements.push(`export type ${pascalCase(bodyName)} = z.infer<typeof ${bodyName}>;`);
         } else {
@@ -100,34 +86,24 @@ export class ZodSchemaGenerator {
                 strict: this.isStrict("body"),
                 removeReadOnly: true,
             });
-
             statements.push(`export const ${bodyName} = ${validator};`);
             statements.push(`export type ${pascalCase(bodyName)} = z.infer<typeof ${bodyName}>;`);
         }
-
         return statements;
     }
-
     async generateResponseValidators(operation: PathInfo, operationName: string): Promise<string[]> {
         const statements: string[] = [];
-
         if (!operation.responses) {
             return statements;
         }
-
         const responsesToGenerate = Object.entries(operation.responses);
-
         for (const [statusCode, response] of responsesToGenerate) {
             if (!response) continue;
-
             const resolvedResponse = this.resolveResponse(response);
             const content = resolvedResponse.content?.[CONTENT_TYPES.JSON];
-
             if (!content?.schema) continue;
-
             const schema = this.resolveSchema(content.schema);
             const responseName = statusCode ? `${operationName}${statusCode}Response` : `${operationName}Response`;
-
             // Check if it's an array
             if (schema.type === "array" && schema.items) {
                 const itemSchema = this.resolveSchema(schema.items as SwaggerDefinition);
@@ -136,9 +112,7 @@ export class ZodSchemaGenerator {
                     coerce: this.shouldCoerce("response"),
                     strict: this.isStrict("response"),
                 });
-
                 statements.push(`export const ${responseName}Item = ${itemValidator};`);
-
                 let arrayValidator = `z.array(${responseName}Item)`;
                 if (schema.minItems !== undefined) {
                     arrayValidator += `.min(${schema.minItems})`;
@@ -146,7 +120,6 @@ export class ZodSchemaGenerator {
                 if (schema.maxItems !== undefined) {
                     arrayValidator += `.max(${schema.maxItems})`;
                 }
-
                 statements.push(`export const ${responseName} = ${arrayValidator};`);
                 statements.push(`export type ${pascalCase(responseName)} = z.infer<typeof ${responseName}>;`);
             } else {
@@ -155,46 +128,41 @@ export class ZodSchemaGenerator {
                     coerce: this.shouldCoerce("response"),
                     strict: this.isStrict("response"),
                 });
-
                 statements.push(`export const ${responseName} = ${validator};`);
                 statements.push(`export type ${pascalCase(responseName)} = z.infer<typeof ${responseName}>;`);
             }
         }
-
         return statements;
     }
-
     private generateObjectValidator(name: string, properties: ReadonlyMap<string, string>): string {
         if (properties.size === 0) {
             return `export const ${name} = z.object({});`;
         }
-
         const props = [...properties]
-            .map(([key, schema]) => `  "${key}": ${schema}`)
+            // Computed key, not a quoted one: in an object literal a
+            // "__proto__" key — quoted or not — invokes the prototype setter and
+            // creates no own property, so the field silently vanished from the
+            // emitted shape at the client's runtime. Only [expr] is a plain key.
+            .map(([key, schema]) => `  ${emitObjectKey(key)}: ${schema}`)
             .join(",\n");
-
         const statements = [
             `export const ${name} = z.object({`,
             props,
             "});",
             `export type ${pascalCase(name)} = z.infer<typeof ${name}>;`,
         ];
-
         return statements.join("\n");
     }
-
     private resolveParameterSchema(parameter: Parameter): SwaggerDefinition {
         if (parameter.schema) {
             return this.resolveSchema(parameter.schema);
         }
-
         // For OpenAPI 2.0, parameter properties are directly on the parameter
         return {
             type: parameter.type,
             format: parameter.format,
         } as SwaggerDefinition;
     }
-
     private resolveRequestBody(requestBody: RequestBody): RequestBody {
         if (isReferenceObject(requestBody)) {
             const resolved = this.spec.resolveReference(requestBody.$ref);
@@ -202,7 +170,6 @@ export class ZodSchemaGenerator {
         }
         return requestBody;
     }
-
     private resolveResponse(response: SwaggerResponse): SwaggerResponse {
         if (isReferenceObject(response)) {
             const resolved = this.spec.resolveReference(response.$ref);
@@ -210,7 +177,6 @@ export class ZodSchemaGenerator {
         }
         return response;
     }
-
     private resolveSchema(schema: SwaggerDefinition | { $ref: string }): SwaggerDefinition {
         if (isReferenceObject(schema)) {
             const resolved = this.spec.resolveReference(schema.$ref);
@@ -218,7 +184,6 @@ export class ZodSchemaGenerator {
         }
         return schema as SwaggerDefinition;
     }
-
     private shouldCoerce(type: "path" | "query" | "header" | "body" | "response"): boolean {
         const typeMap = {
             path: "param",
@@ -227,15 +192,12 @@ export class ZodSchemaGenerator {
             body: "body",
             response: "response",
         };
-
         const mappedType = typeMap[type] || type;
-
         if (typeof this.options.coerce === "boolean") {
             return this.options.coerce;
         }
         return this.options.coerce?.[mappedType as keyof typeof this.options.coerce] || false;
     }
-
     private isStrict(type: "path" | "query" | "header" | "body" | "response"): boolean {
         const typeMap = {
             path: "param",
@@ -244,9 +206,7 @@ export class ZodSchemaGenerator {
             body: "body",
             response: "response",
         };
-
         const mappedType = typeMap[type] || type;
-
         if (typeof this.options.strict === "boolean") {
             return this.options.strict;
         }

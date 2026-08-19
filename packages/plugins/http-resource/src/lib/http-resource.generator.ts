@@ -147,11 +147,18 @@ return context.set(this.clientContextToken, '${this.config.clientName || "defaul
 
         // Generate methods for each operation
         operations.forEach((operation) => {
-            const { renamed } = resolveArgumentNames(operation, this.config, RESOURCE_ARGUMENT_PROFILE);
+            const { renamed, merged } = resolveArgumentNames(operation, this.config, RESOURCE_ARGUMENT_PROFILE);
             for (const { source, identifier } of renamed) {
                 this.onWarning?.(
                     `Parameter "${source}" of ${describeOperation(operation)} is exposed as "${identifier}" — ` +
                         `its natural name is already taken by another parameter or by the resource method itself.`,
+                );
+            }
+            for (const wireName of merged) {
+                this.onWarning?.(
+                    `Parameter "${wireName}" of ${describeOperation(operation)} is declared in more than one ` +
+                        `location; they collapse into one argument, so the first declaration's type wins and ` +
+                        `the same value is sent for both.`,
                 );
             }
             this.methodGenerator.addResourceMethod(serviceClass, operation);

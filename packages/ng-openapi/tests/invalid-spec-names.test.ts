@@ -2,7 +2,14 @@ import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { createOutputDirs, expectGeneratedCodeCompiles } from "@ng-openapi/testing";
-import { generateFromConfig, InvalidIdentifierError } from "ng-openapi";
+import {
+    DuplicateGeneratedNameError,
+    generateFromConfig,
+    InvalidIdentifierError,
+    UnresolvedPathTemplateError,
+} from "ng-openapi";
+import { HttpResourcePlugin } from "@ng-openapi/http-resource";
+import { ZodPlugin } from "@ng-openapi/zod";
 
 /**
  * Regression coverage for #125: `operationId`s and tags are free-form text in a
@@ -190,6 +197,9 @@ describe("specs whose names are illegal TypeScript identifiers (#125)", () => {
             ),
             output,
             options: { dateType: "string", enumStyle: "union", generateServices: true },
+            // Three generators each group by controller independently, so this
+            // fixture is what makes the once-per-spec dedupe observable at all.
+            plugins: [HttpResourcePlugin, ZodPlugin],
         });
 
         // Merging beats dropping, but it must not be silent.
@@ -497,5 +507,231 @@ describe("names that are valid identifiers but still unusable", () => {
 
         // Only the spec we wrote; no half-generated client, no barrel.
         expect(readdirSync(output)).toEqual(["spec.json"]);
+    });
+});
+
+describe("emitted string literals and path templates", () => {
+    it("substitutes a repeated path placeholder everywhere it appears", async () => {
+        const output = outputDirs.create("names-repeat-");
+        await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/a/{id}/b/{id}": {
+                        get: {
+                            tags: ["Repeat"],
+                            operationId: "repeat",
+                            parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+                            responses: { "200": { description: "OK" } },
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        const repeat = readFileSync(join(output, "services", "repeat.service.ts"), "utf8");
+        // `replace` with a string pattern took only the first, shipping a literal
+        // "{id}" in every request URL. That compiles, so no compile assertion or
+        // golden fixture could see it.
+        expect(repeat).toContain("`${this.basePath}/a/${id}/b/${id}`");
+        expect(repeat).not.toContain("/b/{id}");
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("rejects a path placeholder with no declared parameter", async () => {
+        const output = outputDirs.create("names-undeclared-");
+
+        await expect(
+            generateFromConfig({
+                input: writeSpec(output, {
+                    openapi: "3.0.0",
+                    info: { title: "t", version: "1.0.0" },
+                    paths: {
+                        "/a/{id}": {
+                            get: { tags: ["U"], operationId: "u", responses: { "200": { description: "OK" } } },
+                        },
+                    },
+                }),
+                output,
+                options: { dateType: "string", enumStyle: "union", generateServices: true },
+            }),
+        ).rejects.toBeInstanceOf(UnresolvedPathTemplateError);
+    });
+
+    it("escapes quotes and backslashes in wire names", async () => {
+        const output = outputDirs.create("names-quotes-");
+        await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/q": {
+                        get: {
+                            tags: ["Quotes"],
+                            operationId: "quotes",
+                            parameters: [
+                                // A quote closed the literal (a syntax error); a
+                                // backslash was worse, being silent — the wrong
+                                // name went on the wire and still compiled.
+                                { name: "it's", in: "query", schema: { type: "string" } },
+                                { name: "back\\slash", in: "query", schema: { type: "string" } },
+                            ],
+                            responses: { "200": { description: "OK" } },
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        const quotes = readFileSync(join(output, "services", "quotes.service.ts"), "utf8");
+        expect(quotes).toContain("\\'");
+        expect(quotes).toContain("'back\\\\slash'");
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("keeps a backtick or an interpolation in the path from breaking the literal", async () => {
+        const output = outputDirs.create("names-template-");
+        await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/tpl/`x/${y}": {
+                        get: {
+                            tags: ["Tpl"],
+                            operationId: "tpl",
+                            parameters: [{ name: "y", in: "path", required: true, schema: { type: "string" } }],
+                            responses: { "200": { description: "OK" } },
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        expectGeneratedCodeCompiles(output);
+    });
+});
+
+describe("what generation says out loud", () => {
+    it("warns about a required header parameter it does not bind", async () => {
+        const output = outputDirs.create("names-header-");
+        const result = await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/h": {
+                        get: {
+                            tags: ["Head"],
+                            operationId: "headOp",
+                            parameters: [
+                                { name: "X-Trace-Id", in: "header", required: true, schema: { type: "string" } },
+                                { name: "X-Optional", in: "header", schema: { type: "string" } },
+                            ],
+                            responses: { "200": { description: "OK" } },
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        expect(result.warnings.join("\n")).toMatch(/Required header parameter "X-Trace-Id"/);
+        // Optional ones stay quiet: they genuinely are expressible via options,
+        // and warning on every header would bury the required case.
+        expect(result.warnings.join("\n")).not.toContain("X-Optional");
+    });
+
+    it("warns for any tag that keeps no letters, not just two placeholder shapes", async () => {
+        for (const tag of ["$", "1", "{}", "   "]) {
+            const output = outputDirs.create("names-tagless-");
+            const result = await generateFromConfig({
+                input: writeSpec(output, {
+                    openapi: "3.0.0",
+                    info: { title: "t", version: "1.0.0" },
+                    paths: {
+                        "/x": { get: { tags: [tag], operationId: "x_get", responses: { "200": { description: "OK" } } } },
+                    },
+                }),
+                output,
+                options: { dateType: "string", enumStyle: "union", generateServices: true },
+            });
+
+            expect(result.warnings.join("\n"), tag).toMatch(/contains no characters usable in a name/);
+            expect(readFileSync(join(output, "services", "index.ts"), "utf8"), tag).toContain("DefaultService");
+        }
+    });
+
+    it("stays quiet when a tagged and an untagged operation share a controller", async () => {
+        const output = outputDirs.create("names-partial-tag-");
+        const result = await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    // The common partially-tagged spec: path-derived "users" and
+                    // the tag "Users" land in one controller by design, so
+                    // warning here would fire on ordinary documents.
+                    "/api/users": { get: { tags: ["Users"], operationId: "listUsers", responses: { "200": { description: "OK" } } } },
+                    // Path-derived names come from the second segment, so this
+                    // untagged operation resolves to "Users" as well.
+                    "/api/users/{id}": {
+                        get: {
+                            operationId: "getUser",
+                            parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+                            responses: { "200": { description: "OK" } },
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        expect(result.warnings.filter((warning) => warning.includes("map to the controller"))).toEqual([]);
+        expect(readFileSync(join(output, "services", "users.service.ts"), "utf8")).toContain("getUser(");
+    });
+
+    it("warns that a collision rename is part of the public signature", async () => {
+        const output = outputDirs.create("names-renamewarn-");
+        const result = await generateFromConfig({
+            input: writeSpec(output, HOSTILE_OAS3_SPEC),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        // The suffix depends on which other parameters exist, so removing one
+        // renumbers the survivor — a breaking change to call sites.
+        expect(result.warnings.join("\n")).toMatch(/"filter\.name".*is exposed as "filterName2"/);
+        expect(result.warnings.join("\n")).toMatch(/"options\[\]".*is exposed as "options2"/);
+    });
+
+    it("throws a typed error naming both operations when method names collide", async () => {
+        const output = outputDirs.create("names-dupmethod-");
+        const config = {
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/a": { get: { tags: ["Dup"], operationId: "list-things", responses: { "200": { description: "OK" } } } },
+                    "/b": { get: { tags: ["Dup"], operationId: "list_things", responses: { "200": { description: "OK" } } } },
+                },
+            }),
+            output,
+            options: { dateType: "string" as const, enumStyle: "union" as const, generateServices: true },
+        };
+
+        await expect(generateFromConfig(config)).rejects.toBeInstanceOf(DuplicateGeneratedNameError);
+        // Names the operationIds, not just the class: the bare Error this
+        // replaced left the user to work out which two collided.
+        await expect(generateFromConfig(config)).rejects.toThrow(/list-things .*and list_things /);
     });
 });

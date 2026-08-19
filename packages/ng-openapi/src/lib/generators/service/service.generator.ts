@@ -87,6 +87,28 @@ export class ServiceGenerator {
      * removing one renumbers the survivor and breaks call sites. Silent is the
      * one thing that must not happen.
      */
+    /**
+     * Header and cookie parameters are carried on the operation (the zod plugin
+     * validates them) but the client generators never bind them — callers pass
+     * headers through the trailing options parameter instead.
+     *
+     * Only `required` ones warn. An optional header genuinely is expressible
+     * through options, so warning about every one would bury the real case:
+     * a required parameter that the generated signature does not mention at all,
+     * leaving callers no indication the request will be rejected without it.
+     */
+    private warnAboutUnboundParameters(operation: NormalizedOperation): void {
+        const unbound = (operation.parameters ?? []).filter(
+            (param) => (param.in === "header" || param.in === "cookie") && param.required,
+        );
+        for (const param of unbound) {
+            this.onWarning?.(
+                `Required ${param.in} parameter "${param.name}" of ${describeOperation(operation)} is not emitted ` +
+                    `as a method parameter — callers must pass it through the trailing options parameter.`,
+            );
+        }
+    }
+
     private warnAboutRenamedArguments(operation: NormalizedOperation): void {
         const { renamed, merged } = resolveArgumentNames(operation, this.config, SERVICE_ARGUMENT_PROFILE);
         for (const { source, identifier } of renamed) {
@@ -192,6 +214,7 @@ return context.set(this.clientContextToken, '${this.config.clientName || "defaul
         // Generate methods for each operation
         operations.forEach((operation) => {
             this.warnAboutRenamedArguments(operation);
+            this.warnAboutUnboundParameters(operation);
             this.methodGenerator.addServiceMethod(serviceClass, operation, this.requestObjects?.get(operation));
         });
 
