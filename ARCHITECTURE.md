@@ -66,7 +66,7 @@ parameter. But *which* names are already taken is a property of the code being
 emitted, not of the spec — the core service binds `observe`/`options`, the
 httpResource plugin binds `resourceOptions`/`requestOptions`. So this one is
 **not** on `NormalizedOperation`: each generator calls
-`resolveArgumentNames(operation, config, <its own reserved set>)`, a pure
+`resolveArgumentNames(operation, config, <its own ArgumentNameProfile>)`, a pure
 function, and every call site of that generator gets the same answer. Read the
 returned map (`names.of(wireName)`, `names.body`); never `camelCase(param.name)`
 in a generator.
@@ -97,8 +97,16 @@ what keeps the library embeddable and testable.
 
 User-facing failures are typed (`packages/shared/src/errors.ts`):
 `SpecLoadError` (input unreadable), `SpecParseError` (content unusable),
-`ConfigValidationError` (invalid config, collects all issues). Hosts branch on
-`instanceof`, never on message text — messages are presentation.
+`ConfigLoadError` (config file unreadable), `ConfigValidationError` (invalid
+config, collects all issues), `InvalidIdentifierError`,
+`DuplicateGeneratedNameError` and `UnresolvedPathTemplateError` (a name or path
+that cannot be emitted). Hosts branch on `instanceof`, never on message text —
+messages are presentation.
+
+They carry a non-enumerable brand listing their lineage, so `instanceof` also
+recognizes an error thrown by a plugin's own bundled copy of this module.
+`@ng-openapi/shared` is inlined into each published plugin, so the same class
+exists more than once at runtime and the prototype chain alone would not match.
 
 ### Plugin contract
 
@@ -119,6 +127,27 @@ files from earlier runs, and a path-less spec legitimately generates no
 emit a file must remove it from the Project rather than leave it unsaved —
 otherwise it would show up in indexes and `filesWritten`.
 
+### Spec text never reaches emitted code unescaped
+
+Wire names, property names and header values are free-form text. Interpolating
+them into generated source is how #125 kept recurring, in five different
+positions. `packages/shared/src/emit/literal.emit.ts` is the only place that
+decides how: `quoteLiteral` for a string literal, `emitObjectKey` for an
+object-literal key (`__proto__` must be a computed key or it invokes the
+prototype setter and creates no property), `emitPropertyName` for a declaration,
+`escapeTemplateLiteral` inside a template literal. There is deliberately one
+implementation — the four near-copies that preceded it each missed a different
+character, and the one that escaped nothing shipped syntactically invalid
+TypeScript while generation reported success.
+
+### One write per run
+
+Generators build files into the shared `Project` and never save.
+`generateFromConfig` calls `project.save()` once, after every generator has
+succeeded, so a failure leaves the output directory untouched instead of
+half-written. A generator that decides not to emit a file removes it from the
+Project (see above).
+
 ## Safety nets
 
 - **Golden suite** — every generated file from 5 spec fixtures × config
@@ -137,6 +166,7 @@ otherwise it would show up in indexes and `filesWritten`.
 |---|---|
 | A new per-operation derived fact | `normalize.ts` + `NormalizedOperation` |
 | A code fragment used by ≥2 generators | `packages/shared/src/emit/` |
+| Anything that puts spec text into emitted code | `emit/literal.emit.ts` — never a local escaper |
 | A new generator option | `GeneratorConfig` + the narrow view that consumes it + `config-validation.ts` |
 | A new output file kind for the core | a generator under `packages/ng-openapi/src/lib/generators/` |
 | An alternative client flavor | a plugin package implementing `PluginGeneratorContext` |

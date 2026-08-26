@@ -25,12 +25,17 @@ const NG_OPENAPI_ERROR_BRAND = "__ngOpenApiError";
 /** Base class of every error ng-openapi raises deliberately. */
 export class NgOpenApiError extends Error {
     /** Minifier-stable identity of this class, compared against the brand. */
+    /**
+     * Minifier-stable identity, compared against the brand. Frozen below with
+     * the class: a writable static would let anything rewrite what `instanceof`
+     * answers for every error in the hierarchy.
+     */
     static readonly brand: string = "NgOpenApiError";
 
     /** The underlying error that caused this one, when there is one. */
     readonly cause?: unknown;
 
-    constructor(message: string, lineage: readonly string[], cause?: unknown) {
+    protected constructor(message: string, lineage: readonly string[], cause?: unknown) {
         super(message);
         this.name = lineage[0];
         this.cause = cause;
@@ -69,11 +74,18 @@ export class NgOpenApiError extends Error {
 
         // Read the descriptor rather than the property: an inherited value must
         // not count (the same prototype-chain read fixed elsewhere in this
-        // module), a getter must not run — `instanceof` must never throw or
-        // execute foreign code — and the brand this class sets is deliberately
-        // non-enumerable, so an enumerable one came from somewhere else, such
-        // as JSON.parse.
-        const descriptor = Object.getOwnPropertyDescriptor(value, NG_OPENAPI_ERROR_BRAND);
+        // module), a getter must not run, and the brand this class sets is
+        // deliberately non-enumerable, so an enumerable one came from somewhere
+        // else, such as JSON.parse.
+        //
+        // Wrapped because on a Proxy the getOwnPropertyDescriptor trap can
+        // throw, and `instanceof` must answer rather than propagate.
+        let descriptor: PropertyDescriptor | undefined;
+        try {
+            descriptor = Object.getOwnPropertyDescriptor(value, NG_OPENAPI_ERROR_BRAND);
+        } catch {
+            return false;
+        }
         if (!descriptor || descriptor.enumerable || !("value" in descriptor)) {
             return false;
         }
@@ -171,8 +183,8 @@ export class DuplicateGeneratedNameError extends NgOpenApiError {
 
     constructor(message: string, names: readonly string[], operations: readonly OperationRef[] = []) {
         super(message, ["DuplicateGeneratedNameError", "NgOpenApiError"]);
-        this.names = names;
-        this.operations = operations;
+        this.names = Object.freeze([...names]);
+        this.operations = Object.freeze([...operations]);
     }
 }
 
@@ -194,7 +206,7 @@ export class UnresolvedPathTemplateError extends NgOpenApiError {
     constructor(message: string, path: string, placeholders: readonly string[]) {
         super(message, ["UnresolvedPathTemplateError", "NgOpenApiError"]);
         this.path = path;
-        this.placeholders = [...placeholders];
+        this.placeholders = Object.freeze([...placeholders]);
     }
 }
 
@@ -212,6 +224,38 @@ export class ConfigValidationError extends NgOpenApiError {
             `Invalid ng-openapi configuration:\n${issues.map((issue) => `  - ${issue}`).join("\n")}`,
             ["ConfigValidationError", "NgOpenApiError"],
         );
-        this.issues = [...issues];
+        this.issues = Object.freeze([...issues]);
     }
+}
+
+/**
+ * The config file itself could not be loaded or evaluated — distinct from
+ * SpecParseError, which says the *specification* failed to parse.
+ */
+export class ConfigLoadError extends NgOpenApiError {
+    static override readonly brand = "ConfigLoadError";
+
+    /** Path of the config file that failed to load. */
+    readonly source: string;
+
+    constructor(message: string, source: string, cause?: unknown) {
+        super(message, ["ConfigLoadError", "NgOpenApiError"], cause);
+        this.source = source;
+    }
+}
+
+// The `brand` statics decide what `instanceof` answers for the whole
+// hierarchy, and a class static is writable by default. Frozen here rather
+// than declared with a getter so the classes stay ordinary to subclass.
+for (const errorClass of [
+    NgOpenApiError,
+    SpecLoadError,
+    SpecParseError,
+    InvalidIdentifierError,
+    DuplicateGeneratedNameError,
+    UnresolvedPathTemplateError,
+    ConfigValidationError,
+    ConfigLoadError,
+]) {
+    Object.defineProperty(errorClass, "brand", { writable: false, configurable: false });
 }

@@ -1,4 +1,4 @@
-import { emitObjectKey, NormalizedSpec, pascalCase, SwaggerDefinition, TypeMappingConfig } from "@ng-openapi/shared";
+import { emitObjectKey, escapeSingleQuoted, NormalizedSpec, pascalCase, SwaggerDefinition, TypeMappingConfig } from "@ng-openapi/shared";
 import { BuildOptions, ZodPluginOptions } from "./utils/types";
 import { isReferenceObject } from "./utils/is-reference-object";
 
@@ -328,8 +328,9 @@ export class ZodSchemaBuilder {
         return "undefined";
     }
 
+    /** Delegates to emit/literal.emit.ts; this copy used to miss carriage returns. */
     private escapeString(str: string): string {
-        return str.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, "\\n");
+        return escapeSingleQuoted(str);
     }
 
     private escapeRegex(pattern: string): string {

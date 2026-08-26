@@ -33,7 +33,10 @@ export function escapeSingleQuoted(value: string): string {
 export function escapeTemplateLiteral(value: string): string {
     return value
         .replace(/[\\`]/g, (char) => `\\${char}`)
-        .replace(/\$\{/g, "\\${");
+        .replace(/\$\{/g, "\\${")
+        // A lone CR inside a template literal is normalized to LF by the
+        // language, silently changing the value.
+        .replace(/\r/g, "\\r");
 }
 
 /**
@@ -45,15 +48,35 @@ export function escapeTemplateLiteral(value: string): string {
  * computed key is an ordinary key — used only where it is needed, so normal
  * generated output keeps the more readable quoted form.
  */
-export function emitObjectKey(name: string): string {
-    const quoted = `"${escapeDoubleQuoted(name)}"`;
+export function emitObjectKey(name: string, quoteStyle: "single" | "double" = "double"): string {
+    // The quote style is cosmetic and follows the surrounding generated code;
+    // only the computed-key decision is semantic.
+    const quoted = quoteStyle === "single" ? quoteLiteral(name) : `"${escapeDoubleQuoted(name)}"`;
     return name === "__proto__" ? `[${quoted}]` : quoted;
 }
 
 /** The inside of a double-quoted literal. */
-function escapeDoubleQuoted(value: string): string {
+export function escapeDoubleQuoted(value: string): string {
     return value
         .replace(/[\\"]/g, (char) => `\\${char}`)
         .replace(/\r/g, "\\r")
         .replace(/\n/g, "\\n");
 }
+
+/**
+ * A property name in a *declaration* position (an interface member, a type
+ * literal): the bare identifier when it is one, otherwise a quoted and escaped
+ * key.
+ *
+ * The unescaped `"${name}"` this replaces emitted `"say"hi"` for the legal
+ * property name `say"hi` — three syntax errors in one model file from a valid
+ * spec, with generation reporting success. `__proto__` needs no special
+ * treatment here: a declaration has no prototype setter to invoke, unlike the
+ * object-literal position that `emitObjectKey` serves.
+ */
+export function emitPropertyName(name: string): string {
+    return IDENTIFIER_NAME.test(name) ? name : `"${escapeDoubleQuoted(name)}"`;
+}
+
+/** Names emittable bare, without quotes. Deliberately ASCII-conservative. */
+const IDENTIFIER_NAME = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;

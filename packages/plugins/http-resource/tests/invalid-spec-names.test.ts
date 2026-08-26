@@ -248,3 +248,70 @@ it("does not reserve a request-body name the resource never binds", async () => 
     // The core service does bind a body, so it legitimately renames there.
     expect(result.warnings.filter((w) => w.includes("resource method itself"))).toEqual([]);
 });
+
+it("throws a typed error naming both operations when resource method names collide", async () => {
+    const output = mkdtempSync(join(tmpRoot, "hr-dup-"));
+    tempDirs.push(output);
+
+    const input = join(output, "spec.json");
+    writeFileSync(
+        input,
+        JSON.stringify({
+            openapi: "3.0.0",
+            info: { title: "t", version: "1.0.0" },
+            paths: {
+                "/a": { get: { tags: ["T"], operationId: "same.name", responses: { "200": { description: "OK" } } } },
+                "/b": { get: { tags: ["T"], operationId: "same_name", responses: { "200": { description: "OK" } } } },
+            },
+        }),
+    );
+
+    // The plugin's own guard, distinct from the core service generator's: the
+    // nearby InvalidIdentifierError test covers a different one entirely.
+    await expect(
+        generateFromConfig({
+            input,
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: false },
+            plugins: [HttpResourcePlugin],
+        }),
+    ).rejects.toThrow(/same\.name .*and same_name /);
+});
+
+it("warns about a merged parameter on the resource side too", async () => {
+    const output = mkdtempSync(join(tmpRoot, "hr-merged-"));
+    tempDirs.push(output);
+
+    const input = join(output, "spec.json");
+    writeFileSync(
+        input,
+        JSON.stringify({
+            openapi: "3.0.0",
+            info: { title: "t", version: "1.0.0" },
+            paths: {
+                "/things/{id}": {
+                    get: {
+                        tags: ["Things"],
+                        operationId: "getThing",
+                        parameters: [
+                            { name: "id", in: "path", required: true, schema: { type: "string" } },
+                            { name: "id", in: "query", schema: { type: "integer" } },
+                        ],
+                        responses: { "200": { description: "OK" } },
+                    },
+                },
+            },
+        }),
+    );
+
+    const result = await generateFromConfig({
+        input,
+        output,
+        options: { dateType: "string", enumStyle: "union", generateServices: false },
+        plugins: [HttpResourcePlugin],
+    });
+
+    // Plugin-only runs were silent: the generator destructured { renamed }
+    // without merged.
+    expect(result.warnings.join("\n")).toMatch(/"id".*is declared in more than one location/);
+});

@@ -39,6 +39,7 @@ export { normalizeSchema, normalizeSpec, SwaggerParser } from "./core";
 
 // Typed pipeline errors — branch on these, not on message text
 export {
+    ConfigLoadError,
     ConfigValidationError,
     describeOperation,
     DuplicateGeneratedNameError,
@@ -61,6 +62,8 @@ export {
     emitUrlConstruction,
     emitUrlExpression,
     emitObjectKey,
+    emitPropertyName,
+    escapeDoubleQuoted,
     escapeSingleQuoted,
     escapeTemplateLiteral,
     quoteLiteral,

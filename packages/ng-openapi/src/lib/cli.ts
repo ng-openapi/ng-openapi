@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { GeneratorConfig, isUrl, SpecLoadError, SpecParseError } from "@ng-openapi/shared";
+import { ConfigLoadError, GeneratorConfig, isUrl, SpecLoadError } from "@ng-openapi/shared";
 import { Command } from "commander";
 import * as fs from "fs";
 import * as path from "path";
@@ -87,7 +87,7 @@ async function loadConfigFile(configPath: string): Promise<GeneratorConfig> {
 
         return config;
     } catch (error) {
-        throw new SpecParseError(`Failed to load configuration file: ${configPath}`, configPath, error);
+        throw new ConfigLoadError(`Failed to load configuration file: ${configPath}`, configPath, error);
     }
 }
 
@@ -134,8 +134,15 @@ async function generateFromOptions(options: CliOptions): Promise<void> {
 
         // The underlying failure is often the only actionable part (an ENOENT
         // path, a JSON parse position), and it was being collected on `cause`
-        // and then never shown.
-        for (let cause = (error as { cause?: unknown } | undefined)?.cause, depth = 0; cause && depth < 3; depth++) {
+        // and then never shown. Capped because a cause chain can be cyclic —
+        // and the cap says so rather than trailing off silently.
+        const MAX_CAUSES = 3;
+        let cause = (error as { cause?: unknown } | undefined)?.cause;
+        for (let depth = 0; cause !== undefined && cause !== null; depth++) {
+            if (depth === MAX_CAUSES) {
+                console.error("   … further causes omitted");
+                break;
+            }
             console.error("   caused by:", cause instanceof Error ? cause.message : cause);
             cause = (cause as { cause?: unknown }).cause;
         }

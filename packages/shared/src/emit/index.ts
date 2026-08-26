@@ -1,4 +1,11 @@
-export { emitObjectKey, escapeSingleQuoted, escapeTemplateLiteral, quoteLiteral } from "./literal.emit";
+export {
+    emitObjectKey,
+    emitPropertyName,
+    escapeDoubleQuoted,
+    escapeSingleQuoted,
+    escapeTemplateLiteral,
+    quoteLiteral,
+} from "./literal.emit";
 export { emitDefaultHeadersMerge, emitHeaders } from "./headers.emit";
 export type { HeadersEmitOptions } from "./headers.emit";
 export { emitQueryParams, emitSignalAwareQueryParams } from "./query-params.emit";

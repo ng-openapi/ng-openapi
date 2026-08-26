@@ -729,9 +729,144 @@ describe("what generation says out loud", () => {
             options: { dateType: "string" as const, enumStyle: "union" as const, generateServices: true },
         };
 
-        await expect(generateFromConfig(config)).rejects.toBeInstanceOf(DuplicateGeneratedNameError);
+        // Captured once and asserted twice: generating a second time into the
+        // same directory would couple this to whatever a failed run leaves
+        // behind, which the sibling test above pins as "nothing".
+        const error = await generateFromConfig(config).catch((reason: unknown) => reason);
+
+        expect(error).toBeInstanceOf(DuplicateGeneratedNameError);
         // Names the operationIds, not just the class: the bare Error this
         // replaced left the user to work out which two collided.
-        await expect(generateFromConfig(config)).rejects.toThrow(/list-things .*and list_things /);
+        expect((error as Error).message).toMatch(/list-things .*and list_things /);
+    });
+});
+
+describe("spec text reaching emitted literals", () => {
+    it("escapes property names in generated models", async () => {
+        const output = outputDirs.create("names-props-");
+        await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                components: {
+                    schemas: {
+                        Thing: {
+                            type: "object",
+                            properties: {
+                                // All legal property names in a spec. The
+                                // unescaped `"NAME"` emission produced three
+                                // syntax errors in this one file while
+                                // generation reported success.
+                                "say\"hi": { type: "string" },
+                                "back\\slash": { type: "string" },
+                                "has space": { type: "string" },
+                                plain: { type: "string" },
+                            },
+                        },
+                    },
+                },
+                paths: {
+                    "/things": {
+                        get: {
+                            tags: ["Things"],
+                            operationId: "listThings",
+                            responses: {
+                                "200": {
+                                    description: "OK",
+                                    content: {
+                                        "application/json": {
+                                            schema: { $ref: "#/components/schemas/Thing" },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("escapes form-data and urlencoded field names", async () => {
+        const output = outputDirs.create("names-formesc-");
+        await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/upload": {
+                        post: {
+                            tags: ["Upload"],
+                            operationId: "upload",
+                            requestBody: {
+                                content: {
+                                    "multipart/form-data": {
+                                        schema: {
+                                            type: "object",
+                                            properties: { "it's": { type: "string" }, "back\\slash": { type: "string" } },
+                                        },
+                                    },
+                                },
+                            },
+                            responses: { "200": { description: "OK" } },
+                        },
+                    },
+                    "/login": {
+                        post: {
+                            tags: ["Upload"],
+                            operationId: "login",
+                            requestBody: {
+                                content: {
+                                    "application/x-www-form-urlencoded": {
+                                        schema: {
+                                            type: "object",
+                                            properties: { "it's": { type: "string" }, "back\\slash": { type: "string" } },
+                                        },
+                                    },
+                                },
+                            },
+                            responses: { "200": { description: "OK" } },
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        const upload = readFileSync(join(output, "services", "upload.service.ts"), "utf8");
+        // The wire name must survive intact inside the append call — the four
+        // form-data sites were unguarded while the query-param site was not.
+        expect(upload).toContain("formData.append('it\\'s'");
+        expect(upload).toContain("formBody.append('it\\'s'");
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("warns about a required cookie parameter, not only a header one", async () => {
+        const output = outputDirs.create("names-cookie-");
+        const result = await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/c": {
+                        get: {
+                            tags: ["Cookie"],
+                            operationId: "cookieOp",
+                            parameters: [{ name: "session", in: "cookie", required: true, schema: { type: "string" } }],
+                            responses: { "200": { description: "OK" } },
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        expect(result.warnings.join("\n")).toMatch(/Required cookie parameter "session"/);
     });
 });

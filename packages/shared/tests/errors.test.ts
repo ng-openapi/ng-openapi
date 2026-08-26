@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { InvalidIdentifierError, NgOpenApiError, SpecLoadError, SpecParseError } from "../src";
+import {
+    ConfigValidationError,
+    InvalidIdentifierError,
+    NgOpenApiError,
+    SpecLoadError,
+    SpecParseError,
+} from "../src";
 
 describe("typed errors", () => {
     it("keeps the concrete class name and cause", () => {
@@ -99,5 +105,40 @@ describe("typed errors", () => {
         expect(null).not.toBeInstanceOf(NgOpenApiError);
         expect("string").not.toBeInstanceOf(NgOpenApiError);
         expect({}).not.toBeInstanceOf(NgOpenApiError);
+    });
+    it("cannot be rewritten to change what instanceof answers", () => {
+        // The static decides the comparison for the whole hierarchy.
+        expect(() => {
+            (SpecLoadError as unknown as { brand: string }).brand = "SpecParseError";
+        }).toThrow();
+        expect(new SpecLoadError("x", "./s")).not.toBeInstanceOf(SpecParseError);
+    });
+
+    it("answers rather than throwing for a hostile Proxy", () => {
+        const hostile = new Proxy(new Error("hostile"), {
+            getOwnPropertyDescriptor() {
+                throw new Error("trap should not escape");
+            },
+        });
+
+        expect(() => hostile instanceof SpecLoadError).not.toThrow();
+        expect(hostile).not.toBeInstanceOf(SpecLoadError);
+    });
+
+    it("freezes the payload arrays it hands out", () => {
+        const error = new ConfigValidationError(["one", "two"]);
+        expect(() => (error.issues as string[]).push("three")).toThrow();
+        expect(error.issues).toEqual(["one", "two"]);
+    });
+
+    it("brands ConfigValidationError like the rest of the hierarchy", () => {
+        const error = new ConfigValidationError(["bad"]);
+        expect(error).toBeInstanceOf(NgOpenApiError);
+        // Asserting instanceof alone would pass through the prototype chain
+        // whether or not it is branded, so check the brand a plugin bundle
+        // would actually match on.
+        const lineage = Object.getOwnPropertyDescriptor(error, "__ngOpenApiError")?.value;
+        expect(lineage).toEqual(["ConfigValidationError", "NgOpenApiError"]);
+        expect(branded(["ConfigValidationError", "NgOpenApiError"])).toBeInstanceOf(ConfigValidationError);
     });
 });
