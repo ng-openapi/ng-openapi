@@ -6,7 +6,7 @@ import {
     ServiceMethodParamsGenerator,
     ServiceMethodRequestObjectGenerator,
 } from "./service-method";
-import { getOperationMethodName, MethodGenOptions, NormalizedOperation } from "@ng-openapi/shared";
+import { emitDocs, getOperationMethodName, MethodGenOptions, NormalizedOperation } from "@ng-openapi/shared";
 
 export class ServiceMethodGenerator {
     private config: MethodGenOptions;
@@ -43,7 +43,7 @@ export class ServiceMethodGenerator {
             returnType: returnType,
             statements: methodBody,
             overloads: methodOverLoads,
-            docs: operation.description ? [operation.description] : undefined,
+            docs: emitDocs(operation.description),
         });
     }
 

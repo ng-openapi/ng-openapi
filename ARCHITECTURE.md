@@ -135,7 +135,9 @@ positions. `packages/shared/src/emit/literal.emit.ts` is the only place that
 decides how: `quoteLiteral` for a string literal, `emitObjectKey` for an
 object-literal key (`__proto__` must be a computed key or it invokes the
 prototype setter and creates no property), `emitPropertyName` for a declaration,
-`escapeTemplateLiteral` inside a template literal. There is deliberately one
+`escapeTemplateLiteral` inside a template literal, and `emitDocs` for a JSDoc
+block — a description containing `*/` closes the comment, and everything after
+it is emitted as code that compiles. There is deliberately one
 implementation — the four near-copies that preceded it each missed a different
 character, and the one that escaped nothing shipped syntactically invalid
 TypeScript while generation reported success.

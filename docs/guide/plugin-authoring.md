@@ -69,9 +69,12 @@ re-derive them.
 - **Never interpolate spec text into an emitted literal.** Use `quoteLiteral`
   for a string literal, `emitObjectKey` for an object-literal key (a
   `__proto__` key invokes the prototype setter and creates no property),
-  `emitPropertyName` for a declaration, and `escapeTemplateLiteral` inside a
-  template literal. A quote is a syntax error; a backslash is worse, because it
-  compiles and changes which value goes on the wire.
+  `emitPropertyName` for a declaration, `escapeTemplateLiteral` inside a
+  template literal, and `emitDocs` for anything you pass as ts-morph `docs`.
+  A quote is a syntax error; a backslash is worse, because it compiles and
+  changes which value goes on the wire; and a description containing the
+  comment terminator ends the JSDoc block, so whatever follows is emitted as
+  code.
 - **Throw typed errors** from `@ng-openapi/shared` rather than bare `Error`s, so
   hosts can branch on the class. They carry a brand that survives bundling, so
   `instanceof` works across your published bundle and the host's copy.

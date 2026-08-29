@@ -1,4 +1,7 @@
-import { SwaggerDefinition } from "@ng-openapi/shared";
+import {
+    emitDocs,
+    SwaggerDefinition,
+} from "@ng-openapi/shared";
 import {
     IndexSignatureDeclarationStructure,
     InterfaceDeclarationStructure,
@@ -21,7 +24,7 @@ export class InterfaceBuilder {
             kind: StructureKind.Interface,
             name,
             isExported: true,
-            docs: definition.description ? [definition.description] : undefined,
+            docs: emitDocs(definition.description),
             properties: this.buildProperties(definition),
             indexSignatures: this.buildIndexSignatures(definition),
         };
@@ -43,7 +46,7 @@ export class InterfaceBuilder {
                 type: propertyType,
                 isReadonly: isReadOnly,
                 hasQuestionToken: !isRequired,
-                docs: property.description ? [property.description] : undefined,
+                docs: emitDocs(property.description),
             };
         });
     }

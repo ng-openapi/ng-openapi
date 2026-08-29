@@ -1,7 +1,9 @@
 export {
+    emitDocs,
     emitObjectKey,
     emitPropertyName,
     escapeDoubleQuoted,
+    escapeJsDoc,
     escapeSingleQuoted,
     escapeTemplateLiteral,
     quoteLiteral,

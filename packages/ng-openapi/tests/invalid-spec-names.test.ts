@@ -791,6 +791,53 @@ describe("spec text reaching emitted literals", () => {
         expectGeneratedCodeCompiles(output);
     });
 
+    it("cannot be escaped out of a JSDoc block by a description", async () => {
+        const output = outputDirs.create("names-jsdoc-");
+        // A description closing the comment lets everything after it be emitted
+        // as code. At definition level the result is valid TypeScript, so it
+        // compiles — a spec fetched by URL could write declarations into a
+        // consumer's source tree with generation reporting success.
+        const payload = "ends */ export const PWNED = 1; /*";
+        await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                components: {
+                    schemas: {
+                        Doc: {
+                            type: "object",
+                            description: payload,
+                            properties: { a: { type: "string", description: payload } },
+                        },
+                    },
+                },
+                paths: {
+                    "/d": {
+                        get: {
+                            tags: ["D"],
+                            operationId: "d",
+                            description: payload,
+                            responses: {
+                                "200": {
+                                    description: "OK",
+                                    content: { "application/json": { schema: { $ref: "#/components/schemas/Doc" } } },
+                                },
+                            },
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        for (const file of ["models/index.ts", "services/d.service.ts"]) {
+            const emitted = readFileSync(join(output, file), "utf8");
+            expect(emitted, file).not.toMatch(/^\s*export const PWNED/m);
+        }
+        expectGeneratedCodeCompiles(output);
+    });
+
     it("escapes form-data and urlencoded field names", async () => {
         const output = outputDirs.create("names-formesc-");
         await generateFromConfig({
@@ -843,6 +890,56 @@ describe("spec text reaching emitted literals", () => {
         // form-data sites were unguarded while the query-param site was not.
         expect(upload).toContain("formData.append('it\\'s'");
         expect(upload).toContain("formBody.append('it\\'s'");
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("escapes array-typed form field names, not only scalar ones", async () => {
+        const output = outputDirs.create("names-formarr-");
+        const arrayField = { type: "array", items: { type: "string" } };
+        await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/upload": {
+                        post: {
+                            tags: ["Arr"],
+                            operationId: "upload",
+                            requestBody: {
+                                content: {
+                                    "multipart/form-data": {
+                                        schema: { type: "object", properties: { "it's": arrayField } },
+                                    },
+                                },
+                            },
+                            responses: { "200": { description: "OK" } },
+                        },
+                    },
+                    "/login": {
+                        post: {
+                            tags: ["Arr"],
+                            operationId: "login",
+                            requestBody: {
+                                content: {
+                                    "application/x-www-form-urlencoded": {
+                                        schema: { type: "object", properties: { "it's": arrayField } },
+                                    },
+                                },
+                            },
+                            responses: { "200": { description: "OK" } },
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        // The array branches are separate call sites from the scalar ones; the
+        // earlier test declared only string properties, so they never ran.
+        const arr = readFileSync(join(output, "services", "arr.service.ts"), "utf8");
+        expect(arr).toContain("formData.append('it\\'s'");
+        expect(arr).toContain("formBody.append('it\\'s'");
         expectGeneratedCodeCompiles(output);
     });
 

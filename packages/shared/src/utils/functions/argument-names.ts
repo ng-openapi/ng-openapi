@@ -34,10 +34,12 @@ export interface ArgumentNameProfile {
  * `emit/query-params.emit.ts`, `emit/headers.emit.ts` and the form-data blocks
  * of `service-method-body.generator.ts`).
  */
-export const SERVICE_ARGUMENT_PROFILE: ArgumentNameProfile = {
-    reserved: ["observe", "options", "url", "params", "headers", "formData", "formBody"],
+// Frozen: a module singleton whose mutation would be observed by every later
+// resolveArgumentNames call. `readonly` is compile-time only.
+export const SERVICE_ARGUMENT_PROFILE: ArgumentNameProfile = Object.freeze({
+    reserved: Object.freeze(["observe", "options", "url", "params", "headers", "formData", "formBody"]),
     bindsRequestBody: true,
-};
+});
 
 /**
  * The httpResource plugin's equivalent. Deliberately a different set, not a
@@ -48,10 +50,10 @@ export const SERVICE_ARGUMENT_PROFILE: ArgumentNameProfile = {
  * wraps GETs only and never binds a request body, so reserving a body name
  * would burn an identifier no emitted parameter uses.
  */
-export const RESOURCE_ARGUMENT_PROFILE: ArgumentNameProfile = {
-    reserved: ["resourceOptions", "requestOptions", "params", "headers"],
+export const RESOURCE_ARGUMENT_PROFILE: ArgumentNameProfile = Object.freeze({
+    reserved: Object.freeze(["resourceOptions", "requestOptions", "params", "headers"]),
     bindsRequestBody: false,
-};
+});
 
 /** Key of the JSON request-body argument, which has no wire name of its own. */
 const REQUEST_BODY_KEY = Symbol("requestBody");
@@ -148,12 +150,26 @@ export function resolveArgumentNames(
     }
 
     return {
-        of: (wireName) => identifiers.get(wireName) ?? camelCase(wireName),
+        // The fallback runs the *same* rules the resolver would have, rather
+        // than a bare camelCase: an unregistered wire name otherwise came back
+        // as `class` or `options`, names the resolver never assigns.
+        of: (wireName) => identifiers.get(wireName) ?? fallbackIdentifier(wireName, profile),
         body: identifiers.get(REQUEST_BODY_KEY),
-        all: [...identifiers.values()],
-        renamed,
-        merged: [...merged],
+        all: Object.freeze([...identifiers.values()]),
+        renamed: Object.freeze(renamed),
+        merged: Object.freeze([...merged]),
     };
+}
+
+/**
+ * Identifier for a wire name the resolver never saw. Only reachable for
+ * operations assembled outside the normalizer (tests, plugin fixtures); a
+ * resolved map contains every wire name of its operation.
+ */
+function fallbackIdentifier(wireName: string, profile: ArgumentNameProfile): string {
+    const base = camelCase(wireName);
+    const taken = new Set<string>([...profile.reserved, ...RESERVED_WORDS]);
+    return deriveLocalName(base, [...taken]);
 }
 
 /**

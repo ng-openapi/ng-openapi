@@ -315,3 +315,49 @@ it("warns about a merged parameter on the resource side too", async () => {
     // without merged.
     expect(result.warnings.join("\n")).toMatch(/"id".*is declared in more than one location/);
 });
+
+it("keeps a __proto__ default header in the emitted object", async () => {
+    const output = mkdtempSync(join(tmpRoot, "hr-hdrproto-"));
+    tempDirs.push(output);
+
+    const input = join(output, "spec.json");
+    writeFileSync(
+        input,
+        JSON.stringify({
+            openapi: "3.0.0",
+            info: { title: "t", version: "1.0.0" },
+            paths: {
+                "/h": { get: { tags: ["H"], operationId: "h", responses: { "200": { description: "OK" } } } },
+            },
+        }),
+    );
+
+    await generateFromConfig({
+        input,
+        output,
+        options: {
+            dateType: "string",
+            enumStyle: "union",
+            generateServices: true,
+            // The resource's default-header merge is the one object-literal key
+            // position built from config; the core service emits guards instead.
+            // Built with JSON.parse because a __proto__ key written in JS source
+            // is the prototype setter and never becomes an own property — the
+            // same hazard this test exists to pin, one level up.
+            customHeaders: JSON.parse('{"__proto__":"hijack","X-Api-Key":"secret"}'),
+        },
+        plugins: [HttpResourcePlugin],
+    });
+
+    const resource = readFileSync(join(output, "resources", "h.resource.ts"), "utf8");
+    const open = resource.indexOf("headers = {");
+    const literal = resource.slice(resource.indexOf("{", open), resource.indexOf("};", open) + 1);
+
+    // Evaluated, not pattern-matched: a __proto__ key is present in the source
+    // text either way, but as a plain key it invokes the prototype setter, so
+    // the header never reaches the request and the prototype is replaced.
+    const built = new Function(`const headers = {}; return ${literal};`)() as Record<string, unknown>;
+    expect(Object.keys(built)).toContain("__proto__");
+    expect(Object.getPrototypeOf(built)).toBe(Object.prototype);
+    expect(built["__proto__"]).toBe("hijack");
+});

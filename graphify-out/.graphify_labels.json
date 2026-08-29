@@ -173,5 +173,6 @@
   "171": "`validateInput`",
   "172": "`input`",
   "173": "`responseTypeMapping`",
-  "174": "Schema Validation"
+  "174": "Schema Validation",
+  "175": "golden-suite.ts"
 }

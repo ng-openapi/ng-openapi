@@ -1,6 +1,11 @@
-import { SwaggerDefinition, SwaggerParser, TYPE_GENERATOR_HEADER_COMMENT, TypeGenOptions,
+import {
+    emitDocs,
     NgOpenApiError,
     SpecParseError,
+    SwaggerDefinition,
+    SwaggerParser,
+    TYPE_GENERATOR_HEADER_COMMENT,
+    TypeGenOptions,
 } from "@ng-openapi/shared";
 import { ImportDeclarationStructure, OptionalKind, Project, SourceFile, StatementStructures, StructureKind } from "ts-morph";
 import { EnumBuilder } from "./enum-builder";
@@ -100,7 +105,7 @@ export class TypeGenerator {
                     kind: StructureKind.TypeAlias,
                     name: typeName,
                     isExported: true,
-                    docs: definition.description ? [definition.description] : undefined,
+                    docs: emitDocs(definition.description),
                     type: this.resolver.resolve(definition),
                 },
             ];
@@ -122,7 +127,7 @@ export class TypeGenerator {
             name,
             type: typeExpression,
             isExported: true,
-            docs: definition.description ? [definition.description] : undefined,
+            docs: emitDocs(definition.description),
         };
     }
 
@@ -133,7 +138,7 @@ export class TypeGenerator {
             kind: StructureKind.TypeAlias,
             name,
             isExported: true,
-            docs: definition.description ? [definition.description] : undefined,
+            docs: emitDocs(definition.description),
             type: `Array<${itemType}>`,
         };
     }

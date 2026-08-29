@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
     ConfigValidationError,
+    DuplicateGeneratedNameError,
     InvalidIdentifierError,
     NgOpenApiError,
     SpecLoadError,
     SpecParseError,
+    UnresolvedPathTemplateError,
 } from "../src";
+import type { OperationRef } from "../src";
 
 describe("typed errors", () => {
     it("keeps the concrete class name and cause", () => {
@@ -77,13 +80,6 @@ describe("typed errors", () => {
         expect(error).not.toBeInstanceOf(SpecParseError);
     });
 
-    it("does not treat a parent as an instance of a subclass that adds no brand", () => {
-        class TighterSpecLoadError extends SpecLoadError {}
-        // `brand` is a static and therefore inherited; without an own brand the
-        // prototype chain has to be the only answer.
-        expect(new SpecLoadError("x", "./s")).not.toBeInstanceOf(TighterSpecLoadError);
-    });
-
     it("matches a caller's own subclass through the prototype chain", () => {
         class TighterSpecLoadError extends SpecLoadError {}
         const error = new TighterSpecLoadError("x", "./s");
@@ -106,12 +102,11 @@ describe("typed errors", () => {
         expect("string").not.toBeInstanceOf(NgOpenApiError);
         expect({}).not.toBeInstanceOf(NgOpenApiError);
     });
-    it("cannot be rewritten to change what instanceof answers", () => {
-        // The static decides the comparison for the whole hierarchy.
-        expect(() => {
-            (SpecLoadError as unknown as { brand: string }).brand = "SpecParseError";
-        }).toThrow();
-        expect(new SpecLoadError("x", "./s")).not.toBeInstanceOf(SpecParseError);
+    it("does not treat a parent as an instance of a subclass that adds no brand", () => {
+        class TighterSpecLoadError extends SpecLoadError {}
+        // `brand` is a static and therefore inherited; without an own brand the
+        // prototype chain has to be the only answer.
+        expect(new SpecLoadError("x", "./s")).not.toBeInstanceOf(TighterSpecLoadError);
     });
 
     it("answers rather than throwing for a hostile Proxy", () => {
@@ -140,5 +135,69 @@ describe("typed errors", () => {
         const lineage = Object.getOwnPropertyDescriptor(error, "__ngOpenApiError")?.value;
         expect(lineage).toEqual(["ConfigValidationError", "NgOpenApiError"]);
         expect(branded(["ConfigValidationError", "NgOpenApiError"])).toBeInstanceOf(ConfigValidationError);
+    });
+    it("lets a consumer subclass without throwing at module-evaluation time", () => {
+        // `static override brand = "X"` compiles to a plain assignment unless
+        // useDefineForClassFields is on (it is off at this repo's target), so a
+        // non-writable inherited static made this throw on import — the
+        // consumer could not load their own module at all.
+        expect(() => {
+            class Tighter extends SpecLoadError {
+                static brand = "Tighter";
+            }
+            return new Tighter("x", "./s");
+        }).not.toThrow();
+    });
+
+    it("does not let an unregistered subclass claim its parent's instances", () => {
+        class Tighter extends SpecLoadError {}
+        expect(new SpecLoadError("x", "./s")).not.toBeInstanceOf(Tighter);
+        expect(new Tighter("x", "./s")).toBeInstanceOf(SpecLoadError);
+    });
+
+    it("cannot have its lineage forged by a subclass", () => {
+        // The lineage comes from the registry keyed on new.target, so there is
+        // no constructor argument to pass a false one through.
+        class Forged extends NgOpenApiError {
+            constructor() {
+                super("forged");
+            }
+        }
+        expect(new Forged()).not.toBeInstanceOf(SpecLoadError);
+        expect(new Forged()).toBeInstanceOf(NgOpenApiError);
+    });
+
+    it("answers rather than throwing for a Proxy that traps getPrototypeOf", () => {
+        const hostile = new Proxy(new Error("hostile"), {
+            getPrototypeOf() {
+                throw new Error("trap should not escape");
+            },
+            getOwnPropertyDescriptor() {
+                throw new Error("trap should not escape");
+            },
+        });
+
+        expect(() => hostile instanceof SpecLoadError).not.toThrow();
+        expect(hostile).not.toBeInstanceOf(SpecLoadError);
+    });
+
+    it("freezes every payload array it hands out", () => {
+        const duplicate = new DuplicateGeneratedNameError("x", ["a"], [{ method: "GET", path: "/a" }]);
+        expect(() => (duplicate.names as string[]).push("b")).toThrow();
+        expect(() => (duplicate.operations as OperationRef[]).push({ method: "GET", path: "/b" })).toThrow();
+
+        const unresolved = new UnresolvedPathTemplateError("x", "/a/{id}", ["id"]);
+        expect(() => (unresolved.placeholders as string[]).push("other")).toThrow();
+
+        expect(() => (new ConfigValidationError(["one"]).issues as string[]).push("two")).toThrow();
+    });
+
+    it("snapshots the operation rather than aliasing the caller's object", () => {
+        const operation = { operationId: "op", method: "GET", path: "/a" };
+        const error = new InvalidIdentifierError("x", operation, "bad");
+
+        operation.operationId = "mutated";
+        expect(error.operation.operationId).toBe("op");
+        expect(() => ((error.operation as OperationRef).method = "POST")).toThrow();
     });
 });

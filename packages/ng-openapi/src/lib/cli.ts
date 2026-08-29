@@ -50,7 +50,7 @@ async function loadConfigFile(configPath: string): Promise<GeneratorConfig> {
     const resolvedPath = path.resolve(configPath);
 
     if (!fs.existsSync(resolvedPath)) {
-        throw new Error(`Configuration file not found: ${resolvedPath}`);
+        throw new ConfigLoadError(`Configuration file not found: ${resolvedPath}`, resolvedPath);
     }
 
     // Clear require cache to ensure fresh load

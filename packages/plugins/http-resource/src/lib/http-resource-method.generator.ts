@@ -5,7 +5,7 @@ import {
     ParameterDeclarationStructure,
 } from "ts-morph";
 import { HttpResourceMethodBodyGenerator, HttpResourceMethodParamsGenerator } from "./http-resource-method";
-import { getOperationMethodName, getResponseType, MethodGenOptions, NormalizedOperation } from "@ng-openapi/shared";
+import { emitDocs, getOperationMethodName, getResponseType, MethodGenOptions, NormalizedOperation } from "@ng-openapi/shared";
 
 export class HttpResourceMethodGenerator {
     private config: MethodGenOptions;
@@ -32,7 +32,7 @@ export class HttpResourceMethodGenerator {
             returnType: returnType,
             statements: methodBody,
             overloads: overloads,
-            docs: operation.description ? [operation.description] : undefined,
+            docs: emitDocs(operation.description),
         });
     }
 

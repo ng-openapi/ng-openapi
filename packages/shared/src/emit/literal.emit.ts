@@ -80,3 +80,30 @@ export function emitPropertyName(name: string): string {
 
 /** Names emittable bare, without quotes. Deliberately ASCII-conservative. */
 const IDENTIFIER_NAME = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
+
+/**
+ * Escapes text for a JSDoc block.
+ *
+ * A `*` followed by `/` closes the comment, so a description containing one
+ * ends the block early and everything after it is emitted as code. From a
+ * remote spec — ng-openapi accepts a URL as input — that writes arbitrary
+ * declarations into the consumer's source tree, and at definition level the
+ * result is valid TypeScript, so it compiles and no compile assertion sees it.
+ *
+ * `*\/` is the standard neutralization (TypeScript's own emitter does the
+ * same): the backslash has no meaning inside a comment, so it renders as
+ * written and cannot terminate the block.
+ */
+export function escapeJsDoc(text: string): string {
+    return text.replace(/\*\//g, "*\\/");
+}
+
+/**
+ * The `docs` array for a ts-morph structure, or undefined when there is no
+ * description. Every generator goes through this rather than building
+ * `[description]` inline, so the escape cannot be forgotten at one of the eight
+ * call sites.
+ */
+export function emitDocs(description: string | undefined): string[] | undefined {
+    return description ? [escapeJsDoc(description)] : undefined;
+}
