@@ -102,7 +102,6 @@ export class BaseInterceptorGenerator {
         sourceFile.insertText(0, BASE_INTERCEPTOR_HEADER_COMMENT(this.#clientName));
 
         sourceFile.formatText();
-        sourceFile.saveSync();
     }
 
     private capitalizeFirst(str: string): string {

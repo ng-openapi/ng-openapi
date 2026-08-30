@@ -5,12 +5,16 @@
     "projectType": "library",
     "release": {
         "version": {
-            "manifestRootsToUpdate": ["dist/{projectRoot}"],
+            "manifestRootsToUpdate": [
+                "dist/{projectRoot}"
+            ],
             "currentVersionResolver": "git-tag",
             "fallbackCurrentVersionResolver": "disk"
         }
     },
-    "tags": ["scope:core"],
+    "tags": [
+        "scope:core"
+    ],
     "targets": {
         "nx-release-publish": {
             "options": {
@@ -23,12 +27,14 @@
                 "command": "npx tsup",
                 "cwd": "packages/ng-openapi"
             },
-            "outputs": ["{workspaceRoot}/dist/packages/ng-openapi"]
+            "outputs": [
+                "{workspaceRoot}/dist/packages/ng-openapi"
+            ]
         },
         "typecheck": {
             "executor": "nx:run-commands",
             "options": {
-                "command": "npx tsc -p {projectRoot}/tsconfig.lib.json --noEmit"
+                "command": "npx tsc -p {projectRoot}/tsconfig.lib.json --noEmit && npx tsc -p {projectRoot}/tsconfig.spec.json --noEmit"
             }
         },
         "test": {

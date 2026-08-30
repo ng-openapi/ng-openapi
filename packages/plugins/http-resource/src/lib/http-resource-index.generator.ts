@@ -42,6 +42,5 @@ export class HttpResourceIndexGenerator {
         });
 
         sourceFile.formatText();
-        sourceFile.saveSync();
     }
 }

@@ -1,5 +1,6 @@
 import { Project, SourceFile } from "ts-morph";
 import {
+    emitDocs,
     MethodGenOptions,
     NormalizedOperation,
     pascalCase,
@@ -68,7 +69,7 @@ export class RequestParamsGenerator {
                 name: entry.interfaceName,
                 isExported: true,
                 properties: ServiceMethodRequestObjectGenerator.toInterfaceProperties(entry),
-                docs: operation.description ? [operation.description] : undefined,
+                docs: emitDocs(operation.description),
             });
         });
 
@@ -77,7 +78,6 @@ export class RequestParamsGenerator {
         this.addMissingImports(sourceFile);
         sourceFile.formatText();
         sourceFile.insertText(0, REQUEST_PARAMS_GENERATOR_HEADER_COMMENT);
-        sourceFile.saveSync();
 
         this.addModelsBarrelExport(outputRoot);
     }
@@ -135,6 +135,5 @@ export class RequestParamsGenerator {
         }
         modelsIndex.addExportDeclaration({ moduleSpecifier: "./request-params" });
         modelsIndex.formatText();
-        modelsIndex.saveSync();
     }
 }

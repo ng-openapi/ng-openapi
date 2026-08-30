@@ -35,7 +35,9 @@ export class MyPlugin implements IPluginGenerator {
         });
         // ... build the file from spec.operations / spec.definitions ...
         file.formatText();
-        file.saveSync();
+        // No save here. Generation writes the whole Project once, after every
+        // generator has succeeded — saving inside a plugin would leave files on
+        // disk when a later generator fails.
     }
 }
 ```
@@ -48,6 +50,35 @@ export default {
     plugins: [MyPlugin],
 } as GeneratorConfig;
 ```
+
+## Rules a plugin must follow
+
+These are invariants of the emitted code, not style preferences. The core
+generators follow them and the shared helpers exist so plugins need not
+re-derive them.
+
+- **Never write files yourself.** Build into the `project` you are given;
+  `generateFromConfig` saves once at the end, so a failed run leaves no partial
+  output. The example above deliberately has no `save` call.
+- **Never `camelCase` a wire name to get an identifier.** Call
+  `resolveArgumentNames(operation, config, profile)` with a profile describing
+  what *your* emitted method binds, and read `names.of(wireName)`. Wire names
+  are free-form: `filter[name]` and `filter.name` both camelCase to
+  `filterName`, and a parameter can land on a name your own method already
+  uses. Resolving one name at a time cannot see either collision.
+- **Never interpolate spec text into an emitted literal.** Use `quoteLiteral`
+  for a string literal, `emitObjectKey` for an object-literal key (a
+  `__proto__` key invokes the prototype setter and creates no property),
+  `emitPropertyName` for a declaration, `escapeTemplateLiteral` inside a
+  template literal, and `emitDocs` for anything you pass as ts-morph `docs`.
+  A quote is a syntax error; a backslash is worse, because it compiles and
+  changes which value goes on the wire; and a description containing the
+  comment terminator ends the JSDoc block, so whatever follows is emitted as
+  code.
+- **Throw typed errors** from `@ng-openapi/shared` rather than bare `Error`s, so
+  hosts can branch on the class. They carry a brand that survives bundling, so
+  `instanceof` works across your published bundle and the host's copy.
+- **Report non-fatal problems through `onWarning`**, never `console.*`.
 
 ## What the context provides
 

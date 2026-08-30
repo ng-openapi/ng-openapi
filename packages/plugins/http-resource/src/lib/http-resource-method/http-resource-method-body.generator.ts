@@ -1,10 +1,13 @@
 import {
+    ArgumentNames,
     emitDefaultHeadersMerge,
     emitSignalAwareQueryParams,
     emitUrlExpression,
     joinRequestOptionEntries,
     MethodGenOptions,
     NormalizedOperation,
+    RESOURCE_ARGUMENT_PROFILE,
+    resolveArgumentNames,
     signalAwareParamValue,
 } from "@ng-openapi/shared";
 
@@ -13,6 +16,15 @@ export class HttpResourceMethodBodyGenerator {
 
     constructor(config: MethodGenOptions) {
         this.config = config;
+    }
+
+    /**
+     * The plugin reserves its own bindings (`resourceOptions`/`requestOptions`),
+     * not the core service's — resolving against the wrong set would let a
+     * `requestOptions` query parameter capture the plugin's own parameter.
+     */
+    private argumentNames(operation: NormalizedOperation): ArgumentNames {
+        return resolveArgumentNames(operation, this.config, RESOURCE_ARGUMENT_PROFILE);
     }
 
     generateMethodBody(operation: NormalizedOperation): string {
@@ -45,7 +57,7 @@ export class HttpResourceMethodBodyGenerator {
 
     private generateRequestOptions(operation: NormalizedOperation): string {
         const entries: string[] = [];
-        const url = emitUrlExpression(operation.path, operation.pathParams, signalAwareParamValue);
+        const url = emitUrlExpression(operation.path, operation.pathParams, this.argumentNames(operation), signalAwareParamValue);
 
         // Computed entries come after the spread so that caller-supplied
         // request options cannot clobber the merged headers, the accumulated
@@ -73,7 +85,7 @@ export class HttpResourceMethodBodyGenerator {
 
     private generateHttpResource(operation: NormalizedOperation): string {
         const resourceOptions = this.generateRequestOptions(operation);
-        const queryParams = emitSignalAwareQueryParams(operation.queryParams);
+        const queryParams = emitSignalAwareQueryParams(operation.queryParams, this.argumentNames(operation));
         let httpResource = "httpResource";
         switch (operation.responseType) {
             case "blob":

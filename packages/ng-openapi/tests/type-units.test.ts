@@ -104,7 +104,7 @@ describe("TypeResolver", () => {
     });
 
     it("handles JSON-Schema type arrays (3.1 style)", () => {
-        expect(resolver().resolve({ type: ["string", "null"] as unknown as string })).toBe("string | null");
+        expect(resolver().resolve({ type: ["string", "null"] as never })).toBe("string | null");
     });
 });
 

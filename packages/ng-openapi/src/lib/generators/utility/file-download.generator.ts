@@ -109,6 +109,5 @@ export class FileDownloadGenerator {
         });
 
         sourceFile.formatText();
-        sourceFile.saveSync();
     }
 }

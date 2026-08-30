@@ -33,6 +33,5 @@ export class ZodIndexGenerator {
         });
 
         sourceFile.formatText();
-        sourceFile.saveSync();
     }
 }

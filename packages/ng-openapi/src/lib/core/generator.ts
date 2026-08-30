@@ -70,7 +70,15 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
     const generateServices = config.options.generateServices ?? true;
 
     const warnings: string[] = [];
+    const seenWarnings = new Set<string>();
     const onWarning = (message: string): void => {
+        // Deduplicated: the core generator and each plugin independently group
+        // operations by controller, so a spec-level observation like two tags
+        // merging would otherwise be reported once per generator.
+        if (seenWarnings.has(message)) {
+            return;
+        }
+        seenWarnings.add(message);
         warnings.push(message);
         reporter.onWarning?.(message);
     };
@@ -123,7 +131,12 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
     await typeGenerator.generate();
     reporter.onPhase?.("types-generated");
 
-    if (generateServices) {
+    // The client runtime (tokens, HttpParamsBuilder, providers, interceptor) is
+    // not service-specific: the httpResource plugin's resources import
+    // ../tokens and ../utils/http-params-builder too, so gating it on
+    // generateServices alone made plugin-only output reference files that were
+    // never emitted — non-compiling, and hidden from the user by @ts-nocheck.
+    if (generateServices || config.plugins?.length) {
         // Generate tokens first
         const tokenGenerator = new TokenGenerator(project, config.clientName);
         tokenGenerator.generate(outputPath);
@@ -148,7 +161,9 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
 
         const baseInterceptorGenerator = new BaseInterceptorGenerator(project, config.clientName);
         baseInterceptorGenerator.generate(outputPath);
+    }
 
+    if (generateServices) {
         // Generate services using the refactored ServiceGenerator
         const serviceGenerator = new ServiceGenerator(swaggerParser, project, config, onWarning);
         await serviceGenerator.generate(outputPath);
@@ -171,6 +186,13 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
     // Generate main index file (always, regardless of generateServices)
     const mainIndexGenerator = new MainIndexGenerator(project, config);
     mainIndexGenerator.generateMainIndex(outputPath);
+
+    // The single write of the run. Generators only build files in the Project;
+    // saving here means a failure anywhere above leaves the output directory
+    // untouched rather than half-written — previously each controller wrote
+    // itself as it finished, so a throw left the controllers that had already
+    // completed on disk, without a barrel and not compiling.
+    await project.save();
 
     return {
         client: config.clientName,

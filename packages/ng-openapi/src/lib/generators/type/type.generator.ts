@@ -1,4 +1,12 @@
-import { SwaggerDefinition, SwaggerParser, TYPE_GENERATOR_HEADER_COMMENT, TypeGenOptions } from "@ng-openapi/shared";
+import {
+    emitDocs,
+    NgOpenApiError,
+    SpecParseError,
+    SwaggerDefinition,
+    SwaggerParser,
+    TYPE_GENERATOR_HEADER_COMMENT,
+    TypeGenOptions,
+} from "@ng-openapi/shared";
 import { ImportDeclarationStructure, OptionalKind, Project, SourceFile, StatementStructures, StructureKind } from "ts-morph";
 import { EnumBuilder } from "./enum-builder";
 import { InterfaceBuilder } from "./interface-builder";
@@ -71,7 +79,12 @@ export class TypeGenerator {
             // Phase 4: Format and save
             await this.finalize();
         } catch (error) {
-            throw new Error(`Failed to generate types: ${error instanceof Error ? error.message : "Unknown error"}`);
+            // Rethrow typed errors untouched — wrapping one in a bare Error
+            // strips both its class and its cause, which the CLI needs.
+            if (error instanceof NgOpenApiError) {
+                throw error;
+            }
+            throw new SpecParseError("Failed to generate types from the specification", undefined, error);
         }
     }
 
@@ -92,7 +105,7 @@ export class TypeGenerator {
                     kind: StructureKind.TypeAlias,
                     name: typeName,
                     isExported: true,
-                    docs: definition.description ? [definition.description] : undefined,
+                    docs: emitDocs(definition.description),
                     type: this.resolver.resolve(definition),
                 },
             ];
@@ -114,7 +127,7 @@ export class TypeGenerator {
             name,
             type: typeExpression,
             isExported: true,
-            docs: definition.description ? [definition.description] : undefined,
+            docs: emitDocs(definition.description),
         };
     }
 
@@ -125,7 +138,7 @@ export class TypeGenerator {
             kind: StructureKind.TypeAlias,
             name,
             isExported: true,
-            docs: definition.description ? [definition.description] : undefined,
+            docs: emitDocs(definition.description),
             type: `Array<${itemType}>`,
         };
     }
@@ -137,11 +150,12 @@ export class TypeGenerator {
         this.sourceFile.addStatements(this.statements);
     }
 
-    private async finalize(): Promise<void> {
+    private finalize(): void {
         // Format only once at the end
         this.sourceFile.formatText();
-        this.sourceFile.insertText(0, TYPE_GENERATOR_HEADER_COMMENT)
-        await this.sourceFile.save();
+        this.sourceFile.insertText(0, TYPE_GENERATOR_HEADER_COMMENT);
+        // No save here: generateFromConfig writes the whole Project once, after
+        // every generator has succeeded.
     }
 
     private generatePerType(definitions: Record<string, SwaggerDefinition>): void {
@@ -254,6 +268,5 @@ export class TypeGenerator {
     private finalizeModelSourceFile(sourceFile: SourceFile): void {
         sourceFile.formatText();
         sourceFile.insertText(0, TYPE_GENERATOR_HEADER_COMMENT);
-        sourceFile.saveSync();
     }
 }

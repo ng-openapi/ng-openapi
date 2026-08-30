@@ -164,17 +164,22 @@ function normalizeOperation(operation: PathInfo, resolveRef: ResolveRef): Normal
 
     const responseInfo = determineResponseInfo(operation);
 
+    const pathParams = operation.parameters?.filter((p) => p.in === "path") || [];
+    const queryParams = operation.parameters?.filter((p) => p.in === "query") || [];
+    const formDataFields = Object.keys(formDataSchema?.properties || {});
+    const urlEncodedFields = Object.keys(urlEncodedSchema?.properties || {});
+
     return {
         ...operation,
-        pathParams: operation.parameters?.filter((p) => p.in === "path") || [],
-        queryParams: operation.parameters?.filter((p) => p.in === "query") || [],
+        pathParams,
+        queryParams,
         hasBody: !!operation.requestBody,
         isMultipart,
         isUrlEncoded,
         formDataSchema,
-        formDataFields: Object.keys(formDataSchema?.properties || {}),
+        formDataFields,
         urlEncodedSchema,
-        urlEncodedFields: Object.keys(urlEncodedSchema?.properties || {}),
+        urlEncodedFields,
         responseType: responseInfo.responseType,
         acceptHeader: responseInfo.acceptHeader,
     };

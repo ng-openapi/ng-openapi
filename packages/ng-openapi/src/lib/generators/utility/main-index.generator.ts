@@ -89,6 +89,5 @@ export class MainIndexGenerator {
             });
 
         sourceFile.formatText();
-        sourceFile.saveSync();
     }
 }

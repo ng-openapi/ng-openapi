@@ -1,3 +1,6 @@
+// Concrete module, not the emit barrel, to keep the utils <-> emit graph
+// cycle-free — see normalize.ts for the same rule.
+import { escapeSingleQuoted } from "../emit/literal.emit";
 import { SwaggerDefinition, TypeMappingConfig, TypeSchema } from "../types";
 import { getModelTypeName } from "./functions/class-names";
 
@@ -60,7 +63,7 @@ export function getTypeScriptType(
         case "string":
             if (schema.enum) {
                 return schema.enum
-                    .map((value) => (typeof value === "string" ? `'${escapeString(value)}'` : String(value)))
+                    .map((value) => (typeof value === "string" ? `'${escapeSingleQuoted(value)}'` : String(value)))
                     .join(" | ");
             }
 
@@ -121,7 +124,10 @@ export function nullableType(type: string, isNullable?: boolean): string {
     return type + (isNullable ? " | null" : "");
 }
 
-/** Escapes backslashes and single quotes for embedding in a single-quoted generated literal. */
-export function escapeString(str: string): string {
-    return str.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-}
+/**
+ * Escapes a value for embedding in a single-quoted generated literal.
+ *
+ * A named re-export rather than a copy: the copies drifted, each missing a
+ * different character.
+ */
+export { escapeSingleQuoted as escapeString } from "../emit/literal.emit";

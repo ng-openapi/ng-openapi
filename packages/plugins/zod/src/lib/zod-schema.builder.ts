@@ -1,4 +1,4 @@
-import { NormalizedSpec, pascalCase, SwaggerDefinition, TypeMappingConfig } from "@ng-openapi/shared";
+import { emitObjectKey, escapeSingleQuoted, NormalizedSpec, pascalCase, SwaggerDefinition, TypeMappingConfig } from "@ng-openapi/shared";
 import { BuildOptions, ZodPluginOptions } from "./utils/types";
 import { isReferenceObject } from "./utils/is-reference-object";
 
@@ -66,9 +66,11 @@ export class ZodSchemaBuilder {
             zodSchema = `${zodSchema}.optional()`;
         }
 
-        // Add description if present
-        if (schema.description) {
-            zodSchema = `${zodSchema}.describe('${this.escapeString(schema.description)}')`;
+        // Typed, not merely truthy: a description is untrusted JSON and nothing
+        // schema-validates it, so `"description": 42` reaches here and threw a
+        // raw TypeError out of the whole run.
+        if (typeof schema.description === "string" && schema.description) {
+            zodSchema = `${zodSchema}.describe('${escapeSingleQuoted(schema.description)}')`;
         }
 
         return zodSchema;
@@ -77,7 +79,7 @@ export class ZodSchemaBuilder {
     private async buildStringSchema(schema: SwaggerDefinition, buildOptions: BuildOptions): Promise<string> {
         // Handle enums
         if (schema.enum && schema.enum.every((v) => typeof v === "string")) {
-            const enumValues = schema.enum.map((v) => `'${this.escapeString(String(v))}'`).join(", ");
+            const enumValues = schema.enum.map((v) => `'${escapeSingleQuoted(String(v))}'`).join(", ");
             return `z.enum([${enumValues}])`;
         }
 
@@ -256,7 +258,9 @@ export class ZodSchemaBuilder {
                     `${name}${pascalCase(propName)}`,
                     { ...buildOptions, required: isRequired },
                 );
-                properties.push(`  "${propName}": ${propZodSchema}`);
+                // Computed key: see zod-schema.generator.ts — a "__proto__"
+                // property key mutates the prototype instead of being a key.
+                properties.push(`  ${emitObjectKey(propName)}: ${propZodSchema}`);
             }
 
             let objectSchema = `z.object({\n${properties.join(",\n")}\n})`;
@@ -300,7 +304,7 @@ export class ZodSchemaBuilder {
 
     private generateDefaultValue(defaultValue: unknown): string {
         if (typeof defaultValue === "string") {
-            return `'${this.escapeString(defaultValue)}'`;
+            return `'${escapeSingleQuoted(defaultValue)}'`;
         }
         if (typeof defaultValue === "number" || typeof defaultValue === "boolean") {
             return String(defaultValue);
@@ -310,24 +314,20 @@ export class ZodSchemaBuilder {
         }
         if (Array.isArray(defaultValue)) {
             const items = defaultValue.map((item) =>
-                typeof item === "string" ? `'${this.escapeString(item)}'` : String(item),
+                typeof item === "string" ? `'${escapeSingleQuoted(item)}'` : String(item),
             );
             return `[${items.join(", ")}]`;
         }
         if (typeof defaultValue === "object") {
             const entries = Object.entries(defaultValue)
                 .map(([key, value]) => {
-                    const val = typeof value === "string" ? `'${this.escapeString(value)}'` : String(value);
+                    const val = typeof value === "string" ? `'${escapeSingleQuoted(value)}'` : String(value);
                     return `${key}: ${val}`;
                 })
                 .join(", ");
             return `{ ${entries} }`;
         }
         return "undefined";
-    }
-
-    private escapeString(str: string): string {
-        return str.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, "\\n");
     }
 
     private escapeRegex(pattern: string): string {

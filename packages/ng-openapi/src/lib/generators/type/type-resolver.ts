@@ -1,15 +1,17 @@
-import { getModelTypeName, SwaggerDefinition, TypeMappingConfig } from "@ng-openapi/shared";
+import {
+    emitPropertyName,
+    escapeSingleQuoted,
+    getModelTypeName,
+    SwaggerDefinition,
+    TypeMappingConfig,
+} from "@ng-openapi/shared";
 
-export function escapeString(str: string): string {
-    return str.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-}
-
-export function sanitizePropertyName(name: string): string {
-    if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)) {
-        return `"${name}"`;
-    }
-    return name;
-}
+// Both delegate to emit/literal.emit.ts rather than being a fourth and fifth
+// copy. The copies had drifted: this file's escapeString missed newlines and
+// carriage returns, and sanitizePropertyName escaped nothing at all — it
+// emitted `"say"hi"` for the legal property name `say"hi`.
+export const escapeString = escapeSingleQuoted;
+export const sanitizePropertyName = emitPropertyName;
 
 /**
  * Maps swagger/OpenAPI schemas to TypeScript type expressions.

@@ -1,3 +1,5 @@
+import { emitObjectKey, quoteLiteral } from "./literal.emit";
+
 export interface HeadersEmitOptions {
     /** Identifier of the per-request options parameter in the generated method ("options", "requestOptions", …). */
     optionsExpression: string;
@@ -73,7 +75,9 @@ if (!headers.has('Content-Type')) {
  */
 export function emitDefaultHeadersMerge(optionsExpression: string, customHeaders: Record<string, string>): string {
     const defaultsLiteral = Object.entries(customHeaders)
-        .map(([key, value]) => `'${key}': '${value}'`)
+        // emitObjectKey, not quoteLiteral: this is a key position, and a
+        // '__proto__' key hijacks the prototype exactly as a "__proto__" one does.
+        .map(([key, value]) => `${emitObjectKey(key, "single")}: ${quoteLiteral(value)}`)
         .join(", ");
 
     return `
@@ -88,11 +92,11 @@ ${emitDefaultHeaderGuards(customHeaders)}
 
 function emitDefaultHeaderGuards(customHeaders: Record<string, string>): string {
     return Object.entries(customHeaders)
-        .map(
-            ([key, value]) =>
-                `if (!headers.has('${key}')) {
-  headers = headers.set('${key}', '${value}');
-}`,
-        )
+        .map(([key, value]) => {
+            const name = quoteLiteral(key);
+            return `if (!headers.has(${name})) {
+  headers = headers.set(${name}, ${quoteLiteral(value)});
+}`;
+        })
         .join("\n");
 }

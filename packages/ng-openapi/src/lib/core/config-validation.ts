@@ -1,4 +1,8 @@
-import { GeneratorConfig } from "@ng-openapi/shared";
+import { ConfigValidationError, GeneratorConfig } from "@ng-openapi/shared";
+
+// Re-exported for hosts that import it from here; the class itself lives in
+// shared/errors.ts so it joins the branded NgOpenApiError hierarchy.
+export { ConfigValidationError };
 
 const RESPONSE_TYPES = ["json", "blob", "arraybuffer", "text"] as const;
 
@@ -6,22 +10,9 @@ const NAMING_KEYS = ["services", "resources", "models"] as const;
 // Decorations are spliced into generated identifiers, so they must be
 // identifier fragments themselves; the prefix additionally starts the name.
 const NAME_PREFIX_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
+// clientName is spliced into class names, token names and a JSDoc block.
+const CLIENT_NAME_PATTERN = NAME_PREFIX_PATTERN;
 const NAME_SUFFIX_PATTERN = /^[A-Za-z0-9_]*$/;
-
-/**
- * Thrown when the user-supplied config is structurally invalid. Collects every
- * issue instead of failing on the first one, so a config file can be fixed in
- * one pass.
- */
-export class ConfigValidationError extends Error {
-    readonly issues: string[];
-
-    constructor(issues: string[]) {
-        super(`Invalid ng-openapi configuration:\n${issues.map((issue) => `  - ${issue}`).join("\n")}`);
-        this.name = "ConfigValidationError";
-        this.issues = issues;
-    }
-}
 
 /**
  * Validates a config object at the user boundary (CLI config file or
@@ -46,8 +37,16 @@ export function validateGeneratorConfig(config: unknown): asserts config is Gene
     if (typeof c.output !== "string" || c.output.trim() === "") {
         issues.push("`output` must be a non-empty string (output directory)");
     }
-    if (c.clientName !== undefined && typeof c.clientName !== "string") {
-        issues.push("`clientName` must be a string");
+    if (c.clientName !== undefined) {
+        // Reaches a JSDoc block and several single-quoted token literals, so it
+        // is an interpolation source like naming.prefix — validated the same
+        // way rather than escaped at each site.
+        if (typeof c.clientName !== "string" || !CLIENT_NAME_PATTERN.test(c.clientName)) {
+            issues.push(
+                "`clientName` must be a string of letters, digits and underscores starting with a letter " +
+                    "(it becomes part of generated identifiers and token names)",
+            );
+        }
     }
     if (c.validateInput !== undefined && typeof c.validateInput !== "function") {
         issues.push("`validateInput` must be a function (spec) => boolean");

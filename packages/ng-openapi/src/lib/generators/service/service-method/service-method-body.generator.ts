@@ -1,15 +1,16 @@
 import {
-    camelCase,
+    ArgumentNames,
     CONTENT_TYPES,
     emitHeaders,
     emitQueryParams,
     emitResponseTypeOption,
     emitUrlConstruction,
-    getRequestBodyType,
-    isDataTypeInterface,
     joinRequestOptionEntries,
+    quoteLiteral,
     MethodGenOptions,
     NormalizedOperation,
+    resolveArgumentNames,
+    SERVICE_ARGUMENT_PROFILE,
 } from "@ng-openapi/shared";
 
 export class ServiceMethodBodyGenerator {
@@ -20,24 +21,28 @@ export class ServiceMethodBodyGenerator {
     }
 
     generateMethodBody(operation: NormalizedOperation): string {
+        // Resolved here rather than read off the operation: which names are
+        // already taken depends on what this generator emits, and the params
+        // generator resolves the same pure function to the same answer.
+        const argumentNames = resolveArgumentNames(operation, this.config, SERVICE_ARGUMENT_PROFILE);
         const bodyParts = [
-            emitUrlConstruction(operation.path, operation.pathParams),
-            emitQueryParams(operation.queryParams),
+            emitUrlConstruction(operation.path, operation.pathParams, argumentNames),
+            emitQueryParams(operation.queryParams, argumentNames),
             emitHeaders({
                 optionsExpression: "options",
                 customHeaders: this.config.options.customHeaders,
                 accept: (this.config.options.emitAcceptHeader ?? true) ? operation.acceptHeader : undefined,
                 contentType: operation,
             }),
-            this.generateMultipartFormData(operation),
-            this.generateUrlEncodedFormData(operation),
-            this.generateHttpRequest(operation),
+            this.generateMultipartFormData(operation, argumentNames),
+            this.generateUrlEncodedFormData(operation, argumentNames),
+            this.generateHttpRequest(operation, argumentNames),
         ];
 
         return bodyParts.filter(Boolean).join("\n");
     }
 
-    private generateMultipartFormData(operation: NormalizedOperation): string {
+    private generateMultipartFormData(operation: NormalizedOperation, argumentNames: ArgumentNames): string {
         if (!operation.isMultipart || operation.formDataFields.length === 0) {
             return "";
         }
@@ -49,6 +54,9 @@ export class ServiceMethodBodyGenerator {
                 const fieldSchema = properties[field];
                 const isFile = fieldSchema?.type === "string" && fieldSchema?.format === "binary";
                 const isArray = fieldSchema?.type === "array";
+                // `field` is the wire name and stays inside the append literal;
+                // only `arg` may appear in expression position (#125).
+                const arg = argumentNames.of(field);
 
                 if (isArray) {
                     const itemSchema = Array.isArray(fieldSchema.items) ? fieldSchema.items[0] : fieldSchema.items;
@@ -56,18 +64,18 @@ export class ServiceMethodBodyGenerator {
 
                     const valueExpression = isFileArray ? "item" : "String(item)";
 
-                    return `if (${field} !== undefined && Array.isArray(${field})) {
-                  ${field}.forEach((item) => {
+                    return `if (${arg} !== undefined && Array.isArray(${arg})) {
+                  ${arg}.forEach((item) => {
                     if (item !== undefined && item !== null) {
-                      formData.append('${field}', ${valueExpression});
+                      formData.append(${quoteLiteral(field)}, ${valueExpression});
                     }
                   });
                 }`;
                 } else {
-                    const valueExpression = isFile ? field : `String(${field})`;
+                    const valueExpression = isFile ? arg : `String(${arg})`;
 
-                    return `if (${field} !== undefined) {
-                  formData.append('${field}', ${valueExpression});
+                    return `if (${arg} !== undefined) {
+                  formData.append(${quoteLiteral(field)}, ${valueExpression});
                 }`;
                 }
             })
@@ -78,7 +86,7 @@ const formData = new FormData();
 ${formDataAppends}`;
     }
 
-    private generateUrlEncodedFormData(operation: NormalizedOperation): string {
+    private generateUrlEncodedFormData(operation: NormalizedOperation, argumentNames: ArgumentNames): string {
         if (!operation.isUrlEncoded || operation.urlEncodedFields.length === 0) {
             return "";
         }
@@ -89,18 +97,19 @@ ${formDataAppends}`;
             .map((field) => {
                 const fieldSchema = properties[field];
                 const isArray = fieldSchema?.type === "array";
+                const arg = argumentNames.of(field);
 
                 if (isArray) {
-                    return `if (${field} !== undefined && Array.isArray(${field})) {
-                  ${field}.forEach((item) => {
+                    return `if (${arg} !== undefined && Array.isArray(${arg})) {
+                  ${arg}.forEach((item) => {
                     if (item !== undefined && item !== null) {
-                      formBody.append('${field}', String(item));
+                      formBody.append(${quoteLiteral(field)}, String(item));
                     }
                   });
                 }`;
                 } else {
-                    return `if (${field} !== undefined && ${field} !== null) {
-                  formBody.append('${field}', String(${field}));
+                    return `if (${arg} !== undefined && ${arg} !== null) {
+                  formBody.append(${quoteLiteral(field)}, String(${arg}));
                 }`;
                 }
             })
@@ -111,7 +120,7 @@ const formBody = new URLSearchParams();
 ${formBodyAppends}`;
     }
 
-    private generateHttpRequest(operation: NormalizedOperation): string {
+    private generateHttpRequest(operation: NormalizedOperation, argumentNames: ArgumentNames): string {
         const httpMethod = operation.method.toLowerCase();
 
         let bodyParam = "";
@@ -121,9 +130,7 @@ ${formBodyAppends}`;
             } else if (operation.isUrlEncoded) {
                 bodyParam = "formBody.toString()";
             } else if (operation.requestBody?.content?.[CONTENT_TYPES.JSON]) {
-                const bodyType = getRequestBodyType(operation.requestBody, this.config);
-                const isInterface = isDataTypeInterface(bodyType);
-                bodyParam = isInterface ? camelCase(bodyType) : "requestBody";
+                bodyParam = argumentNames.body ?? "requestBody";
             }
         }
 

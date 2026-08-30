@@ -2,10 +2,8 @@
 
 import { GeneratorConfig, isUrl, SpecLoadError } from "@ng-openapi/shared";
 import { Command } from "commander";
-import * as fs from "fs";
-import * as path from "path";
 import * as packageJson from "../../package.json";
-import { generateFromConfig, Reporter } from "./core";
+import { generateFromConfig, loadConfigFile, Reporter } from "./core";
 
 const program = new Command();
 
@@ -44,51 +42,6 @@ async function runGeneration(config: GeneratorConfig): Promise<void> {
     const sourceInfo = `from ${inputType}: ${config.input}`;
     const clientPrefix = result.client ? `${result.client} ` : "";
     console.log(`🎉 ${clientPrefix}Generation completed successfully ${sourceInfo} -> ${config.output}`);
-}
-
-async function loadConfigFile(configPath: string): Promise<GeneratorConfig> {
-    const resolvedPath = path.resolve(configPath);
-
-    if (!fs.existsSync(resolvedPath)) {
-        throw new Error(`Configuration file not found: ${resolvedPath}`);
-    }
-
-    // Clear require cache to ensure fresh load
-    delete require.cache[require.resolve(resolvedPath)];
-
-    try {
-        // Handle both .ts and .js files
-        if (resolvedPath.endsWith(".ts")) {
-            // Use ts-node to load TypeScript config files
-            require("ts-node/register");
-        }
-
-        const configModule = require(resolvedPath);
-
-        // Handle different export styles
-        const config = configModule.default || configModule.config || configModule;
-
-        if (!config.input || !config.output) {
-            throw new Error('Configuration must include "input" and "output" properties');
-        }
-
-        // Resolve relative paths relative to the config file directory
-        const configDir = path.dirname(resolvedPath);
-
-        // Only resolve input if it's not a URL and is a relative path
-        if (!isUrl(config.input) && !path.isAbsolute(config.input)) {
-            config.input = path.resolve(configDir, config.input);
-        }
-
-        // Only resolve output if it's a relative path
-        if (!path.isAbsolute(config.output)) {
-            config.output = path.resolve(configDir, config.output);
-        }
-
-        return config;
-    } catch (error) {
-        throw new Error(`Failed to load configuration file: ${error instanceof Error ? error.message : error}`);
-    }
 }
 
 interface CliOptions {
@@ -131,6 +84,21 @@ async function generateFromOptions(options: CliOptions): Promise<void> {
         console.log("✨ Generation completed successfully!");
     } catch (error) {
         console.error("❌ Generation failed:", error instanceof Error ? error.message : error);
+
+        // The underlying failure is often the only actionable part (an ENOENT
+        // path, a JSON parse position), and it was being collected on `cause`
+        // and then never shown. Capped because a cause chain can be cyclic —
+        // and the cap says so rather than trailing off silently.
+        const MAX_CAUSES = 3;
+        let cause = (error as { cause?: unknown } | undefined)?.cause;
+        for (let depth = 0; cause !== undefined && cause !== null; depth++) {
+            if (depth === MAX_CAUSES) {
+                console.error("   … further causes omitted");
+                break;
+            }
+            console.error("   caused by:", cause instanceof Error ? cause.message : cause);
+            cause = (cause as { cause?: unknown }).cause;
+        }
 
         // Typed hint mapping: branch on the error class, never on message text
         if (error instanceof SpecLoadError && isUrl(error.source)) {

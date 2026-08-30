@@ -1,12 +1,13 @@
 import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
 import {
-    camelCase,
+    ArgumentNames,
     CONTENT_TYPES,
     MethodGenOptions,
     getTypeScriptType,
-    isDataTypeInterface,
     NormalizedOperation,
     RequestBody,
+    resolveArgumentNames,
+    SERVICE_ARGUMENT_PROFILE,
     SwaggerDefinition,
 } from "@ng-openapi/shared";
 import { ServiceMethodRequestObjectGenerator } from "./service-method-request-object.generator";
@@ -28,11 +29,12 @@ export class ServiceMethodParamsGenerator {
 
     generateApiParameters(operation: NormalizedOperation): OptionalKind<ParameterDeclarationStructure>[] {
         const params: OptionalKind<ParameterDeclarationStructure>[] = [];
+        const argumentNames = resolveArgumentNames(operation, this.config, SERVICE_ARGUMENT_PROFILE);
 
         // Path parameters
         operation.pathParams.forEach((param) => {
             params.push({
-                name: camelCase(param.name),
+                name: argumentNames.of(param.name),
                 // Swagger 2.0 puts type/format/enum on the parameter itself; the
                 // spread (vs passing param directly) is needed because Parameter
                 // lacks TypeSchema's index signature — a fresh literal satisfies it.
@@ -48,21 +50,21 @@ export class ServiceMethodParamsGenerator {
 
             // form parameters
             if (operation.isMultipart) {
-                params.push(...this.convertObjectToSingleParams(operation.formDataSchema));
+                params.push(...this.convertObjectToSingleParams(operation.formDataSchema, argumentNames));
             }
 
             // x-www-form-urlencoded parameters
             if (operation.isUrlEncoded) {
-                params.push(...this.convertObjectToSingleParams(operation.urlEncodedSchema));
+                params.push(...this.convertObjectToSingleParams(operation.urlEncodedSchema, argumentNames));
             }
 
-            // body parameters
-            if (jsonContent && !operation.isMultipart) {
-                const bodyType = this.getRequestBodyType(requestBody);
-                const isInterface = isDataTypeInterface(bodyType);
+            // body parameters. The name comes from the resolver, not from the
+            // body type directly: it shares the method scope with the query
+            // params, so a `request_body` query param must not land on it.
+            if (jsonContent && !operation.isMultipart && argumentNames.body) {
                 params.push({
-                    name: isInterface ? camelCase(bodyType) : "requestBody",
-                    type: bodyType,
+                    name: argumentNames.body,
+                    type: this.getRequestBodyType(requestBody),
                     hasQuestionToken: !requestBody.required,
                 });
             }
@@ -71,7 +73,7 @@ export class ServiceMethodParamsGenerator {
         // Query parameters
         operation.queryParams.forEach((param) => {
             params.push({
-                name: camelCase(param.name),
+                name: argumentNames.of(param.name),
                 type: getTypeScriptType(param.schema || { ...param }, this.config),
                 hasQuestionToken: !param.required,
             });
@@ -127,13 +129,18 @@ export class ServiceMethodParamsGenerator {
     }
 
     /** `schema` arrives ref-resolved from the normalizer (formData/urlEncoded schema). */
-    private convertObjectToSingleParams(schema?: SwaggerDefinition): OptionalKind<ParameterDeclarationStructure>[] {
+    private convertObjectToSingleParams(
+        schema: SwaggerDefinition | undefined,
+        argumentNames: ArgumentNames,
+    ): OptionalKind<ParameterDeclarationStructure>[] {
         const params: OptionalKind<ParameterDeclarationStructure>[] = [];
 
-        // For multipart/form-data, add individual parameters for each field
+        // For multipart/form-data, add individual parameters for each field.
+        // A field name is a wire name, not an identifier — `user-name` is a
+        // legal form field and used to reach the signature verbatim (#125).
         Object.entries(schema?.properties ?? {}).forEach(([key, value]) => {
             params.push({
-                name: key,
+                name: argumentNames.of(key),
                 type: getTypeScriptType(value, this.config, value.nullable),
                 hasQuestionToken: !schema?.required?.includes(key),
             });

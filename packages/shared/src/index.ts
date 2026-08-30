@@ -38,7 +38,18 @@ export type { NormalizedOperation, NormalizedSpec, ResponseKind, SpecVersion } f
 export { normalizeSchema, normalizeSpec, SwaggerParser } from "./core";
 
 // Typed pipeline errors — branch on these, not on message text
-export { NgOpenApiError, SpecLoadError, SpecParseError } from "./errors";
+export {
+    ConfigLoadError,
+    ConfigValidationError,
+    describeOperation,
+    DuplicateGeneratedNameError,
+    InvalidIdentifierError,
+    NgOpenApiError,
+    SpecLoadError,
+    SpecParseError,
+    UnresolvedPathTemplateError,
+} from "./errors";
+export type { OperationRef } from "./errors";
 
 // Emission helpers (method-body fragments shared by core + plugins)
 export {
@@ -50,6 +61,14 @@ export {
     emitSignalAwareQueryParams,
     emitUrlConstruction,
     emitUrlExpression,
+    emitDocs,
+    emitObjectKey,
+    emitPropertyName,
+    escapeDoubleQuoted,
+    escapeJsDoc,
+    escapeSingleQuoted,
+    escapeTemplateLiteral,
+    quoteLiteral,
     joinRequestOptionEntries,
     plainParamValue,
     signalAwareParamValue,
@@ -67,6 +86,7 @@ export {
     getClientContextTokenName,
     getInterceptorsTokenName,
     getModelTypeName,
+    getOperationMethodName,
     getRequestBodyType,
     getResourceClassName,
     getResponseInfoFromResponse,
@@ -74,20 +94,25 @@ export {
     getResponseTypeFromResponse,
     getServiceClassName,
     getTypeScriptType,
+    groupOperationsByController,
     hasDuplicateFunctionNames,
     inferResponseTypeFromContentType,
     isDataTypeInterface,
     isPrimitiveType,
     isUrl,
+    isValidIdentifier,
     kebabCase,
     listGeneratedBarrelDirs,
     listGeneratedFileNames,
     nullableType,
     pascalCase,
     pascalCaseForEnums,
+    RESOURCE_ARGUMENT_PROFILE,
+    resolveArgumentNames,
     screamingSnakeCase,
+    SERVICE_ARGUMENT_PROFILE,
 } from "./utils";
-export type { ResponseTypeInfo } from "./utils";
+export type { ArgumentNameProfile, ArgumentNames, RenamedArgument, ResponseTypeInfo } from "./utils";
 
 // Typed config-file helper (user-facing)
 export { defineConfig } from "./config";

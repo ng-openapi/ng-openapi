@@ -89,7 +89,7 @@ describe("normalizeSpec", () => {
         expect(op.isMultipart).toBe(true);
         expect(op.isUrlEncoded).toBe(false);
         expect(op.formDataFields).toEqual(["file", "note"]);
-        expect(op.formDataSchema?.properties?.file).toMatchObject({ type: "string", format: "binary" });
+        expect(op.formDataSchema?.properties?.["file"]).toMatchObject({ type: "string", format: "binary" });
         expect(op.urlEncodedFields).toEqual([]);
         expect(op.urlEncodedSchema).toBeUndefined();
     });
@@ -120,7 +120,7 @@ describe("normalizeSpec", () => {
 
 describe("normalizeSchema (OpenAPI 3.1 constructs)", () => {
     it("folds null members of type arrays into nullable", () => {
-        expect(normalizeSchema({ type: ["string", "null"] as unknown as string })).toMatchObject({
+        expect(normalizeSchema({ type: ["string", "null"] as never })).toMatchObject({
             type: "string",
             nullable: true,
         });
@@ -128,18 +128,18 @@ describe("normalizeSchema (OpenAPI 3.1 constructs)", () => {
 
     it("keeps format working on nullable 3.1 schemas", () => {
         const normalized = normalizeSchema({
-            type: ["string", "null"] as unknown as string,
+            type: ["string", "null"] as never,
             format: "date-time",
         });
         expect(normalized).toMatchObject({ type: "string", format: "date-time", nullable: true });
     });
 
     it("keeps multi-type arrays as unions and handles null-only types", () => {
-        const multi = normalizeSchema({ type: ["string", "number", "null"] as unknown as string });
+        const multi = normalizeSchema({ type: ["string", "number", "null"] as never });
         expect(multi.type).toEqual(["string", "number"]);
         expect(multi.nullable).toBe(true);
 
-        expect(normalizeSchema({ type: ["null"] as unknown as string }).type).toBe("null");
+        expect(normalizeSchema({ type: ["null"] as never }).type).toBe("null");
     });
 
     it("converts string/number const to a single-value enum", () => {
@@ -178,14 +178,14 @@ describe("normalizeSchema (OpenAPI 3.1 constructs)", () => {
         const normalized = normalizeSchema({
             type: "object",
             properties: {
-                tag: { type: ["string", "null"] as unknown as string },
+                tag: { type: ["string", "null"] as never },
                 list: { type: "array", items: { const: 1 } },
             },
-            additionalProperties: { type: ["number", "null"] as unknown as string },
+            additionalProperties: { type: ["number", "null"] as never },
             oneOf: [{ const: "a" }],
         });
-        expect(normalized.properties?.tag).toMatchObject({ type: "string", nullable: true });
-        expect((normalized.properties?.list.items as { enum: unknown[] }).enum).toEqual([1]);
+        expect(normalized.properties?.["tag"]).toMatchObject({ type: "string", nullable: true });
+        expect((normalized.properties?.["list"].items as { enum: unknown[] }).enum).toEqual([1]);
         expect(normalized.additionalProperties).toMatchObject({ type: "number", nullable: true });
         expect(normalized.oneOf?.[0].enum).toEqual(["a"]);
     });
@@ -197,7 +197,7 @@ describe("normalizeSchema (OpenAPI 3.1 constructs)", () => {
         expect(normalized).toEqual(copy);
         expect(input).toEqual(copy);
 
-        const arrayInput = { type: ["string", "null"] as unknown as string };
+        const arrayInput = { type: ["string", "null"] as never };
         normalizeSchema(arrayInput);
         expect(arrayInput.type).toEqual(["string", "null"]);
     });

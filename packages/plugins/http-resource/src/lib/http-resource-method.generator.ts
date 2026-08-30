@@ -5,7 +5,7 @@ import {
     ParameterDeclarationStructure,
 } from "ts-morph";
 import { HttpResourceMethodBodyGenerator, HttpResourceMethodParamsGenerator } from "./http-resource-method";
-import { camelCase, getResponseType, MethodGenOptions, NormalizedOperation, pascalCase } from "@ng-openapi/shared";
+import { emitDocs, getOperationMethodName, getResponseType, MethodGenOptions, NormalizedOperation } from "@ng-openapi/shared";
 
 export class HttpResourceMethodGenerator {
     private config: MethodGenOptions;
@@ -32,35 +32,12 @@ export class HttpResourceMethodGenerator {
             returnType: returnType,
             statements: methodBody,
             overloads: overloads,
-            docs: operation.description ? [operation.description] : undefined,
+            docs: emitDocs(operation.description),
         });
     }
 
     generateMethodName(operation: NormalizedOperation): string {
-        if (this.config.options.customizeMethodName) {
-            if (operation.operationId == null) {
-                throw new Error(
-                    `Operation ID is required for method name customization of operation: (${operation.method}) ${operation.path}`,
-                );
-            }
-            return this.config.options.customizeMethodName(operation.operationId);
-        } else {
-            return this.defaultNameGenerator(operation);
-        }
-    }
-
-    defaultNameGenerator(operation: NormalizedOperation): string {
-        if (operation.operationId) {
-            return camelCase(operation.operationId);
-        }
-
-        const method = pascalCase(operation.method.toLowerCase());
-        const pathParts = operation.path.split("/").map((str) => {
-            return pascalCase(pascalCase(str).replace(/[^a-zA-Z0-9]/g, ""));
-        });
-        const resource = pathParts.join("") || "resource";
-
-        return `${camelCase(resource)}${method}`;
+        return getOperationMethodName(operation, this.config);
     }
 
     generateReturnType(operation: NormalizedOperation): string {

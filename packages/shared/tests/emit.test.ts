@@ -10,24 +10,35 @@ import {
     joinRequestOptionEntries,
     signalAwareParamValue,
 } from "@ng-openapi/shared";
-import type { Parameter } from "@ng-openapi/shared";
+import { camelCase } from "@ng-openapi/shared";
+import type { ArgumentNames, Parameter } from "@ng-openapi/shared";
 
 const pathParam = (name: string): Parameter => ({ name, in: "path" }) as Parameter;
 const queryParam = (name: string): Parameter => ({ name, in: "query" }) as Parameter;
+/** A resolved argument-name map for the given wire names, identity-mapped. */
+const names = (...wireNames: string[]): ArgumentNames => {
+    const identifiers = new Map(wireNames.map((wireName) => [wireName, camelCase(wireName)]));
+    return {
+        of: (wireName) => identifiers.get(wireName) ?? camelCase(wireName),
+        all: [...identifiers.values()],
+        renamed: [],
+        merged: [],
+    };
+};
 
 describe("url emission", () => {
     it("substitutes path params with camelCased identifiers", () => {
-        expect(emitUrlConstruction("/pets/{pet_id}", [pathParam("pet_id")])).toBe(
+        expect(emitUrlConstruction("/pets/{pet_id}", [pathParam("pet_id")], names("pet_id"))).toBe(
             "const url = `${this.basePath}/pets/${petId}`;",
         );
     });
 
     it("leaves paths without params untouched", () => {
-        expect(emitUrlExpression("/pets", [])).toBe("`${this.basePath}/pets`");
+        expect(emitUrlExpression("/pets", [], names())).toBe("`${this.basePath}/pets`");
     });
 
     it("supports the signal-aware read for path params", () => {
-        expect(emitUrlExpression("/pets/{id}", [pathParam("id")], signalAwareParamValue)).toBe(
+        expect(emitUrlExpression("/pets/{id}", [pathParam("id")], names("id"), signalAwareParamValue)).toBe(
             "`${this.basePath}/pets/${typeof id === 'function' ? id() : id}`",
         );
     });
@@ -35,19 +46,19 @@ describe("url emission", () => {
 
 describe("query-params emission", () => {
     it("returns empty string for no query params", () => {
-        expect(emitQueryParams([])).toBe("");
-        expect(emitSignalAwareQueryParams([])).toBe("");
+        expect(emitQueryParams([], names())).toBe("");
+        expect(emitSignalAwareQueryParams([], names())).toBe("");
     });
 
     it("emits an HttpParamsBuilder block per param", () => {
-        const block = emitQueryParams([queryParam("page_size")]);
+        const block = emitQueryParams([queryParam("page_size")], names("page_size"));
         expect(block).toContain("let params = new HttpParams();");
         expect(block).toContain("if (pageSize != null)");
         expect(block).toContain("HttpParamsBuilder.addToHttpParams(params, pageSize, 'page_size')");
     });
 
     it("reads each param once through the signal-aware variant", () => {
-        const block = emitSignalAwareQueryParams([queryParam("limit")]);
+        const block = emitSignalAwareQueryParams([queryParam("limit")], names("limit"));
         expect(block).toContain("const limitValue = typeof limit === 'function' ? limit() : limit;");
         expect(block).toContain("HttpParamsBuilder.addToHttpParams(params, limitValue, 'limit')");
     });
