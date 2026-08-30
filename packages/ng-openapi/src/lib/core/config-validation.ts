@@ -11,7 +11,7 @@ const NAMING_KEYS = ["services", "resources", "models"] as const;
 // identifier fragments themselves; the prefix additionally starts the name.
 const NAME_PREFIX_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 // clientName is spliced into class names, token names and a JSDoc block.
-const CLIENT_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9_]*$/;
+const CLIENT_NAME_PATTERN = NAME_PREFIX_PATTERN;
 const NAME_SUFFIX_PATTERN = /^[A-Za-z0-9_]*$/;
 
 /**

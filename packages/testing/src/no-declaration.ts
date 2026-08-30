@@ -17,7 +17,16 @@ export function expectNoDeclaration(outputDir: string, name: string): void {
     expect(files.length, "no generated files found").toBeGreaterThan(0);
 
     const offenders = files
-        .filter((file) => file.getVariableDeclaration(name) || file.getFunction(name) || file.getClass(name))
+        .filter(
+            (file) =>
+                file.getVariableDeclaration(name) ||
+                file.getFunction(name) ||
+                file.getClass(name) ||
+                file.getInterface(name) ||
+                file.getEnum(name) ||
+                file.getTypeAlias(name) ||
+                file.getModule(name),
+        )
         .map((file) => file.getBaseName());
 
     expect(offenders, `${name} was declared in generated output`).toEqual([]);

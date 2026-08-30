@@ -66,8 +66,10 @@ export class ZodSchemaBuilder {
             zodSchema = `${zodSchema}.optional()`;
         }
 
-        // Add description if present
-        if (schema.description) {
+        // Typed, not merely truthy: a description is untrusted JSON and nothing
+        // schema-validates it, so `"description": 42` reaches here and threw a
+        // raw TypeError out of the whole run.
+        if (typeof schema.description === "string" && schema.description) {
             zodSchema = `${zodSchema}.describe('${escapeSingleQuoted(schema.description)}')`;
         }
 

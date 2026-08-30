@@ -86,6 +86,19 @@ export class NgOpenApiError extends Error {
     }
 
     /**
+     * `message` is non-enumerable on Error, so the default JSON.stringify
+     * dropped it while emitting `cause: undefined` — the least useful possible
+     * serialization for something that exists to be logged.
+     */
+    toJSON(): Record<string, unknown> {
+        const json: Record<string, unknown> = { name: this.name, message: this.message };
+        if (this.cause !== undefined) {
+            json["cause"] = this.cause instanceof Error ? this.cause.message : this.cause;
+        }
+        return json;
+    }
+
+    /**
      * Recognizes branded errors from another bundled copy of this module, so
      * `error instanceof SpecLoadError` works for a plugin-thrown error too.
      * The prototype chain is checked first, so a caller's own subclass of these

@@ -16,10 +16,12 @@ export async function loadConfigFile(configPath: string): Promise<GeneratorConfi
         throw new ConfigLoadError(`Configuration file not found: ${resolvedPath}`, resolvedPath);
     }
 
-    // Clear require cache to ensure fresh load
-    delete require.cache[require.resolve(resolvedPath)];
-
     try {
+        // Inside the try: require.resolve throws for a path that exists but
+        // is not resolvable (a directory), which escaped as a bare Error and
+        // broke the class-branching contract this function otherwise keeps.
+        delete require.cache[require.resolve(resolvedPath)];
+
         // Handle both .ts and .js files
         if (resolvedPath.endsWith(".ts")) {
             // Use ts-node to load TypeScript config files
@@ -53,4 +55,4 @@ export async function loadConfigFile(configPath: string): Promise<GeneratorConfi
         throw new ConfigLoadError(`Failed to load configuration file: ${resolvedPath}`, resolvedPath, error);
     }
 }
-
+

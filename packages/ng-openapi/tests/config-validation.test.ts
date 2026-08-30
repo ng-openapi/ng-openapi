@@ -139,4 +139,21 @@ describe("validateGeneratorConfig", () => {
             expect((error as Error).message).toContain("Invalid ng-openapi configuration");
         }
     });
+    it("rejects a clientName that would be spliced into identifiers", () => {
+        // It reaches a JSDoc block and several single-quoted token literals,
+        // so it is an interpolation source like naming.prefix.
+        for (const clientName of ["my-client", "a.b", "2fa", "quote'injected"]) {
+            expect(issuesOf({ ...validConfig, clientName }), clientName).toContainEqual(
+                expect.stringContaining("`clientName` must be"),
+            );
+        }
+    });
+
+    it("keeps accepting the clientNames that already worked", () => {
+        // Leading underscore included: NAME_PREFIX_PATTERN allows it and it
+        // produced valid output before, so rejecting it would be a regression.
+        for (const clientName of ["PetsApi", "_internal", "v2", "A1_b"]) {
+            expect(issuesOf({ ...validConfig, clientName }), clientName).toEqual([]);
+        }
+    });
 });

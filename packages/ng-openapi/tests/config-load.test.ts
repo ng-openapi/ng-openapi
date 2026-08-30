@@ -1,5 +1,5 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join, relative as relativePath } from "node:path";
 import { afterAll, expect, it } from "vitest";
 import { ConfigLoadError, loadConfigFile, NgOpenApiError } from "ng-openapi";
 
@@ -40,7 +40,33 @@ it("reports the resolved path and keeps the cause for an unloadable config", asy
     const error = await loadConfigFile(broken).catch((reason: unknown) => reason);
 
     expect(error).toBeInstanceOf(ConfigLoadError);
-    // Both throw sites report the resolved path, not the raw argument.
     expect((error as ConfigLoadError).source).toBe(broken);
     expect((error as ConfigLoadError).cause).toBeDefined();
+});
+
+it("raises ConfigLoadError for a path that exists but cannot be required", async () => {
+    // A directory: existsSync passes, require.resolve throws. That throw sat
+    // outside the try and escaped as a bare Error with no `source`.
+    const dir = tempDir();
+
+    const error = await loadConfigFile(dir).catch((reason: unknown) => reason);
+
+    expect(error).toBeInstanceOf(ConfigLoadError);
+    expect((error as ConfigLoadError).source).toBe(dir);
+});
+
+it("reports the resolved path, not the argument it was given", async () => {
+    const dir = tempDir();
+    const broken = join(dir, "broken.config.js");
+    writeFileSync(broken, "module.exports = (((;");
+
+    // Relative, so path.resolve is not the identity and the assertion can tell
+    // the two apart — the earlier fixture passed an absolute path and could not.
+    const relative = relativePath(process.cwd(), broken);
+    expect(isAbsolute(relative)).toBe(false);
+
+    const error = await loadConfigFile(relative).catch((reason: unknown) => reason);
+
+    expect((error as ConfigLoadError).source).toBe(broken);
+    expect((error as ConfigLoadError).source).not.toBe(relative);
 });

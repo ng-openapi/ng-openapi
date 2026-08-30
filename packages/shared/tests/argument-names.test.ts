@@ -139,5 +139,6 @@ describe("resolveArgumentNames", () => {
         expect(() => ((SERVICE_ARGUMENT_PROFILE as { bindsRequestBody: boolean }).bindsRequestBody = false)).toThrow();
         expect(() => (SERVICE_ARGUMENT_PROFILE.reserved as string[]).push("x")).toThrow();
         expect(() => ((RESOURCE_ARGUMENT_PROFILE as { bindsRequestBody: boolean }).bindsRequestBody = true)).toThrow();
+        expect(() => (RESOURCE_ARGUMENT_PROFILE.reserved as string[]).push("x")).toThrow();
     });
 });

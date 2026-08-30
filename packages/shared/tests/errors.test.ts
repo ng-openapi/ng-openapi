@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+    ConfigLoadError,
     ConfigValidationError,
     DuplicateGeneratedNameError,
     InvalidIdentifierError,
@@ -212,15 +213,54 @@ describe("typed errors", () => {
         expect(error.name).toBe("SpecLoadError");
     });
 
-    it("freezes the fallback lineage it hands to unregistered classes", () => {
-        class Unregistered extends NgOpenApiError {
-            constructor() {
-                super("x");
-            }
-        }
-        const lineage = Object.getOwnPropertyDescriptor(new Unregistered(), "__ngOpenApiError")?.value as string[];
+    it("freezes the fallback lineage it hands to a class outside the hierarchy", () => {
+        // Only reachable with a new.target that is not in NgOpenApiError's
+        // chain, since the base itself is registered and the walk terminates
+        // there for every ordinary subclass. Constructing through an unrelated
+        // target is the one way in — and the earlier version of this test used
+        // an ordinary subclass, so it asserted the registered lineage's
+        // frozenness instead and passed with the fallback removed entirely.
+        class Unrelated {}
+        const error = Reflect.construct(NgOpenApiError, ["x"], Unrelated) as Error;
+
+        const lineage = Object.getOwnPropertyDescriptor(error, "__ngOpenApiError")?.value as string[];
+        expect(lineage).toEqual(["NgOpenApiError"]);
         // Pushing to it would upgrade this instance's instanceof.
         expect(() => lineage.push("SpecLoadError")).toThrow();
-        expect(new Unregistered()).not.toBeInstanceOf(SpecLoadError);
+        expect(error).not.toBeInstanceOf(SpecLoadError);
+    });
+
+    it("serializes the parts a log actually needs", () => {
+        // message is non-enumerable on Error, so the default JSON.stringify
+        // dropped it and emitted `cause: undefined` instead.
+        const error = new SpecLoadError("could not read", "./spec.json", new Error("ENOENT"));
+        const json = JSON.parse(JSON.stringify(error)) as Record<string, unknown>;
+
+        expect(json["message"]).toBe("could not read");
+        expect(json["name"]).toBe("SpecLoadError");
+        expect(json["cause"]).toBe("ENOENT");
+        expect(json).not.toHaveProperty("__ngOpenApiError");
+    });
+
+    it("omits cause rather than emitting it as undefined", () => {
+        const json = JSON.parse(JSON.stringify(new SpecLoadError("x", "./s"))) as Record<string, unknown>;
+        expect(json).not.toHaveProperty("cause");
+    });
+
+    it("keeps the brand and the prototype chain agreeing", () => {
+        // Two independent answers to the same question; a divergence would mean
+        // instanceof depends on which copy of the module a caller imported.
+        for (const error of [
+            new SpecLoadError("x", "./s"),
+            new SpecParseError("x"),
+            new InvalidIdentifierError("x", { method: "GET", path: "/a" }),
+            new ConfigValidationError(["x"]),
+            new ConfigLoadError("x", "./c"),
+        ]) {
+            const lineage = Object.getOwnPropertyDescriptor(error, "__ngOpenApiError")?.value as string[];
+            expect(lineage[0], error.name).toBe(error.constructor.name);
+            expect(lineage).toContain("NgOpenApiError");
+            expect(error, error.name).toBeInstanceOf(NgOpenApiError);
+        }
     });
 });

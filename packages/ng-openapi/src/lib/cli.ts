@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 
-import { ConfigLoadError, GeneratorConfig, isUrl, SpecLoadError } from "@ng-openapi/shared";
+import { GeneratorConfig, isUrl, SpecLoadError } from "@ng-openapi/shared";
 import { Command } from "commander";
-import * as fs from "fs";
-import * as path from "path";
 import * as packageJson from "../../package.json";
 import { generateFromConfig, loadConfigFile, Reporter } from "./core";
 

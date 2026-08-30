@@ -814,6 +814,7 @@ describe("spec text reaching emitted literals", () => {
                     // Type-alias branches (type.generator).
                     Alias: { type: "string", description: payload },
                     ArrayAlias: { type: "array", items: { type: "string" }, description: payload },
+                    AllOfAlias: { allOf: [{ $ref: "#/components/schemas/Doc" }], description: payload },
                 },
             },
             paths: {
@@ -873,13 +874,26 @@ describe("spec text reaching emitted literals", () => {
                             tags: ["D"],
                             operationId: "d",
                             description: 42,
-                            responses: { "200": { description: "OK" } },
+                            parameters: [{ name: "q", in: "query", description: 42, schema: { type: "string" } }],
+                            // Content, so the zod plugin actually builds a
+                            // schema from Doc — without it the plugin never
+                            // reaches the description at all and the fixture
+                            // proves nothing about it.
+                            responses: {
+                                "200": {
+                                    description: "OK",
+                                    content: { "application/json": { schema: { $ref: "#/components/schemas/Doc" } } },
+                                },
+                            },
                         },
                     },
                 },
             }),
             output,
             options: { dateType: "string", enumStyle: "union", generateServices: true },
+            // Both plugins: zod builds its own .describe() literal rather than
+            // going through emitDocs, and was still throwing a raw TypeError.
+            plugins: [HttpResourcePlugin, ZodPlugin],
         });
 
         expectGeneratedCodeCompiles(output);

@@ -157,3 +157,51 @@ it("keeps a __proto__ parameter in the emitted schema", async () => {
 
     expectGeneratedCodeCompiles(output, "zod output");
 });
+
+it("escapes quotes, backslashes and newlines in a zod description", async () => {
+    const output = mkdtempSync(join(tmpRoot, "zod-desc-"));
+    tempDirs.push(output);
+
+    const input = join(output, "spec.json");
+    // The escaper is shared by construction now, but nothing exercised these
+    // characters through zod, so re-inlining a drifted copy stayed green.
+    const description = "it" + "'" + "s back" + "\\" + "slash\nand a newline";
+    writeFileSync(
+        input,
+        JSON.stringify({
+            openapi: "3.0.0",
+            info: { title: "t", version: "1.0.0" },
+            components: { schemas: { Doc: { type: "object", description, properties: { a: { type: "string", description } } } } },
+            paths: {
+                "/d": {
+                    get: {
+                        tags: ["D"],
+                        operationId: "d",
+                        responses: {
+                            "200": {
+                                description: "OK",
+                                content: { "application/json": { schema: { $ref: "#/components/schemas/Doc" } } },
+                            },
+                        },
+                    },
+                },
+            },
+        }),
+    );
+
+    await generateFromConfig({
+        input,
+        output,
+        options: { dateType: "string", enumStyle: "union", generateServices: false },
+        plugins: [ZodPlugin],
+    });
+
+    // Evaluated, not pattern-matched: an unescaped quote is a syntax error and
+    // an unescaped backslash silently changes the string.
+    const validator = readFileSync(join(output, "validators", "d.validator.ts"), "utf8");
+    const described = validator.slice(validator.indexOf(".describe("), validator.indexOf(")", validator.indexOf(".describe(")) + 1);
+    const value = new Function(`return ${described.slice(".describe(".length, -1)};`)();
+    expect(value).toBe(description);
+
+    expectGeneratedCodeCompiles(output, "zod output");
+});
