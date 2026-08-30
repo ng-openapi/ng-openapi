@@ -68,7 +68,7 @@ export class ZodSchemaBuilder {
 
         // Add description if present
         if (schema.description) {
-            zodSchema = `${zodSchema}.describe('${this.escapeString(schema.description)}')`;
+            zodSchema = `${zodSchema}.describe('${escapeSingleQuoted(schema.description)}')`;
         }
 
         return zodSchema;
@@ -77,7 +77,7 @@ export class ZodSchemaBuilder {
     private async buildStringSchema(schema: SwaggerDefinition, buildOptions: BuildOptions): Promise<string> {
         // Handle enums
         if (schema.enum && schema.enum.every((v) => typeof v === "string")) {
-            const enumValues = schema.enum.map((v) => `'${this.escapeString(String(v))}'`).join(", ");
+            const enumValues = schema.enum.map((v) => `'${escapeSingleQuoted(String(v))}'`).join(", ");
             return `z.enum([${enumValues}])`;
         }
 
@@ -302,7 +302,7 @@ export class ZodSchemaBuilder {
 
     private generateDefaultValue(defaultValue: unknown): string {
         if (typeof defaultValue === "string") {
-            return `'${this.escapeString(defaultValue)}'`;
+            return `'${escapeSingleQuoted(defaultValue)}'`;
         }
         if (typeof defaultValue === "number" || typeof defaultValue === "boolean") {
             return String(defaultValue);
@@ -312,25 +312,20 @@ export class ZodSchemaBuilder {
         }
         if (Array.isArray(defaultValue)) {
             const items = defaultValue.map((item) =>
-                typeof item === "string" ? `'${this.escapeString(item)}'` : String(item),
+                typeof item === "string" ? `'${escapeSingleQuoted(item)}'` : String(item),
             );
             return `[${items.join(", ")}]`;
         }
         if (typeof defaultValue === "object") {
             const entries = Object.entries(defaultValue)
                 .map(([key, value]) => {
-                    const val = typeof value === "string" ? `'${this.escapeString(value)}'` : String(value);
+                    const val = typeof value === "string" ? `'${escapeSingleQuoted(value)}'` : String(value);
                     return `${key}: ${val}`;
                 })
                 .join(", ");
             return `{ ${entries} }`;
         }
         return "undefined";
-    }
-
-    /** Delegates to emit/literal.emit.ts; this copy used to miss carriage returns. */
-    private escapeString(str: string): string {
-        return escapeSingleQuoted(str);
     }
 
     private escapeRegex(pattern: string): string {

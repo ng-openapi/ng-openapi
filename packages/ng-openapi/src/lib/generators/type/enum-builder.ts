@@ -1,4 +1,4 @@
-import { EnumValueObject, SwaggerDefinition, TypeGenOptions, pascalCaseForEnums } from "@ng-openapi/shared";
+import { emitDocs, EnumValueObject, pascalCaseForEnums, SwaggerDefinition, TypeGenOptions } from "@ng-openapi/shared";
 import {
     EnumMemberStructure,
     OptionalKind,
@@ -32,10 +32,9 @@ export class EnumBuilder {
 
     build(name: string, definition: SwaggerDefinition): StatementStructures[] {
         if (!definition.enum?.length) return [];
-        const docs =
-            !this.config.options.generateEnumBasedOnDescription && definition.description
-                ? [definition.description]
-                : undefined;
+        const docs = this.config.options.generateEnumBasedOnDescription
+            ? undefined
+            : emitDocs(definition.description);
 
         if (this.config.options.enumStyle === "enum") {
             return this.buildEnumAsEnum(name, definition, docs);

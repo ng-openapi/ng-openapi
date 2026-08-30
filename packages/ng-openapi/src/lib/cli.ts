@@ -5,7 +5,7 @@ import { Command } from "commander";
 import * as fs from "fs";
 import * as path from "path";
 import * as packageJson from "../../package.json";
-import { generateFromConfig, Reporter } from "./core";
+import { generateFromConfig, loadConfigFile, Reporter } from "./core";
 
 const program = new Command();
 
@@ -44,51 +44,6 @@ async function runGeneration(config: GeneratorConfig): Promise<void> {
     const sourceInfo = `from ${inputType}: ${config.input}`;
     const clientPrefix = result.client ? `${result.client} ` : "";
     console.log(`🎉 ${clientPrefix}Generation completed successfully ${sourceInfo} -> ${config.output}`);
-}
-
-async function loadConfigFile(configPath: string): Promise<GeneratorConfig> {
-    const resolvedPath = path.resolve(configPath);
-
-    if (!fs.existsSync(resolvedPath)) {
-        throw new ConfigLoadError(`Configuration file not found: ${resolvedPath}`, resolvedPath);
-    }
-
-    // Clear require cache to ensure fresh load
-    delete require.cache[require.resolve(resolvedPath)];
-
-    try {
-        // Handle both .ts and .js files
-        if (resolvedPath.endsWith(".ts")) {
-            // Use ts-node to load TypeScript config files
-            require("ts-node/register");
-        }
-
-        const configModule = require(resolvedPath);
-
-        // Handle different export styles
-        const config = configModule.default || configModule.config || configModule;
-
-        if (!config.input || !config.output) {
-            throw new Error('Configuration must include "input" and "output" properties');
-        }
-
-        // Resolve relative paths relative to the config file directory
-        const configDir = path.dirname(resolvedPath);
-
-        // Only resolve input if it's not a URL and is a relative path
-        if (!isUrl(config.input) && !path.isAbsolute(config.input)) {
-            config.input = path.resolve(configDir, config.input);
-        }
-
-        // Only resolve output if it's a relative path
-        if (!path.isAbsolute(config.output)) {
-            config.output = path.resolve(configDir, config.output);
-        }
-
-        return config;
-    } catch (error) {
-        throw new ConfigLoadError(`Failed to load configuration file: ${configPath}`, configPath, error);
-    }
 }
 
 interface CliOptions {

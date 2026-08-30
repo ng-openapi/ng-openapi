@@ -143,7 +143,7 @@ export function resolveArgumentNames(
         }
 
         if (identifier !== base) {
-            renamed.push({ source: typeof key === "string" ? key : base, identifier });
+            renamed.push(Object.freeze({ source: typeof key === "string" ? key : base, identifier }));
         }
         used.add(identifier);
         identifiers.set(key, identifier);
@@ -153,23 +153,17 @@ export function resolveArgumentNames(
         // The fallback runs the *same* rules the resolver would have, rather
         // than a bare camelCase: an unregistered wire name otherwise came back
         // as `class` or `options`, names the resolver never assigns.
-        of: (wireName) => identifiers.get(wireName) ?? fallbackIdentifier(wireName, profile),
+        // Uniquified against everything already assigned, not just the reserved
+        // words: an unregistered wire name that camelCases onto an identifier
+        // this operation already bound would otherwise alias it — compiling
+        // fine and sending the wrong value. Only reachable for operations built
+        // outside the normalizer, but the resolver is public API.
+        of: (wireName) => identifiers.get(wireName) ?? deriveLocalName(camelCase(wireName), [...used]),
         body: identifiers.get(REQUEST_BODY_KEY),
         all: Object.freeze([...identifiers.values()]),
         renamed: Object.freeze(renamed),
         merged: Object.freeze([...merged]),
     };
-}
-
-/**
- * Identifier for a wire name the resolver never saw. Only reachable for
- * operations assembled outside the normalizer (tests, plugin fixtures); a
- * resolved map contains every wire name of its operation.
- */
-function fallbackIdentifier(wireName: string, profile: ArgumentNameProfile): string {
-    const base = camelCase(wireName);
-    const taken = new Set<string>([...profile.reserved, ...RESERVED_WORDS]);
-    return deriveLocalName(base, [...taken]);
 }
 
 /**

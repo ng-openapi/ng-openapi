@@ -7,6 +7,7 @@ import {
     resolveArgumentNames,
     SERVICE_ARGUMENT_PROFILE,
 } from "../src";
+import type { RenamedArgument } from "../src";
 
 const config: MethodGenOptions = { options: { dateType: "string" } };
 
@@ -115,5 +116,28 @@ describe("resolveArgumentNames", () => {
 
     it("falls back to the plain conversion for an unresolved name", () => {
         expect(service(operation()).of("filter.name")).toBe("filterName");
+    });
+    it("uniquifies an unresolved wire name against the identifiers already bound", () => {
+        const names = service(operation({ queryParams: [param("class")] }));
+        expect(names.of("class")).toBe("class2");
+        // A bare camelCase fallback returned `class` — a syntax error, loud.
+        // Uniquifying only against the reserved words returned `class2` and
+        // aliased the parameter above, which compiles and sends the wrong value.
+        expect(names.of("Class")).toBe("class3");
+        expect(names.of("options")).not.toBe("options");
+    });
+
+    it("freezes the arrays it hands out", () => {
+        const names = service(operation({ queryParams: [param("filter[name]"), param("filter.name"), param("id")] }));
+        expect(() => (names.all as string[]).push("x")).toThrow();
+        expect(() => (names.renamed as RenamedArgument[]).push({ source: "x", identifier: "y" })).toThrow();
+        expect(() => (names.merged as string[]).push("x")).toThrow();
+        expect(() => ((names.renamed[0] as RenamedArgument).source = "x")).toThrow();
+    });
+
+    it("freezes the profile singletons", () => {
+        expect(() => ((SERVICE_ARGUMENT_PROFILE as { bindsRequestBody: boolean }).bindsRequestBody = false)).toThrow();
+        expect(() => (SERVICE_ARGUMENT_PROFILE.reserved as string[]).push("x")).toThrow();
+        expect(() => ((RESOURCE_ARGUMENT_PROFILE as { bindsRequestBody: boolean }).bindsRequestBody = true)).toThrow();
     });
 });

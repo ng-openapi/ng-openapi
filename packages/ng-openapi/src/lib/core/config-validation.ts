@@ -10,6 +10,8 @@ const NAMING_KEYS = ["services", "resources", "models"] as const;
 // Decorations are spliced into generated identifiers, so they must be
 // identifier fragments themselves; the prefix additionally starts the name.
 const NAME_PREFIX_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
+// clientName is spliced into class names, token names and a JSDoc block.
+const CLIENT_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9_]*$/;
 const NAME_SUFFIX_PATTERN = /^[A-Za-z0-9_]*$/;
 
 /**
@@ -35,8 +37,16 @@ export function validateGeneratorConfig(config: unknown): asserts config is Gene
     if (typeof c.output !== "string" || c.output.trim() === "") {
         issues.push("`output` must be a non-empty string (output directory)");
     }
-    if (c.clientName !== undefined && typeof c.clientName !== "string") {
-        issues.push("`clientName` must be a string");
+    if (c.clientName !== undefined) {
+        // Reaches a JSDoc block and several single-quoted token literals, so it
+        // is an interpolation source like naming.prefix — validated the same
+        // way rather than escaped at each site.
+        if (typeof c.clientName !== "string" || !CLIENT_NAME_PATTERN.test(c.clientName)) {
+            issues.push(
+                "`clientName` must be a string of letters, digits and underscores starting with a letter " +
+                    "(it becomes part of generated identifiers and token names)",
+            );
+        }
     }
     if (c.validateInput !== undefined && typeof c.validateInput !== "function") {
         issues.push("`validateInput` must be a function (spec) => boolean");

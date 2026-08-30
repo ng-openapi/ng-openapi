@@ -200,4 +200,27 @@ describe("typed errors", () => {
         expect(error.operation.operationId).toBe("op");
         expect(() => ((error.operation as OperationRef).method = "POST")).toThrow();
     });
+    it("walks the prototype chain to find a registered ancestor", () => {
+        // Collapsing the walk to a direct lookup would leave a subclass instance
+        // with the fallback lineage, so it would stop matching its own parent.
+        class Deep extends SpecLoadError {}
+        class Deeper extends Deep {}
+        const error = new Deeper("x", "./s");
+
+        const lineage = Object.getOwnPropertyDescriptor(error, "__ngOpenApiError")?.value;
+        expect(lineage).toEqual(["SpecLoadError", "NgOpenApiError"]);
+        expect(error.name).toBe("SpecLoadError");
+    });
+
+    it("freezes the fallback lineage it hands to unregistered classes", () => {
+        class Unregistered extends NgOpenApiError {
+            constructor() {
+                super("x");
+            }
+        }
+        const lineage = Object.getOwnPropertyDescriptor(new Unregistered(), "__ngOpenApiError")?.value as string[];
+        // Pushing to it would upgrade this instance's instanceof.
+        expect(() => lineage.push("SpecLoadError")).toThrow();
+        expect(new Unregistered()).not.toBeInstanceOf(SpecLoadError);
+    });
 });

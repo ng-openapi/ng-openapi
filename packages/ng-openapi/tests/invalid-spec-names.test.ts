@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { createOutputDirs, expectGeneratedCodeCompiles } from "@ng-openapi/testing";
+import { createOutputDirs, expectGeneratedCodeCompiles, expectNoDeclaration } from "@ng-openapi/testing";
+import type { GeneratorConfig } from "ng-openapi";
 import {
     DuplicateGeneratedNameError,
     generateFromConfig,
@@ -792,37 +793,87 @@ describe("spec text reaching emitted literals", () => {
     });
 
     it("cannot be escaped out of a JSDoc block by a description", async () => {
-        const output = outputDirs.create("names-jsdoc-");
         // A description closing the comment lets everything after it be emitted
         // as code. At definition level the result is valid TypeScript, so it
         // compiles — a spec fetched by URL could write declarations into a
         // consumer's source tree with generation reporting success.
         const payload = "ends */ export const PWNED = 1; /*";
+        const spec = {
+            openapi: "3.0.0",
+            info: { title: "t", version: "1.0.0" },
+            components: {
+                schemas: {
+                    // Object definition + property (interface-builder).
+                    Doc: {
+                        type: "object",
+                        description: payload,
+                        properties: { a: { type: "string", description: payload } },
+                    },
+                    // Enum definition, both enumStyles (enum-builder).
+                    Status: { type: "string", enum: ["a", "b"], description: payload },
+                    // Type-alias branches (type.generator).
+                    Alias: { type: "string", description: payload },
+                    ArrayAlias: { type: "array", items: { type: "string" }, description: payload },
+                },
+            },
+            paths: {
+                "/d": {
+                    get: {
+                        tags: ["D"],
+                        operationId: "d",
+                        description: payload,
+                        parameters: [{ name: "q", in: "query", schema: { type: "string" } }],
+                        responses: {
+                            "200": {
+                                description: "OK",
+                                content: { "application/json": { schema: { $ref: "#/components/schemas/Doc" } } },
+                            },
+                        },
+                    },
+                },
+            },
+        };
+
+        // Every variant that routes descriptions differently: both enum styles,
+        // the request-parameter interfaces, and the plugin's resource methods.
+        const variants: { label: string; extra: Omit<GeneratorConfig["options"], "dateType"> }[] = [
+            { label: "union", extra: { enumStyle: "union" } },
+            { label: "enum", extra: { enumStyle: "enum" } },
+            { label: "request-param", extra: { enumStyle: "union", useSingleRequestParameter: true } },
+        ];
+        for (const { label, extra } of variants) {
+            const output = outputDirs.create(`names-jsdoc-${label}-`);
+            await generateFromConfig({
+                input: writeSpec(output, spec),
+                output,
+                options: { dateType: "string", generateServices: true, ...extra },
+                plugins: [HttpResourcePlugin],
+            });
+
+            // Parsed, not pattern-matched: ts-morph emits the JSDoc inline, so
+            // the injected code never starts a line, and it compiles, so the
+            // compile assertion cannot see it either.
+            expectNoDeclaration(output, "PWNED");
+            expectGeneratedCodeCompiles(output, `${label} output`);
+        }
+    });
+
+    it("tolerates a description that is not a string", async () => {
+        const output = outputDirs.create("names-jsdoc-nonstring-");
+        // Untrusted JSON: nothing schema-validates a description, and this used
+        // to be emitted harmlessly rather than aborting the run.
         await generateFromConfig({
             input: writeSpec(output, {
                 openapi: "3.0.0",
                 info: { title: "t", version: "1.0.0" },
-                components: {
-                    schemas: {
-                        Doc: {
-                            type: "object",
-                            description: payload,
-                            properties: { a: { type: "string", description: payload } },
-                        },
-                    },
-                },
+                components: { schemas: { Doc: { type: "object", description: 42, properties: { a: { type: "string" } } } } },
                 paths: {
                     "/d": {
                         get: {
                             tags: ["D"],
                             operationId: "d",
-                            description: payload,
-                            responses: {
-                                "200": {
-                                    description: "OK",
-                                    content: { "application/json": { schema: { $ref: "#/components/schemas/Doc" } } },
-                                },
-                            },
+                            description: 42,
+                            responses: { "200": { description: "OK" } },
                         },
                     },
                 },
@@ -831,10 +882,6 @@ describe("spec text reaching emitted literals", () => {
             options: { dateType: "string", enumStyle: "union", generateServices: true },
         });
 
-        for (const file of ["models/index.ts", "services/d.service.ts"]) {
-            const emitted = readFileSync(join(output, file), "utf8");
-            expect(emitted, file).not.toMatch(/^\s*export const PWNED/m);
-        }
         expectGeneratedCodeCompiles(output);
     });
 

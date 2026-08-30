@@ -36,9 +36,12 @@ const NG_OPENAPI_ERROR_BRAND = "__ngOpenApiError";
  * correct answer for it.
  */
 /** Any class object; narrower than `Function`, which lint rejects as too loose. */
-type ErrorClass = abstract new (...args: never[]) => NgOpenApiError;
+type ErrorClass = { readonly prototype: unknown };
 
 const ERROR_LINEAGE = new WeakMap<object, readonly string[]>();
+
+/** Lineage for an instance whose class was never registered. */
+const FALLBACK_LINEAGE: readonly string[] = Object.freeze(["NgOpenApiError"]);
 
 /** Registers `cls` under `lineage`; returns it so declarations stay one statement. */
 function registerError<T extends ErrorClass>(cls: T, lineage: readonly string[]): T {
@@ -54,7 +57,9 @@ function inheritedLineage(cls: object | undefined): readonly string[] {
             return lineage;
         }
     }
-    return ["NgOpenApiError"];
+    // Frozen: it is handed to an instance as its brand, and a caller that
+    // pushed to it would upgrade that instance's `instanceof`.
+    return FALLBACK_LINEAGE;
 }
 
 /** Base class of every error ng-openapi raises deliberately. */
@@ -62,7 +67,7 @@ export class NgOpenApiError extends Error {
     /** The underlying error that caused this one, when there is one. */
     readonly cause?: unknown;
 
-    constructor(message: string, cause?: unknown) {
+    protected constructor(message: string, cause?: unknown) {
         super(message);
         // Read from the registry rather than taken as a parameter: a lineage
         // argument is forgeable by any subclass, `protected` or not, because

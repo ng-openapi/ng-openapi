@@ -104,6 +104,9 @@ export function escapeJsDoc(text: string): string {
  * `[description]` inline, so the escape cannot be forgotten at one of the eight
  * call sites.
  */
-export function emitDocs(description: string | undefined): string[] | undefined {
-    return description ? [escapeJsDoc(description)] : undefined;
+export function emitDocs(description: unknown): string[] | undefined {
+    // `unknown`, not `string | undefined`: a description is untrusted JSON and
+    // nothing schema-validates it, so `"description": 42` reaches here. ts-morph
+    // tolerated that before; crashing the whole run on it would be a regression.
+    return typeof description === "string" && description ? [escapeJsDoc(description)] : undefined;
 }
