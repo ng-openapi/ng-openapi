@@ -86,16 +86,24 @@ export class NgOpenApiError extends Error {
     }
 
     /**
-     * `message` is non-enumerable on Error, so the default JSON.stringify
-     * dropped it while emitting `cause: undefined` — the least useful possible
-     * serialization for something that exists to be logged.
+     * `message` and `name` are non-enumerable on Error, so the default
+     * JSON.stringify dropped both — the least useful possible serialization for
+     * something that exists to be logged.
+     *
+     * The payload is spread rather than enumerated: `source`, `issues`,
+     * `operation`, `names` and `placeholders` are why these classes are typed
+     * in the first place, and listing fields by hand silently drops whichever
+     * ones a later subclass adds.
      */
     toJSON(): Record<string, unknown> {
-        const json: Record<string, unknown> = { name: this.name, message: this.message };
-        if (this.cause !== undefined) {
-            json["cause"] = this.cause instanceof Error ? this.cause.message : this.cause;
-        }
-        return json;
+        const cause = this.cause instanceof Error ? this.cause.message : this.cause;
+        return {
+            name: this.name,
+            message: this.message,
+            ...(cause === undefined ? {} : { cause }),
+            // Own enumerable properties: the brand is deliberately not one.
+            ...Object.fromEntries(Object.entries(this).filter(([key]) => key !== "cause")),
+        };
     }
 
     /**

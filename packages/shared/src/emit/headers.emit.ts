@@ -37,11 +37,13 @@ if (${optionsExpression}?.headers instanceof HttpHeaders) {
 ${emitDefaultHeaderGuards(customHeaders)}`;
     }
 
+    // `accept` is spec text (the response content types), so it is quoted
+    // like every other emitted literal rather than interpolated raw.
     if (accept) {
         headerCode += `
 // Advertise the response content type declared in the spec
 if (!headers.has('Accept')) {
-  headers = headers.set('Accept', '${accept}');
+  headers = headers.set('Accept', ${quoteLiteral(accept)});
 }`;
     }
 

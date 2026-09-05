@@ -1,3 +1,8 @@
+# The repo is LF. Without this, core.autocrlf=true rewrites sources to CRLF
+# on checkout while `git status` still reports clean, so a `git checkout --`
+# silently reintroduces CRLF churn into the next commit.
+* text=auto eol=lf
+
 # Golden snapshots are compared byte-for-byte by the test suite;
 # keep them LF regardless of core.autocrlf so checkouts never break them.
 packages/**/tests/__golden__/** text eol=lf

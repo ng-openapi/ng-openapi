@@ -231,20 +231,40 @@ describe("typed errors", () => {
     });
 
     it("serializes the parts a log actually needs", () => {
-        // message is non-enumerable on Error, so the default JSON.stringify
-        // dropped it and emitted `cause: undefined` instead.
+        // name and message are non-enumerable on Error, so the default
+        // JSON.stringify dropped both.
         const error = new SpecLoadError("could not read", "./spec.json", new Error("ENOENT"));
         const json = JSON.parse(JSON.stringify(error)) as Record<string, unknown>;
 
+        // The exact key set, not individual lookups: the brand is
+        // non-enumerable and `cause: undefined` is dropped by JSON.stringify
+        // regardless, so asserting their absence one at a time holds with
+        // toJSON deleted entirely.
+        expect(Object.keys(json).sort()).toEqual(["cause", "message", "name", "source"]);
         expect(json["message"]).toBe("could not read");
-        expect(json["name"]).toBe("SpecLoadError");
         expect(json["cause"]).toBe("ENOENT");
-        expect(json).not.toHaveProperty("__ngOpenApiError");
+        // The typed payload is why these classes exist; enumerating three
+        // fields by hand dropped it from every structured log.
+        expect(json["source"]).toBe("./spec.json");
+    });
+
+    it("keeps each subclass's own payload", () => {
+        const duplicate = new DuplicateGeneratedNameError("x", ["a", "b"], [{ method: "GET", path: "/a" }]);
+        expect(JSON.parse(JSON.stringify(duplicate))).toMatchObject({
+            names: ["a", "b"],
+            operations: [{ method: "GET", path: "/a" }],
+        });
+
+        expect(JSON.parse(JSON.stringify(new ConfigValidationError(["one"])))).toMatchObject({ issues: ["one"] });
+        expect(JSON.parse(JSON.stringify(new UnresolvedPathTemplateError("x", "/a/{id}", ["id"])))).toMatchObject({
+            path: "/a/{id}",
+            placeholders: ["id"],
+        });
     });
 
     it("omits cause rather than emitting it as undefined", () => {
         const json = JSON.parse(JSON.stringify(new SpecLoadError("x", "./s"))) as Record<string, unknown>;
-        expect(json).not.toHaveProperty("cause");
+        expect(Object.keys(json).sort()).toEqual(["message", "name", "source"]);
     });
 
     it("keeps the brand and the prototype chain agreeing", () => {

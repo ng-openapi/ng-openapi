@@ -81,20 +81,28 @@ export class SwaggerParser {
 
     /** Whether the spec declares a supported version (Swagger 2.x or OpenAPI 3.x). */
     isValidSpec(): boolean {
-        return !!(
-            (this.spec.swagger && this.spec.swagger.startsWith("2.")) ||
-            (this.spec.openapi && this.spec.openapi.startsWith("3."))
-        );
+        // typeof, not truthiness: `swagger: 2.0` unquoted in YAML parses as a
+        // number — which is how most YAML specs are written — and .startsWith
+        // threw a raw TypeError, pre-empting the SpecParseError built to report
+        // exactly this.
+        return specVersionOf(this.spec.swagger, "2.") || specVersionOf(this.spec.openapi, "3.");
     }
 
     /** Detected flavor + literal version string, or null when neither field is present. */
     getSpecVersion(): { type: "swagger" | "openapi"; version: string } | null {
-        if (this.spec.swagger) {
-            return { type: "swagger", version: this.spec.swagger };
+        if (this.spec.swagger !== undefined && this.spec.swagger !== null) {
+            return { type: "swagger", version: String(this.spec.swagger) };
         }
-        if (this.spec.openapi) {
-            return { type: "openapi", version: this.spec.openapi };
+        if (this.spec.openapi !== undefined && this.spec.openapi !== null) {
+            return { type: "openapi", version: String(this.spec.openapi) };
         }
         return null;
     }
+}
+
+/** Whether `value` names a spec version in `major.` — tolerating a YAML number. */
+function specVersionOf(value: unknown, majorPrefix: string): boolean {
+    return typeof value === "string" || typeof value === "number"
+        ? String(value).startsWith(majorPrefix)
+        : false;
 }

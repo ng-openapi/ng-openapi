@@ -37,10 +37,10 @@ export function extractPaths(
                 paths.push({
                     path,
                     method: method.toUpperCase(),
-                    operationId: operation.operationId,
+                    operationId: asName(operation.operationId),
                     summary: operation.summary,
                     description: operation.description,
-                    tags: operation.tags || [],
+                    tags: Array.isArray(operation.tags) ? operation.tags.flatMap(nameOrNothing) : [],
                     parameters: parseParameters(operation.parameters || [], pathItem.parameters || []),
                     requestBody: operation.requestBody,
                     responses: operation.responses || {},
@@ -52,10 +52,32 @@ export function extractPaths(
     return paths;
 }
 
+/**
+ * A spec name, or undefined when the value is not usable as one.
+ *
+ * This is the boundary between untyped spec JSON and the typed PathInfo, and
+ * nothing schema-validates the document: a numeric `operationId`, a `tags`
+ * entry that is an object, or a non-string parameter name all reached the
+ * generators and threw a raw TypeError out of the run from inside camelCase.
+ * Numbers are kept, since a YAML `operationId: 2` is plainly meant as a name.
+ */
+function asName(value: unknown): string | undefined {
+    if (typeof value === "string") {
+        return value;
+    }
+    return typeof value === "number" && Number.isFinite(value) ? String(value) : undefined;
+}
+
+/** asName as a flatMap step: an unusable entry contributes nothing. */
+function nameOrNothing(value: unknown): string[] {
+    const name = asName(value);
+    return name === undefined ? [] : [name];
+}
+
 function parseParameters(operationParams: Parameter[], pathParams: Parameter[]): Parameter[] {
     const allParams = [...pathParams, ...operationParams];
     return allParams.map((param) => ({
-        name: param.name,
+        name: asName(param.name) ?? "",
         in: param.in,
         required: param.required || param.in === "path",
         schema: param.schema,

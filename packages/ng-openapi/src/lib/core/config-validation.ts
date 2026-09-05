@@ -43,7 +43,7 @@ export function validateGeneratorConfig(config: unknown): asserts config is Gene
         // way rather than escaped at each site.
         if (typeof c.clientName !== "string" || !CLIENT_NAME_PATTERN.test(c.clientName)) {
             issues.push(
-                "`clientName` must be a string of letters, digits and underscores starting with a letter " +
+                "`clientName` must be a string of letters, digits and underscores, not starting with a digit " +
                     "(it becomes part of generated identifiers and token names)",
             );
         }

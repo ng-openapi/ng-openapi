@@ -797,7 +797,20 @@ describe("spec text reaching emitted literals", () => {
         // as code. At definition level the result is valid TypeScript, so it
         // compiles — a spec fetched by URL could write declarations into a
         // consumer's source tree with generation reporting success.
-        const payload = "ends */ export const PWNED = 1; /*";
+        // Every declaration form, not just a const: the assertion helper covers
+        // seven kinds, and a single `const` payload left the other six
+        // unwatched — the widening could be reverted with the suite green.
+        const injections = [
+            "export const PWNED = 1;",
+            "export function PWNED2() {}",
+            "export class PWNED3 {}",
+            "export interface PWNED4 { a: string }",
+            "export enum PWNED5 { A }",
+            "export type PWNED6 = string;",
+            "export namespace PWNED7 { export const x = 1; }",
+        ];
+        const injectedNames = ["PWNED", "PWNED2", "PWNED3", "PWNED4", "PWNED5", "PWNED6", "PWNED7"];
+        const payloadFor = (index: number): string => `ends */ ${injections[index % injections.length]} /*`;
         const spec = {
             openapi: "3.0.0",
             info: { title: "t", version: "1.0.0" },
@@ -806,15 +819,15 @@ describe("spec text reaching emitted literals", () => {
                     // Object definition + property (interface-builder).
                     Doc: {
                         type: "object",
-                        description: payload,
-                        properties: { a: { type: "string", description: payload } },
+                        description: payloadFor(0),
+                        properties: { a: { type: "string", description: payloadFor(2) } },
                     },
                     // Enum definition, both enumStyles (enum-builder).
-                    Status: { type: "string", enum: ["a", "b"], description: payload },
+                    Status: { type: "string", enum: ["a", "b"], description: payloadFor(3) },
                     // Type-alias branches (type.generator).
-                    Alias: { type: "string", description: payload },
-                    ArrayAlias: { type: "array", items: { type: "string" }, description: payload },
-                    AllOfAlias: { allOf: [{ $ref: "#/components/schemas/Doc" }], description: payload },
+                    Alias: { type: "string", description: payloadFor(4) },
+                    ArrayAlias: { type: "array", items: { type: "string" }, description: payloadFor(5) },
+                    AllOfAlias: { allOf: [{ $ref: "#/components/schemas/Doc" }], description: payloadFor(6) },
                 },
             },
             paths: {
@@ -822,7 +835,7 @@ describe("spec text reaching emitted literals", () => {
                     get: {
                         tags: ["D"],
                         operationId: "d",
-                        description: payload,
+                        description: payloadFor(1),
                         parameters: [{ name: "q", in: "query", schema: { type: "string" } }],
                         responses: {
                             "200": {
@@ -854,9 +867,106 @@ describe("spec text reaching emitted literals", () => {
             // Parsed, not pattern-matched: ts-morph emits the JSDoc inline, so
             // the injected code never starts a line, and it compiles, so the
             // compile assertion cannot see it either.
-            expectNoDeclaration(output, "PWNED");
+            for (const injected of injectedNames.slice(0, 7)) {
+                expectNoDeclaration(output, injected);
+            }
             expectGeneratedCodeCompiles(output, `${label} output`);
         }
+    });
+
+    it("escapes the Accept value, which is spec text too", async () => {
+        const output = outputDirs.create("names-accept-");
+        // The response content type reaches a single-quoted literal. Unescaped
+        // it closed the literal and the rest became a statement — which
+        // compiles, and which expectNoDeclaration cannot see because an
+        // assignment is not a declaration.
+        const contentType = "application/json'); (globalThis as Record<string, unknown>)['pwned'] = 1; //";
+        await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/a": {
+                        get: {
+                            tags: ["A"],
+                            operationId: "a",
+                            responses: {
+                                "200": { description: "OK", content: { [contentType]: { schema: { type: "string" } } } },
+                            },
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        const service = readFileSync(join(output, "services", "a.service.ts"), "utf8");
+        expect(service).not.toContain("['pwned'] = 1");
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("reports an unquoted YAML version rather than throwing a raw TypeError", async () => {
+        const output = outputDirs.create("names-yamlver-");
+        const input = join(output, "spec.yaml");
+        // `swagger: 2.0` unquoted parses as a number — how most YAML specs are
+        // written. .startsWith threw before the SpecParseError could report it.
+        writeFileSync(input, "swagger: 2.0\ninfo:\n  title: t\n  version: 1.0.0\npaths: {}\n");
+
+        // Either it is accepted as 2.x or it is rejected with the typed error;
+        // what it must not do is throw an untyped TypeError from inside a guard.
+        const result = await generateFromConfig({
+            input,
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        }).catch((reason: unknown) => reason);
+
+        expect(result).not.toBeInstanceOf(TypeError);
+    });
+
+    it("escapes a regex pattern and ignores non-numeric constraints", async () => {
+        const output = outputDirs.create("names-pattern-");
+        await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                components: {
+                    schemas: {
+                        Doc: {
+                            type: "object",
+                            properties: {
+                                // A quote in the pattern closed the RegExp
+                                // literal; the numeric constraints are untrusted
+                                // JSON and landed in expression position.
+                                a: { type: "string", pattern: "^it's$", minLength: "3); evil(" },
+                                b: { type: "number", minimum: "1); evil(" },
+                            },
+                        },
+                    },
+                },
+                paths: {
+                    "/d": {
+                        get: {
+                            tags: ["D"],
+                            operationId: "d",
+                            responses: {
+                                "200": {
+                                    description: "OK",
+                                    content: { "application/json": { schema: { $ref: "#/components/schemas/Doc" } } },
+                                },
+                            },
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: false },
+            plugins: [ZodPlugin],
+        });
+
+        const validator = readFileSync(join(output, "validators", "d.validator.ts"), "utf8");
+        expect(validator).not.toContain("evil(");
+        expectGeneratedCodeCompiles(output, "zod output");
     });
 
     it("tolerates a description that is not a string", async () => {

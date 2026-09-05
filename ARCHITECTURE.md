@@ -175,3 +175,4 @@ Project (see above).
 | A new user-facing failure mode | a typed error in `packages/shared/src/errors.ts` (or extend an existing one) |
 | A string/name helper | `packages/shared/src/utils/` — and export it from the barrel only if consumers outside shared need it |
 | Console output | `cli.ts`. Nowhere else. |
+| Config-file loading / normalizing | `core/config-loader.ts` — not `cli.ts`, which runs the CLI on import and so cannot be tested |
