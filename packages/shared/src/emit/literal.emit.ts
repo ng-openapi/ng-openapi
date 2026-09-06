@@ -90,9 +90,9 @@ const IDENTIFIER_NAME = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
  * declarations into the consumer's source tree, and at definition level the
  * result is valid TypeScript, so it compiles and no compile assertion sees it.
  *
- * `*\/` is the standard neutralization (TypeScript's own emitter does the
- * same): the backslash has no meaning inside a comment, so it renders as
- * written and cannot terminate the block.
+ * `*\/` neutralizes it: the backslash has no meaning inside a comment, so it
+ * renders as written and cannot terminate the block. (TypeScript's own emitter
+ * uses `*_/` for the same job; either works, and this one keeps the text readable.)
  */
 export function escapeJsDoc(text: string): string {
     return text.replace(/\*\//g, "*\\/");
@@ -101,8 +101,8 @@ export function escapeJsDoc(text: string): string {
 /**
  * The `docs` array for a ts-morph structure, or undefined when there is no
  * description. Every generator goes through this rather than building
- * `[description]` inline, so the escape cannot be forgotten at one of the eight
- * call sites.
+ * `[description]` inline, so the escape cannot be forgotten at any call site —
+ * the ninth was found after the first eight were fixed.
  */
 export function emitDocs(description: unknown): string[] | undefined {
     // `unknown`, not `string | undefined`: a description is untrusted JSON and

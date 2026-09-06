@@ -1,4 +1,4 @@
-import { ClassDeclaration, Project, Scope, SourceFile } from "ts-morph";
+import { Project, Scope, SourceFile } from "ts-morph";
 import {
     camelCase,
     describeOperation,
@@ -7,8 +7,9 @@ import {
     getBasePathTokenName,
     getClientContextTokenName,
     getServiceClassName,
+    assertDistinctMemberNames,
     groupOperationsByController,
-    DuplicateGeneratedNameError,
+    reservedMemberCollision,
     resolveArgumentNames,
     SERVICE_ARGUMENT_PROFILE,
     NormalizedOperation,
@@ -54,7 +55,7 @@ export class ServiceGenerator {
         const controllerGroups = groupOperationsByController(paths, this.onWarning);
 
         if (this.config.options.useSingleRequestParameter) {
-            const requestParamsGenerator = new RequestParamsGenerator(this.project, this.config);
+            const requestParamsGenerator = new RequestParamsGenerator(this.project, this.config, this.onWarning);
             this.requestObjects = requestParamsGenerator.buildRegistry(controllerGroups, (operation) =>
                 this.methodGenerator.generateMethodName(operation),
             );
@@ -82,12 +83,6 @@ export class ServiceGenerator {
     }
 
     /**
-     * A renamed argument is part of the method's public signature, and the
-     * suffix depends on which other arguments the operation has — so adding or
-     * removing one renumbers the survivor and breaks call sites. Silent is the
-     * one thing that must not happen.
-     */
-    /**
      * Header and cookie parameters are carried on the operation (the zod plugin
      * validates them) but the client generators never bind them — callers pass
      * headers through the trailing options parameter instead.
@@ -109,6 +104,12 @@ export class ServiceGenerator {
         }
     }
 
+    /**
+     * A renamed argument is part of the method's public signature, and the
+     * suffix depends on which other arguments the operation has — so adding or
+     * removing one renumbers the survivor and breaks call sites. Silent is the
+     * one thing that must not happen.
+     */
     private warnAboutRenamedArguments(operation: NormalizedOperation): void {
         const { renamed, merged } = resolveArgumentNames(operation, this.config, SERVICE_ARGUMENT_PROFILE);
         for (const { source, identifier } of renamed) {
@@ -215,40 +216,25 @@ return context.set(this.clientContextToken, '${this.config.clientName || "defaul
         operations.forEach((operation) => {
             this.warnAboutRenamedArguments(operation);
             this.warnAboutUnboundParameters(operation);
+            this.warnAboutReservedMethodName(operation);
             this.methodGenerator.addServiceMethod(serviceClass, operation, this.requestObjects?.get(operation));
         });
 
-        this.assertDistinctMethodNames(serviceClass, className, operations);
+        assertDistinctMemberNames(serviceClass, className, operations, (op) => this.methodGenerator.generateMethodName(op));
     }
 
     /**
-     * Typed and specific: the bare Error this replaced named only the class,
-     * leaving the user to work out which two operationIds collided.
+     * A derived method name that landed on a member the class binds itself is
+     * prefixed rather than rejected — the spec is valid — but the rename is
+     * public signature and must be said out loud.
      */
-    private assertDistinctMethodNames(
-        serviceClass: ClassDeclaration,
-        className: string,
-        operations: NormalizedOperation[],
-    ): void {
-        const methodNames = serviceClass.getMethods().map((method) => method.getName());
-        const duplicates = [...new Set(methodNames.filter((name, index) => methodNames.indexOf(name) !== index))];
-        if (duplicates.length === 0) {
-            return;
+    private warnAboutReservedMethodName(operation: NormalizedOperation): void {
+        const collision = reservedMemberCollision(operation, this.config);
+        if (collision) {
+            this.onWarning?.(
+                `Operation ${describeOperation(operation)} would be named "${collision.from}", which the generated ` +
+                    `class already binds — it is emitted as "${collision.to}". Rename the operationId to choose the name.`,
+            );
         }
-
-        const byName = new Map(duplicates.map((name) => [name, [] as NormalizedOperation[]]));
-        for (const operation of operations) {
-            byName.get(this.methodGenerator.generateMethodName(operation))?.push(operation);
-        }
-        const detail = [...byName]
-            .map(([name, ops]) => `"${name}" from ${ops.map(describeOperation).join(" and ")}`)
-            .join("; ");
-
-        throw new DuplicateGeneratedNameError(
-            `Operations map to the same method name in ${className}: ${detail}. ` +
-                `Ensure each operationId maps to a unique name.`,
-            duplicates,
-            [...byName.values()].flat(),
-        );
     }
 }

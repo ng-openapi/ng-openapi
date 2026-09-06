@@ -54,7 +54,9 @@ describe("camelCase", () => {
 
     it("falls back to _ when nothing identifier-legal remains", () => {
         expect(camelCase("{}")).toBe("_");
-        expect(camelCase("")).toBe("");
+        // "" is not an identifier for any input, and it is reachable: a
+        // parameter named "" is legal spec JSON.
+        expect(camelCase("")).toBe("_");
     });
 });
 
@@ -87,7 +89,9 @@ describe("pascalCase", () => {
 
     it("falls back to _ when nothing identifier-legal remains", () => {
         expect(pascalCase("()")).toBe("_");
-        expect(pascalCase("")).toBe("");
+        // "" is not an identifier for any input, and it is reachable: a
+        // parameter named "" is legal spec JSON.
+        expect(pascalCase("")).toBe("_");
     });
 });
 

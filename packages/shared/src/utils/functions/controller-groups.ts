@@ -23,6 +23,11 @@ export function groupOperationsByController(
     onWarning?: (message: string) => void,
 ): Record<string, NormalizedOperation[]> {
     const groups: Record<string, NormalizedOperation[]> = {};
+    // Case-insensitive: file names derive from the controller name, and USER
+    // and User are one file on a case-insensitive filesystem (Windows, default
+    // macOS), so keeping them apart lost a service silently and left the
+    // barrel exporting a class that was not on disk. First spelling wins.
+    const controllerByFold = new Map<string, string>();
     const tagSpellings = new Map<string, Set<string>>();
     const namelessTags = new Set<string>();
 
@@ -47,7 +52,10 @@ export function groupOperationsByController(
         // placeholder outputs, which only ever caught two of them.
         const sanitized = pascalCase(rawName);
         const isNameless = !/\p{L}/u.test(sanitized);
-        const controllerName = isNameless ? "Default" : sanitized;
+        const candidate = isNameless ? "Default" : sanitized;
+        const fold = candidate.toLowerCase();
+        const controllerName = controllerByFold.get(fold) ?? candidate;
+        controllerByFold.set(fold, controllerName);
 
         if (tag !== undefined && isNameless) {
             namelessTags.add(tag);

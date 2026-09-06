@@ -1138,3 +1138,212 @@ describe("spec text reaching emitted literals", () => {
         expect(result.warnings.join("\n")).toMatch(/Required cookie parameter "session"/);
     });
 });
+
+describe("names the round-9 review found unguarded", () => {
+    const oas3 = (paths: unknown, components?: unknown) => ({
+        openapi: "3.0.0",
+        info: { title: "t", version: "1.0.0" },
+        ...(components ? { components } : {}),
+        paths,
+    });
+    const ok = { "200": { description: "OK" } };
+
+    it("drops a parameter with no usable name, out loud, instead of emitting an empty identifier", async () => {
+        const output = outputDirs.create("names-nameless-param-");
+        // "" and an object are not names. 42 is: a YAML `name: 42` plainly means
+        // a name. The old boundary coerced all three to "" and the signature
+        // got an empty identifier — TS1003 four times over, reported as success.
+        const result = await generateFromConfig({
+            input: writeSpec(output, oas3({
+                "/p": {
+                    get: {
+                        tags: ["P"],
+                        operationId: "p",
+                        parameters: [
+                            { name: "", in: "query", schema: { type: "string" } },
+                            { name: { x: 1 }, in: "query", schema: { type: "string" } },
+                            { name: 42, in: "query", schema: { type: "string" } },
+                            { name: "kept", in: "query", schema: { type: "string" } },
+                        ],
+                        responses: ok,
+                    },
+                },
+            })),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+
+        const nameless = result.warnings.filter((warning) => warning.includes("has no usable name"));
+        expect(nameless).toHaveLength(2);
+        const service = readFileSync(join(output, "services", "p.service.ts"), "utf8");
+        expect(service).toContain("params, kept, 'kept'");
+        expect(service).toContain("'42'");
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("ignores a tags entry that is not a string", async () => {
+        const output = outputDirs.create("names-objtag-");
+        await generateFromConfig({
+            input: writeSpec(output, oas3({ "/t": { get: { tags: [{ x: 1 }, "Real"], operationId: "t", responses: ok } } })),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+        expect(readFileSync(join(output, "services", "index.ts"), "utf8")).toContain("RealService");
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("emits zod default values as literals, recursively", async () => {
+        const output = outputDirs.create("names-zoddefault-");
+        await generateFromConfig({
+            input: writeSpec(output, oas3(
+                {
+                    "/d": {
+                        get: {
+                            tags: ["D"],
+                            operationId: "d",
+                            responses: { "200": { description: "OK", content: { "application/json": { schema: { $ref: "#/components/schemas/Doc" } } } } },
+                        },
+                    },
+                },
+                {
+                    schemas: {
+                        Doc: {
+                            type: "object",
+                            properties: {
+                                // Object keys are spec text: `{ my-key: 1 }` is a
+                                // syntax error and a __proto__ key is the setter.
+                                // Both halves via JSON.parse: a __proto__ key written in
+                                // JS source is the prototype setter, never a property —
+                                // the same trap the fix closes, one level up in the test.
+                                obj: JSON.parse(
+                                    '{"type":"object","properties":{"my-key":{"type":"number"},"__proto__":{"type":"number"},' +
+                                        '"nested":{"type":"object","properties":{"a":{"type":"array","items":{"type":"number","nullable":true}}}}},' +
+                                        '"default":{"my-key":1,"__proto__":2,"nested":{"a":[1,null]}}}',
+                                ),
+                                // Not emitEnumMember: that turns null into the
+                                // *string* 'null', which is right for a z.enum
+                                // member and wrong for a default.
+                                arr: { type: "array", items: { type: "string", nullable: true }, default: ["x", null] },
+                            },
+                        },
+                    },
+                },
+            )),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: false },
+            plugins: [ZodPlugin],
+        });
+
+        const validator = readFileSync(join(output, "validators", "d.validator.ts"), "utf8");
+        expect(validator).toContain(".default(['x', null])");
+        expect(validator).toContain('"my-key": 1');
+        expect(validator).toContain('["__proto__"]: 2');
+        expect(validator).not.toContain("[object Object]");
+        expectGeneratedCodeCompiles(output, "zod output");
+    });
+
+    it("renames an operation whose name is a member the class binds, and says so", async () => {
+        const output = outputDirs.create("names-basepath-");
+        const result = await generateFromConfig({
+            input: writeSpec(output, oas3({ "/b": { get: { tags: ["B"], operationId: "basePath", responses: ok } } })),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+        // `basePath` is a property of the generated class; a method of the same
+        // name was TS2300 ten times over, reported as success.
+        expect(result.warnings.join("\n")).toMatch(/would be named "basePath".*emitted as "_basePath"/);
+        expect(readFileSync(join(output, "services", "b.service.ts"), "utf8")).toContain("_basePath(");
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("rejects a customizeMethodName result that lands on a class member", async () => {
+        const output = outputDirs.create("names-hook-member-");
+        await expect(
+            generateFromConfig({
+                input: writeSpec(output, oas3({ "/b": { get: { tags: ["B"], operationId: "x", responses: ok } } })),
+                output,
+                options: { dateType: "string", enumStyle: "union", generateServices: true, customizeMethodName: () => "httpClient" },
+            }),
+        ).rejects.toBeInstanceOf(InvalidIdentifierError);
+    });
+
+    it("merges controllers that differ only by case into one file", async () => {
+        const output = outputDirs.create("names-casefold-");
+        // USER and User are one file on Windows and default macOS; kept apart,
+        // one service was silently lost and the barrel exported a class that
+        // was not on disk.
+        const result = await generateFromConfig({
+            input: writeSpec(output, oas3({
+                "/a": { get: { tags: ["USER"], operationId: "a", responses: ok } },
+                "/b": { get: { tags: ["User"], operationId: "b", responses: ok } },
+            })),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+        const services = readdirSync(join(output, "services")).filter((name) => name.endsWith(".service.ts"));
+        expect(services).toHaveLength(1);
+        const merged = readFileSync(join(output, "services", services[0]), "utf8");
+        expect(merged).toContain("a(");
+        expect(merged).toContain("b(");
+        expect(result.warnings.join("\n")).toMatch(/"USER" and "User" all map to the controller/);
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("rejects two schemas whose names sanitize onto one type", async () => {
+        const output = outputDirs.create("names-typecollide-");
+        // TypeScript declaration-merges two interfaces of one name, so the
+        // compile check is blind to it and one model silently acquires the
+        // other's properties.
+        const error = await generateFromConfig({
+            input: writeSpec(output, oas3(
+                { "/d": { get: { tags: ["D"], operationId: "d", responses: ok } } },
+                { schemas: { "Pet-Store": { type: "object", properties: { a: { type: "string" } } }, "Pet.Store": { type: "object", properties: { b: { type: "string" } } } } },
+            )),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        }).catch((reason: unknown) => reason);
+        expect(error).toBeInstanceOf(DuplicateGeneratedNameError);
+        expect((error as Error).message).toMatch(/"Pet_Store" from schemas "Pet-Store" and "Pet.Store"/);
+    });
+
+    it("keeps generating for a clientName that is not an identifier", async () => {
+        for (const clientName of ["my-client", "my.client", "My (Api)"]) {
+            const output = outputDirs.create("names-clientname-");
+            await generateFromConfig({
+                input: writeSpec(output, oas3({ "/c": { get: { tags: ["C"], operationId: "c", responses: ok } } })),
+                output,
+                clientName,
+                options: { dateType: "string", enumStyle: "union", generateServices: true },
+            });
+            expectGeneratedCodeCompiles(output, clientName);
+        }
+        const output = outputDirs.create("names-clientname-final-");
+        await generateFromConfig({
+            input: writeSpec(output, oas3({ "/c": { get: { tags: ["C"], operationId: "c", responses: ok } } })),
+            output,
+            clientName: "my-client",
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+        // The identifiers are sanitized; the string positions keep the raw value.
+        expect(readFileSync(join(output, "providers.ts"), "utf8")).toContain("provideMyClientClient");
+        expect(readFileSync(join(output, "tokens", "index.ts"), "utf8")).toContain("BASE_PATH_MY_CLIENT");
+    });
+
+    it("warns when a request-parameter interface has to be renumbered", async () => {
+        const output = outputDirs.create("names-paramsiface-");
+        // A: getItem claims GetItemParams. B: bGetItem claims BGetItemParams as
+        // its base; then B: getItem finds both its candidates taken. The result
+        // is an exported type renumbered by what else the spec declares.
+        const result = await generateFromConfig({
+            input: writeSpec(output, oas3({
+                "/a": { get: { tags: ["A"], operationId: "getItem", parameters: [{ name: "q", in: "query", schema: { type: "string" } }], responses: ok } },
+                "/b1": { get: { tags: ["B"], operationId: "bGetItem", parameters: [{ name: "q", in: "query", schema: { type: "string" } }], responses: ok } },
+                "/b2": { get: { tags: ["B"], operationId: "getItem", parameters: [{ name: "q", in: "query", schema: { type: "string" } }], responses: ok } },
+            })),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true, useSingleRequestParameter: true },
+        });
+        expect(result.warnings.join("\n")).toMatch(/interface "GetItemParams" is already taken.*exposed as "BGetItemParams2"/);
+        expectGeneratedCodeCompiles(output);
+    });
+});

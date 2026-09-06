@@ -28,6 +28,7 @@ type RawPathItem = { parameters?: Parameter[] } & { [method: string]: unknown };
 export function extractPaths(
     swaggerPaths: { [p: string]: Path } = {},
     methods = ["get", "post", "put", "patch", "delete", "options", "head"],
+    onWarning?: (message: string) => void,
 ): PathInfo[] {
     const paths: PathInfo[] = [];
     Object.entries(swaggerPaths as Record<string, RawPathItem>).forEach(([path, pathItem]) => {
@@ -41,7 +42,12 @@ export function extractPaths(
                     summary: operation.summary,
                     description: operation.description,
                     tags: Array.isArray(operation.tags) ? operation.tags.flatMap(nameOrNothing) : [],
-                    parameters: parseParameters(operation.parameters || [], pathItem.parameters || []),
+                    parameters: parseParameters(
+                        operation.parameters || [],
+                        pathItem.parameters || [],
+                        `(${method.toUpperCase()}) ${path}`,
+                        onWarning,
+                    ),
                     requestBody: operation.requestBody,
                     responses: operation.responses || {},
                 });
@@ -74,10 +80,30 @@ function nameOrNothing(value: unknown): string[] {
     return name === undefined ? [] : [name];
 }
 
-function parseParameters(operationParams: Parameter[], pathParams: Parameter[]): Parameter[] {
+function parseParameters(
+    operationParams: Parameter[],
+    pathParams: Parameter[],
+    location: string,
+    onWarning?: (message: string) => void,
+): Parameter[] {
     const allParams = [...pathParams, ...operationParams];
-    return allParams.map((param) => ({
-        name: asName(param.name) ?? "",
+    // A parameter without a usable name cannot be bound to anything: an empty
+    // or non-string name is dropped here, out loud, rather than coerced to ""
+    // — which traded a loud TypeError for silent invalid TypeScript, since ""
+    // reached the signature verbatim.
+    const named = allParams.filter((param) => {
+        const name = asName(param.name);
+        if (name !== undefined && name !== "") {
+            return true;
+        }
+        onWarning?.(
+            `A ${typeof param.in === "string" ? param.in : "query"} parameter of ${location} has no usable name ` +
+                `(${JSON.stringify(param.name)}) and was skipped. Give it a name in the spec.`,
+        );
+        return false;
+    });
+    return named.map((param) => ({
+        name: asName(param.name) as string,
         in: param.in,
         required: param.required || param.in === "path",
         schema: param.schema,

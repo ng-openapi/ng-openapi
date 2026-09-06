@@ -8,7 +8,8 @@ import {
     getClientContextTokenName,
     getResourceClassName,
     groupOperationsByController,
-    DuplicateGeneratedNameError,
+    assertDistinctMemberNames,
+    reservedMemberCollision,
     resolveArgumentNames,
     RESOURCE_ARGUMENT_PROFILE,
     HTTP_RESOURCE_GENERATOR_HEADER_COMMENT,
@@ -161,28 +162,16 @@ return context.set(this.clientContextToken, '${this.config.clientName || "defaul
                         `the same value is sent for both.`,
                 );
             }
+            const collision = reservedMemberCollision(operation, this.config);
+            if (collision) {
+                this.onWarning?.(
+                    `Operation ${describeOperation(operation)} would be named "${collision.from}", which the generated ` +
+                        `class already binds — it is emitted as "${collision.to}". Rename the operationId to choose the name.`,
+                );
+            }
             this.methodGenerator.addResourceMethod(serviceClass, operation);
         });
 
-        const methodNames = serviceClass.getMethods().map((method) => method.getName());
-        const duplicates = [...new Set(methodNames.filter((name, index) => methodNames.indexOf(name) !== index))];
-        if (duplicates.length > 0) {
-            // Names the operations, not just the class: the operationId is what
-            // the user has to change.
-            const byName = new Map(duplicates.map((name) => [name, [] as NormalizedOperation[]]));
-            for (const operation of operations) {
-                byName.get(this.methodGenerator.generateMethodName(operation))?.push(operation);
-            }
-            const detail = [...byName]
-                .map(([name, ops]) => `"${name}" from ${ops.map(describeOperation).join(" and ")}`)
-                .join("; ");
-
-            throw new DuplicateGeneratedNameError(
-                `Operations map to the same method name in ${className}: ${detail}. ` +
-                    `Ensure each operationId maps to a unique name.`,
-                duplicates,
-                [...byName.values()].flat(),
-            );
-        }
+        assertDistinctMemberNames(serviceClass, className, operations, (op) => this.methodGenerator.generateMethodName(op));
     }
 }

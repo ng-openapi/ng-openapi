@@ -1,5 +1,6 @@
 import { Project, VariableDeclarationKind } from "ts-morph";
 import * as path from "path";
+import { quoteLiteral } from "@ng-openapi/shared";
 
 export class TokenGenerator {
     private project: Project;
@@ -73,7 +74,7 @@ export class TokenGenerator {
             declarations: [
                 {
                     name: clientContextTokenName,
-                    initializer: `new HttpContextToken<string>(() => '${this.clientName}')`,
+                    initializer: `new HttpContextToken<string>(() => ${quoteLiteral(this.clientName)})`,
                 },
             ],
             leadingTrivia: `/**

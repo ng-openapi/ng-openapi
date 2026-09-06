@@ -303,28 +303,33 @@ export class ZodSchemaBuilder {
         return schema.type || "any";
     }
 
+    /**
+     * A default value as a zod `.default(...)` literal.
+     *
+     * Recursive, because a default is arbitrary JSON: object keys are spec text
+     * and went into the literal raw (`{ my-key: 1 }` is a syntax error, a
+     * `__proto__` key is the setter), and nested values went through
+     * `String()`, which emits `[object Object]` into source. Not
+     * `emitEnumMember`: that helper serializes an unknown value as a *string*
+     * because a z.enum member must be one, which turned `default: ["x", null]`
+     * into `['x', 'null']`.
+     */
     private generateDefaultValue(defaultValue: unknown): string {
         if (typeof defaultValue === "string") {
-            return `'${escapeSingleQuoted(defaultValue)}'`;
+            return quoteLiteral(defaultValue);
         }
-        if (typeof defaultValue === "number" || typeof defaultValue === "boolean") {
+        if (typeof defaultValue === "boolean" || (typeof defaultValue === "number" && Number.isFinite(defaultValue))) {
             return String(defaultValue);
         }
         if (defaultValue === null) {
             return "null";
         }
         if (Array.isArray(defaultValue)) {
-            const items = defaultValue.map((item) =>
-                emitEnumMember(item),
-            );
-            return `[${items.join(", ")}]`;
+            return `[${defaultValue.map((item) => this.generateDefaultValue(item)).join(", ")}]`;
         }
         if (typeof defaultValue === "object") {
             const entries = Object.entries(defaultValue)
-                .map(([key, value]) => {
-                    const val = typeof value === "string" ? `'${escapeSingleQuoted(value)}'` : String(value);
-                    return `${key}: ${val}`;
-                })
+                .map(([key, value]) => `${emitObjectKey(key)}: ${this.generateDefaultValue(value)}`)
                 .join(", ");
             return `{ ${entries} }`;
         }

@@ -16,7 +16,7 @@ type ResolveRef = (ref: string) => SwaggerDefinition | undefined;
  * http-resource body, overloads) — computing it once keeps the derivations
  * identical by construction.
  */
-export function normalizeSpec(spec: SwaggerSpec): NormalizedSpec {
+export function normalizeSpec(spec: SwaggerSpec, onWarning?: (message: string) => void): NormalizedSpec {
     const rawDefinitions = spec.definitions || spec.components?.schemas || {};
     const definitions = Object.fromEntries(
         Object.entries(rawDefinitions).map(([name, definition]) => [name, normalizeSchema(definition)]),
@@ -33,7 +33,7 @@ export function normalizeSpec(spec: SwaggerSpec): NormalizedSpec {
               ? { type: "openapi", version: spec.openapi }
               : null,
         definitions,
-        operations: extractPaths(spec.paths).map((operation) =>
+        operations: extractPaths(spec.paths, undefined, onWarning).map((operation) =>
             normalizeOperation(normalizeOperationSchemas(operation), resolveReference),
         ),
         resolveReference,

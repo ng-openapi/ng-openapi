@@ -10,8 +10,8 @@ export {
 } from "./argument-names";
 export type { ArgumentNameProfile, ArgumentNames, RenamedArgument } from "./argument-names";
 export { groupOperationsByController } from "./controller-groups";
-export { getOperationMethodName } from "./method-names";
-export { hasDuplicateFunctionNames } from "./duplicate-function-name";
+export { getOperationMethodName, RESERVED_MEMBER_NAMES, reservedMemberCollision } from "./method-names";
+export { assertDistinctMemberNames } from "./distinct-method-names";
 export { extractPaths } from "./extract-paths";
 export {
     getResponseInfoFromResponse,

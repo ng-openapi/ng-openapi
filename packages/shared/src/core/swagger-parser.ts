@@ -16,13 +16,16 @@ import { SpecParseError } from "../errors";
 export class SwaggerParser {
     private readonly spec: SwaggerSpec;
     private normalized?: NormalizedSpec;
+    /** Non-fatal problems found while normalizing — a parameter with no usable name, for one. */
+    private readonly onWarning?: (message: string) => void;
 
-    private constructor(spec: SwaggerSpec, config: GeneratorConfig) {
+    private constructor(spec: SwaggerSpec, config: GeneratorConfig, onWarning?: (message: string) => void) {
         const isInputValid = config.validateInput?.(spec) ?? true;
         if (!isInputValid) {
             throw new SpecParseError("Swagger spec is not valid. Check your `validateInput` condition.");
         }
         this.spec = spec;
+        this.onWarning = onWarning;
     }
 
     /**
@@ -32,10 +35,14 @@ export class SwaggerParser {
      * @throws SpecParseError when the content cannot be parsed or the
      *   config's `validateInput` hook rejects the spec.
      */
-    static async create(swaggerPathOrUrl: string, config: GeneratorConfig): Promise<SwaggerParser> {
+    static async create(
+        swaggerPathOrUrl: string,
+        config: GeneratorConfig,
+        onWarning?: (message: string) => void,
+    ): Promise<SwaggerParser> {
         const swaggerContent = await loadSpecContent(swaggerPathOrUrl);
         const spec = parseSpecContent(swaggerContent, swaggerPathOrUrl);
-        return new SwaggerParser(spec, config);
+        return new SwaggerParser(spec, config, onWarning);
     }
 
     /**
@@ -44,7 +51,7 @@ export class SwaggerParser {
      * can be used as Map keys across generators.
      */
     getNormalizedSpec(): NormalizedSpec {
-        this.normalized ??= normalizeSpec(this.spec);
+        this.normalized ??= normalizeSpec(this.spec, this.onWarning);
         return this.normalized;
     }
 

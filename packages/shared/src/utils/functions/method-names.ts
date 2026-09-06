@@ -4,12 +4,39 @@ import type { MethodGenOptions } from "../../types";
 import { camelCase, isValidIdentifier, pascalCase } from "../string.utils";
 
 /**
- * Valid identifiers that still cannot name a generated method: `constructor`
- * declares the class constructor, so ts-morph rejects a method by that name
- * ("Inserting syntax kind of MethodDeclaration, but Constructor was
- * inserted"). Other reserved words are fine — `class() {}` is a legal member.
+ * Valid identifiers that still cannot name a generated method.
+ *
+ * `constructor` declares the class constructor, so ts-morph rejects a method
+ * by that name. The rest are members both generated classes bind themselves
+ * (`httpClient`, `basePath`, `clientContextToken`, the context helper): an
+ * operationId of `basePath` emitted a method next to the property of the same
+ * name — TS2300 ten times over, reported as success. The same insight
+ * ArgumentNameProfile.reserved encodes for parameters, applied to methods.
+ * Other reserved words are fine — `class() {}` is a legal member.
  */
-const RESERVED_MEMBER_NAMES = new Set(["constructor"]);
+export const RESERVED_MEMBER_NAMES: ReadonlySet<string> = new Set([
+    "constructor",
+    "httpClient",
+    "basePath",
+    "clientContextToken",
+    "createContextWithClientId",
+]);
+
+/**
+ * The derived method name that collided with a reserved member and was
+ * renamed, or undefined when it did not. For the generators to warn on: a
+ * rename is part of the public signature and must not be silent.
+ */
+export function reservedMemberCollision(
+    operation: NormalizedOperation,
+    config: MethodGenOptions,
+): { from: string; to: string } | undefined {
+    if (config.options.customizeMethodName || !operation.operationId) {
+        return undefined;
+    }
+    const natural = camelCase(operation.operationId);
+    return RESERVED_MEMBER_NAMES.has(natural) ? { from: natural, to: `_${natural}` } : undefined;
+}
 
 /**
  * Single source of truth for the method name of an operation, shared by the
@@ -41,7 +68,7 @@ export function getOperationMethodName(operation: NormalizedOperation, config: M
         throw new InvalidIdentifierError(
             `customizeMethodName returned "${customName}" for ${describeOperation(operation)}, ` +
                 `which is not a usable TypeScript method name. Return an identifier — letters, digits, ` +
-                `"_" and "$", not starting with a digit — and not "constructor".`,
+                `"_" and "$", not starting with a digit — and not one of ${[...RESERVED_MEMBER_NAMES].map((name) => `"${name}"`).join(", ")}.`,
             operation,
             customName,
         );
@@ -63,7 +90,13 @@ function defaultOperationMethodName(operation: NormalizedOperation): string {
 
     const method = pascalCase(operation.method.toLowerCase());
     // pascalCase drops the `{}` of path templates on its own
-    const pathParts = operation.path.split("/").map((str) => pascalCase(str));
+    // Empty segments are dropped before conversion: pascalCase never returns
+    // "" (an empty identifier is never right), so a root path would otherwise
+    // become "__" and the `resource` fallback below would never fire.
+    const pathParts = operation.path
+        .split("/")
+        .filter((segment) => segment !== "")
+        .map((segment) => pascalCase(segment));
     const resource = pathParts.join("") || "resource";
 
     return `${camelCase(resource)}${method}`;

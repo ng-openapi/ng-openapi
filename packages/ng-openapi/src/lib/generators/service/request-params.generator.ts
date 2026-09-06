@@ -24,8 +24,11 @@ export class RequestParamsGenerator {
     private readonly registry = new Map<NormalizedOperation, RequestObjectEntry>();
     private readonly usedInterfaceNames = new Set<string>();
 
-    constructor(project: Project, config: MethodGenOptions) {
+    private readonly onWarning?: (message: string) => void;
+
+    constructor(project: Project, config: MethodGenOptions, onWarning?: (message: string) => void) {
         this.project = project;
+        this.onWarning = onWarning;
         this.paramsGenerator = new ServiceMethodParamsGenerator(config);
     }
 
@@ -40,14 +43,6 @@ export class RequestParamsGenerator {
                 );
                 if (parameters.length === 0) {
                     return;
-                }
-                // The destructured properties share the method scope with the trailing
-                // observe/options parameters, so those names would not compile
-                const reserved = parameters.find((param) => param.name === "observe" || param.name === "options");
-                if (reserved) {
-                    throw new Error(
-                        `Parameter name '${reserved.name}' conflicts with the reserved '${reserved.name}' method parameter when useSingleRequestParameter is enabled: (${operation.method}) ${operation.path}`,
-                    );
                 }
                 const interfaceName = this.reserveInterfaceName(controllerName, getMethodName(operation));
                 this.registry.set(operation, ServiceMethodRequestObjectGenerator.createEntry(interfaceName, parameters));
@@ -125,6 +120,12 @@ export class RequestParamsGenerator {
         }
         const name = `${candidates[1]}${suffix}`;
         this.usedInterfaceNames.add(name);
+        // An exported type in the consumer's import graph, renumbered by what
+        // else the spec declares — a breaking change to call sites if silent.
+        this.onWarning?.(
+            `Request-parameter interface "${base}" is already taken; the parameters of "${methodName}" in ` +
+                `${controllerName} are exposed as "${name}". Renaming the operationId keeps the type name stable.`,
+        );
         return name;
     }
 

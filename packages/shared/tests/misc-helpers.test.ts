@@ -1,11 +1,9 @@
-import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import {
     generateParseRequestTypeParams,
     getBasePathTokenName,
     getClientContextTokenName,
     getInterceptorsTokenName,
-    hasDuplicateFunctionNames,
     isDataTypeInterface,
 } from "../src";
 
@@ -53,17 +51,5 @@ describe("generateParseRequestTypeParams", () => {
 
     it("returns an empty string when no interface parameter exists", () => {
         expect(generateParseRequestTypeParams([{ name: "id", type: "string" }])).toBe("");
-    });
-});
-
-describe("hasDuplicateFunctionNames", () => {
-    const functionsOf = (code: string) => {
-        const project = new Project({ useInMemoryFileSystem: true });
-        return project.createSourceFile("x.ts", code).getFunctions();
-    };
-
-    it("detects duplicate names", () => {
-        expect(hasDuplicateFunctionNames(functionsOf("function a() {}\nfunction b() {}"))).toBe(false);
-        expect(hasDuplicateFunctionNames(functionsOf("function a() {}\nfunction a() {}"))).toBe(true);
     });
 });

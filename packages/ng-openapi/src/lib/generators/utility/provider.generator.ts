@@ -1,9 +1,11 @@
 import { OptionalKind, Project, PropertySignatureStructure, SourceFile } from "ts-morph";
 import * as path from "path";
 import {
+    emitDocs,
     GeneratorConfig,
     getBasePathTokenName,
     getInterceptorsTokenName,
+    pascalCase,
     PROVIDER_GENERATOR_HEADER_COMMENT,
 } from "@ng-openapi/shared";
 
@@ -24,7 +26,7 @@ export class ProviderGenerator {
 
         const basePathTokenName = getBasePathTokenName(this.clientName);
         const interceptorsTokenName = getInterceptorsTokenName(this.clientName);
-        const baseInterceptorClassName = `${this.capitalizeFirst(this.clientName)}BaseInterceptor`;
+        const baseInterceptorClassName = `${pascalCase(this.clientName)}BaseInterceptor`;
 
         // Add imports
         sourceFile.addImportDeclarations([
@@ -88,9 +90,9 @@ export class ProviderGenerator {
         }
 
         sourceFile.addInterface({
-            name: `${this.capitalizeFirst(this.clientName)}Config`,
+            name: `${pascalCase(this.clientName)}Config`,
             isExported: true,
-            docs: [`Configuration options for ${this.clientName} client`],
+            docs: emitDocs(`Configuration options for ${this.clientName} client`),
             properties: configProperties,
         });
 
@@ -108,8 +110,8 @@ export class ProviderGenerator {
         baseInterceptorClassName: string,
     ): void {
         const hasDateInterceptor = this.config.options.dateType === "Date";
-        const functionName = `provide${this.capitalizeFirst(this.clientName)}Client`;
-        const configTypeName = `${this.capitalizeFirst(this.clientName)}Config`;
+        const functionName = `provide${pascalCase(this.clientName)}Client`;
+        const configTypeName = `${pascalCase(this.clientName)}Config`;
 
         const functionBody = `
 const providers: Provider[] = [
@@ -216,7 +218,4 @@ return makeEnvironmentProviders(providers);`;
         }
     }
 
-    private capitalizeFirst(str: string): string {
-        return str.charAt(0).toUpperCase() + str.slice(1);
-    }
 }

@@ -12,16 +12,16 @@ const INVALID_IDENTIFIER_START = /^[^\p{ID_Start}$_]/u;
 
 /**
  * Makes `converted` usable as a TypeScript identifier: guards against a
- * leading digit, and never returns an empty string for a non-empty input
- * (a name of nothing but separators, `"{}"`, would otherwise emit a syntax
- * error). Callers rely on this being total — parameter identifiers are
- * derived independently at their declaration and at every use site
- * (`emit/url.emit.ts`, `emit/query-params.emit.ts`), so the mapping has to
- * agree everywhere rather than be repaired per call site.
+ * leading digit, and never returns an empty string. `""` is not an identifier
+ * for any input, so there is no input for which returning it would be right —
+ * a name of nothing but separators (`"{}"`) and a genuinely empty name both
+ * become `_`. The empty case is reachable: a parameter with `"name": ""` is
+ * legal spec JSON, and emitting it verbatim produced four syntax errors while
+ * generation reported success.
  */
-function toIdentifier(converted: string, original: string): string {
+function toIdentifier(converted: string): string {
     if (converted === "") {
-        return original === "" ? "" : "_";
+        return "_";
     }
     return converted.replace(INVALID_IDENTIFIER_START, (char) => `_${char}`);
 }
@@ -46,7 +46,7 @@ export function camelCase(str: string): string {
     const converted = str
         .replace(IDENTIFIER_SEPARATORS, (_, char: string | undefined) => (char ? char.toUpperCase() : ""))
         .replace(/^./u, (char) => char.toLowerCase());
-    return toIdentifier(converted, str);
+    return toIdentifier(converted);
 }
 
 /** Converts a string to kebab-case (`"PetStore"` → `"pet-store"`). */
@@ -68,7 +68,7 @@ export function pascalCase(str: string): string {
     const converted = str
         .replace(IDENTIFIER_SEPARATORS, (_, char: string | undefined) => (char ? char.toUpperCase() : ""))
         .replace(/^./u, (char) => char.toUpperCase());
-    return toIdentifier(converted, str);
+    return toIdentifier(converted);
 }
 
 /** Converts a string to SCREAMING_SNAKE_CASE (`"PetStore"` → `"PET_STORE"`) — used for token names. */

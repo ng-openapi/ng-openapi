@@ -4,6 +4,7 @@ import {
     BASE_INTERCEPTOR_HEADER_COMMENT,
     getClientContextTokenName,
     getInterceptorsTokenName,
+    pascalCase,
 } from "@ng-openapi/shared";
 
 export class BaseInterceptorGenerator {
@@ -44,7 +45,7 @@ export class BaseInterceptorGenerator {
         ]);
 
         sourceFile.addClass({
-            name: `${this.capitalizeFirst(this.#clientName)}BaseInterceptor`,
+            name: `${pascalCase(this.#clientName)}BaseInterceptor`,
             isExported: true,
             decorators: [
                 {
@@ -104,7 +105,4 @@ export class BaseInterceptorGenerator {
         sourceFile.formatText();
     }
 
-    private capitalizeFirst(str: string): string {
-        return str.charAt(0).toUpperCase() + str.slice(1);
-    }
 }

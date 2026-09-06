@@ -1,5 +1,6 @@
 import {
     emitDocs,
+    DuplicateGeneratedNameError,
     NgOpenApiError,
     SpecParseError,
     SwaggerDefinition,
@@ -59,6 +60,7 @@ export class TypeGenerator {
             if (!definitions || Object.keys(definitions).length === 0) {
                 this.onWarning?.("No definitions found in swagger file");
             }
+            this.assertDistinctTypeNames(definitions);
 
             if (this.config.options.modelFileStructure === "per-type") {
                 this.generatePerType(definitions);
@@ -86,6 +88,32 @@ export class TypeGenerator {
             }
             throw new SpecParseError("Failed to generate types from the specification", undefined, error);
         }
+    }
+
+    /**
+     * Two schemas whose names sanitize onto one type name (`Pet-Store` and
+     * `Pet.Store` both become `Pet_Store`) would emit two declarations of one
+     * interface — and TypeScript declaration-merges those, so the compile
+     * check cannot see it and one model silently acquires the other's
+     * properties. Worse than a hard error, hence a hard error.
+     */
+    private assertDistinctTypeNames(definitions: Record<string, SwaggerDefinition>): void {
+        const rawByType = new Map<string, string[]>();
+        for (const rawName of Object.keys(definitions)) {
+            const typeName = this.resolver.pascalName(rawName);
+            rawByType.set(typeName, [...(rawByType.get(typeName) ?? []), rawName]);
+        }
+        const collisions = [...rawByType].filter(([, raws]) => raws.length > 1);
+        if (collisions.length === 0) {
+            return;
+        }
+        const detail = collisions
+            .map(([typeName, raws]) => `"${typeName}" from schemas ${raws.map((raw) => `"${raw}"`).join(" and ")}`)
+            .join("; ");
+        throw new DuplicateGeneratedNameError(
+            `Schemas map to the same type name: ${detail}. Rename one schema to keep them apart.`,
+            collisions.map(([typeName]) => typeName),
+        );
     }
 
     private collectTypeStructure(name: string, definition: SwaggerDefinition): StatementStructures[] {
