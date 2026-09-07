@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative as relativePath } from "node:path";
 import { afterAll, expect, it } from "vitest";
-import { ConfigLoadError, loadConfigFile, NgOpenApiError } from "ng-openapi";
+import { ConfigLoadError, ConfigValidationError, loadConfigFile, NgOpenApiError } from "ng-openapi";
 
 const tmpRoot = join(process.cwd(), "tmp", "ng-openapi-tests");
 mkdirSync(tmpRoot, { recursive: true });
@@ -69,4 +69,22 @@ it("reports the resolved path, not the argument it was given", async () => {
 
     expect((error as ConfigLoadError).source).toBe(broken);
     expect((error as ConfigLoadError).source).not.toBe(relative);
+});
+
+it("raises ConfigValidationError, not ConfigLoadError, for a config that loads but lacks output", async () => {
+    // The file loaded fine; what is wrong is its content. The check threw a
+    // bare Error inside the try, so the catch relabeled it a load failure.
+    // (.cjs: the workspace is "type": "module", so a .js fixture would fail to
+    // load at all and test the wrong thing.)
+    const dir = tempDir();
+    const incomplete = join(dir, "incomplete.config.cjs");
+    writeFileSync(incomplete, 'module.exports = { input: "./spec.json" };');
+
+    const error = await loadConfigFile(incomplete).catch((reason: unknown) => reason);
+
+    expect(error).toBeInstanceOf(ConfigValidationError);
+    expect(error).not.toBeInstanceOf(ConfigLoadError);
+    expect((error as ConfigValidationError).issues).toEqual([
+        'Configuration must include "input" and "output" properties',
+    ]);
 });

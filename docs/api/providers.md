@@ -5,7 +5,7 @@ title: Providers
 
 # Providers
 
-Every generated client ships a provider function in its `providers.ts` that sets up the client in your Angular application. The function is named after the [`clientName`](configuration/client-name.md): `provide<ClientName>Client` (e.g. `providePetStoreClient`). Without a `clientName` it is `provideDefaultClient`.
+Every generated client ships a provider function in its `providers.ts` that sets up the client in your Angular application. The function is named after the [`clientName`](configuration/client-name.md): `provide<ClientName>Client`, with the name inserted as given apart from its first letter being capitalized (`PetStore` → `providePetStoreClient`, `my_client` → `provideMy_clientClient`). A name that is not a valid identifier is converted (`my-client` → `provideMyClientClient`). Without a `clientName` it is `provideDefaultClient`.
 
 ## Usage
 

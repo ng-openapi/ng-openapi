@@ -19,6 +19,10 @@ interface RawOperation {
 
 type RawPathItem = { parameters?: Parameter[] } & { [method: string]: unknown };
 
+/** Outcome of resolving a `$ref` parameter: the component, or why not. */
+export type ParameterResolution = { parameter: Parameter } | { problem: string };
+export type ResolveParameter = (ref: string) => ParameterResolution;
+
 /**
  * Flattens the spec's `paths` object into one PathInfo per (path, method)
  * pair, merging path-level parameters into each operation. Supports both
@@ -29,7 +33,7 @@ export function extractPaths(
     swaggerPaths: { [p: string]: Path } = {},
     methods = ["get", "post", "put", "patch", "delete", "options", "head"],
     onWarning?: (message: string) => void,
-    resolveParameter?: (ref: string) => Parameter | undefined,
+    resolveParameter?: ResolveParameter,
 ): PathInfo[] {
     const paths: PathInfo[] = [];
     Object.entries(swaggerPaths as Record<string, RawPathItem>).forEach(([path, pathItem]) => {
@@ -87,7 +91,7 @@ function parseParameters(
     pathParams: Parameter[],
     location: string,
     onWarning?: (message: string) => void,
-    resolveParameter?: (ref: string) => Parameter | undefined,
+    resolveParameter?: ResolveParameter,
 ): Parameter[] {
     const allParams = [...pathParams, ...operationParams].flatMap((param): Parameter[] => {
         // A `$ref` parameter has no name of its own — the referenced component
@@ -98,20 +102,25 @@ function parseParameters(
         if (typeof ref !== "string") {
             return [param];
         }
-        const resolved = resolveParameter?.(ref);
-        if (resolved) {
-            return [resolved];
+        const resolution = resolveParameter?.(ref) ?? {
+            problem: "cannot be resolved here: no reusable parameters were provided",
+        };
+        if ("parameter" in resolution) {
+            return [resolution.parameter];
         }
+        // The resolver says why — an external document, a pointer to
+        // something that is not a parameter, a missing name, a cycle — so
+        // the user is sent to the actual problem, not a generic one.
         onWarning?.(
-            `A parameter of ${location} references "${ref}", which does not resolve to a parameter component, ` +
-                `and was skipped.`,
+            `A parameter of ${location} references "${ref}", which ${resolution.problem}. The parameter was skipped.`,
         );
         return [];
     });
-    // A parameter without a usable name cannot be bound to anything: an empty
-    // or non-string name is dropped here, out loud, rather than coerced to ""
-    // — which traded a loud TypeError for silent invalid TypeScript, since ""
-    // reached the signature verbatim.
+    // A parameter without a usable name cannot be bound to anything. A finite
+    // number is a name (a YAML `name: 42` plainly means one); an empty string,
+    // or anything else that is not a string, is dropped here, out loud,
+    // rather than coerced to "" — which traded a loud TypeError for silent
+    // invalid TypeScript, since "" reached the signature verbatim.
     const named = allParams.filter((param) => {
         const name = asName(param.name);
         if (name !== undefined && name !== "") {

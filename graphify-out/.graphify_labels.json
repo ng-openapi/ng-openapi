@@ -163,10 +163,19 @@
   "161": "exports",
   "162": "repository",
   "163": "namedInputs",
+  "164": "errors.test.ts",
   "165": "engines",
   "166": "`responseTypeMapping`",
   "167": "funding",
   "168": "publishConfig",
   "169": "scripts",
-  "171": "`validateInput`"
+  "170": "ZodSchemaGenerator",
+  "171": "`validateInput`",
+  "172": "ZodGenerator",
+  "173": "extract-swagger-response-type.ts",
+  "174": "config-validation.ts",
+  "175": "custom-headers.md",
+  "176": "`responseTypeMapping`",
+  "177": "method-names.test.ts",
+  "178": "Schema Validation"
 }

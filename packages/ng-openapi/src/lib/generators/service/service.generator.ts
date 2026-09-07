@@ -84,48 +84,6 @@ export class ServiceGenerator {
     }
 
     /**
-     * Header and cookie parameters are carried on the operation (the zod plugin
-     * validates them) but the client generators never bind them — callers pass
-     * headers through the trailing options parameter instead.
-     *
-     * Only `required` ones warn. An optional header genuinely is expressible
-     * through options, so warning about every one would bury the real case:
-     * a required parameter that the generated signature does not mention at all,
-     * leaving callers no indication the request will be rejected without it.
-     */
-    private warnAboutUnboundParameters(operation: NormalizedOperation): void {
-        for (const param of operation.parameters ?? []) {
-            if (param.in === "path" || param.in === "query") {
-                continue;
-            }
-            if (param.in === "header" || param.in === "cookie") {
-                // Expressible through the trailing options parameter, so only a
-                // required one — which the signature then fails to mention — warns.
-                if (param.required) {
-                    this.onWarning?.(
-                        `Required ${param.in} parameter "${param.name}" of ${describeOperation(operation)} is not emitted ` +
-                            `as a method parameter — callers must pass it through the trailing options parameter.`,
-                    );
-                }
-                continue;
-            }
-            // formData and body are the Swagger 2.0 spellings, and there is no
-            // options escape hatch for them: the parameter simply vanished from
-            // the signature, the URL and the query string, and a required upload
-            // reported success. Any other value is not a location at all.
-            const kind =
-                param.in === "formData" || param.in === "body"
-                    ? `Swagger 2.0 \`in: ${param.in}\``
-                    : `\`in: ${String(param.in)}\``;
-            this.onWarning?.(
-                `${kind} parameter "${param.name}" of ${describeOperation(operation)} is not supported and was dropped` +
-                    (param.required ? " (it is marked required)" : "") +
-                    `. Describe it as a requestBody, or as a path or query parameter, to have it generated.`,
-            );
-        }
-    }
-
-    /**
      * A renamed argument is part of the method's public signature, and the
      * suffix depends on which other arguments the operation has — so adding or
      * removing one renumbers the survivor and breaks call sites. Silent is the
@@ -235,7 +193,6 @@ return context.set(this.clientContextToken, ${quoteLiteral(effectiveClientName(t
         // Generate methods for each operation
         operations.forEach((operation) => {
             this.warnAboutRenamedArguments(operation);
-            this.warnAboutUnboundParameters(operation);
             this.warnAboutReservedMethodName(operation);
             this.methodGenerator.addServiceMethod(serviceClass, operation, this.requestObjects?.get(operation));
         });

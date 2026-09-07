@@ -9,7 +9,11 @@ title: Client Name
 
 Unique identifier for the generated client code. This is used to differentiate between multiple clients in the same project.
 
-Any string is accepted; an empty string means `default`. A name that is already a valid TypeScript identifier is used as-is where it becomes part of a generated identifier — `my_client` gives `provideMy_clientClient`, exactly as before. A name that is not (`my-client`, `my client`) has its non-identifier characters treated as word separators there (`provideMyClientClient`, `MyClientBaseInterceptor`) and becomes upper-snake in token names (`BASE_PATH_MY_CLIENT`). Wherever the value is only text — the client context token's value, generated comments — it is kept verbatim and escaped.
+Any string is accepted; an empty string means `default`. The name reaches three kinds of places:
+
+- **Generated identifiers** (`provide<Name>Client`, `<Name>Config`, `<Name>BaseInterceptor`). A name that is already a valid TypeScript identifier is used as-is after capitalizing its first letter — `my_client` gives `provideMy_clientClient`, exactly as before. A name that is not (`my-client`, `my client`) has its non-identifier characters treated as word separators: `provideMyClientClient`.
+- **Token names** (`BASE_PATH_<NAME>`, `CLIENT_CONTEXT_TOKEN_<NAME>`, `HTTP_INTERCEPTORS_<NAME>`). Every name, identifier-shaped or not, is upper-cased with each non-alphanumeric character replaced by `_` — so `my_client`, `my-client` and `my client` all produce `BASE_PATH_MY_CLIENT`. Two clients in one project need names that differ by more than punctuation or case.
+- **Text** — the client context token's value and generated comments — where the value is kept verbatim and escaped.
 
 ## Usage
 

@@ -1,6 +1,11 @@
-import type { ClassDeclaration } from "ts-morph";
 import { describeOperation, DuplicateGeneratedNameError } from "../../errors";
 import type { NormalizedOperation } from "../../model/operation.model";
+
+/** What the assertion reads off a class: ts-morph's ClassDeclaration satisfies it structurally. */
+export interface ClassMembers {
+    getMethods(): readonly { getName(): string }[];
+    getProperties(): readonly { getName(): string }[];
+}
 
 /**
  * Throws when two operations produced the same method name, or a method name
@@ -9,7 +14,7 @@ import type { NormalizedOperation } from "../../model/operation.model";
  * drift, and the property check was missing from both.
  */
 export function assertDistinctMemberNames(
-    serviceClass: ClassDeclaration,
+    serviceClass: ClassMembers,
     className: string,
     operations: NormalizedOperation[],
     methodNameOf: (operation: NormalizedOperation) => string,

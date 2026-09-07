@@ -1397,6 +1397,47 @@ describe("names the round-9 review found unguarded", () => {
         expect(readFileSync(join(output, "tokens", "index.ts"), "utf8")).toContain("BASE_PATH_MY_CLIENT");
     });
 
+    it("warns when a request-parameter interface takes the controller-prefixed name", async () => {
+        // Exactly one collision: B's getItem finds GetItemParams taken and
+        // becomes BGetItemParams. That branch renamed an exported type silently
+        // while only the renumbered branch below warned.
+        const output = outputDirs.create("names-paramsiface-prefix-");
+        const result = await generateFromConfig({
+            input: writeSpec(
+                output,
+                oas3({
+                    "/a": {
+                        get: {
+                            tags: ["A"],
+                            operationId: "getItem",
+                            parameters: [{ name: "q", in: "query", schema: { type: "string" } }],
+                            responses: ok,
+                        },
+                    },
+                    "/b": {
+                        get: {
+                            tags: ["B"],
+                            operationId: "getItem",
+                            parameters: [{ name: "q", in: "query", schema: { type: "string" } }],
+                            responses: ok,
+                        },
+                    },
+                }),
+            ),
+            output,
+            options: {
+                dateType: "string",
+                enumStyle: "union",
+                generateServices: true,
+                useSingleRequestParameter: true,
+            },
+        });
+        expect(result.warnings.join("\n")).toMatch(
+            /interface "GetItemParams" is already taken.*exposed as "BGetItemParams"/,
+        );
+        expectGeneratedCodeCompiles(output);
+    });
+
     it("warns when a request-parameter interface has to be renumbered", async () => {
         const output = outputDirs.create("names-paramsiface-");
         // A: getItem claims GetItemParams. B: bGetItem claims BGetItemParams as
@@ -1570,6 +1611,114 @@ describe("parameters the generators used to lose", () => {
         expect(readFileSync(join(output, "services", "r.service.ts"), "utf8")).toContain("params, q, " + "'q'");
         expect(result.warnings.join("\n")).toMatch(/"#\/components\/parameters\/Missing", which does not resolve/);
         expect(result.warnings.join("\n")).not.toContain("no usable name");
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("does not bind a local parameter for a ref that points elsewhere", async () => {
+        // A resolver that matched only the last pointer segment bound the
+        // local `Foo` parameter for both of these — a different parameter sent
+        // on the wire, silently. Both must be skipped, each with its own cause.
+        const output = outputDirs.create("names-paramref-elsewhere-");
+        const result = await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                components: {
+                    parameters: { Foo: { name: "foo", in: "query", schema: { type: "string" } } },
+                    schemas: { Foo: { type: "object" } },
+                },
+                paths: {
+                    "/r": {
+                        get: {
+                            tags: ["R"],
+                            operationId: "r",
+                            parameters: [
+                                { $ref: "common.yaml#/components/parameters/Foo" },
+                                { $ref: "#/components/schemas/Foo" },
+                            ],
+                            responses: ok,
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+        const service = readFileSync(join(output, "services", "r.service.ts"), "utf8");
+        expect(service).not.toContain("foo");
+        const warnings = result.warnings.join("\n");
+        expect(warnings).toMatch(
+            /references "common\.yaml#\/components\/parameters\/Foo", which points into another document \("common\.yaml"\)/,
+        );
+        expect(warnings).toMatch(
+            /references "#\/components\/schemas\/Foo", which is not a parameter component pointer/,
+        );
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("follows a chain of parameter references and reports a cycle", async () => {
+        // components.parameters entries may themselves be Reference Objects.
+        // Single-level resolution dropped A → B and said the parameter had no
+        // name — re-creating the misdiagnosis the resolver was added to remove.
+        const output = outputDirs.create("names-paramref-chain-");
+        const result = await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                components: {
+                    parameters: {
+                        A: { $ref: "#/components/parameters/B" },
+                        B: { name: "b", in: "query", schema: { type: "string" } },
+                        X: { $ref: "#/components/parameters/Y" },
+                        Y: { $ref: "#/components/parameters/X" },
+                    },
+                },
+                paths: {
+                    "/r": {
+                        get: {
+                            tags: ["R"],
+                            operationId: "r",
+                            parameters: [{ $ref: "#/components/parameters/A" }, { $ref: "#/components/parameters/X" }],
+                            responses: ok,
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+        expect(readFileSync(join(output, "services", "r.service.ts"), "utf8")).toContain("params, b, " + "'b'");
+        const warnings = result.warnings.join("\n");
+        expect(warnings).not.toContain("Give it a name");
+        expect(warnings).toMatch(
+            /references "#\/components\/parameters\/X", which is part of a reference cycle \("#\/components\/parameters\/X" -> "#\/components\/parameters\/Y" -> "#\/components\/parameters\/X"\)/,
+        );
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("resolves Swagger 2.0 top-level parameters", async () => {
+        const output = outputDirs.create("names-paramref-v2-");
+        const result = await generateFromConfig({
+            input: writeSpec(output, {
+                swagger: "2.0",
+                info: { title: "t", version: "1.0.0" },
+                parameters: { Q: { name: "q", in: "query", type: "string" } },
+                paths: {
+                    "/r": {
+                        get: {
+                            tags: ["R"],
+                            operationId: "r",
+                            parameters: [{ $ref: "#/parameters/Q" }],
+                            responses: ok,
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+        expect(readFileSync(join(output, "services", "r.service.ts"), "utf8")).toContain("params, q, " + "'q'");
+        expect(result.warnings.join("\n")).not.toContain("#/parameters/Q");
         expectGeneratedCodeCompiles(output);
     });
 

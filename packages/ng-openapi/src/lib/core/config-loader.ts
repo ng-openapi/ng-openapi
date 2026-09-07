@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { ConfigLoadError, GeneratorConfig, isUrl } from "@ng-openapi/shared";
+import { ConfigLoadError, ConfigValidationError, GeneratorConfig, isUrl, NgOpenApiError } from "@ng-openapi/shared";
 
 /**
  * Loads and normalizes a config file.
@@ -34,7 +34,7 @@ export async function loadConfigFile(configPath: string): Promise<GeneratorConfi
         const config = configModule.default || configModule.config || configModule;
 
         if (!config.input || !config.output) {
-            throw new Error('Configuration must include "input" and "output" properties');
+            throw new ConfigValidationError(['Configuration must include "input" and "output" properties']);
         }
 
         // Resolve relative paths relative to the config file directory
@@ -52,7 +52,12 @@ export async function loadConfigFile(configPath: string): Promise<GeneratorConfi
 
         return config;
     } catch (error) {
+        // A typed error raised inside the try is already the right class: a
+        // config that loaded fine but lacks `output` is a validation failure,
+        // not a load failure, and hosts branch on the difference.
+        if (error instanceof NgOpenApiError) {
+            throw error;
+        }
         throw new ConfigLoadError(`Failed to load configuration file: ${resolvedPath}`, resolvedPath, error);
     }
 }
-

@@ -1,14 +1,19 @@
 import {
     emitDocs,
     DuplicateGeneratedNameError,
-    NgOpenApiError,
-    SpecParseError,
     SwaggerDefinition,
     SwaggerParser,
     TYPE_GENERATOR_HEADER_COMMENT,
     TypeGenOptions,
 } from "@ng-openapi/shared";
-import { ImportDeclarationStructure, OptionalKind, Project, SourceFile, StatementStructures, StructureKind } from "ts-morph";
+import {
+    ImportDeclarationStructure,
+    OptionalKind,
+    Project,
+    SourceFile,
+    StatementStructures,
+    StructureKind,
+} from "ts-morph";
 import { EnumBuilder } from "./enum-builder";
 import { InterfaceBuilder } from "./interface-builder";
 import { ModelFileRegistry } from "./model-file-registry";
@@ -55,39 +60,30 @@ export class TypeGenerator {
     }
 
     async generate() {
-        try {
-            const definitions = this.parser.getNormalizedSpec().definitions;
-            if (!definitions || Object.keys(definitions).length === 0) {
-                this.onWarning?.("No definitions found in swagger file");
-            }
-            this.assertDistinctTypeNames(definitions);
-
-            if (this.config.options.modelFileStructure === "per-type") {
-                this.generatePerType(definitions);
-                return;
-            }
-
-            // Phase 1: Collect all type structures in memory (no AST manipulation yet)
-            Object.entries(definitions).forEach(([name, definition]) => {
-                this.statements.push(...this.collectTypeStructure(name, definition));
-            });
-
-            // Phase 2: Add SDK types
-            this.statements.push(...buildSdkTypes(this.config));
-
-            // Phase 3: Single batch AST update
-            this.applyBatchUpdates();
-
-            // Phase 4: Format and save
-            await this.finalize();
-        } catch (error) {
-            // Rethrow typed errors untouched — wrapping one in a bare Error
-            // strips both its class and its cause, which the CLI needs.
-            if (error instanceof NgOpenApiError) {
-                throw error;
-            }
-            throw new SpecParseError("Failed to generate types from the specification", undefined, error);
+        const definitions = this.parser.getNormalizedSpec().definitions;
+        if (!definitions || Object.keys(definitions).length === 0) {
+            this.onWarning?.("No definitions found in swagger file");
         }
+        this.assertDistinctTypeNames(definitions);
+
+        if (this.config.options.modelFileStructure === "per-type") {
+            this.generatePerType(definitions);
+            return;
+        }
+
+        // Phase 1: Collect all type structures in memory (no AST manipulation yet)
+        Object.entries(definitions).forEach(([name, definition]) => {
+            this.statements.push(...this.collectTypeStructure(name, definition));
+        });
+
+        // Phase 2: Add SDK types
+        this.statements.push(...buildSdkTypes(this.config));
+
+        // Phase 3: Single batch AST update
+        this.applyBatchUpdates();
+
+        // Phase 4: Format and save
+        await this.finalize();
     }
 
     /**

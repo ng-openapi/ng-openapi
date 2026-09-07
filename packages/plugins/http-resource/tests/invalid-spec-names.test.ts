@@ -361,3 +361,41 @@ it("keeps a __proto__ default header in the emitted object", async () => {
     expect(Object.getPrototypeOf(built)).toBe(Object.prototype);
     expect(built["__proto__"]).toBe("hijack");
 });
+
+it("warns about a dropped parameter when only the plugin generates", async () => {
+    // The unbound-parameter check lived in the service generator, so with
+    // generateServices: false a required upload vanished from the resource
+    // signature with zero warnings. It is the normalizer's now.
+    const output = mkdtempSync(join(tmpRoot, "hr-dropped-"));
+    tempDirs.push(output);
+    const input = join(output, "spec.json");
+    writeFileSync(
+        input,
+        JSON.stringify({
+            swagger: "2.0",
+            info: { title: "t", version: "1.0.0" },
+            paths: {
+                "/upload": {
+                    post: {
+                        tags: ["U"],
+                        operationId: "upload",
+                        parameters: [
+                            { name: "file", in: "formData", required: true, type: "file" },
+                            { name: "X-Trace", in: "header", required: true, type: "string" },
+                        ],
+                        responses: { "200": { description: "OK" } },
+                    },
+                },
+            },
+        }),
+    );
+    const result = await generateFromConfig({
+        input,
+        output,
+        options: { dateType: "string", enumStyle: "union", generateServices: false },
+        plugins: [HttpResourcePlugin],
+    });
+    const warnings = result.warnings.join("\n");
+    expect(warnings).toMatch(/in: formData` parameter "file" of upload .* was dropped \(it is marked required\)/);
+    expect(warnings).toMatch(/Required header parameter "X-Trace" of upload .* is not bound by the generated clients/);
+});

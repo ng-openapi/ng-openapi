@@ -36,12 +36,24 @@ function createConsoleReporter(config: GeneratorConfig): Reporter {
     };
 }
 
-async function runGeneration(config: GeneratorConfig): Promise<void> {
+/** Returns the number of warnings, so the final line can say so. */
+async function runGeneration(config: GeneratorConfig): Promise<number> {
     const result = await generateFromConfig(config, createConsoleReporter(config));
     const inputType = isUrl(config.input) ? "URL" : "file";
     const sourceInfo = `from ${inputType}: ${config.input}`;
     const clientPrefix = result.client ? `${result.client} ` : "";
-    console.log(`🎉 ${clientPrefix}Generation completed successfully ${sourceInfo} -> ${config.output}`);
+    // Warnings describe spec content that was dropped, merged or renamed —
+    // an unconditional "successfully" after twelve of them misreads the run.
+    const outcome =
+        result.warnings.length === 0
+            ? "completed successfully"
+            : `completed with ${countWarnings(result.warnings.length)}`;
+    console.log(`🎉 ${clientPrefix}Generation ${outcome} ${sourceInfo} -> ${config.output}`);
+    return result.warnings.length;
+}
+
+function countWarnings(count: number): string {
+    return `${count} warning${count === 1 ? "" : "s"}`;
 }
 
 interface CliOptions {
@@ -55,10 +67,11 @@ interface CliOptions {
 
 async function generateFromOptions(options: CliOptions): Promise<void> {
     const timestamp = new Date().getTime();
+    let warningCount = 0;
     try {
         if (options.config) {
             const config = await loadConfigFile(options.config);
-            await runGeneration(config);
+            warningCount = await runGeneration(config);
         } else if (options.input) {
             const config: GeneratorConfig = {
                 input: options.input, // Can now be a URL or file path
@@ -73,7 +86,7 @@ async function generateFromOptions(options: CliOptions): Promise<void> {
                 },
             };
 
-            await runGeneration(config);
+            warningCount = await runGeneration(config);
         } else {
             console.error("Error: Either --config or --input option is required");
             // help({ error: true }) prints to stderr and exits non-zero;
@@ -81,7 +94,13 @@ async function generateFromOptions(options: CliOptions): Promise<void> {
             program.help({ error: true });
         }
 
-        console.log("✨ Generation completed successfully!");
+        if (warningCount === 0) {
+            console.log("✨ Generation completed successfully!");
+        } else {
+            console.log(
+                `✨ Generation completed with ${countWarnings(warningCount)} — see above; each describes spec content that was not generated as written.`,
+            );
+        }
     } catch (error) {
         console.error("❌ Generation failed:", error instanceof Error ? error.message : error);
 
