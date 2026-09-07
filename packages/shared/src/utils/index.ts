@@ -1,6 +1,7 @@
 // String casing
 export {
     camelCase,
+    capitalizeFirst,
     isValidIdentifier,
     kebabCase,
     pascalCase,
@@ -18,6 +19,8 @@ export {
     extractPaths,
     generateParseRequestTypeParams,
     getBasePathTokenName,
+    clientNameIdentifier,
+    effectiveClientName,
     getClientContextTokenName,
     getInterceptorsTokenName,
     getModelTypeName,
@@ -32,6 +35,7 @@ export {
     getResponseType,
     getResponseTypeFromResponse,
     groupOperationsByController,
+    hasDuplicateFunctionNames,
     inferResponseTypeFromContentType,
     isDataTypeInterface,
     isPrimitiveType,

@@ -185,17 +185,26 @@ describe("specs whose names are illegal TypeScript identifiers (#125)", () => {
     it("warns when two distinct tags normalize onto one controller", async () => {
         const output = outputDirs.create("names-tagmerge-");
         const result = await generateFromConfig({
-            input: writeSpec(
-                output,
-                {
-                    openapi: "3.0.0",
-                    info: { title: "t", version: "1.0.0" },
-                    paths: {
-                        "/a": { get: { tags: ["Groups (yes)"], operationId: "a_get", responses: { "200": { description: "OK" } } } },
-                        "/b": { get: { tags: ["Groups-yes"], operationId: "b_get", responses: { "200": { description: "OK" } } } },
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/a": {
+                        get: {
+                            tags: ["Groups (yes)"],
+                            operationId: "a_get",
+                            responses: { "200": { description: "OK" } },
+                        },
+                    },
+                    "/b": {
+                        get: {
+                            tags: ["Groups-yes"],
+                            operationId: "b_get",
+                            responses: { "200": { description: "OK" } },
+                        },
                     },
                 },
-            ),
+            }),
             output,
             options: { dateType: "string", enumStyle: "union", generateServices: true },
             // Three generators each group by controller independently, so this
@@ -659,7 +668,9 @@ describe("what generation says out loud", () => {
                     openapi: "3.0.0",
                     info: { title: "t", version: "1.0.0" },
                     paths: {
-                        "/x": { get: { tags: [tag], operationId: "x_get", responses: { "200": { description: "OK" } } } },
+                        "/x": {
+                            get: { tags: [tag], operationId: "x_get", responses: { "200": { description: "OK" } } },
+                        },
                     },
                 }),
                 output,
@@ -681,7 +692,9 @@ describe("what generation says out loud", () => {
                     // The common partially-tagged spec: path-derived "users" and
                     // the tag "Users" land in one controller by design, so
                     // warning here would fire on ordinary documents.
-                    "/api/users": { get: { tags: ["Users"], operationId: "listUsers", responses: { "200": { description: "OK" } } } },
+                    "/api/users": {
+                        get: { tags: ["Users"], operationId: "listUsers", responses: { "200": { description: "OK" } } },
+                    },
                     // Path-derived names come from the second segment, so this
                     // untagged operation resolves to "Users" as well.
                     "/api/users/{id}": {
@@ -722,8 +735,12 @@ describe("what generation says out loud", () => {
                 openapi: "3.0.0",
                 info: { title: "t", version: "1.0.0" },
                 paths: {
-                    "/a": { get: { tags: ["Dup"], operationId: "list-things", responses: { "200": { description: "OK" } } } },
-                    "/b": { get: { tags: ["Dup"], operationId: "list_things", responses: { "200": { description: "OK" } } } },
+                    "/a": {
+                        get: { tags: ["Dup"], operationId: "list-things", responses: { "200": { description: "OK" } } },
+                    },
+                    "/b": {
+                        get: { tags: ["Dup"], operationId: "list_things", responses: { "200": { description: "OK" } } },
+                    },
                 },
             }),
             output,
@@ -758,7 +775,7 @@ describe("spec text reaching emitted literals", () => {
                                 // unescaped `"NAME"` emission produced three
                                 // syntax errors in this one file while
                                 // generation reported success.
-                                "say\"hi": { type: "string" },
+                                'say"hi': { type: "string" },
                                 "back\\slash": { type: "string" },
                                 "has space": { type: "string" },
                                 plain: { type: "string" },
@@ -891,7 +908,10 @@ describe("spec text reaching emitted literals", () => {
                             tags: ["A"],
                             operationId: "a",
                             responses: {
-                                "200": { description: "OK", content: { [contentType]: { schema: { type: "string" } } } },
+                                "200": {
+                                    description: "OK",
+                                    content: { [contentType]: { schema: { type: "string" } } },
+                                },
                             },
                         },
                     },
@@ -977,7 +997,9 @@ describe("spec text reaching emitted literals", () => {
             input: writeSpec(output, {
                 openapi: "3.0.0",
                 info: { title: "t", version: "1.0.0" },
-                components: { schemas: { Doc: { type: "object", description: 42, properties: { a: { type: "string" } } } } },
+                components: {
+                    schemas: { Doc: { type: "object", description: 42, properties: { a: { type: "string" } } } },
+                },
                 paths: {
                     "/d": {
                         get: {
@@ -1025,7 +1047,10 @@ describe("spec text reaching emitted literals", () => {
                                     "multipart/form-data": {
                                         schema: {
                                             type: "object",
-                                            properties: { "it's": { type: "string" }, "back\\slash": { type: "string" } },
+                                            properties: {
+                                                "it's": { type: "string" },
+                                                "back\\slash": { type: "string" },
+                                            },
                                         },
                                     },
                                 },
@@ -1042,7 +1067,10 @@ describe("spec text reaching emitted literals", () => {
                                     "application/x-www-form-urlencoded": {
                                         schema: {
                                             type: "object",
-                                            properties: { "it's": { type: "string" }, "back\\slash": { type: "string" } },
+                                            properties: {
+                                                "it's": { type: "string" },
+                                                "back\\slash": { type: "string" },
+                                            },
                                         },
                                     },
                                 },
@@ -1154,27 +1182,34 @@ describe("names the round-9 review found unguarded", () => {
         // a name. The old boundary coerced all three to "" and the signature
         // got an empty identifier — TS1003 four times over, reported as success.
         const result = await generateFromConfig({
-            input: writeSpec(output, oas3({
-                "/p": {
-                    get: {
-                        tags: ["P"],
-                        operationId: "p",
-                        parameters: [
-                            { name: "", in: "query", schema: { type: "string" } },
-                            { name: { x: 1 }, in: "query", schema: { type: "string" } },
-                            { name: 42, in: "query", schema: { type: "string" } },
-                            { name: "kept", in: "query", schema: { type: "string" } },
-                        ],
-                        responses: ok,
+            input: writeSpec(
+                output,
+                oas3({
+                    "/p": {
+                        get: {
+                            tags: ["P"],
+                            operationId: "p",
+                            parameters: [
+                                { name: "", in: "query", schema: { type: "string" } },
+                                { name: { x: 1 }, in: "query", schema: { type: "string" } },
+                                { name: 42, in: "query", schema: { type: "string" } },
+                                { name: "kept", in: "query", schema: { type: "string" } },
+                            ],
+                            responses: ok,
+                        },
                     },
-                },
-            })),
+                }),
+            ),
             output,
             options: { dateType: "string", enumStyle: "union", generateServices: true },
         });
 
-        const nameless = result.warnings.filter((warning) => warning.includes("has no usable name"));
+        const nameless = result.warnings.filter((warning) => warning.includes("and was skipped. Give it a name"));
         expect(nameless).toHaveLength(2);
+        // Names the location the spec gave, and shows the offending value —
+        // never a fabricated \"query\" nor a JSON.stringify(undefined) hole.
+        expect(nameless[0]).toContain('A query parameter of (GET) /p has name "" and was skipped');
+        expect(nameless[1]).toContain('A query parameter of (GET) /p has name {"x":1} and was skipped');
         const service = readFileSync(join(output, "services", "p.service.ts"), "utf8");
         expect(service).toContain("params, kept, 'kept'");
         expect(service).toContain("'42'");
@@ -1184,7 +1219,10 @@ describe("names the round-9 review found unguarded", () => {
     it("ignores a tags entry that is not a string", async () => {
         const output = outputDirs.create("names-objtag-");
         await generateFromConfig({
-            input: writeSpec(output, oas3({ "/t": { get: { tags: [{ x: 1 }, "Real"], operationId: "t", responses: ok } } })),
+            input: writeSpec(
+                output,
+                oas3({ "/t": { get: { tags: [{ x: 1 }, "Real"], operationId: "t", responses: ok } } }),
+            ),
             output,
             options: { dateType: "string", enumStyle: "union", generateServices: true },
         });
@@ -1195,40 +1233,54 @@ describe("names the round-9 review found unguarded", () => {
     it("emits zod default values as literals, recursively", async () => {
         const output = outputDirs.create("names-zoddefault-");
         await generateFromConfig({
-            input: writeSpec(output, oas3(
-                {
-                    "/d": {
-                        get: {
-                            tags: ["D"],
-                            operationId: "d",
-                            responses: { "200": { description: "OK", content: { "application/json": { schema: { $ref: "#/components/schemas/Doc" } } } } },
-                        },
-                    },
-                },
-                {
-                    schemas: {
-                        Doc: {
-                            type: "object",
-                            properties: {
-                                // Object keys are spec text: `{ my-key: 1 }` is a
-                                // syntax error and a __proto__ key is the setter.
-                                // Both halves via JSON.parse: a __proto__ key written in
-                                // JS source is the prototype setter, never a property —
-                                // the same trap the fix closes, one level up in the test.
-                                obj: JSON.parse(
-                                    '{"type":"object","properties":{"my-key":{"type":"number"},"__proto__":{"type":"number"},' +
-                                        '"nested":{"type":"object","properties":{"a":{"type":"array","items":{"type":"number","nullable":true}}}}},' +
-                                        '"default":{"my-key":1,"__proto__":2,"nested":{"a":[1,null]}}}',
-                                ),
-                                // Not emitEnumMember: that turns null into the
-                                // *string* 'null', which is right for a z.enum
-                                // member and wrong for a default.
-                                arr: { type: "array", items: { type: "string", nullable: true }, default: ["x", null] },
+            input: writeSpec(
+                output,
+                oas3(
+                    {
+                        "/d": {
+                            get: {
+                                tags: ["D"],
+                                operationId: "d",
+                                responses: {
+                                    "200": {
+                                        description: "OK",
+                                        content: {
+                                            "application/json": { schema: { $ref: "#/components/schemas/Doc" } },
+                                        },
+                                    },
+                                },
                             },
                         },
                     },
-                },
-            )),
+                    {
+                        schemas: {
+                            Doc: {
+                                type: "object",
+                                properties: {
+                                    // Object keys are spec text: `{ my-key: 1 }` is a
+                                    // syntax error and a __proto__ key is the setter.
+                                    // Both halves via JSON.parse: a __proto__ key written in
+                                    // JS source is the prototype setter, never a property —
+                                    // the same trap the fix closes, one level up in the test.
+                                    obj: JSON.parse(
+                                        '{"type":"object","properties":{"my-key":{"type":"number"},"__proto__":{"type":"number"},' +
+                                            '"nested":{"type":"object","properties":{"a":{"type":"array","items":{"type":"number","nullable":true}}}}},' +
+                                            '"default":{"my-key":1,"__proto__":2,"nested":{"a":[1,null]}}}',
+                                    ),
+                                    // Not emitEnumMember: that turns null into the
+                                    // *string* 'null', which is right for a z.enum
+                                    // member and wrong for a default.
+                                    arr: {
+                                        type: "array",
+                                        items: { type: "string", nullable: true },
+                                        default: ["x", null],
+                                    },
+                                },
+                            },
+                        },
+                    },
+                ),
+            ),
             output,
             options: { dateType: "string", enumStyle: "union", generateServices: false },
             plugins: [ZodPlugin],
@@ -1262,7 +1314,12 @@ describe("names the round-9 review found unguarded", () => {
             generateFromConfig({
                 input: writeSpec(output, oas3({ "/b": { get: { tags: ["B"], operationId: "x", responses: ok } } })),
                 output,
-                options: { dateType: "string", enumStyle: "union", generateServices: true, customizeMethodName: () => "httpClient" },
+                options: {
+                    dateType: "string",
+                    enumStyle: "union",
+                    generateServices: true,
+                    customizeMethodName: () => "httpClient",
+                },
             }),
         ).rejects.toBeInstanceOf(InvalidIdentifierError);
     });
@@ -1273,10 +1330,13 @@ describe("names the round-9 review found unguarded", () => {
         // one service was silently lost and the barrel exported a class that
         // was not on disk.
         const result = await generateFromConfig({
-            input: writeSpec(output, oas3({
-                "/a": { get: { tags: ["USER"], operationId: "a", responses: ok } },
-                "/b": { get: { tags: ["User"], operationId: "b", responses: ok } },
-            })),
+            input: writeSpec(
+                output,
+                oas3({
+                    "/a": { get: { tags: ["USER"], operationId: "a", responses: ok } },
+                    "/b": { get: { tags: ["User"], operationId: "b", responses: ok } },
+                }),
+            ),
             output,
             options: { dateType: "string", enumStyle: "union", generateServices: true },
         });
@@ -1295,10 +1355,18 @@ describe("names the round-9 review found unguarded", () => {
         // compile check is blind to it and one model silently acquires the
         // other's properties.
         const error = await generateFromConfig({
-            input: writeSpec(output, oas3(
-                { "/d": { get: { tags: ["D"], operationId: "d", responses: ok } } },
-                { schemas: { "Pet-Store": { type: "object", properties: { a: { type: "string" } } }, "Pet.Store": { type: "object", properties: { b: { type: "string" } } } } },
-            )),
+            input: writeSpec(
+                output,
+                oas3(
+                    { "/d": { get: { tags: ["D"], operationId: "d", responses: ok } } },
+                    {
+                        schemas: {
+                            "Pet-Store": { type: "object", properties: { a: { type: "string" } } },
+                            "Pet.Store": { type: "object", properties: { b: { type: "string" } } },
+                        },
+                    },
+                ),
+            ),
             output,
             options: { dateType: "string", enumStyle: "union", generateServices: true },
         }).catch((reason: unknown) => reason);
@@ -1335,15 +1403,205 @@ describe("names the round-9 review found unguarded", () => {
         // its base; then B: getItem finds both its candidates taken. The result
         // is an exported type renumbered by what else the spec declares.
         const result = await generateFromConfig({
-            input: writeSpec(output, oas3({
-                "/a": { get: { tags: ["A"], operationId: "getItem", parameters: [{ name: "q", in: "query", schema: { type: "string" } }], responses: ok } },
-                "/b1": { get: { tags: ["B"], operationId: "bGetItem", parameters: [{ name: "q", in: "query", schema: { type: "string" } }], responses: ok } },
-                "/b2": { get: { tags: ["B"], operationId: "getItem", parameters: [{ name: "q", in: "query", schema: { type: "string" } }], responses: ok } },
-            })),
+            input: writeSpec(
+                output,
+                oas3({
+                    "/a": {
+                        get: {
+                            tags: ["A"],
+                            operationId: "getItem",
+                            parameters: [{ name: "q", in: "query", schema: { type: "string" } }],
+                            responses: ok,
+                        },
+                    },
+                    "/b1": {
+                        get: {
+                            tags: ["B"],
+                            operationId: "bGetItem",
+                            parameters: [{ name: "q", in: "query", schema: { type: "string" } }],
+                            responses: ok,
+                        },
+                    },
+                    "/b2": {
+                        get: {
+                            tags: ["B"],
+                            operationId: "getItem",
+                            parameters: [{ name: "q", in: "query", schema: { type: "string" } }],
+                            responses: ok,
+                        },
+                    },
+                }),
+            ),
             output,
-            options: { dateType: "string", enumStyle: "union", generateServices: true, useSingleRequestParameter: true },
+            options: {
+                dateType: "string",
+                enumStyle: "union",
+                generateServices: true,
+                useSingleRequestParameter: true,
+            },
         });
-        expect(result.warnings.join("\n")).toMatch(/interface "GetItemParams" is already taken.*exposed as "BGetItemParams2"/);
+        expect(result.warnings.join("\n")).toMatch(
+            /interface "GetItemParams" is already taken.*exposed as "BGetItemParams2"/,
+        );
         expectGeneratedCodeCompiles(output);
+    });
+});
+
+describe("clientName reaches text, identifiers and a token value", () => {
+    const ok = { "200": { description: "OK" } };
+    const spec = {
+        openapi: "3.0.0",
+        info: { title: "t", version: "1.0.0" },
+        paths: { "/c": { get: { tags: ["C"], operationId: "c", responses: ok } } },
+    };
+    const literalOf = (source: string, marker: string): unknown => {
+        const at = source.indexOf(marker);
+        expect(at, marker).toBeGreaterThan(-1);
+        const rest = source.slice(at + marker.length);
+        const quote = rest[0];
+        let i = 1;
+        while (i < rest.length && !(rest[i] === quote && rest[i - 1] !== "\\")) i++;
+        return new Function(`return ${rest.slice(0, i + 1)};`)();
+    };
+
+    it("escapes every comment and literal it reaches, and the token agrees with its setters", async () => {
+        // A comment terminator, a quote and a backslash: one value that hits
+        // the five raw comment sites, the token default and both setters.
+        const clientName = "x*/ export const PWNED = 1; /* it" + "'" + "s a" + "\\" + "b";
+        const output = outputDirs.create("names-clientname-esc-");
+        await generateFromConfig({
+            input: writeSpec(output, spec),
+            output,
+            clientName,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+            plugins: [HttpResourcePlugin],
+        });
+
+        expectNoDeclaration(output, "PWNED");
+        // The value the token defaults to and the value the setters write must
+        // be the same string, or a clientName-scoped interceptor stops
+        // recognizing its own requests. Before, for a backslash, they differed
+        // silently — both compiled.
+        const tokenDefault = literalOf(
+            readFileSync(join(output, "tokens", "index.ts"), "utf8"),
+            "new HttpContextToken<string>(() => ",
+        );
+        const serviceSet = literalOf(
+            readFileSync(join(output, "services", "c.service.ts"), "utf8"),
+            "context.set(this.clientContextToken, ",
+        );
+        const resourceSet = literalOf(
+            readFileSync(join(output, "resources", "c.resource.ts"), "utf8"),
+            "context.set(this.clientContextToken, ",
+        );
+        expect(tokenDefault).toBe(clientName);
+        expect(serviceSet).toBe(clientName);
+        expect(resourceSet).toBe(clientName);
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("keeps an identifier-shaped clientName verbatim in generated identifiers", async () => {
+        // These compiled before; sending them through pascalCase renamed the
+        // function every consumer imports. Only names that could not have
+        // compiled are sanitized.
+        const cases: [string, string][] = [
+            ["my_client", "provideMy_clientClient"],
+            ["_internal", "provide_internalClient"],
+            ["A1_b", "provideA1_bClient"],
+            ["my-client", "provideMyClientClient"],
+            ["my client", "provideMyClientClient"],
+        ];
+        for (const [clientName, provider] of cases) {
+            const output = outputDirs.create("names-clientname-id-");
+            await generateFromConfig({
+                input: writeSpec(output, spec),
+                output,
+                clientName,
+                options: { dateType: "string", enumStyle: "union", generateServices: true },
+            });
+            expect(readFileSync(join(output, "providers.ts"), "utf8"), clientName).toContain(provider);
+            expectGeneratedCodeCompiles(output, clientName);
+        }
+    });
+
+    it("treats an empty clientName as the default client", async () => {
+        // One site used `|| "default"` and two used default parameters, which
+        // fire only on undefined — so "" emitted BASE_PATH_ in the tokens and
+        // imported BASE_PATH_DEFAULT in the providers.
+        const output = outputDirs.create("names-clientname-empty-");
+        await generateFromConfig({
+            input: writeSpec(output, spec),
+            output,
+            clientName: "",
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+        expect(readFileSync(join(output, "tokens", "index.ts"), "utf8")).toContain("BASE_PATH_DEFAULT");
+        expectGeneratedCodeCompiles(output);
+    });
+});
+
+describe("parameters the generators used to lose", () => {
+    const ok = { "200": { description: "OK" } };
+
+    it("resolves a $ref parameter instead of reporting it nameless", async () => {
+        const output = outputDirs.create("names-paramref-");
+        const result = await generateFromConfig({
+            input: writeSpec(output, {
+                openapi: "3.0.0",
+                info: { title: "t", version: "1.0.0" },
+                components: { parameters: { Q: { name: "q", in: "query", schema: { type: "string" } } } },
+                paths: {
+                    "/r": {
+                        get: {
+                            tags: ["R"],
+                            operationId: "r",
+                            parameters: [
+                                { $ref: "#/components/parameters/Q" },
+                                { $ref: "#/components/parameters/Missing" },
+                            ],
+                            responses: ok,
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+        expect(readFileSync(join(output, "services", "r.service.ts"), "utf8")).toContain("params, q, " + "'q'");
+        expect(result.warnings.join("\n")).toMatch(/"#\/components\/parameters\/Missing", which does not resolve/);
+        expect(result.warnings.join("\n")).not.toContain("no usable name");
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("warns when a parameter is dropped because its location is not supported", async () => {
+        const output = outputDirs.create("names-droppedin-");
+        const result = await generateFromConfig({
+            input: writeSpec(output, {
+                swagger: "2.0",
+                info: { title: "t", version: "1.0.0" },
+                paths: {
+                    "/upload": {
+                        post: {
+                            tags: ["U"],
+                            operationId: "upload",
+                            parameters: [
+                                { name: "file", in: "formData", required: true, type: "file" },
+                                { name: "note", in: "formData", type: "string" },
+                                { name: "X-Optional", in: "header", type: "string" },
+                            ],
+                            responses: ok,
+                        },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+        });
+        const warnings = result.warnings.join("\n");
+        // Swagger 2.0's form upload — required — used to vanish and report success.
+        expect(warnings).toMatch(/in: formData` parameter "file".*dropped \(it is marked required\)/);
+        expect(warnings).toMatch(/in: formData` parameter "note".*dropped\./);
+        // An optional header is expressible via options; it stays quiet.
+        expect(warnings).not.toContain("X-Optional");
     });
 });

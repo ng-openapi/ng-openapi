@@ -9,7 +9,7 @@ title: Client Name
 
 Unique identifier for the generated client code. This is used to differentiate between multiple clients in the same project.
 
-Any string is accepted. Characters that cannot appear in a TypeScript identifier are treated as word separators where the name is spliced into generated identifiers (`my-client` yields `MyClientBaseInterceptor` and `BASE_PATH_MY_CLIENT`); the raw value is kept where it is only a string, such as the client context token.
+Any string is accepted; an empty string means `default`. A name that is already a valid TypeScript identifier is used as-is where it becomes part of a generated identifier — `my_client` gives `provideMy_clientClient`, exactly as before. A name that is not (`my-client`, `my client`) has its non-identifier characters treated as word separators there (`provideMyClientClient`, `MyClientBaseInterceptor`) and becomes upper-snake in token names (`BASE_PATH_MY_CLIENT`). Wherever the value is only text — the client context token's value, generated comments — it is kept verbatim and escaped.
 
 ## Usage
 

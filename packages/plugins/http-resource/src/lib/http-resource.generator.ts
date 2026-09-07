@@ -2,6 +2,8 @@ import { Project, Scope, SourceFile } from "ts-morph";
 import {
     camelCase,
     describeOperation,
+    quoteLiteral,
+    effectiveClientName,
     emitServiceDecorator,
     GeneratorConfig,
     getBasePathTokenName,
@@ -16,7 +18,6 @@ import {
     IPluginGenerator,
     NormalizedOperation,
     NormalizedSpec,
-
     PluginGeneratorContext,
 } from "@ng-openapi/shared";
 import * as path from "path";
@@ -71,7 +72,12 @@ export class HttpResourceGenerator implements IPluginGenerator {
         const sourceFile = this.project.createSourceFile(filePath, "", { overwrite: true });
         this.addServiceClass(sourceFile, controllerName, operations);
         sourceFile.fixMissingImports().formatText(); //TODO: add models
-        sourceFile.insertText(0, HTTP_RESOURCE_GENERATOR_HEADER_COMMENT(getResourceClassName(controllerName, this.config.options.naming?.resources)));
+        sourceFile.insertText(
+            0,
+            HTTP_RESOURCE_GENERATOR_HEADER_COMMENT(
+                getResourceClassName(controllerName, this.config.options.naming?.resources),
+            ),
+        );
     }
 
     private addServiceClass(sourceFile: SourceFile, controllerName: string, operations: NormalizedOperation[]): void {
@@ -143,7 +149,7 @@ export class HttpResourceGenerator implements IPluginGenerator {
             ],
             returnType: "HttpContext",
             statements: `const context = existingContext || new HttpContext();
-return context.set(this.clientContextToken, '${this.config.clientName || "default"}');`,
+return context.set(this.clientContextToken, ${quoteLiteral(effectiveClientName(this.config.clientName))});`,
         });
 
         // Generate methods for each operation
@@ -172,6 +178,8 @@ return context.set(this.clientContextToken, '${this.config.clientName || "defaul
             this.methodGenerator.addResourceMethod(serviceClass, operation);
         });
 
-        assertDistinctMemberNames(serviceClass, className, operations, (op) => this.methodGenerator.generateMethodName(op));
+        assertDistinctMemberNames(serviceClass, className, operations, (op) =>
+            this.methodGenerator.generateMethodName(op),
+        );
     }
 }

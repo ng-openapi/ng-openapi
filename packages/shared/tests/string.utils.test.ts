@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { camelCase, isValidIdentifier, kebabCase, pascalCase, pascalCaseForEnums, screamingSnakeCase } from "../src";
+import {
+    camelCase,
+    capitalizeFirst,
+    isValidIdentifier,
+    kebabCase,
+    pascalCase,
+    pascalCaseForEnums,
+    screamingSnakeCase,
+} from "../src";
 
 describe("camelCase", () => {
     it("converts kebab-case", () => {
@@ -152,5 +160,17 @@ describe("pascalCaseForEnums", () => {
 
     it("keeps already valid PascalCase names", () => {
         expect(pascalCaseForEnums("OrderStatus")).toBe("OrderStatus");
+    });
+
+    it("never returns an empty name", () => {
+        // A schema named "" emitted `export interface  {`.
+        expect(pascalCaseForEnums("")).toBe("_");
+    });
+});
+
+describe("capitalizeFirst", () => {
+    it("touches only the first character", () => {
+        expect(capitalizeFirst("my_client")).toBe("My_client");
+        expect(capitalizeFirst("")).toBe("");
     });
 });

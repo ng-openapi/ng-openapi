@@ -85,8 +85,16 @@ export function screamingSnakeCase(str: string): string {
  * prefixed with `_` so the result is always a valid TS identifier.
  */
 export function pascalCaseForEnums(str: string): string {
-    return str
+    const converted = str
         .replace(/[^a-zA-Z0-9]/g, "_")
         .replace(/(?:^|_)([a-z])/g, (_, char) => char.toUpperCase())
         .replace(/^([0-9])/, "_$1");
+    // "" is never a valid identifier: a schema named "" emitted
+    // `export interface  {`. Same rule as toIdentifier.
+    return converted === "" ? "_" : converted;
+}
+
+/** Uppercases the first character and leaves the rest exactly as given. */
+export function capitalizeFirst(str: string): string {
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }

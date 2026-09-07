@@ -4,7 +4,7 @@ import { CONTENT_TYPES } from "../utils/content-types.constants";
 import { extractPaths } from "../utils/functions/extract-paths";
 import { getResponseInfoFromResponse } from "../utils/functions/extract-swagger-response-type";
 import type { ResponseTypeInfo } from "../utils/functions/extract-swagger-response-type";
-import type { PathInfo, RequestBody, SwaggerDefinition, SwaggerSpec } from "../types/swagger.types";
+import type { Parameter, PathInfo, RequestBody, SwaggerDefinition, SwaggerSpec } from "../types/swagger.types";
 import type { NormalizedOperation } from "../model/operation.model";
 import type { NormalizedSpec } from "../model/spec.model";
 
@@ -25,6 +25,18 @@ export function normalizeSpec(spec: SwaggerSpec, onWarning?: (message: string) =
         const parts = ref.split("/");
         return definitions[parts[parts.length - 1]];
     };
+    // Reusable parameters: components.parameters in OpenAPI 3, top-level
+    // parameters in Swagger 2.0. Read untyped — the raw spec types do not
+    // model either map fully, and a wrong shape must not throw here.
+    const parameterComponents: Record<string, unknown> =
+        (spec as { components?: { parameters?: Record<string, unknown> } }).components?.parameters ??
+        (spec as { parameters?: Record<string, unknown> }).parameters ??
+        {};
+    const resolveParameter = (ref: string): Parameter | undefined => {
+        const parts = ref.split("/");
+        const candidate = parameterComponents[parts[parts.length - 1]];
+        return candidate && typeof candidate === "object" ? (candidate as Parameter) : undefined;
+    };
 
     return {
         version: spec.swagger
@@ -33,7 +45,7 @@ export function normalizeSpec(spec: SwaggerSpec, onWarning?: (message: string) =
               ? { type: "openapi", version: spec.openapi }
               : null,
         definitions,
-        operations: extractPaths(spec.paths, undefined, onWarning).map((operation) =>
+        operations: extractPaths(spec.paths, undefined, onWarning, resolveParameter).map((operation) =>
             normalizeOperation(normalizeOperationSchemas(operation), resolveReference),
         ),
         resolveReference,

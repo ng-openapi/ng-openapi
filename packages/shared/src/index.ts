@@ -78,11 +78,14 @@ export type { HeadersEmitOptions, ServiceDecoratorEmit, ServiceDecoratorEmitOpti
 // Utilities
 export {
     camelCase,
+    capitalizeFirst,
     CONTENT_TYPES,
     escapeString,
     extractPaths,
     generateParseRequestTypeParams,
     getBasePathTokenName,
+    clientNameIdentifier,
+    effectiveClientName,
     getClientContextTokenName,
     getInterceptorsTokenName,
     getModelTypeName,
@@ -98,6 +101,7 @@ export {
     getServiceClassName,
     getTypeScriptType,
     groupOperationsByController,
+    hasDuplicateFunctionNames,
     inferResponseTypeFromContentType,
     isDataTypeInterface,
     isPrimitiveType,

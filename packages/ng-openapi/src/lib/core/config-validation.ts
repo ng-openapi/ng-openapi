@@ -35,10 +35,11 @@ export function validateGeneratorConfig(config: unknown): asserts config is Gene
     if (typeof c.output !== "string" || c.output.trim() === "") {
         issues.push("`output` must be a non-empty string (output directory)");
     }
-    // Free-form on purpose. It is not an identifier: every identifier derived
-    // from it goes through pascalCase / the token-name helpers, which sanitize,
-    // and the one JSDoc it reaches goes through emitDocs. Rejecting names such
-    // as "my-client" here broke configs that generated fine before.
+    // Free-form on purpose. It is not an identifier: identifiers derived from it
+    // go through clientNameIdentifier and the token-name helpers, every comment
+    // it reaches goes through escapeJsDoc, and every string literal through
+    // quoteLiteral. Rejecting names such as "my-client" here broke configs that
+    // generated fine before.
     if (c.clientName !== undefined && typeof c.clientName !== "string") {
         issues.push("`clientName` must be a string");
     }
@@ -124,7 +125,10 @@ export function validateGeneratorConfig(config: unknown): asserts config is Gene
             }
         }
 
-        if (options.validation !== undefined && (typeof options.validation !== "object" || options.validation === null)) {
+        if (
+            options.validation !== undefined &&
+            (typeof options.validation !== "object" || options.validation === null)
+        ) {
             issues.push("`options.validation` must be an object like { response?: boolean }");
         }
 

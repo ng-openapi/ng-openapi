@@ -32,7 +32,9 @@ export function assertDistinctMemberNames(
     const detail = [...byName]
         .map(([name, ops]) => {
             const from = ops.map(describeOperation).join(" and ");
-            return propertyNames.has(name) ? `"${name}" from ${from} (a property of ${className})` : `"${name}" from ${from}`;
+            return propertyNames.has(name)
+                ? `"${name}" from ${from} (a property of ${className})`
+                : `"${name}" from ${from}`;
         })
         .join("; ");
 

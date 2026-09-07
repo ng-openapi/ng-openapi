@@ -45,7 +45,10 @@ export class RequestParamsGenerator {
                     return;
                 }
                 const interfaceName = this.reserveInterfaceName(controllerName, getMethodName(operation));
-                this.registry.set(operation, ServiceMethodRequestObjectGenerator.createEntry(interfaceName, parameters));
+                this.registry.set(
+                    operation,
+                    ServiceMethodRequestObjectGenerator.createEntry(interfaceName, parameters),
+                );
             });
         });
         return this.registry;
@@ -96,7 +99,8 @@ export class RequestParamsGenerator {
         let text = sourceFile.getFullText();
         changes.forEach((change) => {
             const span = change.getSpan();
-            text = text.slice(0, span.getStart()) + change.getNewText() + text.slice(span.getStart() + span.getLength());
+            text =
+                text.slice(0, span.getStart()) + change.getNewText() + text.slice(span.getStart() + span.getLength());
         });
         sourceFile.replaceWithText(text);
     }
@@ -108,25 +112,28 @@ export class RequestParamsGenerator {
     private reserveInterfaceName(controllerName: string, methodName: string): string {
         const base = `${pascalCase(methodName)}Params`;
         const candidates = [base, `${pascalCase(controllerName)}${base}`];
-        for (const candidate of candidates) {
-            if (!this.usedInterfaceNames.has(candidate)) {
-                this.usedInterfaceNames.add(candidate);
-                return candidate;
-            }
+        if (!this.usedInterfaceNames.has(base)) {
+            this.usedInterfaceNames.add(base);
+            return base;
+        }
+        const warnRenamed = (name: string): string => {
+            this.usedInterfaceNames.add(name);
+            // An exported type in the consumer's import graph, named by what
+            // else the spec declares — a breaking change to call sites if silent.
+            this.onWarning?.(
+                `Request-parameter interface "${base}" is already taken; the parameters of "${methodName}" in ` +
+                    `${controllerName} are exposed as "${name}". Renaming the operationId keeps the type name stable.`,
+            );
+            return name;
+        };
+        if (!this.usedInterfaceNames.has(candidates[1])) {
+            return warnRenamed(candidates[1]);
         }
         let suffix = 2;
         while (this.usedInterfaceNames.has(`${candidates[1]}${suffix}`)) {
             suffix++;
         }
-        const name = `${candidates[1]}${suffix}`;
-        this.usedInterfaceNames.add(name);
-        // An exported type in the consumer's import graph, renumbered by what
-        // else the spec declares — a breaking change to call sites if silent.
-        this.onWarning?.(
-            `Request-parameter interface "${base}" is already taken; the parameters of "${methodName}" in ` +
-                `${controllerName} are exposed as "${name}". Renaming the operationId keeps the type name stable.`,
-        );
-        return name;
+        return warnRenamed(`${candidates[1]}${suffix}`);
     }
 
     private addModelsBarrelExport(outputRoot: string): void {

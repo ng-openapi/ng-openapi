@@ -13,10 +13,53 @@ import { isDataTypeInterface } from "./is-data-type-interface";
  * Includes the strict-mode reserved words, since generated code is a module.
  */
 const RESERVED_WORDS = [
-    "arguments", "await", "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete",
-    "do", "else", "enum", "eval", "export", "extends", "false", "finally", "for", "function", "if", "implements",
-    "import", "in", "instanceof", "interface", "let", "new", "null", "package", "private", "protected", "public",
-    "return", "static", "super", "switch", "this", "throw", "true", "try", "typeof", "var", "void", "while", "with",
+    "arguments",
+    "await",
+    "break",
+    "case",
+    "catch",
+    "class",
+    "const",
+    "continue",
+    "debugger",
+    "default",
+    "delete",
+    "do",
+    "else",
+    "enum",
+    "eval",
+    "export",
+    "extends",
+    "false",
+    "finally",
+    "for",
+    "function",
+    "if",
+    "implements",
+    "import",
+    "in",
+    "instanceof",
+    "interface",
+    "let",
+    "new",
+    "null",
+    "package",
+    "private",
+    "protected",
+    "public",
+    "return",
+    "static",
+    "super",
+    "switch",
+    "this",
+    "throw",
+    "true",
+    "try",
+    "typeof",
+    "var",
+    "void",
+    "while",
+    "with",
     "yield",
 ] as const;
 
@@ -99,6 +142,41 @@ export interface ArgumentNames {
  * it decides which argument keeps the unsuffixed name.
  */
 export function resolveArgumentNames(
+    operation: NormalizedOperation,
+    config: MethodGenOptions,
+    profile: ArgumentNameProfile,
+): ArgumentNames {
+    // Memoized per (operation, config, profile). The function is pure in those
+    // three, so callers get the same answer either way; the cache just means
+    // the four call sites on the resource path resolve once instead of four
+    // times. Keyed by identity: operations are the normalizer's shared
+    // instances, config is the one object a run threads everywhere, profiles
+    // are the two frozen singletons.
+    let byConfig = RESOLVED.get(operation);
+    if (!byConfig) {
+        byConfig = new WeakMap();
+        RESOLVED.set(operation, byConfig);
+    }
+    let byProfile = byConfig.get(config);
+    if (!byProfile) {
+        byProfile = new WeakMap();
+        byConfig.set(config, byProfile);
+    }
+    const cached = byProfile.get(profile);
+    if (cached) {
+        return cached;
+    }
+    const resolved = computeArgumentNames(operation, config, profile);
+    byProfile.set(profile, resolved);
+    return resolved;
+}
+
+const RESOLVED = new WeakMap<
+    NormalizedOperation,
+    WeakMap<MethodGenOptions, WeakMap<ArgumentNameProfile, ArgumentNames>>
+>();
+
+function computeArgumentNames(
     operation: NormalizedOperation,
     config: MethodGenOptions,
     profile: ArgumentNameProfile,

@@ -29,6 +29,7 @@ export function extractPaths(
     swaggerPaths: { [p: string]: Path } = {},
     methods = ["get", "post", "put", "patch", "delete", "options", "head"],
     onWarning?: (message: string) => void,
+    resolveParameter?: (ref: string) => Parameter | undefined,
 ): PathInfo[] {
     const paths: PathInfo[] = [];
     Object.entries(swaggerPaths as Record<string, RawPathItem>).forEach(([path, pathItem]) => {
@@ -47,6 +48,7 @@ export function extractPaths(
                         pathItem.parameters || [],
                         `(${method.toUpperCase()}) ${path}`,
                         onWarning,
+                        resolveParameter,
                     ),
                     requestBody: operation.requestBody,
                     responses: operation.responses || {},
@@ -85,8 +87,27 @@ function parseParameters(
     pathParams: Parameter[],
     location: string,
     onWarning?: (message: string) => void,
+    resolveParameter?: (ref: string) => Parameter | undefined,
 ): Parameter[] {
-    const allParams = [...pathParams, ...operationParams];
+    const allParams = [...pathParams, ...operationParams].flatMap((param): Parameter[] => {
+        // A `$ref` parameter has no name of its own — the referenced component
+        // does. Resolving it here means it is generated; before, it was reported
+        // as "no usable name", which sent users hunting for a problem that was
+        // not there, and then dropped.
+        const ref = (param as { $ref?: unknown }).$ref;
+        if (typeof ref !== "string") {
+            return [param];
+        }
+        const resolved = resolveParameter?.(ref);
+        if (resolved) {
+            return [resolved];
+        }
+        onWarning?.(
+            `A parameter of ${location} references "${ref}", which does not resolve to a parameter component, ` +
+                `and was skipped.`,
+        );
+        return [];
+    });
     // A parameter without a usable name cannot be bound to anything: an empty
     // or non-string name is dropped here, out loud, rather than coerced to ""
     // — which traded a loud TypeError for silent invalid TypeScript, since ""
@@ -96,10 +117,9 @@ function parseParameters(
         if (name !== undefined && name !== "") {
             return true;
         }
-        onWarning?.(
-            `A ${typeof param.in === "string" ? param.in : "query"} parameter of ${location} has no usable name ` +
-                `(${JSON.stringify(param.name)}) and was skipped. Give it a name in the spec.`,
-        );
+        const where = typeof param.in === "string" ? `${param.in} parameter` : "parameter";
+        const shown = param.name === undefined ? "no name" : `name ${JSON.stringify(param.name)}`;
+        onWarning?.(`A ${where} of ${location} has ${shown} and was skipped. Give it a name in the spec.`);
         return false;
     });
     return named.map((param) => ({

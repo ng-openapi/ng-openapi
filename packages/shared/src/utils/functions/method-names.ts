@@ -7,20 +7,24 @@ import { camelCase, isValidIdentifier, pascalCase } from "../string.utils";
  * Valid identifiers that still cannot name a generated method.
  *
  * `constructor` declares the class constructor, so ts-morph rejects a method
- * by that name. The rest are members both generated classes bind themselves
- * (`httpClient`, `basePath`, `clientContextToken`, the context helper): an
+ * by that name. The rest are members the generated classes bind themselves
+ * (`httpClient` in the service; `basePath`, `clientContextToken` and the context helper in
+ * both): an
  * operationId of `basePath` emitted a method next to the property of the same
  * name — TS2300 ten times over, reported as success. The same insight
  * ArgumentNameProfile.reserved encodes for parameters, applied to methods.
  * Other reserved words are fine — `class() {}` is a legal member.
  */
-export const RESERVED_MEMBER_NAMES: ReadonlySet<string> = new Set([
+export const RESERVED_MEMBER_NAMES: readonly string[] = Object.freeze([
     "constructor",
     "httpClient",
     "basePath",
     "clientContextToken",
     "createContextWithClientId",
 ]);
+// A Set is what the lookups want, but Object.freeze does not stop Set.add, so
+// the exported value is the frozen array and the Set stays module-private.
+const RESERVED_MEMBER_SET: ReadonlySet<string> = new Set(RESERVED_MEMBER_NAMES);
 
 /**
  * The derived method name that collided with a reserved member and was
@@ -35,7 +39,7 @@ export function reservedMemberCollision(
         return undefined;
     }
     const natural = camelCase(operation.operationId);
-    return RESERVED_MEMBER_NAMES.has(natural) ? { from: natural, to: `_${natural}` } : undefined;
+    return RESERVED_MEMBER_SET.has(natural) ? { from: natural, to: `_${natural}` } : undefined;
 }
 
 /**
@@ -64,11 +68,11 @@ export function getOperationMethodName(operation: NormalizedOperation, config: M
     // The hook replaces the built-in conversion outright, so nothing else
     // sanitizes its result — validate rather than silently rewrite it, which
     // would leave the user's config and the generated client disagreeing.
-    if (!isValidIdentifier(customName) || RESERVED_MEMBER_NAMES.has(customName)) {
+    if (!isValidIdentifier(customName) || RESERVED_MEMBER_SET.has(customName)) {
         throw new InvalidIdentifierError(
             `customizeMethodName returned "${customName}" for ${describeOperation(operation)}, ` +
                 `which is not a usable TypeScript method name. Return an identifier — letters, digits, ` +
-                `"_" and "$", not starting with a digit — and not one of ${[...RESERVED_MEMBER_NAMES].map((name) => `"${name}"`).join(", ")}.`,
+                `"_" and "$", not starting with a digit — and not one of ${RESERVED_MEMBER_NAMES.map((name) => `"${name}"`).join(", ")}.`,
             operation,
             customName,
         );
@@ -85,7 +89,7 @@ function defaultOperationMethodName(operation: NormalizedOperation): string {
         const name = camelCase(operation.operationId);
         // Derived names are sanitized rather than rejected: the spec is valid,
         // so generation must succeed without the user editing it.
-        return RESERVED_MEMBER_NAMES.has(name) ? `_${name}` : name;
+        return RESERVED_MEMBER_SET.has(name) ? `_${name}` : name;
     }
 
     const method = pascalCase(operation.method.toLowerCase());

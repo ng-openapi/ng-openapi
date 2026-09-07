@@ -31,12 +31,14 @@ export function escapeSingleQuoted(value: string): string {
  * ends the literal and `${` opens an interpolation.
  */
 export function escapeTemplateLiteral(value: string): string {
-    return value
-        .replace(/[\\`]/g, (char) => `\\${char}`)
-        .replace(/\$\{/g, "\\${")
-        // A lone CR inside a template literal is normalized to LF by the
-        // language, silently changing the value.
-        .replace(/\r/g, "\\r");
+    return (
+        value
+            .replace(/[\\`]/g, (char) => `\\${char}`)
+            .replace(/\$\{/g, "\\${")
+            // A lone CR inside a template literal is normalized to LF by the
+            // language, silently changing the value.
+            .replace(/\r/g, "\\r")
+    );
 }
 
 /**
@@ -101,8 +103,8 @@ export function escapeJsDoc(text: string): string {
 /**
  * The `docs` array for a ts-morph structure, or undefined when there is no
  * description. Every generator goes through this rather than building
- * `[description]` inline, so the escape cannot be forgotten at any call site —
- * the ninth was found after the first eight were fixed.
+ * `[description]` inline, so the escape cannot be forgotten at a call site — every
+ * count of them written here so far has been wrong within a round.
  */
 export function emitDocs(description: unknown): string[] | undefined {
     // `unknown`, not `string | undefined`: a description is untrusted JSON and

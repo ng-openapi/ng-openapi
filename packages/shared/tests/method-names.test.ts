@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { getOperationMethodName, InvalidIdentifierError, MethodGenOptions, NormalizedOperation } from "../src";
+import {
+    getOperationMethodName,
+    InvalidIdentifierError,
+    MethodGenOptions,
+    NormalizedOperation,
+    RESERVED_MEMBER_NAMES,
+} from "../src";
 
 const operation = (overrides: Partial<NormalizedOperation> = {}): NormalizedOperation =>
     ({
@@ -37,9 +43,12 @@ describe("getOperationMethodName without a customize hook", () => {
 
 describe("getOperationMethodName with a customize hook", () => {
     it("uses the hook's result when it is a valid identifier", () => {
-        expect(getOperationMethodName(operation({ operationId: "get_pet" }), config((id) => `${id}V2`))).toBe(
-            "get_petV2",
-        );
+        expect(
+            getOperationMethodName(
+                operation({ operationId: "get_pet" }),
+                config((id) => `${id}V2`),
+            ),
+        ).toBe("get_petV2");
     });
 
     it("throws InvalidIdentifierError when the hook returns an unusable name", () => {
@@ -57,7 +66,26 @@ describe("getOperationMethodName with a customize hook", () => {
 
     it("requires an operationId when a customize hook is configured", () => {
         // Typed, not a bare Error: hosts branch on the class, never on text.
-        expect(() => getOperationMethodName(operation(), config((id) => id))).toThrow(InvalidIdentifierError);
-        expect(() => getOperationMethodName(operation(), config((id) => id))).toThrow(/needs an operationId/);
+        expect(() =>
+            getOperationMethodName(
+                operation(),
+                config((id) => id),
+            ),
+        ).toThrow(InvalidIdentifierError);
+        expect(() =>
+            getOperationMethodName(
+                operation(),
+                config((id) => id),
+            ),
+        ).toThrow(/needs an operationId/);
+    });
+});
+
+describe("RESERVED_MEMBER_NAMES", () => {
+    it("cannot be mutated through a cast", () => {
+        // A Set typed ReadonlySet is mutable process-wide through one cast;
+        // Object.freeze does not stop Set.add, so the export is a frozen array.
+        expect(Object.isFrozen(RESERVED_MEMBER_NAMES)).toBe(true);
+        expect(() => (RESERVED_MEMBER_NAMES as string[]).push("x")).toThrow();
     });
 });

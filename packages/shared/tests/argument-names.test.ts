@@ -142,3 +142,25 @@ describe("resolveArgumentNames", () => {
         expect(() => (RESOURCE_ARGUMENT_PROFILE.reserved as string[]).push("x")).toThrow();
     });
 });
+
+describe("resolveArgumentNames memoization", () => {
+    it("is keyed by config as well as operation, not just operation", () => {
+        // The JSON body name comes from the body type, which config decides.
+        // A cache keyed by operation alone would hand the second config the
+        // first config's answer.
+        const op = operation({
+            operationId: "put",
+            method: "PUT",
+            requestBody: {
+                required: true,
+                content: { "application/json": { schema: { type: "string", format: "date-time" } } },
+            } as unknown as NormalizedOperation["requestBody"],
+        });
+        const a = resolveArgumentNames(op, { options: { dateType: "string" } }, SERVICE_ARGUMENT_PROFILE);
+        const b = resolveArgumentNames(op, { options: { dateType: "Date" } }, SERVICE_ARGUMENT_PROFILE);
+        expect(a).not.toBe(b);
+        expect(resolveArgumentNames(op, config, SERVICE_ARGUMENT_PROFILE)).toBe(
+            resolveArgumentNames(op, config, SERVICE_ARGUMENT_PROFILE),
+        );
+    });
+});
