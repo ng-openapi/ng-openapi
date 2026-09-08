@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.0](https://github.com/ng-openapi/ng-openapi/compare/zod-v0.1.3...zod-v0.2.0) (2026-09-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* **generator:** three changes alter consumer code without a compile error.
+
+### Bug Fixes
+
+* **generator:** sanitize identifiers derived from spec names ([#127](https://github.com/ng-openapi/ng-openapi/issues/127)) ([77ebd9f](https://github.com/ng-openapi/ng-openapi/commit/77ebd9f1fb522ff3d2fb206457159366d32518b6))
+
 ## [0.1.3](https://github.com/ng-openapi/ng-openapi/compare/zod-v0.1.2...zod-v0.1.3) (2026-08-13)
 
 
