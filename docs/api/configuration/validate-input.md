@@ -31,7 +31,7 @@ export default config;
 
 ## Parameters
 
-- **spec**: The parsed OpenAPI/Swagger specification object
+- **spec**: The parsed OpenAPI/Swagger specification object, exactly as authored — the hook runs before the generator rewrites deep-pointer `$ref`s (`#/components/schemas/X/properties/y`) into inline copies, so assertions about your own `$ref`s hold.
 
 ## Return Value
 

@@ -2,7 +2,14 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
-import { GeneratorConfig, SwaggerParser } from "../src";
+import { GeneratorConfig, SwaggerParser, SwaggerSpec } from "../src";
+
+/** The `/ns` GET 200 JSON schema, read loosely: the spec types model responses as `Reference | …`. */
+function responseSchema(spec: SwaggerSpec): unknown {
+    const operation = (spec.paths["/ns"] as Record<string, { responses?: Record<string, unknown> } | undefined>)["get"];
+    const response = operation?.responses?.["200"] as { content?: Record<string, { schema?: unknown }> } | undefined;
+    return response?.content?.["application/json"]?.schema;
+}
 
 const config: GeneratorConfig = {
     input: "spec.json",
@@ -46,7 +53,14 @@ describe("SwaggerParser.create from files", () => {
     });
 
     it("parses a .yaml file", async () => {
-        const yaml = ["swagger: '2.0'", "info: { title: t, version: '1' }", "paths: {}", "definitions:", "  Pet:", "    type: object"].join("\n");
+        const yaml = [
+            "swagger: '2.0'",
+            "info: { title: t, version: '1' }",
+            "paths: {}",
+            "definitions:",
+            "  Pet:",
+            "    type: object",
+        ].join("\n");
         const parser = await SwaggerParser.create(writeTemp("spec.yaml", yaml), config);
         expect(parser.getAllDefinitionNames()).toEqual(["Pet"]);
     });
@@ -57,7 +71,10 @@ describe("SwaggerParser.create from files", () => {
     });
 
     it("auto-detects YAML content behind an unknown extension", async () => {
-        const parser = await SwaggerParser.create(writeTemp("spec2.txt", "openapi: 3.0.0\ninfo: {}\npaths: {}"), config);
+        const parser = await SwaggerParser.create(
+            writeTemp("spec2.txt", "openapi: 3.0.0\ninfo: {}\npaths: {}"),
+            config,
+        );
         expect(parser.getSpecVersion()).toEqual({ type: "openapi", version: "3.0.0" });
     });
 
@@ -78,6 +95,59 @@ describe("SwaggerParser.create from files", () => {
         const acceptingConfig: GeneratorConfig = { ...config, validateInput: (spec) => !!spec.openapi };
         const parser = await SwaggerParser.create(writeTemp("spec4.json", JSON.stringify(v3Spec)), acceptingConfig);
         expect(parser.isValidSpec()).toBe(true);
+    });
+
+    it("hands validateInput the spec as authored, before deep $refs are inlined", async () => {
+        // The hook is the user's check on *their* document — a rule counting
+        // refs or asserting on their own pointers must not judge a rewrite.
+        const deepRefSpec = {
+            openapi: "3.0.3",
+            info: { title: "t", version: "1" },
+            paths: {
+                "/ns": {
+                    get: {
+                        responses: {
+                            "200": {
+                                description: "ok",
+                                content: {
+                                    "application/json": {
+                                        schema: { $ref: "#/components/schemas/Policy/properties/namespaces" },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            components: {
+                schemas: {
+                    Policy: {
+                        type: "object",
+                        properties: { namespaces: { type: "array", items: { type: "string" } } },
+                    },
+                },
+            },
+        };
+        let seenSchema: unknown;
+        const inspectingConfig: GeneratorConfig = {
+            ...config,
+            validateInput: (spec) => {
+                seenSchema = responseSchema(spec);
+                return true;
+            },
+        };
+
+        const parser = await SwaggerParser.create(
+            writeTemp("spec5.json", JSON.stringify(deepRefSpec)),
+            inspectingConfig,
+        );
+
+        expect(seenSchema).toEqual({ $ref: "#/components/schemas/Policy/properties/namespaces" });
+        // …while the parser itself holds the inlined copy.
+        expect(responseSchema(parser.getSpec())).toEqual({
+            type: "array",
+            items: { type: "string" },
+        });
     });
 });
 
@@ -105,9 +175,7 @@ describe("SwaggerParser.create from URLs", () => {
 
     it("throws on an empty response body", async () => {
         stubFetch(async () => new Response("   ", { status: 200 }));
-        await expect(SwaggerParser.create("https://example.com/spec.json", config)).rejects.toThrow(
-            /Empty response/,
-        );
+        await expect(SwaggerParser.create("https://example.com/spec.json", config)).rejects.toThrow(/Empty response/);
     });
 
     it("reports a timeout when fetch aborts via AbortSignal.timeout", async () => {

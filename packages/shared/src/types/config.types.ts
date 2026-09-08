@@ -40,7 +40,11 @@ export interface GeneratorConfig {
     output: string;
     /** Distinguishes tokens/providers when several clients coexist in one app. */
     clientName?: string;
-    /** Custom acceptance check run on the parsed spec; returning false aborts generation. */
+    /**
+     * Custom acceptance check run on the parsed spec; returning false aborts
+     * generation. Receives the spec as authored — before deep-pointer `$ref`s
+     * are inlined (`core/inline-nested-refs.ts`).
+     */
     validateInput?: (spec: SwaggerSpec) => boolean;
     options: {
         /** How date/date-time formats are typed in generated models. */

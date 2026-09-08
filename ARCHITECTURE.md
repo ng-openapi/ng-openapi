@@ -11,12 +11,40 @@ Every generation run flows through the same stages:
    load ─────────► parse ─────────► normalize ─────────► generate ─────────► emit
    spec-loader     spec-format      normalize.ts          generators          ts-morph Project
    (fs / http)     (JSON / YAML)    → NormalizedSpec      (core + plugins)    formatText() + save
+                   $ref inlining
 ```
 
 - **Load** (`packages/shared/src/core/spec-loader.ts`) — raw content from a file
   or URL. Pure I/O; throws `SpecLoadError`.
 - **Parse** (`spec-format.ts`) — format detection + JSON/YAML parsing into a raw
   `SwaggerSpec`. Pure functions; throws `SpecParseError`.
+  `SwaggerParser.create` then runs `inline-nested-refs.ts` once: deep-pointer
+  `$ref`s (`#/components/schemas/X/properties/y`) are replaced by a copy of
+  their target — downstream a `$ref` becomes a type name taken from its last
+  segment, which for these matches no model. Only the schema roots
+  (`components/schemas`, `definitions`) are inlined; a deep pointer into any
+  other root is passed through and warned about, naming the dangling type it
+  will emit. Parse time is upstream of _both_ raw-spec readers and the IR, so
+  one pass fixes every consumer; top-level refs are left alone to keep
+  generating imported models; keys sitting next to a deep `$ref` are kept and
+  win over the target's — with a warning when one
+  overrides a _type-bearing_ key the target defines, the one case where that
+  choice changes the emitted type; an annotation-only override (`description`,
+  `example`) is the ordinary authoring shape and stays silent.
+  `validateInput` runs _before_ this pass, so the hook judges the document as
+  authored. A pointer it refuses — unresolvable, cyclic, aimed at a non-schema
+  value, not addressing a schema _position_ (`.../properties` is a plain object
+  but a map, not a schema), or past the expansion depth/node caps that bound
+  combinatorial fan-out — stays in place and reports through `onWarning`, once
+  per cause _and_ ref (plus, for sibling findings, per colliding key set, since
+  _which_ siblings collide belongs to the use site, not the ref). A refusal does
+  not stop the walk, so refs nested under a broken one are still reached, and
+  past ten messages per cause the remaining refs are named in a single tail —
+  the cap bounds line count, never which refs the user is told about. Payload
+  positions (`example`, `default`, `enum`, …) are not walked at all: their
+  contents are the user's data, and a `$ref`-shaped example is not a reference.
+  Anything the pass can still throw is re-wrapped as `SpecParseError` so hosts
+  keep branching on the typed errors.
 - **Normalize** (`normalize.ts`) — resolves _every_ Swagger 2.0 vs OpenAPI 3.x
   difference exactly once and precomputes what generators would otherwise
   re-derive (`pathParams`, `queryParams`, `hasBody`, `isMultipart`,
@@ -108,6 +136,13 @@ recognizes an error thrown by a plugin's own bundled copy of this module.
 `@ng-openapi/shared` is inlined into each published plugin, so the same class
 exists more than once at runtime and the prototype chain alone would not match.
 
+Problems the run survives go to the `onWarning` sink (an unresolvable `$ref`,
+two models whose file names collide — see `model-file-registry.ts`): output is
+still produced, so the user must be told which construct is wrong. Say what the
+consumer will actually see — generated files ship `@ts-nocheck`, so these
+degrade to a silently wrong type rather than a compile error, and a warning
+promising "will not compile" is false. Silent degradation is never acceptable.
+
 ### Plugin contract
 
 Plugins are classes constructed with a single `PluginGeneratorContext`
@@ -173,6 +208,8 @@ Project (see above).
 | A new output file kind for the core            | a generator under `packages/ng-openapi/src/lib/generators/`                                                                                                                                                                                                                                                                                                                                                                          |
 | An alternative client flavor                   | a plugin package implementing `PluginGeneratorContext`                                                                                                                                                                                                                                                                                                                                                                               |
 | A new user-facing failure mode                 | a typed error in `packages/shared/src/errors.ts` (or extend an existing one)                                                                                                                                                                                                                                                                                                                                                         |
+| A degradation the run survives                 | a message through the `onWarning` sink — never a silent fallback                                                                                                                                                                                                                                                                                                                                                                     |
+| A raw-spec fixup every consumer needs          | a parse-time pass in `packages/shared/src/core/`, run from `SwaggerParser.create` (see `inline-nested-refs.ts`)                                                                                                                                                                                                                                                                                                                      |
 | A string/name helper                           | `packages/shared/src/utils/` — and export it from the barrel only if consumers outside shared need it                                                                                                                                                                                                                                                                                                                                |
 | A rule about which generated names may coexist | `packages/shared/src/utils/functions/` — `argument-names.ts` (parameters, per-emitter profile), `method-names.ts` (methods vs. class members), `controller-groups.ts` (files, case-insensitive), `distinct-member-names.ts` (the shared assertion). The _rule_ lives here once; a generator may keep its own bookkeeping of names it has already handed out (`ModelFileRegistry`, `reserveInterfaceName`, `assertDistinctTypeNames`) |
 | Console output                                 | `cli.ts`. Nowhere else.                                                                                                                                                                                                                                                                                                                                                                                                              |
