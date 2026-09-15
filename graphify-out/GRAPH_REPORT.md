@@ -1,16 +1,16 @@
 # Graph Report - ng-openapi  (2026-09-15)
 
 ## Corpus Check
-- 268 files · ~115,123 words
+- 268 files · ~115,309 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1882 nodes · 3293 edges · 166 communities (121 shown, 45 thin omitted)
+- 1882 nodes · 3293 edges · 175 communities (130 shown, 45 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 38 edges (avg confidence: 0.71)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `1f8f1a6c`
+- Built from commit: `981a26a4`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -168,9 +168,18 @@
 - [[_COMMUNITY_inline-nested-refs.test.ts|inline-nested-refs.test.ts]]
 - [[_COMMUNITY_generation-result.test.ts|generation-result.test.ts]]
 - [[_COMMUNITY_peerDependenciesMeta|peerDependenciesMeta]]
+- [[_COMMUNITY_peerDependenciesMeta|peerDependenciesMeta]]
+- [[_COMMUNITY_Plugin Authoring|Plugin Authoring]]
+- [[_COMMUNITY_validation|validation.md]]
 - [[_COMMUNITY_`responseTypeMapping`|`responseTypeMapping`]]
+- [[_COMMUNITY_author|author]]
+- [[_COMMUNITY_exports|exports]]
+- [[_COMMUNITY_repository|repository]]
+- [[_COMMUNITY_namedInputs|namedInputs]]
+- [[_COMMUNITY_engines|engines]]
 - [[_COMMUNITY_ZodGenerator|ZodGenerator]]
-- [[_COMMUNITY_`responseTypeMapping`|`responseTypeMapping`]]
+- [[_COMMUNITY_publishConfig|publishConfig]]
+- [[_COMMUNITY_scripts|scripts]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `NormalizedOperation` - 64 edges
@@ -203,7 +212,7 @@
 - **NPM Release Pipeline** — _github_workflows_release_please_release_please_workflow, _github_workflows_publish_publish_workflow, _github_workflows_release_pr_prerelease_workflow [EXTRACTED 0.90]
 - **Monorepo Published Packages** — pkg_ng_openapi, pkg_http_resource, pkg_zod, pkg_shared [EXTRACTED 0.85]
 
-## Communities (166 total, 45 thin omitted)
+## Communities (175 total, 45 thin omitted)
 
 ### Community 0 - "Core Generation Pipeline"
 Cohesion: 0.09
@@ -218,8 +227,8 @@ Cohesion: 0.14
 Nodes (10): generateFromConfig(), FIXTURE, NoopPlugin, tempDirs, tmpRoot, REPRO_SPEC, FIXTURE, generateAndBuild() (+2 more)
 
 ### Community 3 - "Package Manifests & Exports"
-Cohesion: 0.05
-Nodes (43): author, email, name, url, bugs, url, description, engines (+35 more)
+Cohesion: 0.15
+Nodes (12): bugs, url, description, files, homepage, keywords, license, main (+4 more)
 
 ### Community 4 - "Zod Schema Generation"
 Cohesion: 0.17
@@ -302,8 +311,8 @@ Cohesion: 0.04
 Nodes (45): optional, optional, author, email, name, url, bugs, url (+37 more)
 
 ### Community 24 - "Date Transformation"
-Cohesion: 0.24
-Nodes (3): Notes, `output`, Usage
+Cohesion: 0.19
+Nodes (6): Notes, `output`, Usage, Example using Zod, Overview, Schema Validation
 
 ### Community 25 - "Plugins Changelog"
 Cohesion: 0.11
@@ -370,8 +379,8 @@ Cohesion: 0.40
 Nodes (5): optional, optional, peerDependenciesMeta, @angular/common, @angular/core
 
 ### Community 42 - "Angular Peer Deps"
-Cohesion: 0.09
-Nodes (19): Example, Notes, `serviceDecorator`, Usage, Available Plugins, `HttpResourcePlugin`, Notes, Usage (+11 more)
+Cohesion: 0.11
+Nodes (15): Example, Notes, `serviceDecorator`, Usage, Available Plugins, `HttpResourcePlugin`, Notes, Usage (+7 more)
 
 ### Community 43 - "Brand Identity & Logo"
 Cohesion: 0.67
@@ -386,8 +395,8 @@ Cohesion: 0.50
 Nodes (4): repository, directory, type, url
 
 ### Community 46 - "HttpResourceGenerator"
-Cohesion: 0.14
-Nodes (13): analytics, defaultBase, extends, namedInputs, default, sharedGlobals, neverConnectToCloud, plugins (+5 more)
+Cohesion: 0.18
+Nodes (10): analytics, defaultBase, extends, neverConnectToCloud, plugins, release, version, $schema (+2 more)
 
 ### Community 47 - "Author Metadata"
 Cohesion: 0.17
@@ -598,8 +607,8 @@ Cohesion: 0.40
 Nodes (5): Notes, Parameters, Return Value, Usage, `validateInput`
 
 ### Community 107 - "index.md"
-Cohesion: 0.29
-Nodes (4): `@ng-openapi/http-resource`, Changelog, `@ng-openapi/zod`, zod
+Cohesion: 0.33
+Nodes (3): `@ng-openapi/http-resource`, Changelog, `@ng-openapi/zod`
 
 ### Community 108 - "peerDependenciesMeta"
 Cohesion: 0.16
@@ -637,17 +646,53 @@ Nodes (4): `customizeMethodName`, Notes, Return a valid identifier, Usage
 Cohesion: 0.50
 Nodes (3): `generateServices`, Notes, Usage
 
+### Community 163 - "peerDependenciesMeta"
+Cohesion: 0.29
+Nodes (7): optional, peerDependenciesMeta, ng-openapi, ts-morph, zod, optional, optional
+
+### Community 164 - "Plugin Authoring"
+Cohesion: 0.40
+Nodes (5): Plugin Authoring, Rules a plugin must follow, Rules of engagement, The contract, What the context provides
+
+### Community 165 - "validation.md"
+Cohesion: 0.50
+Nodes (3): Resources, Usage, `validation`
+
 ### Community 166 - "`responseTypeMapping`"
 Cohesion: 0.23
 Nodes (6): BaseInterceptorGenerator, BASE_INTERCEPTOR_HEADER_COMMENT(), HTTP_RESOURCE_GENERATOR_HEADER_COMMENT(), SERVICE_GENERATOR_HEADER_COMMENT(), ZOD_PLUGIN_GENERATOR_HEADER_COMMENT(), defineConfig()
 
+### Community 167 - "author"
+Cohesion: 0.50
+Nodes (4): author, email, name, url
+
+### Community 168 - "exports"
+Cohesion: 0.50
+Nodes (4): exports, import, require, types
+
+### Community 169 - "repository"
+Cohesion: 0.50
+Nodes (4): repository, directory, type, url
+
+### Community 170 - "namedInputs"
+Cohesion: 0.67
+Nodes (3): namedInputs, default, sharedGlobals
+
+### Community 171 - "engines"
+Cohesion: 0.67
+Nodes (3): engines, node, npm
+
 ### Community 172 - "ZodGenerator"
 Cohesion: 0.67
-Nodes (3): Example using Zod, Overview, Schema Validation
+Nodes (3): funding, type, url
 
-### Community 176 - "`responseTypeMapping`"
-Cohesion: 0.50
-Nodes (3): `responseTypeMapping`, Schema, Usage
+### Community 173 - "publishConfig"
+Cohesion: 0.67
+Nodes (3): publishConfig, access, registry
+
+### Community 174 - "scripts"
+Cohesion: 0.67
+Nodes (3): scripts, build, prepublishOnly
 
 ## Knowledge Gaps
 - **870 isolated node(s):** `$schema`, `url`, `public_key`, `projectTitle`, `description` (+865 more)
@@ -657,12 +702,12 @@ Nodes (3): `responseTypeMapping`, Schema, Usage
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `GeneratorConfig` connect `guides.md` to `Core Generation Pipeline`, `inline-nested-refs.test.ts`, `Method Body Generation`, `index.ts`, `Config/Metadata Fragment`, `Documentation & Guides`, ``responseTypeMapping``, `custom-headers.md`, ``useSingleRequestParameter``, `generator.ts`, ``naming``, `author`, `peerDependenciesMeta`, `isUrl`, `HttpResourceMethodBodyGenerator`, `Plugins Changelog`?**
-  _High betweenness centrality (0.020) - this node is a cross-community bridge._
-- **Why does `SwaggerDefinition` connect `index.ts` to `inline-nested-refs.test.ts`, `Method Body Generation`, `custom-headers.md`, `Zod Schema Generation`, `HttpParamsBuilderGenerator`, `getTypeScriptType`, `peerDependenciesMeta`, `generator.ts`, `getTypeScriptType`, `Plugins Changelog`, `Publish Config`, `peerDependenciesMeta`?**
-  _High betweenness centrality (0.015) - this node is a cross-community bridge._
-- **Why does `generateFromConfig()` connect `Method Body Generation` to `swagger-parser.test.ts`, `custom-headers.md`, `Config/Metadata Fragment`, `Zod Schema Generation`, ``responseTypeMapping``, `Documentation & Guides`, ``useSingleRequestParameter``, ``naming``, `author`, `isUrl`, `guides.md`, `HttpResourceMethodBodyGenerator`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
+- **Why does `peerDependencies` connect `peerDependencies` to `Package Manifests & Exports`?**
+  _High betweenness centrality (0.028) - this node is a cross-community bridge._
+- **Why does `devDependencies` connect `Dev Dependencies` to `Angular Peer Deps`, `HttpResourceGenerator`, `Build Scripts`?**
+  _High betweenness centrality (0.028) - this node is a cross-community bridge._
+- **Why does `zod` connect `peerDependencies` to `Angular Peer Deps`?**
+  _High betweenness centrality (0.027) - this node is a cross-community bridge._
 - **What connects `$schema`, `url`, `public_key` to the rest of the system?**
   _872 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Core Generation Pipeline` be split into smaller, more focused modules?**

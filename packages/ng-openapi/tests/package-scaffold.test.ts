@@ -177,6 +177,24 @@ describe("PackageScaffoldGenerator", () => {
             expect(detected.warnings).toEqual([]);
         });
 
+        it("does not let a detected Angular the build config cannot handle through silently", () => {
+            // Angular 15 is within the core's peer range but predates the
+            // TypeScript 5 the emitted tsconfig needs; a source-linked
+            // placeholder version would otherwise yield ^0.0.0 everywhere
+            for (const detectedAngularVersion of ["15.2.9", "0.0.0-PLACEHOLDER"]) {
+                const { packageJson, warnings } = run({ package: { name: "x" }, detectedAngularVersion });
+                expect(packageJson.peerDependencies["@angular/core"], detectedAngularVersion).toBe(
+                    `^${DEFAULT_ANGULAR_MAJOR}.0.0`,
+                );
+                expect(packageJson.devDependencies["ng-packagr"], detectedAngularVersion).toBe(
+                    `^${DEFAULT_ANGULAR_MAJOR}.0.0`,
+                );
+                expect(warnings, detectedAngularVersion).toEqual([
+                    expect.stringContaining(`@angular/core ${detectedAngularVersion} found in this workspace is older`),
+                ]);
+            }
+        });
+
         it("falls back to the generator's own supported major with a warning", () => {
             const { packageJson, warnings } = run({ package: { name: "x" } });
             expect(packageJson.peerDependencies["@angular/core"]).toBe(`^${DEFAULT_ANGULAR_MAJOR}.0.0`);

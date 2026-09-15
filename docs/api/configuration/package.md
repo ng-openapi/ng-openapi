@@ -57,7 +57,7 @@ All five are regenerated on every run, exactly like the rest of the output. Cust
 
 ### Angular version
 
-The `@angular/*` peer range and the versions of `ng-packagr`, `@angular/compiler-cli` & co. in `devDependencies` all follow one Angular major. It is taken from `angularVersion` when set; otherwise from the `@angular/core` installed in the workspace ng-openapi runs in (`21.2.13` → `^21.0.0`); otherwise ng-openapi assumes the Angular major it is itself built against and warns, since that is a guess. Set `angularVersion` explicitly when the generator runs somewhere other than the Angular workspace that will consume the package — a CI job without Angular installed, for instance.
+The `@angular/*` peer range and the versions of `ng-packagr`, `@angular/compiler-cli` & co. in `devDependencies` all follow one Angular major. It is taken from `angularVersion` when set; otherwise from the `@angular/core` installed in the workspace ng-openapi runs in (`21.2.13` → `^21.0.0`), provided it is Angular 16 or later — the oldest the generated build config supports; otherwise ng-openapi assumes the Angular major it is itself built against and warns, since that is a guess. Set `angularVersion` explicitly when the generator runs somewhere other than the Angular workspace that will consume the package — a CI job without Angular installed, for instance.
 
 ### `packageJson` overrides
 

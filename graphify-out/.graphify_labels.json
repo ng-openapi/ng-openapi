@@ -162,7 +162,16 @@
   "160": "inline-nested-refs.test.ts",
   "161": "generation-result.test.ts",
   "162": "peerDependenciesMeta",
+  "163": "peerDependenciesMeta",
+  "164": "Plugin Authoring",
+  "165": "validation.md",
   "166": "`responseTypeMapping`",
+  "167": "author",
+  "168": "exports",
+  "169": "repository",
+  "170": "namedInputs",
+  "171": "engines",
   "172": "ZodGenerator",
-  "176": "`responseTypeMapping`"
+  "173": "publishConfig",
+  "174": "scripts"
 }

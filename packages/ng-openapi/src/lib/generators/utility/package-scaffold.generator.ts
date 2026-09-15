@@ -18,6 +18,7 @@ import {
     DEV_DEPENDENCY_RANGES,
     KNOWN_PEER_RANGES,
     leadingMajor,
+    MIN_ANGULAR_MAJOR,
     PACKAGE_JSON_MARKER,
     TSLIB_RANGE,
 } from "./package-scaffold.versions";
@@ -169,12 +170,21 @@ export class PackageScaffoldGenerator {
             return { peerRange: pkg.angularVersion, major };
         }
         const detectedMajor = this.detectedAngularVersion ? leadingMajor(this.detectedAngularVersion) : undefined;
-        if (detectedMajor !== undefined) {
+        if (detectedMajor !== undefined && detectedMajor >= MIN_ANGULAR_MAJOR) {
             return { peerRange: `^${detectedMajor}.0.0`, major: detectedMajor };
         }
+        // The core supports Angular 15, but the emitted toolchain config does
+        // not (see MIN_ANGULAR_MAJOR); a source-linked "0.0.0-PLACEHOLDER"
+        // lands here too. Same soft-guard philosophy as the @Service() check:
+        // the workspace running the generator is not necessarily the one
+        // that builds the package, so guess, but say so.
+        const reason =
+            detectedMajor === undefined
+                ? "no @angular/core found in this workspace to derive the Angular version from"
+                : `the @angular/core ${this.detectedAngularVersion} found in this workspace is older than ` +
+                  `Angular ${MIN_ANGULAR_MAJOR}, the oldest the generated build config supports`;
         this.onWarning(
-            `package: no @angular/core found in this workspace to derive the Angular version from — ` +
-                `assuming Angular ${DEFAULT_ANGULAR_MAJOR} for package.json. ` +
+            `package: ${reason} — assuming Angular ${DEFAULT_ANGULAR_MAJOR} for package.json. ` +
                 `Set \`package.angularVersion\` (e.g. "^${DEFAULT_ANGULAR_MAJOR}.0.0") to pin it.`,
         );
         return { peerRange: `^${DEFAULT_ANGULAR_MAJOR}.0.0`, major: DEFAULT_ANGULAR_MAJOR };
