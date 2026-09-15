@@ -21,12 +21,13 @@ import {
 } from "./package-scaffold.versions";
 
 /**
- * Library tsconfig for the ng-packagr build. Deliberately minimal — the
- * generated sources ship `@ts-nocheck`, so strictness flags would assert
- * nothing — and verified against a real ng-packagr build by the smoke test.
- * `module`/`moduleResolution` are set explicitly rather than inherited from
- * ng-packagr's defaults so the file is a complete, readable description of
- * how the package compiles.
+ * Library tsconfig for the ng-packagr build, verified by the smoke test.
+ * Passed with `-c`, this file *replaces* ng-packagr's built-in tsconfig, so
+ * every option here is load-bearing: drop `module`/`moduleResolution` and
+ * TypeScript's own defaults apply, not ng-packagr's. (ng-packagr still forces
+ * `target`, `declaration`, `sourceMap`, `inlineSources` and the flat-module
+ * settings on top.) `strict` is for anything a user adds next to the
+ * generated sources; those ship `@ts-nocheck` themselves.
  */
 const LIBRARY_TSCONFIG = {
     compilerOptions: {
@@ -94,24 +95,25 @@ export class PackageScaffoldGenerator {
         const version = this.resolveVersion(pkg);
         const imported = listImportedPackageNames(this.project);
 
-        const packageJson = mergePackageJson(
-            {
-                name: pkg.name,
-                version,
-                ...(pkg.repository !== undefined ? { repository: pkg.repository } : {}),
-                ...(pkg.publishRegistry !== undefined ? { publishConfig: { registry: pkg.publishRegistry } } : {}),
-                sideEffects: false,
-                scripts: {
-                    // -c is not optional: without it ng-packagr compiles with its
-                    // own built-in tsconfig and the emitted one is never read
-                    build: "ng-packagr -p ng-package.json -c tsconfig.json",
-                },
-                peerDependencies: this.buildPeerDependencies(imported, angularPeerRange),
-                dependencies: { tslib: TSLIB_RANGE },
-                devDependencies: this.buildDevDependencies(imported, angularMajor),
+        const description = collapseWhitespace(this.specInfo?.description);
+        const generated: Record<string, unknown> = {
+            name: pkg.name,
+            version,
+            ...(description ? { description } : {}),
+            ...(pkg.repository !== undefined ? { repository: pkg.repository } : {}),
+            ...(pkg.publishRegistry !== undefined ? { publishConfig: { registry: pkg.publishRegistry } } : {}),
+            sideEffects: false,
+            scripts: {
+                // -c is not optional: without it ng-packagr compiles with its
+                // own built-in tsconfig and the emitted one is never read
+                build: "ng-packagr -p ng-package.json -c tsconfig.json",
             },
-            pkg.packageJson,
-        );
+            peerDependencies: this.buildPeerDependencies(imported, angularPeerRange),
+            dependencies: { tslib: TSLIB_RANGE },
+            devDependencies: this.buildDevDependencies(imported, angularMajor),
+        };
+        const packageJson = mergePackageJson(generated, pkg.packageJson);
+        this.warnOnReplacedBuildKeys(generated, packageJson);
 
         emitJsonFile(this.project, path.join(outputRoot, "package.json"), packageJson);
         emitJsonFile(this.project, path.join(outputRoot, "ng-package.json"), {
@@ -120,12 +122,34 @@ export class PackageScaffoldGenerator {
             lib: { entryFile: "index.ts" },
         });
         emitJsonFile(this.project, path.join(outputRoot, "tsconfig.json"), LIBRARY_TSCONFIG);
-        // The provider function exists only when the client runtime was
-        // generated (services or a plugin); a types-only package must not
-        // document an import that is not there. The Project is the manifest.
+        // README documents the provider only if providers.ts was actually
+        // generated — the Project is the manifest
         const hasProviders = this.project.getSourceFile(path.join(outputRoot, "providers.ts")) !== undefined;
         emitTextFile(this.project, path.join(outputRoot, "README.md"), this.buildReadme(pkg, hasProviders));
         emitTextFile(this.project, path.join(outputRoot, ".gitignore"), "node_modules/\ndist/\n");
+    }
+
+    /**
+     * A `packageJson` override may replace these, but the README's build and
+     * publish steps assume them: without the ng-packagr script `npm run build`
+     * does something else, and without tslib the `importHelpers` output fails
+     * at runtime in the consumer. Honored, since the user asked — but said.
+     */
+    private warnOnReplacedBuildKeys(generated: Record<string, unknown>, merged: Record<string, unknown>): void {
+        const buildKeys: Array<[section: string, key: string, consequence: string]> = [
+            ["scripts", "build", "`npm run build` will no longer run ng-packagr"],
+            ["dependencies", "tslib", "the compiled output imports tslib and will fail without it"],
+        ];
+        for (const [section, key, consequence] of buildKeys) {
+            const before = (generated[section] as Record<string, unknown>)[key];
+            const after = (merged[section] as Record<string, unknown>)[key];
+            if (after !== before) {
+                this.onWarning(
+                    `package: packageJson.${section}.${key} replaces the generated value ` +
+                        `${JSON.stringify(before)} with ${JSON.stringify(after)} — ${consequence}.`,
+                );
+            }
+        }
     }
 
     /**
@@ -313,4 +337,10 @@ function mergePackageJson(
         merged[key] = isPlainObject(existing) && isPlainObject(value) ? mergePackageJson(existing, value) : value;
     }
     return merged;
+}
+
+/** One line of prose from possibly multi-line spec text; undefined when there is nothing left. */
+function collapseWhitespace(text: string | undefined): string | undefined {
+    const collapsed = text?.replace(/\s+/g, " ").trim();
+    return collapsed ? collapsed : undefined;
 }

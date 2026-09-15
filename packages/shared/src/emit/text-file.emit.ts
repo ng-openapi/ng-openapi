@@ -9,11 +9,14 @@ import { Project, ScriptKind } from "ts-morph";
  *
  * ts-morph keeps a file's text verbatim as long as nothing edits it, so the
  * only rule is that nothing may: never call `formatText()`,
- * `fixMissingImports()` or the diagnostics API on a file created here. The
- * script kinds below are what make that safe — `JSON` is a real TypeScript
- * script kind, and `Deferred` marks a file the language service never parses,
- * so a README containing `export` is not mistaken for a module by the
- * auto-import machinery the .ts generators rely on.
+ * `fixMissingImports()` or the diagnostics API on a file created here — the
+ * first two rewrite it, the last crashes the checker. The script kinds are
+ * what make the rest safe: `JSON` is a real TypeScript script kind, and
+ * `Deferred` keeps the file out of the compiler program, so the checker,
+ * `fixMissingImports()` and auto-import never see a README. Note that the
+ * parser still runs on creation — a Deferred README is a (syntactically
+ * broken) AST, not opaque text, which is why anything scanning the Project's
+ * imports must skip non-TS script kinds (see listImportedPackageNames).
  */
 
 /** Registers `value` as a two-space-indented JSON file. */
@@ -24,7 +27,7 @@ export function emitJsonFile(project: Project, filePath: string, value: unknown)
     });
 }
 
-/** Registers `text` verbatim as an opaque, non-TypeScript file. */
+/** Registers `text` verbatim as a non-TypeScript file. */
 export function emitTextFile(project: Project, filePath: string, text: string): void {
     project.createSourceFile(filePath, text, { overwrite: true, scriptKind: ScriptKind.Deferred });
 }

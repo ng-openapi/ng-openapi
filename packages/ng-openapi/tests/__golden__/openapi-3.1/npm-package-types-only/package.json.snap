@@ -1,0 +1,21 @@
+{
+  "name": "@acme/pets-api-models",
+  "version": "1.0.0",
+  "sideEffects": false,
+  "scripts": {
+    "build": "ng-packagr -p ng-package.json -c tsconfig.json"
+  },
+  "peerDependencies": {
+    "@angular/common": "^21.0.0"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/common": "^21.0.0",
+    "@angular/compiler": "^21.0.0",
+    "@angular/compiler-cli": "^21.0.0",
+    "@angular/core": "^21.0.0",
+    "ng-packagr": "^21.0.0"
+  }
+}

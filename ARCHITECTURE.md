@@ -167,8 +167,10 @@ The same rule covers files that are not TypeScript. The npm package scaffold
 README.md, .gitignore) registers them through `emitJsonFile`/`emitTextFile`
 (`packages/shared/src/emit/text-file.emit.ts`) so they ride the single
 `project.save()` and appear in `filesWritten`; ts-morph keeps their text
-verbatim as long as nothing formats or type-checks them, and the `Deferred`
-script kind keeps the language service from parsing a README as a module.
+verbatim as long as nothing formats them, and the `Deferred` script kind
+keeps a README out of the compiler program so auto-import and the checker
+never see it (the parser still runs, which is why import scans skip non-TS
+script kinds).
 The scaffold runs after every other generator because it reads
 package.json's peer dependencies off the manifest too
 (`listImportedPackageNames()`): a plugin's runtime imports become peer

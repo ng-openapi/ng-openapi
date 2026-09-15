@@ -83,6 +83,67 @@ describe("generateFromConfig result + reporter", () => {
         expect(phases).toEqual(["processing-spec", "types-generated", "services-generated"]);
     });
 
+    it("runs the package scaffold after plugins and lists its files in filesWritten", async () => {
+        const output = mkdtempSync(join(tmpRoot, "package-phase-"));
+        tempDirs.push(output);
+
+        // A plugin that emits nothing: enough to prove the phase ordering the
+        // scaffold depends on (peers are read from what plugins emitted)
+        class NoopPlugin {
+            async generate(): Promise<void> {
+                /* nothing to emit */
+            }
+        }
+        const phases: GenerationPhase[] = [];
+        const result = await generateFromConfig(
+            {
+                ...buildConfig(output),
+                plugins: [NoopPlugin],
+                package: { name: "@acme/pets-api-client", angularVersion: "^21.0.0" },
+            },
+            { onPhase: (phase) => phases.push(phase) },
+        );
+
+        expect(phases).toEqual([
+            "processing-spec",
+            "types-generated",
+            "services-generated",
+            "plugins-generated",
+            "package-generated",
+        ]);
+        const written = result.filesWritten.map((file) => file.replace(/\\/g, "/"));
+        for (const scaffold of ["package.json", "ng-package.json", "tsconfig.json", "README.md", ".gitignore"]) {
+            expect(written, scaffold).toContain(`${output.replace(/\\/g, "/")}/${scaffold}`);
+        }
+        expect(result.warnings).toEqual([]);
+    });
+
+    it("surfaces a package scaffold warning through the reporter and the result", async () => {
+        const output = mkdtempSync(join(tmpRoot, "package-warn-"));
+        tempDirs.push(output);
+        const input = join(output, "non-semver-version.json");
+        const { writeFileSync } = await import("node:fs");
+        writeFileSync(
+            input,
+            JSON.stringify({
+                openapi: "3.0.0",
+                info: { title: "versioned", version: "v1" },
+                paths: {},
+                components: { schemas: { Pet: { type: "object" } } },
+            }),
+        );
+
+        const reported: string[] = [];
+        const result = await generateFromConfig(
+            { ...buildConfig(output), input, package: { name: "pets", angularVersion: "^21.0.0" } },
+            { onWarning: (message) => reported.push(message) },
+        );
+
+        const versionWarning = expect.stringContaining('version "v1" taken from the spec\'s info.version');
+        expect(reported).toContainEqual(versionWarning);
+        expect(result.warnings).toEqual(reported);
+    });
+
     it("delivers warnings to the reporter and the result", async () => {
         const output = mkdtempSync(join(tmpRoot, "warn-"));
         tempDirs.push(output);

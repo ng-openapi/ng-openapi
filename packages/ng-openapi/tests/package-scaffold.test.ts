@@ -10,6 +10,7 @@ const OUT = "/out";
 interface PackageJsonShape {
     name: string;
     version: string;
+    description?: string;
     repository?: unknown;
     publishConfig?: Record<string, string>;
     sideEffects: boolean;
@@ -237,26 +238,43 @@ describe("PackageScaffoldGenerator", () => {
             expect(packageJson.publishConfig).toEqual({ access: "public" });
         });
 
-        it("replaces a class instance wholesale instead of flattening it to {}", () => {
-            // js-yaml and hand-written configs can both hand over a Date; a
-            // loose plain-object check would merge into it and emit {}
-            const stamp = new Date("2026-09-15T00:00:00Z");
-            const { packageJson } = run({
-                package: { name: "x", angularVersion: "^21.0.0", packageJson: { scripts: stamp } },
-            });
-            expect(packageJson.scripts).toBe("2026-09-15T00:00:00.000Z");
-        });
-
         it("ignores undefined overrides instead of letting them delete a key", () => {
             const { packageJson } = run({
                 package: {
                     name: "x",
                     angularVersion: "^21.0.0",
-                    packageJson: { version: undefined, sideEffects: undefined },
+                    packageJson: { license: undefined, sideEffects: undefined },
                 },
             });
-            expect(packageJson.version).toBe("0.0.0");
+            expect(packageJson.license).toBeUndefined();
             expect(packageJson.sideEffects).toBe(false);
+        });
+
+        it("honors an override of the build script or tslib but says what breaks", () => {
+            const { packageJson, warnings } = run({
+                package: {
+                    name: "x",
+                    angularVersion: "^21.0.0",
+                    packageJson: { scripts: { build: "tsc" }, dependencies: { tslib: "^1.0.0" } },
+                },
+            });
+            expect(packageJson.scripts["build"]).toBe("tsc");
+            expect(packageJson.dependencies["tslib"]).toBe("^1.0.0");
+            expect(warnings).toEqual([
+                expect.stringContaining("packageJson.scripts.build replaces the generated value"),
+                expect.stringContaining("packageJson.dependencies.tslib replaces the generated value"),
+            ]);
+        });
+
+        it("writes the spec's description as one line, only when there is one", () => {
+            const withDescription = run({
+                package: { name: "x", angularVersion: "^21.0.0" },
+                specInfo: { description: "Orders,\n  returns and\trefunds.  " },
+            }).packageJson;
+            expect(withDescription.description).toBe("Orders, returns and refunds.");
+            expect(run({ package: { name: "x", angularVersion: "^21.0.0" } }).packageJson).not.toHaveProperty(
+                "description",
+            );
         });
     });
 

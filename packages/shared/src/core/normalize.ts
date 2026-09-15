@@ -37,9 +37,9 @@ export function normalizeSpec(spec: SwaggerSpec, onWarning?: (message: string) =
               : null,
         info: spec.info
             ? {
-                  title: infoText(spec.info.title),
-                  version: infoText(spec.info.version),
-                  description: infoText(spec.info.description),
+                  title: infoText(spec.info.title, "title", onWarning),
+                  version: infoText(spec.info.version, "version", onWarning),
+                  description: infoText(spec.info.description, "description", onWarning),
               }
             : undefined,
         definitions,
@@ -51,15 +51,27 @@ export function normalizeSpec(spec: SwaggerSpec, onWarning?: (message: string) =
 }
 
 /**
- * `info` fields are typed as strings but arrive as whatever the author wrote:
- * an unquoted YAML `version: 1.0` parses as the number 1, and forwarding that
- * would put an unquoted number where consumers (package.json) need a string.
+ * `info` fields are typed as strings but arrive as whatever the author wrote.
+ * An unquoted YAML `version: 1.0` parses as the number 1 and is stringified
+ * (as "1" — the original spelling is gone by then); anything else that is not
+ * text is dropped with a warning rather than forwarded as "[object Object]"
+ * into a README or package.json.
  */
-function infoText(value: unknown): string | undefined {
+function infoText(value: unknown, field: string, onWarning?: (message: string) => void): string | undefined {
     if (value === undefined || value === null) {
         return undefined;
     }
-    return typeof value === "string" ? value : String(value);
+    if (typeof value === "string") {
+        return value;
+    }
+    if (typeof value === "number" || typeof value === "boolean") {
+        return String(value);
+    }
+    onWarning?.(
+        `info.${field} is not text (got ${Array.isArray(value) ? "an array" : `a ${typeof value}`}); ` +
+            `generated files that would show it (README, package.json) omit it.`,
+    );
+    return undefined;
 }
 
 /**

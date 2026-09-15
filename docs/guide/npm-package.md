@@ -13,7 +13,7 @@ Setting the [`package`](../api/configuration/package.md) option adds the files a
 
 ```
 petstore-client/
-├── package.json       ← name, version, peer/dev dependencies, build script
+├── package.json       ← name, version, description, dependencies, build script
 ├── ng-package.json    ← ng-packagr project file
 ├── tsconfig.json      ← library compiler settings
 ├── README.md          ← build, publish and usage instructions for this client
@@ -42,7 +42,9 @@ export default defineConfig({
     },
     package: {
         name: "@acme/petstore-client",
-        version: process.env["PKG_VERSION"], // falls back to the spec's info.version
+        // Falls back to the spec's info.version when unset; must be bare
+        // MAJOR.MINOR.PATCH, so a "v1.2.3" tag needs its prefix stripped
+        version: process.env["PKG_VERSION"]?.replace(/^v/, ""),
         repository: "https://github.com/acme/petstore-client",
         packageJson: {
             license: "MIT",
@@ -101,8 +103,11 @@ A typical pipeline regenerates the client from the current spec, builds it and p
 
 ```yaml
 - run: npm ci
-- run: PKG_VERSION=${{ github.ref_name }} npx ng-openapi -c openapi.config.ts
-- run: npm ci && npm run build
+- run: npx ng-openapi -c openapi.config.ts
+  env:
+      PKG_VERSION: ${{ github.ref_name }} # "v1.2.3" on a tag; the config strips the "v"
+# npm install, not npm ci: the generated directory has no lockfile
+- run: npm install && npm run build
   working-directory: petstore-client
 - run: npm publish
   working-directory: petstore-client/dist
@@ -118,4 +123,4 @@ Two things to keep in mind:
 ## What is not generated
 
 - **A `LICENSE` file.** Set `packageJson.license` for the SPDX identifier npm reads; drop a `LICENSE` file into the output directory yourself if you want the text shipped — ng-packagr copies it into `dist/`.
-- **`typescript` in `devDependencies`.** Its compatible range differs per Angular major; npm installs the one `@angular/compiler-cli` declares as a peer.
+- **`typescript` in `devDependencies`.** Its compatible range differs per Angular major; npm 7+ and pnpm install the one `@angular/compiler-cli` declares as a peer. Yarn does not — add it through `packageJson.devDependencies` there.

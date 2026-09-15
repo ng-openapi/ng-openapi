@@ -51,12 +51,16 @@ export interface PackageConfig {
      */
     angularVersion?: string;
     /**
-     * Deep-merged onto the generated package.json — nested objects merge,
-     * everything else is replaced, and your values win. `name` is not
-     * accepted here (set `package.name`); a derived `peerDependencies` entry
-     * can have its range overridden but cannot be removed.
+     * Deep-merged onto the generated package.json — nested objects merge
+     * key by key, everything else is replaced, and your values win. `name`
+     * and `version` are not accepted here (set `package.name` /
+     * `package.version`). Dependency maps and `scripts` must be objects of
+     * strings, so a derived `peerDependencies` entry can have its range
+     * changed but not be removed; replacing the generated `scripts.build` or
+     * `dependencies.tslib` is honored with a warning, since either breaks the
+     * documented build.
      */
-    packageJson?: Record<string, unknown>;
+    packageJson?: Record<string, unknown> & { name?: never; version?: never };
 }
 
 /**

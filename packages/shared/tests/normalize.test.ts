@@ -76,6 +76,19 @@ describe("normalizeSpec", () => {
         expect(info).toEqual({ title: "t", version: "2", description: undefined });
     });
 
+    it("drops info fields that are not text, and says so", () => {
+        const warnings: string[] = [];
+        const info = normalizeSpec(
+            { openapi: "3.0.0", info: { title: { en: "Pets" }, version: "1", description: ["a"] }, paths: {} } as never,
+            (message) => warnings.push(message),
+        ).info;
+        expect(info).toEqual({ title: undefined, version: "1", description: undefined });
+        expect(warnings).toEqual([
+            expect.stringContaining("info.title is not text (got a object)"),
+            expect.stringContaining("info.description is not text (got an array)"),
+        ]);
+    });
+
     it("unifies definitions across spec versions", () => {
         expect(Object.keys(normalized.definitions)).toEqual(["UploadForm"]);
         const v2 = normalizeSpec({ swagger: "2.0", definitions: { Pet: { type: "object" } }, paths: {} } as never);

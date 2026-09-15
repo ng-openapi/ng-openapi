@@ -209,13 +209,58 @@ describe("validateGeneratorConfig", () => {
             expect(withPackage({ name: "x", angularVersion: "21" })).toEqual([]);
         });
 
-        it("rejects packageJson that is not an object or that overrides name", () => {
+        it("rejects packageJson that is not an object or that overrides name or version", () => {
             expect(withPackage({ name: "x", packageJson: [] })).toContainEqual(
                 expect.stringContaining("`package.packageJson` must be an object"),
             );
             expect(withPackage({ name: "x", packageJson: { name: "y" } })).toContainEqual(
                 expect.stringContaining("`package.packageJson.name` is not allowed"),
             );
+            expect(withPackage({ name: "x", packageJson: { version: "1.0" } })).toContainEqual(
+                expect.stringContaining("`package.packageJson.version` is not allowed"),
+            );
+        });
+
+        it("requires dependency maps and scripts in packageJson to be objects of non-empty strings", () => {
+            // Replacing a map wholesale is how a derived peer could be dropped
+            for (const bad of [null, [], "rxjs"]) {
+                expect(
+                    withPackage({ name: "x", packageJson: { peerDependencies: bad } }),
+                    JSON.stringify(bad),
+                ).toContainEqual(
+                    expect.stringContaining(
+                        "`package.packageJson.peerDependencies` must be an object of name → string",
+                    ),
+                );
+            }
+            expect(withPackage({ name: "x", packageJson: { peerDependencies: { rxjs: null } } })).toContainEqual(
+                expect.stringContaining('`package.packageJson.peerDependencies["rxjs"]` must be a non-empty string'),
+            );
+            expect(withPackage({ name: "x", packageJson: { scripts: { build: "" } } })).toContainEqual(
+                expect.stringContaining('`package.packageJson.scripts["build"]` must be a non-empty string'),
+            );
+            expect(withPackage({ name: "x", packageJson: { dependencies: { tslib: "^2.0.0" } } })).toEqual([]);
+        });
+
+        it("rejects packageJson values JSON.stringify would drop, mangle or choke on", () => {
+            expect(withPackage({ name: "x", packageJson: { funding: () => "x" } })).toContainEqual(
+                expect.stringContaining("`package.packageJson.funding` must be a JSON value"),
+            );
+            expect(withPackage({ name: "x", packageJson: { stamp: new Date() } })).toContainEqual(
+                expect.stringContaining("`package.packageJson.stamp` must be a JSON value"),
+            );
+            expect(withPackage({ name: "x", packageJson: { nested: { list: [1, Number.NaN] } } })).toContainEqual(
+                expect.stringContaining("`package.packageJson.nested.list[1]` must be a finite number"),
+            );
+            expect(
+                withPackage({ name: "x", packageJson: JSON.parse('{"__proto__": {"polluted": true}}') }),
+            ).toContainEqual(expect.stringContaining('must not contain a "__proto__" key'));
+            expect(
+                withPackage({
+                    name: "x",
+                    packageJson: { keywords: ["api", "angular"], private: false, deprecated: null, tags: { a: 1 } },
+                }),
+            ).toEqual([]);
         });
     });
 });

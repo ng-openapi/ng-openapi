@@ -41,13 +41,13 @@ export default defineConfig({
 
 ## Generated files
 
-| File              | Content                                                                                                                                          |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `package.json`    | name, version, `peerDependencies`, the ng-packagr toolchain as `devDependencies`, `scripts.build`, `sideEffects: false`, plus your `packageJson` |
-| `ng-package.json` | ng-packagr project file; its entry point is the generated root `index.ts`                                                                        |
-| `tsconfig.json`   | Library compiler settings, including `compilationMode: "partial"` — the mode Angular requires for libraries published to npm                     |
-| `README.md`       | Build, publish and usage instructions for this client, naming its `provide<ClientName>Client()` function                                         |
-| `.gitignore`      | `node_modules/` and `dist/`                                                                                                                      |
+| File              | Content                                                                                                                                                                                                                                                                                                 |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `package.json`    | name, version, description (from the spec's `info`), `peerDependencies`, `dependencies.tslib` (required by the Angular Package Format), the ng-packagr toolchain as `devDependencies`, `scripts.build`, `sideEffects: false`, `repository` and `publishConfig` when configured, plus your `packageJson` |
+| `ng-package.json` | ng-packagr project file; its entry point is the generated root `index.ts`                                                                                                                                                                                                                               |
+| `tsconfig.json`   | Library compiler settings, including `compilationMode: "partial"` — the mode Angular requires for libraries published to npm                                                                                                                                                                            |
+| `README.md`       | Build, publish and usage instructions for this client, naming its `provide<ClientName>Client()` function when services or a plugin were generated                                                                                                                                                       |
+| `.gitignore`      | `node_modules/` and `dist/`                                                                                                                                                                                                                                                                             |
 
 All five are regenerated on every run, exactly like the rest of the output. Customize them through this option — an edit to a generated file is overwritten by the next run.
 
@@ -76,14 +76,16 @@ package: {
 },
 ```
 
-Two limits keep the generated file consistent with the generated code:
+A few rules keep the generated file consistent with the generated code:
 
-- `name` is rejected here — set `package.name`.
-- A derived peer dependency's range can be changed, but the entry cannot be removed while the generated code still imports the package.
+- `name` and `version` are rejected here — set `package.name` / `package.version`.
+- `dependencies`, `devDependencies`, `peerDependencies`, `optionalDependencies` and `scripts` must be objects of non-empty strings. A derived peer dependency's range can be changed, but the entry cannot be removed while the generated code still imports the package.
+- Replacing the generated `scripts.build` or `dependencies.tslib` is honored, with a warning: the first means `npm run build` no longer runs ng-packagr, the second breaks the compiled output at runtime.
+- Values must be JSON: functions, symbols, class instances, `NaN` and `__proto__` keys are rejected rather than silently dropped or mangled by serialization.
 
 ## Notes
 
 - `version` in a CI pipeline usually comes from outside the spec: `version: process.env["PKG_VERSION"]` in the config file works, since the config is plain TypeScript.
 - A spec whose `info.version` is not a semver version (`"1.0"`, `"v2"`) still generates, with a warning: npm would refuse to publish that version, so set `package.version`.
-- `typescript` is deliberately not pinned in `devDependencies`; npm installs the version `@angular/compiler-cli` declares as its peer, which is the right one for the chosen Angular major.
+- `typescript` is deliberately not pinned in `devDependencies`; npm 7+ and pnpm install the version `@angular/compiler-cli` declares as its peer, which is the right one for the chosen Angular major. Yarn does not install peers — add `typescript` through `packageJson.devDependencies` there.
 - The generated `build` script passes the emitted `tsconfig.json` explicitly (`-c tsconfig.json`). Without `-c`, ng-packagr compiles with its own built-in configuration and ignores the file.

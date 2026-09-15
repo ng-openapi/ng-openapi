@@ -48,21 +48,22 @@ export function listGeneratedBarrelDirs(project: Project, rootPath: string): str
 
 /**
  * Package names the generated code imports — every bare (non-relative)
- * module specifier of every TypeScript file in the Project, reduced to its
- * package root (`@angular/common/http` → `@angular/common`, `rxjs/operators`
- * → `rxjs`). This is the peer-dependency set a generated npm package must
- * declare, read from the code itself rather than from the config: a plugin
- * that was configured but emitted nothing adds no dependency, and a plugin
- * the core has never heard of still gets its imports listed. Sorted for
- * deterministic output.
+ * static `import`/`export … from` specifier of every TypeScript file in the
+ * Project, reduced to its package root (`@angular/common/http` →
+ * `@angular/common`, `rxjs/operators` → `rxjs`). Dynamic `import()` is not
+ * scanned; generated code never uses it. This is the peer-dependency set a
+ * generated npm package must declare, read from the code itself rather than
+ * from the config: a plugin that was configured but emitted nothing adds no
+ * dependency, and a plugin the core has never heard of still gets its
+ * imports listed. Sorted for deterministic output.
  */
 export function listImportedPackageNames(project: Project): string[] {
     const names = new Set<string>();
 
     for (const sourceFile of project.getSourceFiles()) {
-        // Files registered with emitJsonFile/emitTextFile are not TypeScript;
-        // the language service never parses them, and asking for their
-        // declarations would.
+        // Files registered with emitJsonFile/emitTextFile are still parsed by
+        // ts-morph, so a README containing the word `import` would otherwise
+        // contribute a phantom peer — skip everything that is not real TS
         if (sourceFile.getScriptKind() !== ScriptKind.TS) {
             continue;
         }

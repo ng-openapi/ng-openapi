@@ -1,4 +1,11 @@
-import { ConfigValidationError, GeneratorConfig, isSemver, isUrl, PackageConfig } from "@ng-openapi/shared";
+import {
+    ConfigValidationError,
+    GeneratorConfig,
+    isPlainObject,
+    isSemver,
+    isUrl,
+    PackageConfig,
+} from "@ng-openapi/shared";
 
 // Re-exported for hosts that import it from here; the class itself lives in
 // shared/errors.ts so it joins the branded NgOpenApiError hierarchy.
@@ -186,7 +193,8 @@ export function validateGeneratorConfig(config: unknown): asserts config is Gene
     }
 }
 
-// npm's own rule for new package names: lowercase, URL-safe, optionally scoped.
+// Approximates npm's rule for new package names (lowercase, URL-safe,
+// optionally scoped); the 214-character limit is not checked.
 const NPM_PACKAGE_NAME_PATTERN = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
 // A range whose leading major can be read: "^20.0.0", "~21.1", ">=19 <22", "21"
 const ANGULAR_RANGE_PATTERN = /^(\^|~|>=)?\d+/;
@@ -224,10 +232,81 @@ function validatePackageConfig(pkg: UnknownShape<PackageConfig>, issues: string[
         );
     }
     if (pkg.packageJson !== undefined) {
-        if (typeof pkg.packageJson !== "object" || pkg.packageJson === null || Array.isArray(pkg.packageJson)) {
+        if (!isPlainObject(pkg.packageJson)) {
             issues.push("`package.packageJson` must be an object of package.json fields to merge in");
-        } else if ("name" in pkg.packageJson) {
-            issues.push("`package.packageJson.name` is not allowed — set `package.name` instead");
+        } else {
+            validatePackageJsonOverrides(pkg.packageJson, issues);
         }
     }
+}
+
+// Keys the scaffold derives; an override here would say the same thing twice
+const PACKAGE_JSON_OWNED_KEYS = { name: "package.name", version: "package.version" } as const;
+// Maps npm reads as name → range/command: a non-string value is an invalid
+// manifest, and requiring the map shape is what keeps a derived entry from
+// being dropped by replacing the whole map with null or an array
+const PACKAGE_JSON_STRING_MAPS = [
+    "dependencies",
+    "devDependencies",
+    "peerDependencies",
+    "optionalDependencies",
+    "scripts",
+] as const;
+
+function validatePackageJsonOverrides(overrides: Record<string, unknown>, issues: string[]): void {
+    for (const [key, target] of Object.entries(PACKAGE_JSON_OWNED_KEYS)) {
+        if (key in overrides) {
+            issues.push(`\`package.packageJson.${key}\` is not allowed — set \`${target}\` instead`);
+        }
+    }
+    for (const key of PACKAGE_JSON_STRING_MAPS) {
+        const map = overrides[key];
+        if (map === undefined) {
+            continue;
+        }
+        if (!isPlainObject(map)) {
+            issues.push(`\`package.packageJson.${key}\` must be an object of name → string`);
+            continue;
+        }
+        for (const [name, value] of Object.entries(map)) {
+            if (typeof value !== "string" || value.trim() === "") {
+                issues.push(`\`package.packageJson.${key}["${name}"]\` must be a non-empty string`);
+            }
+        }
+    }
+    assertJsonValue(overrides, "package.packageJson", issues);
+}
+
+/**
+ * The override is serialized with JSON.stringify, which silently drops
+ * functions and symbols, turns NaN into null, and throws a bare TypeError on
+ * bigints and cycles — none of which should reach the emitted file unnoticed.
+ * A `__proto__` key is refused for the same reason emitObjectKey computes it:
+ * assigning it during the merge invokes the setter instead of creating a key.
+ */
+function assertJsonValue(value: unknown, path: string, issues: string[]): void {
+    if (value === null || typeof value === "string" || typeof value === "boolean") {
+        return;
+    }
+    if (typeof value === "number") {
+        if (!Number.isFinite(value)) {
+            issues.push(`\`${path}\` must be a finite number, got ${String(value)}`);
+        }
+        return;
+    }
+    if (Array.isArray(value)) {
+        value.forEach((item, index) => assertJsonValue(item, `${path}[${index}]`, issues));
+        return;
+    }
+    if (isPlainObject(value)) {
+        for (const [key, item] of Object.entries(value)) {
+            if (key === "__proto__") {
+                issues.push(`\`${path}\` must not contain a "__proto__" key`);
+                continue;
+            }
+            assertJsonValue(item, `${path}.${key}`, issues);
+        }
+        return;
+    }
+    issues.push(`\`${path}\` must be a JSON value (string, number, boolean, null, array or plain object)`);
 }
