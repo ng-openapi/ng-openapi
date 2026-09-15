@@ -233,6 +233,20 @@ describe("validateGeneratorConfig", () => {
             expect(withPackage({ name: "x", packageJson: { publishConfig: { access: "public" } } })).toEqual([]);
         });
 
+        it("reserves the marker key a later run recognizes its own package.json by", () => {
+            // `null` is a value the merge writes — it would clobber the marker and
+            // make the next run refuse to overwrite a file ng-openapi wrote
+            for (const ngOpenapi of [null, { generated: false }, "x"]) {
+                expect(
+                    withPackage({ name: "x", packageJson: { ngOpenapi } }),
+                    JSON.stringify(ngOpenapi),
+                ).toContainEqual(
+                    expect.stringContaining("`package.packageJson.ngOpenapi` is not allowed — it is reserved"),
+                );
+            }
+            expect(withPackage({ name: "x", packageJson: { ngOpenapi: undefined } })).toEqual([]);
+        });
+
         it("accepts undefined override values, since the merge skips them", () => {
             // `license: process.env["LICENSE"]` with the variable unset is the documented pattern
             expect(

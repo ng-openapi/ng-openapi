@@ -124,4 +124,4 @@ Two things to keep in mind:
 ## What is not generated
 
 - **A `LICENSE` file.** Set `packageJson.license` for the SPDX identifier npm reads; drop a `LICENSE` file into the output directory yourself if you want the text shipped — ng-packagr copies it into `dist/`.
-- **`typescript` in `devDependencies`.** Its compatible range differs per Angular major; npm 7+ and pnpm install the one `@angular/compiler-cli` declares as a peer. Yarn does not — add it through `packageJson.devDependencies` there.
+- **A `package-lock.json`.** Run `npm install` in the generated directory (not `npm ci`); commit the lockfile it produces if you want reproducible builds.

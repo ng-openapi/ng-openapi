@@ -132,8 +132,22 @@ describe("PackageScaffoldGenerator", () => {
                 "@angular/core": "^19.0.0",
                 "ng-packagr": "^19.0.0",
                 rxjs: "^7.8.0",
+                typescript: "~5.8.0",
             });
-            expect(packageJson.devDependencies["typescript"]).toBeUndefined();
+        });
+
+        it("pins typescript to the range the Angular major accepts, and only for majors it knows", () => {
+            // Peer auto-install would cover npm 7+, but not legacy-peer-deps, Yarn classic or npm 6
+            expect(
+                run({ package: { name: "x", angularVersion: "^21.0.0" } }).packageJson.devDependencies["typescript"],
+            ).toBe("~5.9.0");
+            expect(
+                run({ package: { name: "x", angularVersion: "^17.0.0" } }).packageJson.devDependencies["typescript"],
+            ).toBe("~5.4.0");
+            // An unknown (future) major: no pin rather than a range that may conflict with compiler-cli's
+            expect(
+                run({ package: { name: "x", angularVersion: "^99.0.0" } }).packageJson.devDependencies["typescript"],
+            ).toBeUndefined();
         });
 
         it('pins an import it has no range for to "*" and says so', () => {
@@ -241,6 +255,11 @@ describe("PackageScaffoldGenerator", () => {
             });
             expect(packageJson.version).toBe("v1.0");
             expect(warnings).toEqual([expect.stringContaining('"v1.0"')]);
+
+            // The normalizer coerces an unquoted YAML `version: 1.0` to "1"
+            // silently; here, where it is actually used, the hint explains why
+            const coerced = run({ package: { name: "x", angularVersion: "^21.0.0" }, specInfo: { version: "1" } });
+            expect(coerced.warnings).toEqual([expect.stringContaining("YAML reads that as a number")]);
         });
     });
 

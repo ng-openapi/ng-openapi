@@ -21,6 +21,7 @@ import {
     MIN_ANGULAR_MAJOR,
     PACKAGE_JSON_MARKER,
     TSLIB_RANGE,
+    TYPESCRIPT_RANGE_BY_ANGULAR_MAJOR,
 } from "./package-scaffold.versions";
 
 /**
@@ -210,7 +211,8 @@ export class PackageScaffoldGenerator {
         if (!isSemver(specVersion)) {
             this.onWarning(
                 `package: version ${JSON.stringify(specVersion)} taken from the spec's info.version is not a valid ` +
-                    `semver version; npm will refuse to publish it. Set \`package.version\` to override.`,
+                    `semver version; npm will refuse to publish it. Set \`package.version\` to override — or, if ` +
+                    `the spec says something like \`version: 1.0\` unquoted, quote it: YAML reads that as a number.`,
             );
         }
         return specVersion;
@@ -264,9 +266,16 @@ export class PackageScaffoldGenerator {
                 devDependencies[name] = DEV_DEPENDENCY_RANGES[name];
             }
         }
-        // typescript is deliberately absent: its compatible range differs per
-        // Angular major, and npm installs it from @angular/compiler-cli's peer
-        // range — the one place that range is maintained correctly.
+        // typescript is pinned explicitly: peer auto-install would pull it in
+        // through ng-packagr's peer range on npm 7+, but not under
+        // legacy-peer-deps (common in Angular workspaces' .npmrc), Yarn
+        // classic or npm 6 — "Cannot find module 'typescript'" at build time.
+        // A major the table does not know is left to peer auto-install rather
+        // than pinned to a range that may conflict with compiler-cli's.
+        const typescript = TYPESCRIPT_RANGE_BY_ANGULAR_MAJOR[angularMajor];
+        if (typescript !== undefined) {
+            devDependencies["typescript"] = typescript;
+        }
         return devDependencies;
     }
 

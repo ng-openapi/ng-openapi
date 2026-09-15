@@ -37,9 +37,9 @@ export function normalizeSpec(spec: SwaggerSpec, onWarning?: (message: string) =
               : null,
         info: spec.info
             ? {
-                  title: infoText(spec.info.title, "title", onWarning),
-                  version: infoText(spec.info.version, "version", onWarning),
-                  description: infoText(spec.info.description, "description", onWarning),
+                  title: infoText(spec.info.title),
+                  version: infoText(spec.info.version),
+                  description: infoText(spec.info.description),
               }
             : undefined,
         definitions,
@@ -51,31 +51,20 @@ export function normalizeSpec(spec: SwaggerSpec, onWarning?: (message: string) =
 }
 
 /**
- * `info` fields are typed as strings but arrive as whatever the author wrote.
- * An unquoted YAML `version: 1.10` parses as the number 1.1, so it is
- * stringified *and* reported here, where the original spelling is already
- * gone — a later warning about "1.1" would name a value the author never
- * wrote. Anything else that is not text is dropped with a warning rather than
- * forwarded as "[object Object]" into a README or package.json.
+ * `info` fields are typed as strings but arrive as whatever the author wrote:
+ * an unquoted YAML `version: 1.0` parses as the number 1, and an object or
+ * array is nothing a README or package.json could show. Coerced silently —
+ * nothing reads `info` unless the `package` option is set, and the scaffold
+ * warns at the point of use, so a spec defect never nags a user it does not
+ * affect.
  */
-function infoText(value: unknown, field: string, onWarning?: (message: string) => void): string | undefined {
-    if (value === undefined || value === null) {
-        return undefined;
-    }
+function infoText(value: unknown): string | undefined {
     if (typeof value === "string") {
         return value;
     }
     if (typeof value === "number" || typeof value === "boolean") {
-        onWarning?.(
-            `info.${field} is a ${typeof value}, not text — treated as ${JSON.stringify(String(value))}. ` +
-                `Quote it in the spec to keep its exact spelling.`,
-        );
         return String(value);
     }
-    onWarning?.(
-        `info.${field} is not text (got ${Array.isArray(value) ? "an array" : `a ${typeof value}`}); ` +
-            `generated files that would show it (README, package.json) omit it.`,
-    );
     return undefined;
 }
 

@@ -91,5 +91,5 @@ The scaffold's five files collide with almost every project root. ng-openapi sta
 
 - `version` in a CI pipeline usually comes from outside the spec: `version: process.env["PKG_VERSION"]` in the config file works, since the config is plain TypeScript.
 - A spec whose `info.version` is not a semver version (`"1.0"`, `"v2"`) still generates, with a warning: npm would refuse to publish that version, so set `package.version`.
-- `typescript` is deliberately not pinned in `devDependencies`; npm 7+ and pnpm install the version `@angular/compiler-cli` declares as its peer, which is the right one for the chosen Angular major. Yarn does not install peers — add `typescript` through `packageJson.devDependencies` there.
+- `typescript` is pinned in `devDependencies` from a table of the range each Angular major accepts (Angular 16 through 22). Relying on peer auto-install instead would work on npm 7+ but not under `legacy-peer-deps`, Yarn classic or npm 6. A newer Angular major the table does not know yet gets no pin — add `typescript` through `packageJson.devDependencies` if your package manager does not install peers.
 - The generated `build` script passes the emitted `tsconfig.json` explicitly (`-c tsconfig.json`). Without `-c`, ng-packagr compiles with its own built-in configuration and ignores the file.

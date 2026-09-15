@@ -38,6 +38,22 @@ export const DEV_DEPENDENCY_RANGES: Readonly<Record<string, string>> = {
     zod: "^4.0.0",
 };
 
+/**
+ * TypeScript range per Angular major — the newest minor each major's
+ * @angular/compiler-cli accepts, as a tilde range so `npm install` cannot
+ * drift past it. Extend when a new Angular major ships; an unlisted major
+ * gets no typescript devDependency (see buildDevDependencies).
+ */
+export const TYPESCRIPT_RANGE_BY_ANGULAR_MAJOR: Readonly<Record<number, string>> = {
+    16: "~5.1.0",
+    17: "~5.4.0",
+    18: "~5.5.0",
+    19: "~5.8.0",
+    20: "~5.9.0",
+    21: "~5.9.0",
+    22: "~6.0.0",
+};
+
 /** Angular Package Format requires tslib as a runtime dependency when `importHelpers` is on. */
 export const TSLIB_RANGE = "^2.3.0";
 

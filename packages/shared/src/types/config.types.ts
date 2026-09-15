@@ -67,6 +67,8 @@ export interface PackageConfig {
         version?: never;
         repository?: never;
         publishConfig?: Record<string, unknown> & { registry?: never };
+        /** Reserved: the marker a later run recognizes its own package.json by. */
+        ngOpenapi?: never;
     };
 }
 

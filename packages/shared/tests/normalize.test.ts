@@ -70,28 +70,26 @@ describe("normalizeSpec", () => {
         expect(normalizeSpec({ openapi: "3.0.0", paths: {} } as never).info).toBeUndefined();
     });
 
-    it("stringifies info fields a YAML author left unquoted, and says so while the spelling is still known", () => {
-        // `version: 1.10` is the number 1.1 after js-yaml — a later warning
-        // about "1.1" would name a value the author never wrote
+    it("coerces info fields silently: nothing reads them unless the package option is set", () => {
+        // `version: 1.0` is the number 1 after js-yaml — a very common spec;
+        // warning here would nag every YAML user on every run, so the
+        // scaffold warns at the point of use instead
         const warnings: string[] = [];
-        const info = normalizeSpec({ openapi: "3.0.0", info: { title: "t", version: 1.1 }, paths: {} } as never, (m) =>
-            warnings.push(m),
-        ).info;
-        expect(info).toEqual({ title: "t", version: "1.1", description: undefined });
-        expect(warnings).toEqual([expect.stringContaining('info.version is a number, not text — treated as "1.1"')]);
-    });
-
-    it("drops info fields that are not text, and says so", () => {
-        const warnings: string[] = [];
-        const info = normalizeSpec(
-            { openapi: "3.0.0", info: { title: { en: "Pets" }, version: "1", description: ["a"] }, paths: {} } as never,
-            (message) => warnings.push(message),
-        ).info;
-        expect(info).toEqual({ title: undefined, version: "1", description: undefined });
-        expect(warnings).toEqual([
-            expect.stringContaining("info.title is not text (got a object)"),
-            expect.stringContaining("info.description is not text (got an array)"),
-        ]);
+        const onWarning = (message: string) => warnings.push(message);
+        expect(
+            normalizeSpec({ openapi: "3.0.0", info: { title: "t", version: 1 }, paths: {} } as never, onWarning).info,
+        ).toEqual({ title: "t", version: "1", description: undefined });
+        expect(
+            normalizeSpec(
+                {
+                    openapi: "3.0.0",
+                    info: { title: { en: "Pets" }, version: "1", description: ["a"] },
+                    paths: {},
+                } as never,
+                onWarning,
+            ).info,
+        ).toEqual({ title: undefined, version: "1", description: undefined });
+        expect(warnings).toEqual([]);
     });
 
     it("unifies definitions across spec versions", () => {

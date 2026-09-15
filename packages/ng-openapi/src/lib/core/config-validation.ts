@@ -6,7 +6,11 @@ import {
     isUrl,
     PackageConfig,
 } from "@ng-openapi/shared";
-import { leadingMajor, MIN_ANGULAR_MAJOR } from "../generators/utility/package-scaffold.versions";
+import {
+    leadingMajor,
+    MIN_ANGULAR_MAJOR,
+    PACKAGE_JSON_MARKER_KEY,
+} from "../generators/utility/package-scaffold.versions";
 
 // Re-exported for hosts that import it from here; the class itself lives in
 // shared/errors.ts so it joins the branded NgOpenApiError hierarchy.
@@ -249,11 +253,14 @@ function validatePackageConfig(pkg: UnknownShape<PackageConfig>, issues: string[
 // Fields with a first-class `package` option. An override here would say the
 // same thing twice with no rule for which wins — every future first-class
 // field joins this list. (`publishConfig.access` and the like stay allowed.)
-const PACKAGE_JSON_OWNED_KEYS: ReadonlyArray<[path: readonly string[], option: string]> = [
-    [["name"], "package.name"],
-    [["version"], "package.version"],
-    [["repository"], "package.repository"],
-    [["publishConfig", "registry"], "package.publishRegistry"],
+const PACKAGE_JSON_OWNED_KEYS: ReadonlyArray<[path: readonly string[], reason: string]> = [
+    [["name"], "set `package.name` instead"],
+    [["version"], "set `package.version` instead"],
+    [["repository"], "set `package.repository` instead"],
+    [["publishConfig", "registry"], "set `package.publishRegistry` instead"],
+    // The marker a later run recognizes its own package.json by; clobbering
+    // it would make that run refuse to overwrite a file ng-openapi wrote
+    [[PACKAGE_JSON_MARKER_KEY], "it is reserved for ng-openapi's own marker"],
 ];
 // Maps npm reads as name → range/command: a non-string value is an invalid
 // manifest, and requiring the map shape is what keeps a derived entry from
@@ -267,10 +274,14 @@ const PACKAGE_JSON_STRING_MAPS = [
 ] as const;
 
 function validatePackageJsonOverrides(overrides: Record<string, unknown>, issues: string[]): void {
-    for (const [path, option] of PACKAGE_JSON_OWNED_KEYS) {
-        const value = path.reduce<unknown>((node, key) => (isPlainObject(node) ? node[key] : undefined), overrides);
-        if (value !== undefined) {
-            issues.push(`\`package.packageJson.${path.join(".")}\` is not allowed — set \`${option}\` instead`);
+    for (const [path, reason] of PACKAGE_JSON_OWNED_KEYS) {
+        // `in`, not a value check: `ngOpenapi: undefined` is skipped by the
+        // merge, but `null` is a value and would clobber the marker
+        const parent = path
+            .slice(0, -1)
+            .reduce<unknown>((node, key) => (isPlainObject(node) ? node[key] : undefined), overrides);
+        if (isPlainObject(parent) && path[path.length - 1] in parent && parent[path[path.length - 1]] !== undefined) {
+            issues.push(`\`package.packageJson.${path.join(".")}\` is not allowed — ${reason}`);
         }
     }
     for (const key of PACKAGE_JSON_STRING_MAPS) {
