@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.3.3...ng-openapi-v0.4.0) (2026-09-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* **generator:** three changes alter consumer code without a compile error.
+
+### Bug Fixes
+
+* **generator:** sanitize identifiers derived from spec names ([#127](https://github.com/ng-openapi/ng-openapi/issues/127)) ([77ebd9f](https://github.com/ng-openapi/ng-openapi/commit/77ebd9f1fb522ff3d2fb206457159366d32518b6))
+* **shared:** resolve deep-pointer $refs to nested schema properties ([#121](https://github.com/ng-openapi/ng-openapi/issues/121)) ([33f1104](https://github.com/ng-openapi/ng-openapi/commit/33f110401e218d0b2255416ab214ad9db3ba328e))
+
 ## [0.3.3](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.3.2...ng-openapi-v0.3.3) (2026-08-13)
 
 
