@@ -1,0 +1,292 @@
+import { Project } from "ts-morph";
+import { describe, expect, it } from "vitest";
+import { PackageConfig, SpecInfo } from "@ng-openapi/shared";
+import { PackageScaffoldGenerator } from "../src/lib/generators/utility/package-scaffold.generator";
+import { DEFAULT_ANGULAR_MAJOR } from "../src/lib/generators/utility/package-scaffold.versions";
+
+const OUT = "/out";
+
+/** The package.json fields these tests look at. */
+interface PackageJsonShape {
+    name: string;
+    version: string;
+    repository?: unknown;
+    publishConfig?: Record<string, string>;
+    sideEffects: boolean;
+    license?: string;
+    files?: string[];
+    scripts: Record<string, string>;
+    peerDependencies: Record<string, string>;
+    dependencies: Record<string, string>;
+    devDependencies: Record<string, string>;
+}
+
+interface TsconfigShape {
+    angularCompilerOptions: { compilationMode: string };
+}
+
+interface RunOptions {
+    package: PackageConfig;
+    clientName?: string;
+    specInfo?: SpecInfo;
+    detectedAngularVersion?: string;
+    /** Bare imports to plant in a generated-looking service file. */
+    imports?: string[];
+    /** Whether the run generated providers.ts (the client runtime). Default: true. */
+    providers?: boolean;
+}
+
+/** Runs the generator against an in-memory project and returns what it emitted. */
+function run(options: RunOptions) {
+    const project = new Project({ useInMemoryFileSystem: true });
+    const imports = options.imports ?? ["@angular/core", "@angular/common/http", "rxjs"];
+    project.createSourceFile(
+        `${OUT}/services/a.service.ts`,
+        imports.map((specifier, i) => `import * as m${i} from "${specifier}";`).join("\n"),
+    );
+    project.createSourceFile(`${OUT}/index.ts`, 'export * from "./services/a.service";');
+    if (options.providers !== false) {
+        project.createSourceFile(`${OUT}/providers.ts`, "export function provideDefaultClient() {}");
+    }
+
+    const warnings: string[] = [];
+    new PackageScaffoldGenerator(
+        project,
+        { clientName: options.clientName, package: options.package },
+        options.specInfo,
+        options.detectedAngularVersion,
+        (message) => warnings.push(message),
+    ).generate(OUT);
+
+    const text = (file: string) => project.getSourceFileOrThrow(`${OUT}/${file}`).getFullText();
+    const json = <T>(file: string) => JSON.parse(text(file)) as T;
+    return { project, warnings, text, json, packageJson: json<PackageJsonShape>("package.json") };
+}
+
+describe("PackageScaffoldGenerator", () => {
+    it("emits the five scaffold files at the output root", () => {
+        const { project } = run({ package: { name: "x", angularVersion: "^21.0.0" } });
+        const emitted = project
+            .getSourceFiles()
+            .map((f) => f.getFilePath())
+            .sort();
+        expect(emitted).toEqual([
+            "/out/.gitignore",
+            "/out/README.md",
+            "/out/index.ts",
+            "/out/ng-package.json",
+            "/out/package.json",
+            "/out/providers.ts",
+            "/out/services/a.service.ts",
+            "/out/tsconfig.json",
+        ]);
+    });
+
+    it("points ng-packagr at the generated root index.ts and its own tsconfig", () => {
+        const { json, packageJson } = run({ package: { name: "x", angularVersion: "^21.0.0" } });
+        expect(json<unknown>("ng-package.json")).toEqual({
+            $schema: "./node_modules/ng-packagr/ng-package.schema.json",
+            dest: "dist",
+            lib: { entryFile: "index.ts" },
+        });
+        expect(packageJson.scripts["build"]).toBe("ng-packagr -p ng-package.json -c tsconfig.json");
+        expect(json<TsconfigShape>("tsconfig.json").angularCompilerOptions.compilationMode).toBe("partial");
+    });
+
+    describe("peer and dev dependencies", () => {
+        it("derives peers from the generated imports, reduced to package roots", () => {
+            const { packageJson, warnings } = run({ package: { name: "x", angularVersion: "^21.0.0" } });
+            expect(packageJson.peerDependencies).toEqual({
+                "@angular/common": "^21.0.0",
+                "@angular/core": "^21.0.0",
+                rxjs: "^7.4.0",
+            });
+            expect(packageJson.dependencies).toEqual({ tslib: "^2.3.0" });
+            expect(warnings).toEqual([]);
+        });
+
+        it("adds zod to peers and devDependencies only when the code imports it", () => {
+            const without = run({ package: { name: "x", angularVersion: "^21.0.0" } }).packageJson;
+            expect(without.peerDependencies["zod"]).toBeUndefined();
+            expect(without.devDependencies["zod"]).toBeUndefined();
+
+            const withZod = run({
+                package: { name: "x", angularVersion: "^21.0.0" },
+                imports: ["@angular/core", "zod"],
+            }).packageJson;
+            expect(withZod.peerDependencies["zod"]).toBe("^4.0.0");
+            expect(withZod.devDependencies["zod"]).toBe("^4.0.0");
+        });
+
+        it("keeps every Angular-family package and ng-packagr on the same major", () => {
+            const { packageJson } = run({ package: { name: "x", angularVersion: ">=19.0.0 <22" } });
+            expect(packageJson.peerDependencies["@angular/core"]).toBe(">=19.0.0 <22");
+            expect(packageJson.devDependencies).toEqual({
+                "@angular/common": "^19.0.0",
+                "@angular/compiler": "^19.0.0",
+                "@angular/compiler-cli": "^19.0.0",
+                "@angular/core": "^19.0.0",
+                "ng-packagr": "^19.0.0",
+                rxjs: "^7.8.0",
+            });
+            expect(packageJson.devDependencies["typescript"]).toBeUndefined();
+        });
+
+        it('pins an import it has no range for to "*" and says so', () => {
+            const { packageJson, warnings } = run({
+                package: { name: "x", angularVersion: "^21.0.0" },
+                imports: ["@angular/core", "@acme/runtime/helpers"],
+            });
+            expect(packageJson.peerDependencies["@acme/runtime"]).toBe("*");
+            expect(warnings).toEqual([expect.stringContaining('imports "@acme/runtime"')]);
+        });
+    });
+
+    describe("Angular version", () => {
+        it("prefers the configured range, then the detected workspace major", () => {
+            expect(
+                run({ package: { name: "x", angularVersion: "^20.0.0" }, detectedAngularVersion: "21.2.13" })
+                    .packageJson.peerDependencies["@angular/core"],
+            ).toBe("^20.0.0");
+
+            const detected = run({ package: { name: "x" }, detectedAngularVersion: "20.1.4" });
+            expect(detected.packageJson.peerDependencies["@angular/core"]).toBe("^20.0.0");
+            expect(detected.packageJson.devDependencies["ng-packagr"]).toBe("^20.0.0");
+            expect(detected.warnings).toEqual([]);
+        });
+
+        it("falls back to the generator's own supported major with a warning", () => {
+            const { packageJson, warnings } = run({ package: { name: "x" } });
+            expect(packageJson.peerDependencies["@angular/core"]).toBe(`^${DEFAULT_ANGULAR_MAJOR}.0.0`);
+            expect(warnings).toEqual([expect.stringContaining("no @angular/core found")]);
+        });
+    });
+
+    describe("version", () => {
+        it("uses the configured version, else the spec's info.version, else 0.0.0", () => {
+            const info = { version: "2.3.4" };
+            expect(
+                run({ package: { name: "x", version: "9.9.9", angularVersion: "^21.0.0" }, specInfo: info }).packageJson
+                    .version,
+            ).toBe("9.9.9");
+            expect(run({ package: { name: "x", angularVersion: "^21.0.0" }, specInfo: info }).packageJson.version).toBe(
+                "2.3.4",
+            );
+            expect(run({ package: { name: "x", angularVersion: "^21.0.0" } }).packageJson.version).toBe("0.0.0");
+            expect(
+                run({ package: { name: "x", angularVersion: "^21.0.0" }, specInfo: { version: "" } }).packageJson
+                    .version,
+            ).toBe("0.0.0");
+        });
+
+        it("warns when the spec's version is not something npm will publish", () => {
+            const { packageJson, warnings } = run({
+                package: { name: "x", angularVersion: "^21.0.0" },
+                specInfo: { version: "v1.0" },
+            });
+            expect(packageJson.version).toBe("v1.0");
+            expect(warnings).toEqual([expect.stringContaining('"v1.0"')]);
+        });
+    });
+
+    describe("package.json fields", () => {
+        it("writes repository and publishConfig only when configured", () => {
+            const minimal = run({ package: { name: "x", angularVersion: "^21.0.0" } }).packageJson;
+            expect(minimal).not.toHaveProperty("repository");
+            expect(minimal).not.toHaveProperty("publishConfig");
+            expect(minimal.sideEffects).toBe(false);
+
+            const full = run({
+                package: {
+                    name: "@acme/x",
+                    angularVersion: "^21.0.0",
+                    repository: { type: "git", url: "https://example.com/x.git" },
+                    publishRegistry: "https://npm.example.com/",
+                },
+            }).packageJson;
+            expect(full.repository).toEqual({ type: "git", url: "https://example.com/x.git" });
+            expect(full.publishConfig).toEqual({ registry: "https://npm.example.com/" });
+        });
+
+        it("deep-merges packageJson overrides: nested maps merge, scalars and arrays replace", () => {
+            const { packageJson } = run({
+                package: {
+                    name: "x",
+                    angularVersion: "^21.0.0",
+                    packageJson: {
+                        license: "MIT",
+                        files: ["dist"],
+                        scripts: { release: "npm publish" },
+                        peerDependencies: { rxjs: "^8.0.0" },
+                        publishConfig: { access: "public" },
+                    },
+                },
+            });
+            expect(packageJson.license).toBe("MIT");
+            expect(packageJson.files).toEqual(["dist"]);
+            expect(packageJson.scripts).toEqual({
+                build: "ng-packagr -p ng-package.json -c tsconfig.json",
+                release: "npm publish",
+            });
+            // the override changed rxjs's range but could not drop the derived Angular peers
+            expect(packageJson.peerDependencies).toEqual({
+                "@angular/common": "^21.0.0",
+                "@angular/core": "^21.0.0",
+                rxjs: "^8.0.0",
+            });
+            expect(packageJson.publishConfig).toEqual({ access: "public" });
+        });
+
+        it("replaces a class instance wholesale instead of flattening it to {}", () => {
+            // js-yaml and hand-written configs can both hand over a Date; a
+            // loose plain-object check would merge into it and emit {}
+            const stamp = new Date("2026-09-15T00:00:00Z");
+            const { packageJson } = run({
+                package: { name: "x", angularVersion: "^21.0.0", packageJson: { scripts: stamp } },
+            });
+            expect(packageJson.scripts).toBe("2026-09-15T00:00:00.000Z");
+        });
+
+        it("ignores undefined overrides instead of letting them delete a key", () => {
+            const { packageJson } = run({
+                package: {
+                    name: "x",
+                    angularVersion: "^21.0.0",
+                    packageJson: { version: undefined, sideEffects: undefined },
+                },
+            });
+            expect(packageJson.version).toBe("0.0.0");
+            expect(packageJson.sideEffects).toBe(false);
+        });
+    });
+
+    describe("README", () => {
+        it("documents a types-only package without a provider the run never generated", () => {
+            const readme = run({ package: { name: "x", angularVersion: "^21.0.0" }, providers: false }).text(
+                "README.md",
+            );
+            expect(readme).toContain("model types only");
+            expect(readme).not.toContain("provideDefaultClient");
+        });
+
+        it("documents the provider function the provider generator actually emits", () => {
+            expect(run({ package: { name: "@acme/x", angularVersion: "^21.0.0" } }).text("README.md")).toContain(
+                'import { provideDefaultClient } from "@acme/x"',
+            );
+            expect(
+                run({ package: { name: "x", angularVersion: "^21.0.0" }, clientName: "pets-api" }).text("README.md"),
+            ).toContain("providePetsApiClient({ basePath:");
+        });
+
+        it("names the API from the spec title when there is one", () => {
+            const readme = run({
+                package: { name: "x", angularVersion: "^21.0.0" },
+                specInfo: { title: "Pet\nStore  API" },
+            }).text("README.md");
+            expect(readme).toContain("# x\n\nAngular client for Pet Store API, generated by");
+            expect(run({ package: { name: "x", angularVersion: "^21.0.0" } }).text("README.md")).toContain(
+                "# x\n\nAngular client generated by",
+            );
+        });
+    });
+});

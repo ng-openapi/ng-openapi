@@ -28,6 +28,9 @@ function createConsoleReporter(config: GeneratorConfig): Reporter {
                 case "plugins-generated":
                     console.log("✅ Plugins are generated");
                     break;
+                case "package-generated":
+                    console.log("✅ npm package files generated");
+                    break;
             }
         },
         onWarning(message) {

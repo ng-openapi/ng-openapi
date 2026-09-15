@@ -69,5 +69,19 @@ registerGoldenSuite("ng-openapi golden", {
             };
             return config;
         },
+        // npm package scaffold. angularVersion is pinned so the snapshot does
+        // not track the workspace's own Angular; version is left to default
+        // from the fixture's info.version. models-only exercises the no-import
+        // case (no peers at all), the others the derived Angular/rxjs peers
+        "npm-package": (input, output) => ({
+            ...baseConfig(input, output),
+            clientName: "PetsApi",
+            package: {
+                name: "@acme/pets-api-client",
+                angularVersion: "^21.0.0",
+                repository: "https://github.com/acme/pets-api-client",
+                packageJson: { license: "MIT", publishConfig: { access: "public" } },
+            },
+        }),
     },
 });

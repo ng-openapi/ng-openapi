@@ -214,6 +214,7 @@ export default defineConfig({
                         { text: "Date Handling", link: "/guide/date-handling" },
                         { text: "File Downloads", link: "/guide/file-download" },
                         { text: "Schema Validation", link: "/guide/schema-validation" },
+                        { text: "Publishing as an npm Package", link: "/guide/npm-package" },
                     ],
                 },
                 {
@@ -325,6 +326,10 @@ export default defineConfig({
                                 {
                                     text: "Compiler Options",
                                     link: "/api/configuration/compiler-options",
+                                },
+                                {
+                                    text: "Package",
+                                    link: "/api/configuration/package",
                                 },
                                 {
                                     text: "Plugins",

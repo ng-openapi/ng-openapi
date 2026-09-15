@@ -1,4 +1,4 @@
-import { ConfigValidationError, GeneratorConfig } from "@ng-openapi/shared";
+import { ConfigValidationError, GeneratorConfig, isSemver, isUrl, PackageConfig } from "@ng-openapi/shared";
 
 // Re-exported for hosts that import it from here; the class itself lives in
 // shared/errors.ts so it joins the branded NgOpenApiError hierarchy.
@@ -171,7 +171,63 @@ export function validateGeneratorConfig(config: unknown): asserts config is Gene
         }
     }
 
+    if (c.package !== undefined) {
+        if (typeof c.package !== "object" || c.package === null) {
+            issues.push(
+                "`package` must be an object like { name, version?, repository?, publishRegistry?, angularVersion?, packageJson? }",
+            );
+        } else {
+            validatePackageConfig(c.package as UnknownShape<PackageConfig>, issues);
+        }
+    }
+
     if (issues.length > 0) {
         throw new ConfigValidationError(issues);
+    }
+}
+
+// npm's own rule for new package names: lowercase, URL-safe, optionally scoped.
+const NPM_PACKAGE_NAME_PATTERN = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
+// A range whose leading major can be read: "^20.0.0", "~21.1", ">=19 <22", "21"
+const ANGULAR_RANGE_PATTERN = /^(\^|~|>=)?\d+/;
+
+function validatePackageConfig(pkg: UnknownShape<PackageConfig>, issues: string[]): void {
+    if (typeof pkg.name !== "string" || !NPM_PACKAGE_NAME_PATTERN.test(pkg.name)) {
+        issues.push(
+            `\`package.name\` must be a valid npm package name (lowercase, e.g. "@scope/my-client"), got ${JSON.stringify(pkg.name)}`,
+        );
+    }
+    // Stricter than the spec-derived default (which only warns): an explicit
+    // version is a deliberate choice, so a typo here should not reach npm
+    if (pkg.version !== undefined && (typeof pkg.version !== "string" || !isSemver(pkg.version))) {
+        issues.push(`\`package.version\` must be a semver version like "1.2.3", got ${JSON.stringify(pkg.version)}`);
+    }
+    if (pkg.repository !== undefined && typeof pkg.repository !== "string") {
+        if (typeof pkg.repository !== "object" || pkg.repository === null) {
+            issues.push("`package.repository` must be a URL string or an object like { type, url, directory? }");
+        } else {
+            const { type, url } = pkg.repository as { type?: unknown; url?: unknown };
+            if (typeof type !== "string" || typeof url !== "string") {
+                issues.push("`package.repository` object form needs string `type` and `url` fields");
+            }
+        }
+    }
+    if (pkg.publishRegistry !== undefined && (typeof pkg.publishRegistry !== "string" || !isUrl(pkg.publishRegistry))) {
+        issues.push(`\`package.publishRegistry\` must be an http(s) URL, got ${JSON.stringify(pkg.publishRegistry)}`);
+    }
+    if (
+        pkg.angularVersion !== undefined &&
+        (typeof pkg.angularVersion !== "string" || !ANGULAR_RANGE_PATTERN.test(pkg.angularVersion))
+    ) {
+        issues.push(
+            `\`package.angularVersion\` must be a semver range starting with the Angular major, like "^20.0.0", got ${JSON.stringify(pkg.angularVersion)}`,
+        );
+    }
+    if (pkg.packageJson !== undefined) {
+        if (typeof pkg.packageJson !== "object" || pkg.packageJson === null || Array.isArray(pkg.packageJson)) {
+            issues.push("`package.packageJson` must be an object of package.json fields to merge in");
+        } else if ("name" in pkg.packageJson) {
+            issues.push("`package.packageJson.name` is not allowed — set `package.name` instead");
+        }
     }
 }

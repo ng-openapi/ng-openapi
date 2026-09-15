@@ -69,7 +69,12 @@ describe("validateGeneratorConfig", () => {
     it("names the offending value for enum-like options", () => {
         const issues = issuesOf({
             ...validConfig,
-            options: { dateType: "date", enumStyle: "unions", serviceDecorator: "Service", modelFileStructure: "split" },
+            options: {
+                dateType: "date",
+                enumStyle: "unions",
+                serviceDecorator: "Service",
+                modelFileStructure: "split",
+            },
         });
         expect(issues.find((i) => i.includes("dateType"))).toContain('"date"');
         expect(issues.find((i) => i.includes("enumStyle"))).toContain('"unions"');
@@ -78,9 +83,9 @@ describe("validateGeneratorConfig", () => {
     });
 
     it("accepts an empty-string naming suffix (drops the default)", () => {
-        expect(issuesOf({ ...validConfig, options: { ...validConfig.options, naming: { services: { suffix: "" } } } })).toEqual(
-            [],
-        );
+        expect(
+            issuesOf({ ...validConfig, options: { ...validConfig.options, naming: { services: { suffix: "" } } } }),
+        ).toEqual([]);
     });
 
     it("validates naming decorations as identifier fragments", () => {
@@ -147,5 +152,70 @@ describe("validateGeneratorConfig", () => {
             expect(issuesOf({ ...validConfig, clientName }), clientName).toEqual([]);
         }
         expect(issuesOf({ ...validConfig, clientName: 42 })).toContainEqual(expect.stringContaining("`clientName`"));
+    });
+
+    describe("package", () => {
+        const withPackage = (pkg: unknown) => issuesOf({ ...validConfig, package: pkg });
+
+        it("accepts a minimal and a fully-populated package config", () => {
+            expect(withPackage({ name: "my-client" })).toEqual([]);
+            expect(
+                withPackage({
+                    name: "@acme/petstore-client",
+                    version: "1.2.3-beta.1+build.5",
+                    repository: { type: "git", url: "https://github.com/acme/petstore-client.git", directory: "pkg" },
+                    publishRegistry: "https://npm.acme.internal/",
+                    angularVersion: ">=19.0.0 <22",
+                    packageJson: { license: "MIT", publishConfig: { access: "restricted" } },
+                }),
+            ).toEqual([]);
+            expect(withPackage({ name: "x", repository: "github:acme/x" })).toEqual([]);
+        });
+
+        it("requires the object shape", () => {
+            expect(withPackage("my-client")).toContainEqual(expect.stringContaining("`package` must be an object"));
+            expect(withPackage(null)).toContainEqual(expect.stringContaining("`package` must be an object"));
+        });
+
+        it("requires a valid npm package name", () => {
+            for (const name of [undefined, "", "My Client", "UPPER", "@scope", "scope/", ".hidden"]) {
+                expect(withPackage({ name }), JSON.stringify(name)).toContainEqual(
+                    expect.stringContaining("`package.name`"),
+                );
+            }
+        });
+
+        it("requires an explicit version to be semver", () => {
+            expect(withPackage({ name: "x", version: "1.0" })).toContainEqual(
+                expect.stringContaining("`package.version`"),
+            );
+            expect(withPackage({ name: "x", version: 1 })).toContainEqual(expect.stringContaining("`package.version`"));
+        });
+
+        it("validates repository, publishRegistry and angularVersion shapes", () => {
+            expect(withPackage({ name: "x", repository: 42 })).toContainEqual(
+                expect.stringContaining("`package.repository`"),
+            );
+            expect(withPackage({ name: "x", repository: { url: "u" } })).toContainEqual(
+                expect.stringContaining("`package.repository` object form"),
+            );
+            expect(withPackage({ name: "x", publishRegistry: "npm.acme.internal" })).toContainEqual(
+                expect.stringContaining("`package.publishRegistry`"),
+            );
+            expect(withPackage({ name: "x", angularVersion: "latest" })).toContainEqual(
+                expect.stringContaining("`package.angularVersion`"),
+            );
+            expect(withPackage({ name: "x", angularVersion: "^20.0.0" })).toEqual([]);
+            expect(withPackage({ name: "x", angularVersion: "21" })).toEqual([]);
+        });
+
+        it("rejects packageJson that is not an object or that overrides name", () => {
+            expect(withPackage({ name: "x", packageJson: [] })).toContainEqual(
+                expect.stringContaining("`package.packageJson` must be an object"),
+            );
+            expect(withPackage({ name: "x", packageJson: { name: "y" } })).toContainEqual(
+                expect.stringContaining("`package.packageJson.name` is not allowed"),
+            );
+        });
     });
 });

@@ -35,12 +35,31 @@ export function normalizeSpec(spec: SwaggerSpec, onWarning?: (message: string) =
             : spec.openapi
               ? { type: "openapi", version: spec.openapi }
               : null,
+        info: spec.info
+            ? {
+                  title: infoText(spec.info.title),
+                  version: infoText(spec.info.version),
+                  description: infoText(spec.info.description),
+              }
+            : undefined,
         definitions,
         operations: extractPaths(spec.paths, undefined, onWarning, resolveParameter).map((operation) =>
             normalizeOperation(normalizeOperationSchemas(operation), resolveReference, onWarning),
         ),
         resolveReference,
     };
+}
+
+/**
+ * `info` fields are typed as strings but arrive as whatever the author wrote:
+ * an unquoted YAML `version: 1.0` parses as the number 1, and forwarding that
+ * would put an unquoted number where consumers (package.json) need a string.
+ */
+function infoText(value: unknown): string | undefined {
+    if (value === undefined || value === null) {
+        return undefined;
+    }
+    return typeof value === "string" ? value : String(value);
 }
 
 /**

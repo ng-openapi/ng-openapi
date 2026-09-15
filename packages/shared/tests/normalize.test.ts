@@ -65,6 +65,17 @@ describe("normalizeSpec", () => {
         expect(normalizeSpec({ paths: {} } as never).version).toBeNull();
     });
 
+    it("carries the spec's info block through, and leaves it undefined when absent", () => {
+        expect(normalized.info).toEqual({ title: "t", version: "1", description: undefined });
+        expect(normalizeSpec({ openapi: "3.0.0", paths: {} } as never).info).toBeUndefined();
+    });
+
+    it("stringifies info fields a YAML author left unquoted", () => {
+        // `version: 1.0` is the number 1 after js-yaml; `version: 2` is 2
+        const info = normalizeSpec({ openapi: "3.0.0", info: { title: "t", version: 2 }, paths: {} } as never).info;
+        expect(info).toEqual({ title: "t", version: "2", description: undefined });
+    });
+
     it("unifies definitions across spec versions", () => {
         expect(Object.keys(normalized.definitions)).toEqual(["UploadForm"]);
         const v2 = normalizeSpec({ swagger: "2.0", definitions: { Pet: { type: "object" } }, paths: {} } as never);
@@ -109,9 +120,7 @@ describe("normalizeSpec", () => {
     });
 
     it("derives acceptHeader from the same success response", () => {
-        expect(normalized.operations.find((o) => o.operationId === "getOrder")!.acceptHeader).toBe(
-            "application/json",
-        );
+        expect(normalized.operations.find((o) => o.operationId === "getOrder")!.acceptHeader).toBe("application/json");
         expect(normalized.operations.find((o) => o.operationId === "token")!.acceptHeader).toBe("application/pdf");
         // 201 with no content → nothing to advertise
         expect(normalized.operations.find((o) => o.operationId === "upload")!.acceptHeader).toBeUndefined();

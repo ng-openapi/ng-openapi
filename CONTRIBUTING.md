@@ -19,7 +19,7 @@ npm run build          # builds ng-openapi, http-resource, and zod
 
 ## Testing
 
-The suite is [Vitest](https://vitest.dev)-based and splits into three kinds of tests:
+The suite is [Vitest](https://vitest.dev)-based and splits into four kinds of tests:
 
 ```bash
 npm test               # run everything once
@@ -91,6 +91,16 @@ npm test
 
 In CI these are provided as repository variables (`vars.*`), so the compile-checks run
 on every pull request without any per-fork setup.
+
+### Package-scaffold build test
+
+`packages/ng-openapi/tests/package-scaffold-smoke.test.ts` generates a client with the
+`package` option and builds it with a real ng-packagr run (via its programmatic API),
+proving the emitted `package.json`/`ng-package.json`/`tsconfig.json` produce a working
+Angular Package Format library. It needs no network: the output lives under the repo's
+`tmp/`, so ng-packagr resolves `@angular/compiler-cli`, `rxjs` and friends from the
+workspace's own `node_modules` (those are root devDependencies for exactly this reason).
+It always runs as part of `npm test`.
 
 ## Documentation
 

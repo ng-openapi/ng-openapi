@@ -1,5 +1,6 @@
 import type { SwaggerSpec } from "../types/swagger.types";
 import { pascalCase } from "../utils/string.utils";
+import { isPlainObject } from "../utils/functions/plain-object";
 
 /**
  * Inlines `$ref`s that point at a *nested* location inside a schema (a deep
@@ -836,18 +837,4 @@ function resolvePointer(root: SwaggerSpec, ref: string): unknown {
  */
 function toArrayIndex(segment: string): number | undefined {
     return /^(?:0|[1-9][0-9]*)$/.test(segment) ? Number(segment) : undefined;
-}
-
-/**
- * Plain objects only — anything with a class prototype is *not* rebuildable by
- * `transform`. js-yaml's default schema turns unquoted timestamps into `Date`s
- * (`example: 2020-01-01`), and `Object.entries(new Date())` is `[]`, so a loose
- * predicate would silently flatten every such value to `{}`.
- */
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-    if (typeof value !== "object" || value === null || Array.isArray(value)) {
-        return false;
-    }
-    const proto = Object.getPrototypeOf(value);
-    return proto === Object.prototype || proto === null;
 }

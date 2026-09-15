@@ -16,5 +16,14 @@ registerGoldenSuite("zod golden", {
             },
             plugins: [ZodPlugin],
         }),
+        // The scaffold reads peer dependencies off the generated imports, so
+        // the zod peer must appear without the core knowing this plugin exists
+        "npm-package": (input, output) => ({
+            input,
+            output,
+            options: { dateType: "string", enumStyle: "union" },
+            plugins: [ZodPlugin],
+            package: { name: "@acme/validated-client", angularVersion: "^21.0.0" },
+        }),
     },
 });
