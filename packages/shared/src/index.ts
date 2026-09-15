@@ -50,6 +50,7 @@ export {
     DuplicateGeneratedNameError,
     InvalidIdentifierError,
     NgOpenApiError,
+    OutputConflictError,
     SpecLoadError,
     SpecParseError,
     UnresolvedPathTemplateError,

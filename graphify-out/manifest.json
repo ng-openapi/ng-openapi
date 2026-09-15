@@ -75,8 +75,8 @@
     "semantic_hash": ""
   },
   "packages/ng-openapi/src/lib/core/generator.ts": {
-    "mtime": 1789467901.2252593,
-    "ast_hash": "75f807ba1bcef09fde455a0e74279886",
+    "mtime": 1789472130.1578848,
+    "ast_hash": "2c3ba300b4c1338c596eb8e44d2e9be4",
     "semantic_hash": ""
   },
   "packages/ng-openapi/src/lib/core/index.ts": {
@@ -390,13 +390,13 @@
     "semantic_hash": ""
   },
   "packages/shared/src/index.ts": {
-    "mtime": 1789468949.039888,
-    "ast_hash": "13e6c3f4a0473b6af48f0fe06ebb5572",
+    "mtime": 1789472023.9219892,
+    "ast_hash": "2007ee508426ccba17e0c6868594c966",
     "semantic_hash": ""
   },
   "packages/shared/src/types/config.types.ts": {
-    "mtime": 1789470629.0634632,
-    "ast_hash": "d2685fa01cfea24a5272056a72a0d664",
+    "mtime": 1789472034.1103384,
+    "ast_hash": "23dda4f5f17e437142201fecacf37219",
     "semantic_hash": ""
   },
   "packages/shared/src/types/generator.types.ts": {
@@ -1100,18 +1100,18 @@
     "semantic_hash": ""
   },
   "packages/ng-openapi/src/lib/core/config-validation.ts": {
-    "mtime": 1789470830.153087,
-    "ast_hash": "9e227a8d1beca7c40498a0dd79f2174d",
+    "mtime": 1789472141.7496347,
+    "ast_hash": "70d125e3ffeaa0e057af1026234f6317",
     "semantic_hash": ""
   },
   "packages/ng-openapi/tests/config-validation.test.ts": {
-    "mtime": 1789470829.9933887,
-    "ast_hash": "4ffcbe574cc03d9683a5ef93cabd1cd6",
+    "mtime": 1789472248.668775,
+    "ast_hash": "4514a54cc0a008bfaabeee5acada2547",
     "semantic_hash": ""
   },
   "packages/shared/src/core/normalize.ts": {
-    "mtime": 1789470719.6712494,
-    "ast_hash": "379cf4350a4e6bbd1ec8ff94e78183b9",
+    "mtime": 1789472040.5940204,
+    "ast_hash": "48e8b831c313fb314b887cb82e720746",
     "semantic_hash": ""
   },
   "packages/shared/src/core/spec-format.ts": {
@@ -1140,8 +1140,8 @@
     "semantic_hash": ""
   },
   "packages/shared/tests/normalize.test.ts": {
-    "mtime": 1789470793.8578308,
-    "ast_hash": "00b36d70460177b46dda151851f53e66",
+    "mtime": 1789472196.013723,
+    "ast_hash": "f8db38f2fca7c3653c8c7cf8c4936564",
     "semantic_hash": ""
   },
   "packages/shared/tests/spec-format.test.ts": {
@@ -1180,8 +1180,8 @@
     "semantic_hash": ""
   },
   "packages/ng-openapi/tests/generation-result.test.ts": {
-    "mtime": 1789470806.4723258,
-    "ast_hash": "c0eaf8e20d56e13697124a3878ff77e5",
+    "mtime": 1789472222.6930144,
+    "ast_hash": "94e467190c3e33be9fec641c4240e603",
     "semantic_hash": ""
   },
   "packages/ng-openapi/tests/type-units.test.ts": {
@@ -1250,13 +1250,13 @@
     "semantic_hash": ""
   },
   "packages/shared/src/errors.ts": {
-    "mtime": 1789464207.1311054,
-    "ast_hash": "5c0e1ee592d66154e06c9302341caffc",
+    "mtime": 1789472022.4263265,
+    "ast_hash": "59845b50e1e4ac7f0475b858d0014203",
     "semantic_hash": ""
   },
   "ARCHITECTURE.md": {
-    "mtime": 1789470739.5508425,
-    "ast_hash": "697ec8ecb3d4687cd8d09ac9136acc7a",
+    "mtime": 1789472238.9627929,
+    "ast_hash": "e05a660ebac4c659ee1377bb178fa460",
     "semantic_hash": ""
   },
   "packages/ng-openapi/tests/perf-benchmark.test.ts": {
@@ -1610,8 +1610,8 @@
     "semantic_hash": ""
   },
   "packages/shared/tests/errors.test.ts": {
-    "mtime": 1789464207.138156,
-    "ast_hash": "7677760eb8932b9fe484597d06760fe0",
+    "mtime": 1789472247.5951204,
+    "ast_hash": "01a2a2042645f6e185200d09679cdc3a",
     "semantic_hash": ""
   },
   "packages/testing/src/compile-generated.ts": {
@@ -1710,13 +1710,13 @@
     "semantic_hash": ""
   },
   "packages/ng-openapi/src/lib/generators/utility/package-scaffold.generator.ts": {
-    "mtime": 1789470705.1875002,
-    "ast_hash": "ecdf548d314678f13a423b1c247a66f6",
+    "mtime": 1789472115.447304,
+    "ast_hash": "324f1fa45d3ca16cd2de75840feb6281",
     "semantic_hash": ""
   },
   "packages/ng-openapi/src/lib/generators/utility/package-scaffold.versions.ts": {
-    "mtime": 1789467249.2268221,
-    "ast_hash": "936a7d67863595e05e328d620885ca51",
+    "mtime": 1789472028.4508069,
+    "ast_hash": "eea266df44c27c0ca03b15f1974b2289",
     "semantic_hash": ""
   },
   "packages/ng-openapi/tests/package-scaffold-smoke.test.ts": {
@@ -1725,8 +1725,8 @@
     "semantic_hash": ""
   },
   "packages/ng-openapi/tests/package-scaffold.test.ts": {
-    "mtime": 1789470772.9863706,
-    "ast_hash": "ee9955be25481db820fb6bc69690edd3",
+    "mtime": 1789472191.7650177,
+    "ast_hash": "104eb0a285088af980939c0c2bc0dd08",
     "semantic_hash": ""
   },
   "packages/shared/src/emit/text-file.emit.ts": {
@@ -1740,13 +1740,13 @@
     "semantic_hash": ""
   },
   "docs/api/configuration/package.md": {
-    "mtime": 1789470935.7851956,
-    "ast_hash": "b23a1f57c8096af94830ce8e6a802485",
+    "mtime": 1789472248.8246045,
+    "ast_hash": "8ae259ed4b4a11be4d08f54eaa720f1d",
     "semantic_hash": ""
   },
   "docs/guide/npm-package.md": {
-    "mtime": 1789470934.5647893,
-    "ast_hash": "71df4105f425318660217d6e271248bc",
+    "mtime": 1789472236.8451915,
+    "ast_hash": "b9c319c9749715db1a4a2f7acd8fafac",
     "semantic_hash": ""
   },
   "packages/ng-openapi/tests/__golden__/edge-cases/npm-package/_manifest.txt": {
@@ -1837,6 +1837,11 @@
   "packages/ng-openapi/tests/__golden__/swagger-2.0/npm-package-types-only/_manifest.txt": {
     "mtime": 1789470894.0792768,
     "ast_hash": "a34621f5cc5f349b7bcb4cc8a8e1297e",
+    "semantic_hash": ""
+  },
+  "packages/ng-openapi/src/lib/core/package-scaffold-guard.ts": {
+    "mtime": 1789472126.6128187,
+    "ast_hash": "83b80b071e9af4c015bd67e777324473",
     "semantic_hash": ""
   }
 }

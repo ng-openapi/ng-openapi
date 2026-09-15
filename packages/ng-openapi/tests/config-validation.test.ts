@@ -209,16 +209,58 @@ describe("validateGeneratorConfig", () => {
             expect(withPackage({ name: "x", angularVersion: "21" })).toEqual([]);
         });
 
-        it("rejects packageJson that is not an object or that overrides name or version", () => {
+        it("rejects packageJson that is not an object or that overrides a first-class field", () => {
             expect(withPackage({ name: "x", packageJson: [] })).toContainEqual(
                 expect.stringContaining("`package.packageJson` must be an object"),
             );
             expect(withPackage({ name: "x", packageJson: { name: "y" } })).toContainEqual(
-                expect.stringContaining("`package.packageJson.name` is not allowed"),
+                expect.stringContaining("`package.packageJson.name` is not allowed — set `package.name`"),
             );
             expect(withPackage({ name: "x", packageJson: { version: "1.0" } })).toContainEqual(
                 expect.stringContaining("`package.packageJson.version` is not allowed"),
             );
+            expect(withPackage({ name: "x", packageJson: { repository: "github:acme/x" } })).toContainEqual(
+                expect.stringContaining("`package.packageJson.repository` is not allowed — set `package.repository`"),
+            );
+            // A copied config with both would publish to a registry nobody chose
+            expect(
+                withPackage({ name: "x", packageJson: { publishConfig: { registry: "https://npm.example.com" } } }),
+            ).toContainEqual(
+                expect.stringContaining(
+                    "`package.packageJson.publishConfig.registry` is not allowed — set `package.publishRegistry`",
+                ),
+            );
+            expect(withPackage({ name: "x", packageJson: { publishConfig: { access: "public" } } })).toEqual([]);
+        });
+
+        it("accepts undefined override values, since the merge skips them", () => {
+            // `license: process.env["LICENSE"]` with the variable unset is the documented pattern
+            expect(
+                withPackage({
+                    name: "x",
+                    packageJson: {
+                        license: undefined,
+                        peerDependencies: { rxjs: undefined },
+                        nested: { a: undefined },
+                    },
+                }),
+            ).toEqual([]);
+        });
+
+        it("anchors angularVersion to one readable range at or above the oldest supported major", () => {
+            for (const range of ["^20.0.0", "~21.1", ">=19.0.0 <22", "21", "16", "16.2"]) {
+                expect(withPackage({ name: "x", angularVersion: range }), range).toEqual([]);
+            }
+            for (const range of ["21abc", "^20.0.0 and up", "^20 || ^21", "latest", "20.0.0.0", ""]) {
+                expect(withPackage({ name: "x", angularVersion: range }), JSON.stringify(range)).toContainEqual(
+                    expect.stringContaining("must be a single semver range"),
+                );
+            }
+            for (const range of ["15", "^1.0.0", "0"]) {
+                expect(withPackage({ name: "x", angularVersion: range }), range).toContainEqual(
+                    expect.stringContaining("must target Angular 16 or later"),
+                );
+            }
         });
 
         it("requires dependency maps and scripts in packageJson to be objects of non-empty strings", () => {

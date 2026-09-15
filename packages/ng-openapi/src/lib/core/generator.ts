@@ -14,6 +14,7 @@ import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
 import { GeneratorConfig, isUrl, SpecLoadError, SpecParseError, SwaggerParser } from "@ng-openapi/shared";
 import { validateGeneratorConfig } from "./config-validation";
 import { detectAngularCoreVersion } from "./angular-version";
+import { assertScaffoldTargetsWritable } from "./package-scaffold-guard";
 import { GenerationResult, Reporter } from "./reporter";
 import * as fs from "fs";
 import * as path from "path";
@@ -194,6 +195,7 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
     // Last, after plugins and the main index: package.json's peer
     // dependencies are derived from the imports of everything generated above
     if (config.package) {
+        assertScaffoldTargetsWritable(outputPath);
         const packageScaffoldGenerator = new PackageScaffoldGenerator(
             project,
             { clientName: config.clientName, package: config.package },

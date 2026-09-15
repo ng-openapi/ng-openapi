@@ -17,5 +17,8 @@
     "@angular/compiler-cli": "^21.0.0",
     "@angular/core": "^21.0.0",
     "ng-packagr": "^21.0.0"
+  },
+  "ngOpenapi": {
+    "generated": true
   }
 }

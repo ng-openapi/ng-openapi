@@ -12,6 +12,20 @@
  */
 export const DEFAULT_ANGULAR_MAJOR = 21;
 
+/**
+ * Oldest Angular the emitted toolchain config works with: the tsconfig uses
+ * `moduleResolution: "bundler"`, which needs the TypeScript 5 that Angular 16
+ * was the first to require.
+ */
+export const MIN_ANGULAR_MAJOR = 16;
+
+/**
+ * Stamped into the generated package.json so a later run can tell its own
+ * file from one the user wrote — the scaffold refuses to overwrite the latter.
+ */
+export const PACKAGE_JSON_MARKER_KEY = "ngOpenapi";
+export const PACKAGE_JSON_MARKER = { [PACKAGE_JSON_MARKER_KEY]: { generated: true } } as const;
+
 /** Peer ranges for the packages generated code can import; anything else is pinned to "*" with a warning. */
 export const KNOWN_PEER_RANGES: Readonly<Record<string, string>> = {
     rxjs: "^7.4.0",

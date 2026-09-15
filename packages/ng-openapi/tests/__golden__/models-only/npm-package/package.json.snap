@@ -22,6 +22,9 @@
     "ng-packagr": "^21.0.0",
     "rxjs": "^7.8.0"
   },
+  "ngOpenapi": {
+    "generated": true
+  },
   "license": "MIT",
   "publishConfig": {
     "access": "public"

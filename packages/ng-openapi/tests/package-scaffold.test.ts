@@ -1,8 +1,9 @@
 import { Project } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { PackageConfig, SpecInfo } from "@ng-openapi/shared";
+import { ConfigValidationError, PackageConfig, SpecInfo } from "@ng-openapi/shared";
+import { detectAngularCoreVersion } from "../src/lib/core/angular-version";
 import { PackageScaffoldGenerator } from "../src/lib/generators/utility/package-scaffold.generator";
-import { DEFAULT_ANGULAR_MAJOR } from "../src/lib/generators/utility/package-scaffold.versions";
+import { DEFAULT_ANGULAR_MAJOR, leadingMajor } from "../src/lib/generators/utility/package-scaffold.versions";
 
 const OUT = "/out";
 
@@ -20,6 +21,7 @@ interface PackageJsonShape {
     peerDependencies: Record<string, string>;
     dependencies: Record<string, string>;
     devDependencies: Record<string, string>;
+    ngOpenapi?: { generated: boolean };
 }
 
 interface TsconfigShape {
@@ -54,7 +56,8 @@ function run(options: RunOptions) {
     new PackageScaffoldGenerator(
         project,
         { clientName: options.clientName, package: options.package },
-        options.specInfo,
+        // A spec with a version, unless the test says otherwise: a missing one warns
+        "specInfo" in options ? options.specInfo : { version: "1.0.0" },
         options.detectedAngularVersion,
         (message) => warnings.push(message),
     ).generate(OUT);
@@ -141,6 +144,24 @@ describe("PackageScaffoldGenerator", () => {
             expect(packageJson.peerDependencies["@acme/runtime"]).toBe("*");
             expect(warnings).toEqual([expect.stringContaining('imports "@acme/runtime"')]);
         });
+
+        it("falls silent once the user supplies the range the warning asked for", () => {
+            const { packageJson, warnings } = run({
+                package: {
+                    name: "x",
+                    angularVersion: "^21.0.0",
+                    packageJson: { peerDependencies: { "@acme/runtime": "^1.0.0" } },
+                },
+                imports: ["@angular/core", "@acme/runtime/helpers"],
+            });
+            expect(packageJson.peerDependencies["@acme/runtime"]).toBe("^1.0.0");
+            expect(warnings).toEqual([]);
+        });
+
+        it("stamps the marker a later run recognizes its own package.json by", () => {
+            const { packageJson } = run({ package: { name: "x", angularVersion: "^21.0.0" } });
+            expect(packageJson.ngOpenapi).toEqual({ generated: true });
+        });
     });
 
     describe("Angular version", () => {
@@ -161,6 +182,20 @@ describe("PackageScaffoldGenerator", () => {
             expect(packageJson.peerDependencies["@angular/core"]).toBe(`^${DEFAULT_ANGULAR_MAJOR}.0.0`);
             expect(warnings).toEqual([expect.stringContaining("no @angular/core found")]);
         });
+
+        it("keeps the fallback major in step with the Angular this workspace builds against", () => {
+            // The constant claims to track the root @angular/core; a bump to one
+            // without the other would silently regress the fallback
+            const workspaceVersion = detectAngularCoreVersion();
+            expect(workspaceVersion).toBeDefined();
+            expect(leadingMajor(workspaceVersion as string)).toBe(DEFAULT_ANGULAR_MAJOR);
+        });
+
+        it("refuses a range it cannot read a major from instead of pairing it with the default toolchain", () => {
+            // Validation rejects this before the generator runs; a caller that
+            // skipped validation must not get a silently mismatched package.json
+            expect(() => run({ package: { name: "x", angularVersion: "latest" } })).toThrow(ConfigValidationError);
+        });
     });
 
     describe("version", () => {
@@ -173,11 +208,12 @@ describe("PackageScaffoldGenerator", () => {
             expect(run({ package: { name: "x", angularVersion: "^21.0.0" }, specInfo: info }).packageJson.version).toBe(
                 "2.3.4",
             );
-            expect(run({ package: { name: "x", angularVersion: "^21.0.0" } }).packageJson.version).toBe("0.0.0");
-            expect(
-                run({ package: { name: "x", angularVersion: "^21.0.0" }, specInfo: { version: "" } }).packageJson
-                    .version,
-            ).toBe("0.0.0");
+            for (const specInfo of [undefined, { version: "" }, { version: "  " }]) {
+                const missing = run({ package: { name: "x", angularVersion: "^21.0.0" }, specInfo });
+                expect(missing.packageJson.version).toBe("0.0.0");
+                // Defaulting is as much a spec defect as a bad value; both are said
+                expect(missing.warnings).toEqual([expect.stringContaining("the spec has no info.version")]);
+            }
         });
 
         it("warns when the spec's version is not something npm will publish", () => {
@@ -250,20 +286,18 @@ describe("PackageScaffoldGenerator", () => {
             expect(packageJson.sideEffects).toBe(false);
         });
 
-        it("honors an override of the build script or tslib but says what breaks", () => {
+        it("honors an override of the build script but says what breaks", () => {
             const { packageJson, warnings } = run({
                 package: {
                     name: "x",
                     angularVersion: "^21.0.0",
-                    packageJson: { scripts: { build: "tsc" }, dependencies: { tslib: "^1.0.0" } },
+                    packageJson: { scripts: { build: "tsc" }, dependencies: { tslib: "^2.8.0" } },
                 },
             });
             expect(packageJson.scripts["build"]).toBe("tsc");
-            expect(packageJson.dependencies["tslib"]).toBe("^1.0.0");
-            expect(warnings).toEqual([
-                expect.stringContaining("packageJson.scripts.build replaces the generated value"),
-                expect.stringContaining("packageJson.dependencies.tslib replaces the generated value"),
-            ]);
+            // Re-ranging tslib is harmless (validation keeps it a string): no warning for it
+            expect(packageJson.dependencies["tslib"]).toBe("^2.8.0");
+            expect(warnings).toEqual([expect.stringContaining("packageJson.scripts.build replaces the generated")]);
         });
 
         it("writes the spec's description as one line, only when there is one", () => {

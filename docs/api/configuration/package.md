@@ -30,14 +30,14 @@ export default defineConfig({
 
 ## Properties
 
-| Property          | Type                                  | Default                                 | Description                                                                    |
-| ----------------- | ------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------ |
-| `name`            | `string`                              | —                                       | npm package name (`@scope/name` or `name`). Required.                          |
-| `version`         | `string`                              | the spec's `info.version`, else `0.0.0` | package.json `version`. Must be a semver version when set.                     |
-| `repository`      | `string \| { type, url, directory? }` | `undefined`                             | package.json `repository`.                                                     |
-| `publishRegistry` | `string`                              | `undefined`                             | Written as `publishConfig.registry`, for private registries.                   |
-| `angularVersion`  | `string`                              | detected from the workspace             | Angular major the package targets, as a semver range (`"^20.0.0"`). See below. |
-| `packageJson`     | `Record<string, unknown>`             | `undefined`                             | Extra package.json fields, deep-merged onto the generated ones. See below.     |
+| Property          | Type                                  | Default                                 | Description                                                                                                             |
+| ----------------- | ------------------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `name`            | `string`                              | —                                       | npm package name (`@scope/name` or `name`). Required.                                                                   |
+| `version`         | `string`                              | the spec's `info.version`, else `0.0.0` | package.json `version`. Must be a semver version when set.                                                              |
+| `repository`      | `string \| { type, url, directory? }` | `undefined`                             | package.json `repository`.                                                                                              |
+| `publishRegistry` | `string`                              | `undefined`                             | Written as `publishConfig.registry`, for private registries.                                                            |
+| `angularVersion`  | `string`                              | detected from the workspace             | Angular major the package targets, as one semver range (`"^20.0.0"`, `">=19.0.0 <22"`); Angular 16 or later. See below. |
+| `packageJson`     | `Record<string, unknown>`             | `undefined`                             | Extra package.json fields, deep-merged onto the generated ones. See below.                                              |
 
 ## Generated files
 
@@ -78,10 +78,14 @@ package: {
 
 A few rules keep the generated file consistent with the generated code:
 
-- `name` and `version` are rejected here — set `package.name` / `package.version`.
+- Fields that have a first-class option — `name`, `version`, `repository`, `publishConfig.registry` — are rejected here; set `package.name` / `package.version` / `package.repository` / `package.publishRegistry`. (`publishConfig.access` and everything else under `publishConfig` is fine.)
 - `dependencies`, `devDependencies`, `peerDependencies`, `optionalDependencies` and `scripts` must be objects of non-empty strings. A derived peer dependency's range can be changed, but the entry cannot be removed while the generated code still imports the package.
-- Replacing the generated `scripts.build` or `dependencies.tslib` is honored, with a warning: the first means `npm run build` no longer runs ng-packagr, the second breaks the compiled output at runtime.
-- Values must be JSON: functions, symbols, class instances, `NaN` and `__proto__` keys are rejected rather than silently dropped or mangled by serialization.
+- Replacing the generated `scripts.build` is honored, with a warning: `npm run build` then no longer runs ng-packagr as the generated README says.
+- An `undefined` value is ignored — `license: process.env["LICENSE"]` with the variable unset simply adds nothing. Everything else must be JSON: functions, symbols, class instances, `NaN` and `__proto__` keys are rejected rather than silently dropped or mangled by serialization.
+
+## Existing files
+
+The scaffold's five files collide with almost every project root. ng-openapi stamps its own `package.json` (`"ngOpenapi": { "generated": true }`) and overwrites the scaffold files only when that stamp is present. If any of the five already exists in the output directory without it — typically `output: "."` in a repository that has its own `package.json` — generation stops with an `OutputConflictError` naming the files, before anything is written. Point `output` at a directory of its own, or remove stale files by hand.
 
 ## Notes
 

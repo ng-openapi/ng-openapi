@@ -119,6 +119,7 @@ Two things to keep in mind:
 
 - The generator picks the Angular major from the `@angular/core` installed where it runs. In a job that has no Angular installed, set `package.angularVersion` explicitly so the package targets the Angular your applications use, not a guessed default.
 - Every scaffold file is regenerated on each run. Put customizations in the config's `packageJson` override rather than editing the generated `package.json`, or they are lost on the next generation.
+- Give the package a directory of its own. The scaffold refuses to overwrite a `package.json`, `tsconfig.json`, `README.md`, `ng-package.json` or `.gitignore` it did not generate (it recognizes its own by a stamp in `package.json`), so `output: "."` in a repository with its own `package.json` fails with an `OutputConflictError` rather than replacing it.
 
 ## What is not generated
 

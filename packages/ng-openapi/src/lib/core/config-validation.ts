@@ -6,6 +6,7 @@ import {
     isUrl,
     PackageConfig,
 } from "@ng-openapi/shared";
+import { leadingMajor, MIN_ANGULAR_MAJOR } from "../generators/utility/package-scaffold.versions";
 
 // Re-exported for hosts that import it from here; the class itself lives in
 // shared/errors.ts so it joins the branded NgOpenApiError hierarchy.
@@ -196,8 +197,10 @@ export function validateGeneratorConfig(config: unknown): asserts config is Gene
 // Approximates npm's rule for new package names (lowercase, URL-safe,
 // optionally scoped); the 214-character limit is not checked.
 const NPM_PACKAGE_NAME_PATTERN = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
-// A range whose leading major can be read: "^20.0.0", "~21.1", ">=19 <22", "21"
-const ANGULAR_RANGE_PATTERN = /^(\^|~|>=)?\d+/;
+// One simple range whose leading major can be read: "^20.0.0", "~21.1",
+// ">=19 <22", "21". No unions ("^20 || ^21") — the leading major also drives
+// the toolchain devDependencies, which need one answer.
+const ANGULAR_RANGE_PATTERN = /^(\^|~|>=)?\d+(\.\d+){0,2}( <\d+(\.\d+){0,2})?$/;
 
 function validatePackageConfig(pkg: UnknownShape<PackageConfig>, issues: string[]): void {
     if (typeof pkg.name !== "string" || !NPM_PACKAGE_NAME_PATTERN.test(pkg.name)) {
@@ -223,13 +226,16 @@ function validatePackageConfig(pkg: UnknownShape<PackageConfig>, issues: string[
     if (pkg.publishRegistry !== undefined && (typeof pkg.publishRegistry !== "string" || !isUrl(pkg.publishRegistry))) {
         issues.push(`\`package.publishRegistry\` must be an http(s) URL, got ${JSON.stringify(pkg.publishRegistry)}`);
     }
-    if (
-        pkg.angularVersion !== undefined &&
-        (typeof pkg.angularVersion !== "string" || !ANGULAR_RANGE_PATTERN.test(pkg.angularVersion))
-    ) {
-        issues.push(
-            `\`package.angularVersion\` must be a semver range starting with the Angular major, like "^20.0.0", got ${JSON.stringify(pkg.angularVersion)}`,
-        );
+    if (pkg.angularVersion !== undefined) {
+        if (typeof pkg.angularVersion !== "string" || !ANGULAR_RANGE_PATTERN.test(pkg.angularVersion)) {
+            issues.push(
+                `\`package.angularVersion\` must be a single semver range starting with the Angular major, like "^20.0.0" or ">=19.0.0 <22", got ${JSON.stringify(pkg.angularVersion)}`,
+            );
+        } else if ((leadingMajor(pkg.angularVersion) ?? 0) < MIN_ANGULAR_MAJOR) {
+            issues.push(
+                `\`package.angularVersion\` must target Angular ${MIN_ANGULAR_MAJOR} or later (the generated tsconfig needs TypeScript 5), got ${JSON.stringify(pkg.angularVersion)}`,
+            );
+        }
     }
     if (pkg.packageJson !== undefined) {
         if (!isPlainObject(pkg.packageJson)) {
@@ -240,8 +246,15 @@ function validatePackageConfig(pkg: UnknownShape<PackageConfig>, issues: string[
     }
 }
 
-// Keys the scaffold derives; an override here would say the same thing twice
-const PACKAGE_JSON_OWNED_KEYS = { name: "package.name", version: "package.version" } as const;
+// Fields with a first-class `package` option. An override here would say the
+// same thing twice with no rule for which wins — every future first-class
+// field joins this list. (`publishConfig.access` and the like stay allowed.)
+const PACKAGE_JSON_OWNED_KEYS: ReadonlyArray<[path: readonly string[], option: string]> = [
+    [["name"], "package.name"],
+    [["version"], "package.version"],
+    [["repository"], "package.repository"],
+    [["publishConfig", "registry"], "package.publishRegistry"],
+];
 // Maps npm reads as name → range/command: a non-string value is an invalid
 // manifest, and requiring the map shape is what keeps a derived entry from
 // being dropped by replacing the whole map with null or an array
@@ -254,9 +267,10 @@ const PACKAGE_JSON_STRING_MAPS = [
 ] as const;
 
 function validatePackageJsonOverrides(overrides: Record<string, unknown>, issues: string[]): void {
-    for (const [key, target] of Object.entries(PACKAGE_JSON_OWNED_KEYS)) {
-        if (key in overrides) {
-            issues.push(`\`package.packageJson.${key}\` is not allowed — set \`${target}\` instead`);
+    for (const [path, option] of PACKAGE_JSON_OWNED_KEYS) {
+        const value = path.reduce<unknown>((node, key) => (isPlainObject(node) ? node[key] : undefined), overrides);
+        if (value !== undefined) {
+            issues.push(`\`package.packageJson.${path.join(".")}\` is not allowed — set \`${option}\` instead`);
         }
     }
     for (const key of PACKAGE_JSON_STRING_MAPS) {
@@ -269,7 +283,8 @@ function validatePackageJsonOverrides(overrides: Record<string, unknown>, issues
             continue;
         }
         for (const [name, value] of Object.entries(map)) {
-            if (typeof value !== "string" || value.trim() === "") {
+            // undefined is skipped by the merge, like everywhere else in the override
+            if (value !== undefined && (typeof value !== "string" || value.trim() === "")) {
                 issues.push(`\`package.packageJson.${key}["${name}"]\` must be a non-empty string`);
             }
         }
@@ -281,11 +296,13 @@ function validatePackageJsonOverrides(overrides: Record<string, unknown>, issues
  * The override is serialized with JSON.stringify, which silently drops
  * functions and symbols, turns NaN into null, and throws a bare TypeError on
  * bigints and cycles — none of which should reach the emitted file unnoticed.
+ * `undefined` is the one non-JSON value accepted: the merge skips it, so
+ * `license: process.env["LICENSE"]` with the variable unset adds nothing.
  * A `__proto__` key is refused for the same reason emitObjectKey computes it:
  * assigning it during the merge invokes the setter instead of creating a key.
  */
 function assertJsonValue(value: unknown, path: string, issues: string[]): void {
-    if (value === null || typeof value === "string" || typeof value === "boolean") {
+    if (value === undefined || value === null || typeof value === "string" || typeof value === "boolean") {
         return;
     }
     if (typeof value === "number") {

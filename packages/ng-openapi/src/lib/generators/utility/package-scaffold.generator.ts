@@ -2,6 +2,7 @@ import { Project } from "ts-morph";
 import * as path from "path";
 import {
     clientNameIdentifier,
+    ConfigValidationError,
     effectiveClientName,
     emitJsonFile,
     emitTextFile,
@@ -17,6 +18,7 @@ import {
     DEV_DEPENDENCY_RANGES,
     KNOWN_PEER_RANGES,
     leadingMajor,
+    PACKAGE_JSON_MARKER,
     TSLIB_RANGE,
 } from "./package-scaffold.versions";
 
@@ -108,9 +110,10 @@ export class PackageScaffoldGenerator {
                 // own built-in tsconfig and the emitted one is never read
                 build: "ng-packagr -p ng-package.json -c tsconfig.json",
             },
-            peerDependencies: this.buildPeerDependencies(imported, angularPeerRange),
+            peerDependencies: this.buildPeerDependencies(imported, angularPeerRange, pkg.packageJson),
             dependencies: { tslib: TSLIB_RANGE },
             devDependencies: this.buildDevDependencies(imported, angularMajor),
+            ...PACKAGE_JSON_MARKER,
         };
         const packageJson = mergePackageJson(generated, pkg.packageJson);
         this.warnOnReplacedBuildKeys(generated, packageJson);
@@ -130,25 +133,19 @@ export class PackageScaffoldGenerator {
     }
 
     /**
-     * A `packageJson` override may replace these, but the README's build and
-     * publish steps assume them: without the ng-packagr script `npm run build`
-     * does something else, and without tslib the `importHelpers` output fails
-     * at runtime in the consumer. Honored, since the user asked — but said.
+     * A `packageJson` override may replace the build script, but the README's
+     * build and publish steps assume it. Honored, since the user asked — but
+     * said. (tslib needs no such guard: validation keeps it a string, and
+     * ng-packagr adds it to the published manifest regardless.)
      */
     private warnOnReplacedBuildKeys(generated: Record<string, unknown>, merged: Record<string, unknown>): void {
-        const buildKeys: Array<[section: string, key: string, consequence: string]> = [
-            ["scripts", "build", "`npm run build` will no longer run ng-packagr"],
-            ["dependencies", "tslib", "the compiled output imports tslib and will fail without it"],
-        ];
-        for (const [section, key, consequence] of buildKeys) {
-            const before = (generated[section] as Record<string, unknown>)[key];
-            const after = (merged[section] as Record<string, unknown>)[key];
-            if (after !== before) {
-                this.onWarning(
-                    `package: packageJson.${section}.${key} replaces the generated value ` +
-                        `${JSON.stringify(before)} with ${JSON.stringify(after)} — ${consequence}.`,
-                );
-            }
+        const before = (generated["scripts"] as Record<string, unknown>)["build"];
+        const after = (merged["scripts"] as Record<string, unknown>)["build"];
+        if (after !== before) {
+            this.onWarning(
+                `package: packageJson.scripts.build replaces the generated ${JSON.stringify(before)} with ` +
+                    `${JSON.stringify(after)} — \`npm run build\` will no longer run ng-packagr as the README says.`,
+            );
         }
     }
 
@@ -161,7 +158,15 @@ export class PackageScaffoldGenerator {
      */
     private resolveAngularVersion(pkg: PackageConfig): { peerRange: string; major: number } {
         if (pkg.angularVersion !== undefined) {
-            return { peerRange: pkg.angularVersion, major: leadingMajor(pkg.angularVersion) ?? DEFAULT_ANGULAR_MAJOR };
+            const major = leadingMajor(pkg.angularVersion);
+            if (major === undefined) {
+                // Validation rejects this shape; a caller that skipped it must
+                // not get a peer range silently paired with the default toolchain
+                throw new ConfigValidationError([
+                    `\`package.angularVersion\` has no leading Angular major, got ${JSON.stringify(pkg.angularVersion)}`,
+                ]);
+            }
+            return { peerRange: pkg.angularVersion, major };
         }
         const detectedMajor = this.detectedAngularVersion ? leadingMajor(this.detectedAngularVersion) : undefined;
         if (detectedMajor !== undefined) {
@@ -184,8 +189,12 @@ export class PackageScaffoldGenerator {
         if (pkg.version !== undefined) {
             return pkg.version;
         }
-        const specVersion = this.specInfo?.version;
-        if (specVersion === undefined || specVersion === "") {
+        const specVersion = this.specInfo?.version?.trim();
+        if (!specVersion) {
+            this.onWarning(
+                `package: the spec has no info.version, so package.json gets version "0.0.0". ` +
+                    `Set \`package.version\` (or info.version in the spec).`,
+            );
             return "0.0.0";
         }
         if (!isSemver(specVersion)) {
@@ -197,7 +206,14 @@ export class PackageScaffoldGenerator {
         return specVersion;
     }
 
-    private buildPeerDependencies(imported: string[], angularPeerRange: string): Record<string, string> {
+    private buildPeerDependencies(
+        imported: string[],
+        angularPeerRange: string,
+        overrides: PackageConfig["packageJson"],
+    ): Record<string, string> {
+        // Ranges the user already supplied — the "*" warning tells them to,
+        // so it must fall silent once they have
+        const overridden = isPlainObject(overrides?.["peerDependencies"]) ? overrides["peerDependencies"] : {};
         const peerDependencies: Record<string, string> = {};
         for (const name of imported) {
             if (name.startsWith("@angular/")) {
@@ -206,6 +222,9 @@ export class PackageScaffoldGenerator {
                 peerDependencies[name] = KNOWN_PEER_RANGES[name];
             } else {
                 peerDependencies[name] = "*";
+                if (typeof overridden[name] === "string") {
+                    continue;
+                }
                 this.onWarning(
                     `package: generated code imports "${name}", which ng-openapi has no known version range for — ` +
                         `pinning it to "*" in package.json. Set \`package.packageJson.peerDependencies["${name}"]\` to a real range.`,
@@ -257,9 +276,9 @@ export class PackageScaffoldGenerator {
 
 ${intro}
 
-Every file in this directory, including this one, is regenerated on each
-\`ng-openapi\` run. Configure packaging through the \`package\` option of your
-ng-openapi config rather than editing the generated files.
+Every generated file in this directory, including this one, is rewritten on
+each \`ng-openapi\` run. Configure packaging through the \`package\` option of
+your ng-openapi config rather than editing the generated files.
 
 ## Build
 

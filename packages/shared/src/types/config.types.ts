@@ -52,15 +52,22 @@ export interface PackageConfig {
     angularVersion?: string;
     /**
      * Deep-merged onto the generated package.json — nested objects merge
-     * key by key, everything else is replaced, and your values win. `name`
-     * and `version` are not accepted here (set `package.name` /
-     * `package.version`). Dependency maps and `scripts` must be objects of
-     * strings, so a derived `peerDependencies` entry can have its range
-     * changed but not be removed; replacing the generated `scripts.build` or
-     * `dependencies.tslib` is honored with a warning, since either breaks the
-     * documented build.
+     * key by key, everything else is replaced, and your values win. Fields
+     * that have a first-class option (`name`, `version`, `repository`,
+     * `publishConfig.registry`) are not accepted here, so precedence is never
+     * ambiguous. An `undefined` value is ignored (`license: process.env[…]`
+     * with the variable unset adds nothing). Dependency maps and `scripts`
+     * must be objects of strings, so a derived `peerDependencies` entry can
+     * have its range changed but not be removed; replacing the generated
+     * `scripts.build` is honored with a warning, since it is the documented
+     * build.
      */
-    packageJson?: Record<string, unknown> & { name?: never; version?: never };
+    packageJson?: Record<string, unknown> & {
+        name?: never;
+        version?: never;
+        repository?: never;
+        publishConfig?: Record<string, unknown> & { registry?: never };
+    };
 }
 
 /**

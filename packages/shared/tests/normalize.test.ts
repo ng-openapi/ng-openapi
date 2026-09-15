@@ -70,10 +70,15 @@ describe("normalizeSpec", () => {
         expect(normalizeSpec({ openapi: "3.0.0", paths: {} } as never).info).toBeUndefined();
     });
 
-    it("stringifies info fields a YAML author left unquoted", () => {
-        // `version: 1.0` is the number 1 after js-yaml; `version: 2` is 2
-        const info = normalizeSpec({ openapi: "3.0.0", info: { title: "t", version: 2 }, paths: {} } as never).info;
-        expect(info).toEqual({ title: "t", version: "2", description: undefined });
+    it("stringifies info fields a YAML author left unquoted, and says so while the spelling is still known", () => {
+        // `version: 1.10` is the number 1.1 after js-yaml — a later warning
+        // about "1.1" would name a value the author never wrote
+        const warnings: string[] = [];
+        const info = normalizeSpec({ openapi: "3.0.0", info: { title: "t", version: 1.1 }, paths: {} } as never, (m) =>
+            warnings.push(m),
+        ).info;
+        expect(info).toEqual({ title: "t", version: "1.1", description: undefined });
+        expect(warnings).toEqual([expect.stringContaining('info.version is a number, not text — treated as "1.1"')]);
     });
 
     it("drops info fields that are not text, and says so", () => {

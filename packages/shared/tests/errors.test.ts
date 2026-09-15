@@ -5,6 +5,7 @@ import {
     DuplicateGeneratedNameError,
     InvalidIdentifierError,
     NgOpenApiError,
+    OutputConflictError,
     SpecLoadError,
     SpecParseError,
     UnresolvedPathTemplateError,
@@ -125,6 +126,17 @@ describe("typed errors", () => {
         const error = new ConfigValidationError(["one", "two"]);
         expect(() => (error.issues as string[]).push("three")).toThrow();
         expect(error.issues).toEqual(["one", "two"]);
+    });
+
+    it("brands OutputConflictError and carries the conflicting paths", () => {
+        const error = new OutputConflictError("clash", ["/out/package.json", "/out/README.md"]);
+        expect(error).toBeInstanceOf(NgOpenApiError);
+        expect(error.paths).toEqual(["/out/package.json", "/out/README.md"]);
+        expect(Object.getOwnPropertyDescriptor(error, "__ngOpenApiError")?.value).toEqual([
+            "OutputConflictError",
+            "NgOpenApiError",
+        ]);
+        expect(branded(["OutputConflictError", "NgOpenApiError"])).toBeInstanceOf(OutputConflictError);
     });
 
     it("brands ConfigValidationError like the rest of the hierarchy", () => {

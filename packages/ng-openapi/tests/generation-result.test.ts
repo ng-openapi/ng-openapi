@@ -1,7 +1,14 @@
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
-import { generateFromConfig, GenerationPhase, GeneratorConfig, SpecLoadError, SpecParseError } from "ng-openapi";
+import {
+    generateFromConfig,
+    GenerationPhase,
+    GeneratorConfig,
+    OutputConflictError,
+    SpecLoadError,
+    SpecParseError,
+} from "ng-openapi";
 
 const FIXTURE = resolve(__dirname, "../../testing/fixtures/specs/openapi-3.0.json");
 
@@ -116,6 +123,37 @@ describe("generateFromConfig result + reporter", () => {
             expect(written, scaffold).toContain(`${output.replace(/\\/g, "/")}/${scaffold}`);
         }
         expect(result.warnings).toEqual([]);
+    });
+
+    it("refuses to overwrite scaffold files it did not generate, and writes nothing", async () => {
+        const output = mkdtempSync(join(tmpRoot, "package-conflict-"));
+        tempDirs.push(output);
+        const { writeFileSync, readFileSync, readdirSync } = await import("node:fs");
+        // A user's own project root: output: "." in a client repo
+        const ownManifest = JSON.stringify({ name: "my-app", devDependencies: { "ng-openapi": "*" } });
+        writeFileSync(join(output, "package.json"), ownManifest);
+        writeFileSync(join(output, "README.md"), "# my-app\n");
+
+        const config = { ...buildConfig(output), package: { name: "pets", angularVersion: "^21.0.0" } };
+        await expect(generateFromConfig(config)).rejects.toMatchObject({
+            constructor: OutputConflictError,
+            paths: [join(output, "package.json"), join(output, "README.md")],
+        });
+        // One write per run: the failure happened before it
+        expect(readFileSync(join(output, "package.json"), "utf8")).toBe(ownManifest);
+        expect(readdirSync(output).sort()).toEqual(["README.md", "package.json"]);
+    });
+
+    it("regenerates over its own scaffold files without complaint", async () => {
+        const output = mkdtempSync(join(tmpRoot, "package-regen-"));
+        tempDirs.push(output);
+        const config = { ...buildConfig(output), package: { name: "pets", angularVersion: "^21.0.0" } };
+
+        await generateFromConfig(config);
+        const { readFileSync } = await import("node:fs");
+        const first = readFileSync(join(output, "package.json"), "utf8");
+        await expect(generateFromConfig(config)).resolves.toBeDefined();
+        expect(readFileSync(join(output, "package.json"), "utf8")).toBe(first);
     });
 
     it("surfaces a package scaffold warning through the reporter and the result", async () => {

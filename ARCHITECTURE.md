@@ -126,7 +126,8 @@ what keeps the library embeddable and testable.
 User-facing failures are typed (`packages/shared/src/errors.ts`):
 `SpecLoadError` (input unreadable), `SpecParseError` (content unusable),
 `ConfigLoadError` (config file unreadable), `ConfigValidationError` (invalid
-config, collects all issues), `InvalidIdentifierError`,
+config, collects all issues), `OutputConflictError` (a scaffold file at the
+output path that ng-openapi did not write), `InvalidIdentifierError`,
 `DuplicateGeneratedNameError` and `UnresolvedPathTemplateError` (a name or path
 that cannot be emitted). Hosts branch on `instanceof`, never on message text —
 messages are presentation.
