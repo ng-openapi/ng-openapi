@@ -301,3 +301,20 @@ export class ConfigLoadError extends NgOpenApiError {
     }
 }
 registerError(ConfigLoadError, ["ConfigLoadError", "NgOpenApiError"]);
+
+/**
+ * A file the run would write already exists at the output path and was not
+ * written by ng-openapi — the npm package scaffold's package.json,
+ * tsconfig.json, README.md & co. collide with almost every project root,
+ * unlike generated .ts files. Nothing has been written when this is thrown.
+ */
+export class OutputConflictError extends NgOpenApiError {
+    /** Absolute paths of the files that would have been overwritten. */
+    readonly paths: readonly string[];
+
+    constructor(message: string, paths: readonly string[]) {
+        super(message);
+        this.paths = paths;
+    }
+}
+registerError(OutputConflictError, ["OutputConflictError", "NgOpenApiError"]);

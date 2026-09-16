@@ -35,12 +35,37 @@ export function normalizeSpec(spec: SwaggerSpec, onWarning?: (message: string) =
             : spec.openapi
               ? { type: "openapi", version: spec.openapi }
               : null,
+        info: spec.info
+            ? {
+                  title: infoText(spec.info.title),
+                  version: infoText(spec.info.version),
+                  description: infoText(spec.info.description),
+              }
+            : undefined,
         definitions,
         operations: extractPaths(spec.paths, undefined, onWarning, resolveParameter).map((operation) =>
             normalizeOperation(normalizeOperationSchemas(operation), resolveReference, onWarning),
         ),
         resolveReference,
     };
+}
+
+/**
+ * `info` fields are typed as strings but arrive as whatever the author wrote:
+ * an unquoted YAML `version: 1.0` parses as the number 1, and an object or
+ * array is nothing a README or package.json could show. Coerced silently —
+ * nothing reads `info` unless the `package` option is set, and the scaffold
+ * warns at the point of use, so a spec defect never nags a user it does not
+ * affect.
+ */
+function infoText(value: unknown): string | undefined {
+    if (typeof value === "string") {
+        return value;
+    }
+    if (typeof value === "number" || typeof value === "boolean") {
+        return String(value);
+    }
+    return undefined;
 }
 
 /**

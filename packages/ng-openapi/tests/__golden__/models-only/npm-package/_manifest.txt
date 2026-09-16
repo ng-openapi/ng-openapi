@@ -1,0 +1,12 @@
+.gitignore
+README.md
+index.ts
+models/index.ts
+ng-package.json
+package.json
+providers.ts
+tokens/index.ts
+tsconfig.json
+utils/base-interceptor.ts
+utils/file-download.ts
+utils/http-params-builder.ts

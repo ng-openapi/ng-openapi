@@ -39,6 +39,10 @@ Use the built-in file download utilities with generated services.
 
 Validate API responses against the OpenAPI schema at runtime.
 
+### [Publishing as an npm Package](./npm-package.md)
+
+Generate the client as a standalone npm package: build it with ng-packagr, publish it, install it anywhere.
+
 ## Plugins
 
 ### [HTTP Resource Plugin](./http-resource.md)

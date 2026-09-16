@@ -6,6 +6,7 @@ import {
     FileDownloadGenerator,
     HttpParamsBuilderGenerator,
     MainIndexGenerator,
+    PackageScaffoldGenerator,
     ProviderGenerator,
     TokenGenerator,
 } from "../generators/utility";
@@ -13,6 +14,7 @@ import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
 import { GeneratorConfig, isUrl, SpecLoadError, SpecParseError, SwaggerParser } from "@ng-openapi/shared";
 import { validateGeneratorConfig } from "./config-validation";
 import { detectAngularCoreVersion } from "./angular-version";
+import { assertScaffoldTargetsWritable } from "./package-scaffold-guard";
 import { GenerationResult, Reporter } from "./reporter";
 import * as fs from "fs";
 import * as path from "path";
@@ -83,11 +85,14 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
         reporter.onWarning?.(message);
     };
 
+    // Detected once: the @Service() guard below and the package scaffold's
+    // Angular peer range both read it.
+    const angularVersion = detectAngularCoreVersion();
+
     // Soft guard only: @Service() requires Angular 22+, but the workspace the
     // CLI runs in is not always the workspace that compiles the output, so an
     // undetectable or mismatched version must never block generation.
     if (config.options.serviceDecorator === "service") {
-        const angularVersion = detectAngularCoreVersion();
         if (angularVersion !== undefined && parseInt(angularVersion, 10) < 22) {
             onWarning(
                 `serviceDecorator "service" emits @Service(), which requires Angular 22+ — ` +
@@ -186,6 +191,21 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
     // Generate main index file (always, regardless of generateServices)
     const mainIndexGenerator = new MainIndexGenerator(project, config);
     mainIndexGenerator.generateMainIndex(outputPath);
+
+    // Last, after plugins and the main index: package.json's peer
+    // dependencies are derived from the imports of everything generated above
+    if (config.package) {
+        assertScaffoldTargetsWritable(outputPath);
+        const packageScaffoldGenerator = new PackageScaffoldGenerator(
+            project,
+            { clientName: config.clientName, package: config.package },
+            normalizedSpec.info,
+            angularVersion,
+            onWarning,
+        );
+        packageScaffoldGenerator.generate(outputPath);
+        reporter.onPhase?.("package-generated");
+    }
 
     // The single write of the run. Generators only build files in the Project;
     // saving here means a failure anywhere above leaves the output directory

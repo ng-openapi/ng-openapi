@@ -88,6 +88,10 @@ The `provide<ClientName>Client()` function (e.g. `provideDefaultClient`) plus it
 
 Barrel export of everything above — including any plugin directories (e.g. `resources/`, `validators/`) — so consumers can import from the output root.
 
+### `package.json`, `ng-package.json`, `tsconfig.json`, `README.md`, `.gitignore`
+
+Only with the [`package`](../api/configuration/package.md) option: the files that make the output directory a buildable, publishable Angular library. See [Publishing as an npm Package](./npm-package.md).
+
 ## Schema References
 
 - `$ref` to a whole schema (`#/components/schemas/Pet`) — an imported model in `models/`.

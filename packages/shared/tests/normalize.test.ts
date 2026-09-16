@@ -65,6 +65,33 @@ describe("normalizeSpec", () => {
         expect(normalizeSpec({ paths: {} } as never).version).toBeNull();
     });
 
+    it("carries the spec's info block through, and leaves it undefined when absent", () => {
+        expect(normalized.info).toEqual({ title: "t", version: "1", description: undefined });
+        expect(normalizeSpec({ openapi: "3.0.0", paths: {} } as never).info).toBeUndefined();
+    });
+
+    it("coerces info fields silently: nothing reads them unless the package option is set", () => {
+        // `version: 1.0` is the number 1 after js-yaml — a very common spec;
+        // warning here would nag every YAML user on every run, so the
+        // scaffold warns at the point of use instead
+        const warnings: string[] = [];
+        const onWarning = (message: string) => warnings.push(message);
+        expect(
+            normalizeSpec({ openapi: "3.0.0", info: { title: "t", version: 1 }, paths: {} } as never, onWarning).info,
+        ).toEqual({ title: "t", version: "1", description: undefined });
+        expect(
+            normalizeSpec(
+                {
+                    openapi: "3.0.0",
+                    info: { title: { en: "Pets" }, version: "1", description: ["a"] },
+                    paths: {},
+                } as never,
+                onWarning,
+            ).info,
+        ).toEqual({ title: undefined, version: "1", description: undefined });
+        expect(warnings).toEqual([]);
+    });
+
     it("unifies definitions across spec versions", () => {
         expect(Object.keys(normalized.definitions)).toEqual(["UploadForm"]);
         const v2 = normalizeSpec({ swagger: "2.0", definitions: { Pet: { type: "object" } }, paths: {} } as never);
@@ -109,9 +136,7 @@ describe("normalizeSpec", () => {
     });
 
     it("derives acceptHeader from the same success response", () => {
-        expect(normalized.operations.find((o) => o.operationId === "getOrder")!.acceptHeader).toBe(
-            "application/json",
-        );
+        expect(normalized.operations.find((o) => o.operationId === "getOrder")!.acceptHeader).toBe("application/json");
         expect(normalized.operations.find((o) => o.operationId === "token")!.acceptHeader).toBe("application/pdf");
         // 201 with no content → nothing to advertise
         expect(normalized.operations.find((o) => o.operationId === "upload")!.acceptHeader).toBeUndefined();

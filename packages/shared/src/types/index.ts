@@ -16,6 +16,8 @@ export type {
     NameDecoration,
     NamingOptions,
     NgOpenapiClientConfig,
+    PackageConfig,
+    PackageGenOptions,
     TypeGenOptions,
     TypeMappingConfig,
 } from "./config.types";

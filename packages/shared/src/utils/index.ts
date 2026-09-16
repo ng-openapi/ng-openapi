@@ -13,7 +13,7 @@ export { escapeString, getTypeScriptType, nullableType } from "./type.utils";
 // Content-type constants
 export { CONTENT_TYPES } from "./content-types.constants";
 // ts-morph Project queries
-export { listGeneratedBarrelDirs, listGeneratedFileNames } from "./project.utils";
+export { listGeneratedBarrelDirs, listGeneratedFileNames, listImportedPackageNames } from "./project.utils";
 // Helper functions (path extraction, response typing, token names, ...)
 export {
     extractPaths,
@@ -39,6 +39,8 @@ export {
     inferResponseTypeFromContentType,
     isDataTypeInterface,
     isPrimitiveType,
+    isPlainObject,
+    isSemver,
     isUrl,
     RESOURCE_ARGUMENT_PROFILE,
     resolveArgumentNames,

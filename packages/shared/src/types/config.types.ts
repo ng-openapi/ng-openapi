@@ -28,6 +28,51 @@ export interface NamingOptions {
 }
 
 /**
+ * Turns the output directory into a standalone Angular library that builds
+ * with ng-packagr and publishes to npm. Every scaffold file is regenerated on
+ * each run, like the rest of the output — customize through this object, not
+ * by editing the emitted files.
+ */
+export interface PackageConfig {
+    /** npm package name written to package.json (`@scope/name` or `name`). */
+    name: string;
+    /** package.json `version`. Default: the spec's `info.version`, else "0.0.0". */
+    version?: string;
+    /** package.json `repository` (a URL, or the `{ type, url, directory? }` object form). */
+    repository?: string | { type: string; url: string; directory?: string };
+    /** Written as `publishConfig.registry` — for publishing to a private registry. */
+    publishRegistry?: string;
+    /**
+     * Angular major the package targets, as a semver range such as "^20.0.0".
+     * Drives the `@angular/*` peer range and the ng-packagr toolchain versions
+     * in devDependencies. Default: the major of the `@angular/core` installed
+     * in the workspace the generator runs in, else the generator's own
+     * supported major (reported through a warning, since it is a guess).
+     */
+    angularVersion?: string;
+    /**
+     * Deep-merged onto the generated package.json — nested objects merge
+     * key by key, everything else is replaced, and your values win. Fields
+     * that have a first-class option (`name`, `version`, `repository`,
+     * `publishConfig.registry`) are not accepted here, so precedence is never
+     * ambiguous. An `undefined` value is ignored (`license: process.env[…]`
+     * with the variable unset adds nothing). Dependency maps and `scripts`
+     * must be objects of strings, so a derived `peerDependencies` entry can
+     * have its range changed but not be removed; replacing the generated
+     * `scripts.build` is honored with a warning, since it is the documented
+     * build.
+     */
+    packageJson?: Record<string, unknown> & {
+        name?: never;
+        version?: never;
+        repository?: never;
+        publishConfig?: Record<string, unknown> & { registry?: never };
+        /** Reserved: the marker a later run recognizes its own package.json by. */
+        ngOpenapi?: never;
+    };
+}
+
+/**
  * The user-facing configuration (config file or programmatic call).
  * Validated at the boundary by validateGeneratorConfig, which throws
  * ConfigValidationError listing every problem at once — see
@@ -100,6 +145,8 @@ export interface GeneratorConfig {
     };
     /** Plugin generator classes, run after core generation (see PluginGeneratorContext). */
     plugins?: IPluginGeneratorClass[];
+    /** Emit package.json & co. so the output builds and publishes as an npm package (see PackageConfig). */
+    package?: PackageConfig;
 }
 
 /**
@@ -151,6 +198,12 @@ export interface MethodGenOptions {
             models?: NameDecoration;
         };
     };
+}
+
+/** Options consumed by npm package scaffolding (PackageScaffoldGenerator). */
+export interface PackageGenOptions {
+    clientName?: string;
+    package: PackageConfig;
 }
 
 /** Per-client runtime configuration consumed by the generated provider functions. */
