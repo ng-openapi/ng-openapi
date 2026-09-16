@@ -26,31 +26,40 @@ export const SCAFFOLD_FILES = ["package.json", "ng-package.json", "tsconfig.json
  * @throws OutputConflictError naming every file that would be overwritten.
  */
 export function assertScaffoldTargetsWritable(outputRoot: string): void {
-    if (isGeneratedPackageJson(path.join(outputRoot, "package.json"))) {
+    const manifestPath = path.join(outputRoot, "package.json");
+    const manifest = inspectPackageJson(manifestPath);
+    if (manifest.generated) {
         return;
     }
     const conflicts = SCAFFOLD_FILES.map((file) => path.join(outputRoot, file)).filter((file) => fs.existsSync(file));
     if (conflicts.length === 0) {
         return;
     }
+    // A package.json that could not be read is refused like a foreign one —
+    // but the message must not call it foreign when the real problem is
+    // permissions or a stray BOM
+    const named = conflicts.map((file) =>
+        file === manifestPath && manifest.problem
+            ? `package.json (could not be read: ${manifest.problem})`
+            : path.basename(file),
+    );
     throw new OutputConflictError(
-        `Refusing to overwrite files in ${outputRoot} that ng-openapi did not generate: ` +
-            `${conflicts.map((file) => path.basename(file)).join(", ")}. ` +
+        `Refusing to overwrite files in ${outputRoot} that ng-openapi did not generate: ${named.join(", ")}. ` +
             `Point \`output\` at a directory of its own, or remove them if they are stale.`,
         conflicts,
     );
 }
 
-function isGeneratedPackageJson(filePath: string): boolean {
+/** Whether the package.json at `filePath` carries the scaffold's marker; `problem` says why that could not be determined. */
+function inspectPackageJson(filePath: string): { generated: boolean; problem?: string } {
     if (!fs.existsSync(filePath)) {
-        return false;
+        return { generated: false };
     }
     try {
         const manifest = JSON.parse(fs.readFileSync(filePath, "utf8")) as Record<string, unknown>;
         const marker = manifest[PACKAGE_JSON_MARKER_KEY] as { generated?: unknown } | undefined;
-        return marker?.generated === true;
-    } catch {
-        // Unparsable is not ours either way; the conflict error names it
-        return false;
+        return { generated: marker?.generated === true };
+    } catch (error) {
+        return { generated: false, problem: error instanceof Error ? error.message : String(error) };
     }
 }

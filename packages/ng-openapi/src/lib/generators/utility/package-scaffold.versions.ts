@@ -14,8 +14,11 @@ export const DEFAULT_ANGULAR_MAJOR = 21;
 
 /**
  * Oldest Angular the emitted toolchain config works with: the tsconfig uses
- * `moduleResolution: "bundler"`, which needs the TypeScript 5 that Angular 16
- * was the first to require.
+ * `moduleResolution: "bundler"`, which needs TypeScript 5 — Angular 16 is
+ * the first major whose compiler accepts it (with the 16 → ~5.1.0 pin below).
+ * Verified once by hand, not in CI: a generated package with
+ * `angularVersion: "^16.0.0"` installed (compiler-cli 16.2.12, ng-packagr
+ * 16.2.3, typescript 5.1.6) and built clean with ng-packagr on 2026-09-16.
  */
 export const MIN_ANGULAR_MAJOR = 16;
 

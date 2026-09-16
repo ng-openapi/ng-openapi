@@ -233,6 +233,17 @@ describe("validateGeneratorConfig", () => {
             expect(withPackage({ name: "x", packageJson: { publishConfig: { access: "public" } } })).toEqual([]);
         });
 
+        it("names a cycle instead of overflowing the walk", () => {
+            const cyclic: Record<string, unknown> = { keywords: ["a"] };
+            cyclic["self"] = { back: cyclic };
+            const shared = { a: 1 };
+            expect(withPackage({ name: "x", packageJson: cyclic })).toEqual([
+                expect.stringContaining("`package.packageJson.self.back` refers back to one of its own ancestors"),
+            ]);
+            // The same object twice in different branches is not a cycle
+            expect(withPackage({ name: "x", packageJson: { one: shared, two: shared } })).toEqual([]);
+        });
+
         it("reserves the marker key a later run recognizes its own package.json by", () => {
             // `null` is a value the merge writes — it would clobber the marker and
             // make the next run refuse to overwrite a file ng-openapi wrote

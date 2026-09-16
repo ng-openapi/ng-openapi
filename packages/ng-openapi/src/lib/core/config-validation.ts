@@ -306,13 +306,19 @@ function validatePackageJsonOverrides(overrides: Record<string, unknown>, issues
 /**
  * The override is serialized with JSON.stringify, which silently drops
  * functions and symbols, turns NaN into null, and throws a bare TypeError on
- * bigints and cycles — none of which should reach the emitted file unnoticed.
- * `undefined` is the one non-JSON value accepted: the merge skips it, so
+ * bigints and cycles — none of which should reach the emitted file unnoticed,
+ * and a cycle would otherwise overflow this walk before serialization even
+ * ran. `undefined` is the one non-JSON value accepted: the merge skips it, so
  * `license: process.env["LICENSE"]` with the variable unset adds nothing.
  * A `__proto__` key is refused for the same reason emitObjectKey computes it:
  * assigning it during the merge invokes the setter instead of creating a key.
  */
-function assertJsonValue(value: unknown, path: string, issues: string[]): void {
+function assertJsonValue(
+    value: unknown,
+    path: string,
+    issues: string[],
+    ancestors: WeakSet<object> = new WeakSet(),
+): void {
     if (value === undefined || value === null || typeof value === "string" || typeof value === "boolean") {
         return;
     }
@@ -322,18 +328,24 @@ function assertJsonValue(value: unknown, path: string, issues: string[]): void {
         }
         return;
     }
-    if (Array.isArray(value)) {
-        value.forEach((item, index) => assertJsonValue(item, `${path}[${index}]`, issues));
-        return;
-    }
-    if (isPlainObject(value)) {
-        for (const [key, item] of Object.entries(value)) {
-            if (key === "__proto__") {
-                issues.push(`\`${path}\` must not contain a "__proto__" key`);
-                continue;
-            }
-            assertJsonValue(item, `${path}.${key}`, issues);
+    if (Array.isArray(value) || isPlainObject(value)) {
+        if (ancestors.has(value)) {
+            issues.push(`\`${path}\` refers back to one of its own ancestors — package.json cannot hold a cycle`);
+            return;
         }
+        ancestors.add(value);
+        if (Array.isArray(value)) {
+            value.forEach((item, index) => assertJsonValue(item, `${path}[${index}]`, issues, ancestors));
+        } else {
+            for (const [key, item] of Object.entries(value)) {
+                if (key === "__proto__") {
+                    issues.push(`\`${path}\` must not contain a "__proto__" key`);
+                    continue;
+                }
+                assertJsonValue(item, `${path}.${key}`, issues, ancestors);
+            }
+        }
+        ancestors.delete(value);
         return;
     }
     issues.push(`\`${path}\` must be a JSON value (string, number, boolean, null, array or plain object)`);

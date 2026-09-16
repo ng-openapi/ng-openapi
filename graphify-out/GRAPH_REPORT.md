@@ -1,7 +1,7 @@
-# Graph Report - ng-openapi  (2026-09-15)
+# Graph Report - ng-openapi  (2026-09-16)
 
 ## Corpus Check
-- 268 files · ~115,651 words
+- 268 files · ~116,051 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `72d9f9b1`
+- Built from commit: `0f8d3101`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -314,8 +314,8 @@ Cohesion: 0.04
 Nodes (45): optional, optional, author, email, name, url, bugs, url (+37 more)
 
 ### Community 24 - "Date Transformation"
-Cohesion: 0.24
-Nodes (3): Notes, `output`, Usage
+Cohesion: 0.19
+Nodes (6): Notes, `output`, Usage, Example using Zod, Overview, Schema Validation
 
 ### Community 25 - "Plugins Changelog"
 Cohesion: 0.10
@@ -382,8 +382,8 @@ Cohesion: 0.40
 Nodes (5): optional, optional, peerDependenciesMeta, @angular/common, @angular/core
 
 ### Community 42 - "Angular Peer Deps"
-Cohesion: 0.09
-Nodes (19): Example, Notes, `serviceDecorator`, Usage, Available Plugins, `HttpResourcePlugin`, Notes, Usage (+11 more)
+Cohesion: 0.11
+Nodes (15): Example, Notes, `serviceDecorator`, Usage, Available Plugins, `HttpResourcePlugin`, Notes, Usage (+7 more)
 
 ### Community 43 - "Brand Identity & Logo"
 Cohesion: 0.67
@@ -414,8 +414,8 @@ Cohesion: 0.11
 Nodes (18): Advanced Provider Options, Angular Integration, CLI Usage, Command Line Options, Configuration Options, Contributing, 🚀 Easy Setup (Recommended), File Download Example (+10 more)
 
 ### Community 50 - "Enum Generation Options"
-Cohesion: 0.08
-Nodes (21): Example, `modelFileStructure`, Notes, Usage, Example, `naming`, Notes, Usage (+13 more)
+Cohesion: 0.07
+Nodes (22): `customHeaders`, Usage, `emitAcceptHeader`, Usage, Example, `modelFileStructure`, Notes, Usage (+14 more)
 
 ### Community 51 - "generator.ts"
 Cohesion: 0.22
@@ -454,8 +454,8 @@ Cohesion: 0.16
 Nodes (17): createParameterResolver(), determineResponseInfo(), infoText(), normalizeContentSchemas(), normalizeOperation(), normalizeOperationSchemas(), normalizeSchema(), normalizeSpec() (+9 more)
 
 ### Community 60 - "Publish Scripts"
-Cohesion: 0.33
-Nodes (6): `'Date'` (Default), `dateType`, Notes, `'string'`, Supported Options, Usage
+Cohesion: 0.11
+Nodes (15): `clientName`, Notes, Usage, `'Date'` (Default), `dateType`, Notes, `'string'`, Supported Options (+7 more)
 
 ### Community 62 - "Config/Metadata Fragment"
 Cohesion: 0.15
@@ -498,8 +498,8 @@ Cohesion: 0.25
 Nodes (7): Development Dependency (Recommended), Global Installation, Install, Installation, Next Step, Prerequisites, Verify Installation
 
 ### Community 78 - "generateFromConfig"
-Cohesion: 0.12
-Nodes (11): `clientName`, Notes, Usage, Available Utilities, [Date Transformer](utilities/date-transformer.md), File Download Helper, Generated Source, Usage (+3 more)
+Cohesion: 0.20
+Nodes (8): Available Utilities, [Date Transformer](utilities/date-transformer.md), File Download Helper, Generated Source, Usage, [File Download Helper](utilities/file-download-helper.md), Usage, Utilities
 
 ### Community 80 - "BaseInterceptorGenerator"
 Cohesion: 0.25
@@ -578,8 +578,8 @@ Cohesion: 0.24
 Nodes (9): NamingOptions, NgOpenapiClientConfig, GetMethodGenerationContext, MethodGenerationContext, TypeSchema, IPluginGeneratorClass, PluginGeneratorContext, EnumValueObject (+1 more)
 
 ### Community 101 - "peerDependencies"
-Cohesion: 0.20
-Nodes (9): `ng-openapi`, peerDependencies, @angular/common, @angular/core, ng-openapi, ts-morph, peerDependencies, ng-openapi (+1 more)
+Cohesion: 0.18
+Nodes (10): `ng-openapi`, peerDependencies, @angular/common, @angular/core, ng-openapi, ts-morph, peerDependencies, ng-openapi (+2 more)
 
 ### Community 102 - "Changelog"
 Cohesion: 0.11
@@ -594,16 +594,16 @@ Cohesion: 0.50
 Nodes (3): Checklist, How to verify, Summary
 
 ### Community 105 - "targetDefaults"
-Cohesion: 0.14
-Nodes (14): cache, dependsOn, inputs, cache, inputs, targetDefaults, build, lint (+6 more)
+Cohesion: 0.20
+Nodes (10): cache, inputs, targetDefaults, lint, test, typecheck, cache, inputs (+2 more)
 
 ### Community 106 - "`validateInput`"
 Cohesion: 0.40
 Nodes (5): Notes, Parameters, Return Value, Usage, `validateInput`
 
 ### Community 107 - "index.md"
-Cohesion: 0.25
-Nodes (5): `@ng-openapi/http-resource`, Changelog, `@ng-openapi/zod`, zod, zod
+Cohesion: 0.33
+Nodes (3): `@ng-openapi/http-resource`, Changelog, `@ng-openapi/zod`
 
 ### Community 108 - "peerDependenciesMeta"
 Cohesion: 0.16
@@ -650,8 +650,8 @@ Cohesion: 0.38
 Nodes (3): DEFAULT_OPTIONS, ZodPluginOptions, NormalizedSpec
 
 ### Community 165 - "validation.md"
-Cohesion: 0.33
-Nodes (4): `customHeaders`, Usage, `emitAcceptHeader`, Usage
+Cohesion: 0.40
+Nodes (5): Plugin Authoring, Rules a plugin must follow, Rules of engagement, The contract, What the context provides
 
 ### Community 166 - "`responseTypeMapping`"
 Cohesion: 0.22
@@ -690,12 +690,12 @@ Cohesion: 0.67
 Nodes (3): scripts, build, prepublishOnly
 
 ### Community 175 - "Date Transformer"
-Cohesion: 0.33
-Nodes (6): Customizing the Regex, Date Transformer, Generated Source, Manual Setup, Recognized Formats, Usage
+Cohesion: 0.50
+Nodes (3): Resources, Usage, `validation`
 
 ### Community 177 - "Schema Validation"
-Cohesion: 0.67
-Nodes (3): Example using Zod, Overview, Schema Validation
+Cohesion: 0.50
+Nodes (4): cache, dependsOn, inputs, build
 
 ## Knowledge Gaps
 - **870 isolated node(s):** `$schema`, `url`, `public_key`, `projectTitle`, `description` (+865 more)
@@ -705,12 +705,12 @@ Nodes (3): Example using Zod, Overview, Schema Validation
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `GeneratorConfig` connect `guides.md` to `Core Generation Pipeline`, `Method Body Generation`, `custom-headers.md`, `Config/Metadata Fragment`, `Documentation & Guides`, `Plugin Authoring`, ``responseTypeMapping``, `HttpParamsBuilderGenerator`, ``useSingleRequestParameter``, `generator.ts`, ``naming``, `author`, `isUrl`?**
-  _High betweenness centrality (0.018) - this node is a cross-community bridge._
-- **Why does `NormalizedOperation` connect `getTypeScriptType` to `Core Generation Pipeline`, `Plugin Authoring`, `peerDependenciesMeta`, `method-names.test.ts`, `generator.ts`, ``naming``, `author`, `index.ts`, `Publish Config`, `HttpResourceMethodBodyGenerator`, `peerDependenciesMeta`, `ServiceMethodOverloadsGenerator`?**
-  _High betweenness centrality (0.016) - this node is a cross-community bridge._
-- **Why does `SwaggerDefinition` connect `index.ts` to `inline-nested-refs.test.ts`, `getTypeScriptType`, `custom-headers.md`, `Zod Schema Generation`, `Documentation & Guides`, `Plugin Authoring`, `HttpParamsBuilderGenerator`, ``useSingleRequestParameter``, `generator.ts`, ``naming``, `getTypeScriptType`, `Publish Config`, `HttpResourceMethodBodyGenerator`, `peerDependenciesMeta`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
+- **Why does `devDependencies` connect `Dev Dependencies` to `Angular Peer Deps`, `HttpResourceGenerator`, `Build Scripts`?**
+  _High betweenness centrality (0.027) - this node is a cross-community bridge._
+- **Why does `zod` connect `Angular Peer Deps` to `Dev Dependencies`?**
+  _High betweenness centrality (0.026) - this node is a cross-community bridge._
+- **Why does `peerDependencies` connect `peerDependencies` to `Package Manifests & Exports`?**
+  _High betweenness centrality (0.024) - this node is a cross-community bridge._
 - **What connects `$schema`, `url`, `public_key` to the rest of the system?**
   _872 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Core Generation Pipeline` be split into smaller, more focused modules?**
