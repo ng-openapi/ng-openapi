@@ -38,6 +38,13 @@ export interface UploadFileParams {
     description?: string;
 }
 
+export interface ImportFileParams {
+    source: string;
+    file: Blob;
+    overwrite?: boolean;
+    category?: string;
+}
+
 export interface RequestTokenParams {
     username: string;
     password: string;

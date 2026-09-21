@@ -5,6 +5,7 @@ models/bank-transfer.ts
 models/card.ts
 models/create-order-request.ts
 models/file-info.ts
+models/import-request.ts
 models/index.ts
 models/order-item.ts
 models/order-status.ts

@@ -13,6 +13,7 @@ export * from "./bank-transfer";
 export * from "./card";
 export * from "./create-order-request";
 export * from "./file-info";
+export * from "./import-request";
 export * from "./order";
 export * from "./order-item";
 export * from "./order-status";

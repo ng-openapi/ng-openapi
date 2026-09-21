@@ -75,4 +75,54 @@ export class FilesService {
             context: this.createContextWithClientId(options?.context)
         });
     }
+
+    importFile(source: string, file: Blob, overwrite?: boolean, category?: string, observe?: 'body', options?: RequestOptions<'json'>): Observable<FileInfo>;
+    importFile(source: string, file: Blob, overwrite?: boolean, category?: string, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<FileInfo>>;
+    importFile(source: string, file: Blob, overwrite?: boolean, category?: string, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<FileInfo>>;
+    importFile(source: string, file: Blob, overwrite?: boolean, category?: string, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/files/import`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Add default headers if not already present
+        if (!headers.has('X-Api-Key')) {
+            headers = headers.set('X-Api-Key', 'demo-key');
+        }
+        if (!headers.has('X-Client-Version')) {
+            headers = headers.set('X-Client-Version', '1.2.3');
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+        // Remove Content-Type for multipart (browser will set it with boundary)
+        headers = headers.delete('Content-Type');
+
+        const formData = new FormData();
+        if (source !== undefined) {
+            formData.append('source', String(source));
+        }
+        if (overwrite !== undefined) {
+            formData.append('overwrite', String(overwrite));
+        }
+        if (file !== undefined) {
+            formData.append('file', file);
+        }
+        if (category !== undefined) {
+            formData.append('category', String(category));
+        }
+
+        return this.httpClient.request('post', url, {
+            body: formData,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
 }
