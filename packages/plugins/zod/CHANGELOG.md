@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/ng-openapi/ng-openapi/compare/zod-v0.2.0...zod-v0.2.1) (2026-09-24)
+
+
+### Features
+
+* **generator:** emit npm package scaffold via `package` option ([#130](https://github.com/ng-openapi/ng-openapi/issues/130)) ([d851fb0](https://github.com/ng-openapi/ng-openapi/commit/d851fb0824350f89688fe5e42a601f175b5e0b2e))
+
 ## [0.2.0](https://github.com/ng-openapi/ng-openapi/compare/zod-v0.1.3...zod-v0.2.0) (2026-09-08)
 
 

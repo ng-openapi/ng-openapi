@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.4.0...ng-openapi-v0.4.1) (2026-09-24)
+
+
+### Features
+
+* **generator:** emit npm package scaffold via `package` option ([#130](https://github.com/ng-openapi/ng-openapi/issues/130)) ([d851fb0](https://github.com/ng-openapi/ng-openapi/commit/d851fb0824350f89688fe5e42a601f175b5e0b2e))
+
 ## [0.4.0](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.3.3...ng-openapi-v0.4.0) (2026-09-08)
 
 
