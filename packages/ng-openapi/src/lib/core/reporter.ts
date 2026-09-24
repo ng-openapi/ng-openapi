@@ -4,7 +4,12 @@
  * presentation lives entirely in the host's Reporter implementation.
  */
 
-export type GenerationPhase = "processing-spec" | "types-generated" | "services-generated" | "plugins-generated";
+export type GenerationPhase =
+    | "processing-spec"
+    | "types-generated"
+    | "services-generated"
+    | "plugins-generated"
+    | "package-generated";
 
 export interface Reporter {
     /** Called when a generation phase completes (or, for "processing-spec", starts). */

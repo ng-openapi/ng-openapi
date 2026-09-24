@@ -32,3 +32,5 @@ export { getRequestBodyType } from "./get-request-body-type";
 export { isDataTypeInterface } from "./is-data-type-interface";
 export { generateParseRequestTypeParams } from "./generate-parse-request-type-params";
 export { isUrl } from "./is-url";
+export { isPlainObject } from "./plain-object";
+export { isSemver } from "./semver";

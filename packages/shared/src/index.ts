@@ -18,6 +18,8 @@ export type {
     NameDecoration,
     NamingOptions,
     NgOpenapiClientConfig,
+    PackageConfig,
+    PackageGenOptions,
     OpenApiSecurityScheme,
     Parameter,
     PathInfo,
@@ -32,7 +34,7 @@ export type {
 } from "./types";
 
 // Normalized spec model (version-free view consumed by generators)
-export type { NormalizedOperation, NormalizedSpec, ResponseKind, SpecVersion } from "./model";
+export type { NormalizedOperation, NormalizedSpec, ResponseKind, SpecInfo, SpecVersion } from "./model";
 
 // Spec loading and access. `inlineNestedRefs` is deliberately *not* re-exported:
 // it runs inside `SwaggerParser.create` and has no consumer outside this
@@ -48,6 +50,7 @@ export {
     DuplicateGeneratedNameError,
     InvalidIdentifierError,
     NgOpenApiError,
+    OutputConflictError,
     SpecLoadError,
     SpecParseError,
     UnresolvedPathTemplateError,
@@ -64,6 +67,8 @@ export {
     emitSignalAwareQueryParams,
     emitUrlConstruction,
     emitUrlExpression,
+    emitJsonFile,
+    emitTextFile,
     emitDocs,
     emitObjectKey,
     emitPropertyName,
@@ -108,11 +113,14 @@ export {
     inferResponseTypeFromContentType,
     isDataTypeInterface,
     isPrimitiveType,
+    isPlainObject,
+    isSemver,
     isUrl,
     isValidIdentifier,
     kebabCase,
     listGeneratedBarrelDirs,
     listGeneratedFileNames,
+    listImportedPackageNames,
     nullableType,
     pascalCase,
     pascalCaseForEnums,

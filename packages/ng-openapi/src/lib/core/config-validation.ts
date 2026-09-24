@@ -1,4 +1,16 @@
-import { ConfigValidationError, GeneratorConfig } from "@ng-openapi/shared";
+import {
+    ConfigValidationError,
+    GeneratorConfig,
+    isPlainObject,
+    isSemver,
+    isUrl,
+    PackageConfig,
+} from "@ng-openapi/shared";
+import {
+    leadingMajor,
+    MIN_ANGULAR_MAJOR,
+    PACKAGE_JSON_MARKER_KEY,
+} from "../generators/utility/package-scaffold.versions";
 
 // Re-exported for hosts that import it from here; the class itself lives in
 // shared/errors.ts so it joins the branded NgOpenApiError hierarchy.
@@ -171,7 +183,170 @@ export function validateGeneratorConfig(config: unknown): asserts config is Gene
         }
     }
 
+    if (c.package !== undefined) {
+        if (typeof c.package !== "object" || c.package === null) {
+            issues.push(
+                "`package` must be an object like { name, version?, repository?, publishRegistry?, angularVersion?, packageJson? }",
+            );
+        } else {
+            validatePackageConfig(c.package as UnknownShape<PackageConfig>, issues);
+        }
+    }
+
     if (issues.length > 0) {
         throw new ConfigValidationError(issues);
     }
+}
+
+// Approximates npm's rule for new package names (lowercase, URL-safe,
+// optionally scoped); the 214-character limit is not checked.
+const NPM_PACKAGE_NAME_PATTERN = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
+// One simple range whose leading major can be read: "^20.0.0", "~21.1",
+// ">=19 <22", "21". No unions ("^20 || ^21") — the leading major also drives
+// the toolchain devDependencies, which need one answer.
+const ANGULAR_RANGE_PATTERN = /^(\^|~|>=)?\d+(\.\d+){0,2}( <\d+(\.\d+){0,2})?$/;
+
+function validatePackageConfig(pkg: UnknownShape<PackageConfig>, issues: string[]): void {
+    if (typeof pkg.name !== "string" || !NPM_PACKAGE_NAME_PATTERN.test(pkg.name)) {
+        issues.push(
+            `\`package.name\` must be a valid npm package name (lowercase, e.g. "@scope/my-client"), got ${JSON.stringify(pkg.name)}`,
+        );
+    }
+    // Stricter than the spec-derived default (which only warns): an explicit
+    // version is a deliberate choice, so a typo here should not reach npm
+    if (pkg.version !== undefined && (typeof pkg.version !== "string" || !isSemver(pkg.version))) {
+        issues.push(`\`package.version\` must be a semver version like "1.2.3", got ${JSON.stringify(pkg.version)}`);
+    }
+    if (pkg.repository !== undefined && typeof pkg.repository !== "string") {
+        if (typeof pkg.repository !== "object" || pkg.repository === null) {
+            issues.push("`package.repository` must be a URL string or an object like { type, url, directory? }");
+        } else {
+            const { type, url } = pkg.repository as { type?: unknown; url?: unknown };
+            if (typeof type !== "string" || typeof url !== "string") {
+                issues.push("`package.repository` object form needs string `type` and `url` fields");
+            }
+        }
+    }
+    if (pkg.publishRegistry !== undefined && (typeof pkg.publishRegistry !== "string" || !isUrl(pkg.publishRegistry))) {
+        issues.push(`\`package.publishRegistry\` must be an http(s) URL, got ${JSON.stringify(pkg.publishRegistry)}`);
+    }
+    if (pkg.angularVersion !== undefined) {
+        if (typeof pkg.angularVersion !== "string" || !ANGULAR_RANGE_PATTERN.test(pkg.angularVersion)) {
+            issues.push(
+                `\`package.angularVersion\` must be a single semver range starting with the Angular major, like "^20.0.0" or ">=19.0.0 <22", got ${JSON.stringify(pkg.angularVersion)}`,
+            );
+        } else if ((leadingMajor(pkg.angularVersion) ?? 0) < MIN_ANGULAR_MAJOR) {
+            issues.push(
+                `\`package.angularVersion\` must target Angular ${MIN_ANGULAR_MAJOR} or later (the generated tsconfig needs TypeScript 5), got ${JSON.stringify(pkg.angularVersion)}`,
+            );
+        }
+    }
+    if (pkg.packageJson !== undefined) {
+        if (!isPlainObject(pkg.packageJson)) {
+            issues.push("`package.packageJson` must be an object of package.json fields to merge in");
+        } else {
+            validatePackageJsonOverrides(pkg.packageJson, issues);
+        }
+    }
+}
+
+// Fields with a first-class `package` option. An override here would say the
+// same thing twice with no rule for which wins — every future first-class
+// field joins this list. (`publishConfig.access` and the like stay allowed.)
+const PACKAGE_JSON_OWNED_KEYS: ReadonlyArray<[path: readonly string[], reason: string]> = [
+    [["name"], "set `package.name` instead"],
+    [["version"], "set `package.version` instead"],
+    [["repository"], "set `package.repository` instead"],
+    [["publishConfig", "registry"], "set `package.publishRegistry` instead"],
+    // The marker a later run recognizes its own package.json by; clobbering
+    // it would make that run refuse to overwrite a file ng-openapi wrote
+    [[PACKAGE_JSON_MARKER_KEY], "it is reserved for ng-openapi's own marker"],
+];
+// Maps npm reads as name → range/command: a non-string value is an invalid
+// manifest, and requiring the map shape is what keeps a derived entry from
+// being dropped by replacing the whole map with null or an array
+const PACKAGE_JSON_STRING_MAPS = [
+    "dependencies",
+    "devDependencies",
+    "peerDependencies",
+    "optionalDependencies",
+    "scripts",
+] as const;
+
+function validatePackageJsonOverrides(overrides: Record<string, unknown>, issues: string[]): void {
+    for (const [path, reason] of PACKAGE_JSON_OWNED_KEYS) {
+        // `in`, not a value check: `ngOpenapi: undefined` is skipped by the
+        // merge, but `null` is a value and would clobber the marker
+        const parent = path
+            .slice(0, -1)
+            .reduce<unknown>((node, key) => (isPlainObject(node) ? node[key] : undefined), overrides);
+        if (isPlainObject(parent) && path[path.length - 1] in parent && parent[path[path.length - 1]] !== undefined) {
+            issues.push(`\`package.packageJson.${path.join(".")}\` is not allowed — ${reason}`);
+        }
+    }
+    for (const key of PACKAGE_JSON_STRING_MAPS) {
+        const map = overrides[key];
+        if (map === undefined) {
+            continue;
+        }
+        if (!isPlainObject(map)) {
+            issues.push(`\`package.packageJson.${key}\` must be an object of name → string`);
+            continue;
+        }
+        for (const [name, value] of Object.entries(map)) {
+            // undefined is skipped by the merge, like everywhere else in the override
+            if (value !== undefined && (typeof value !== "string" || value.trim() === "")) {
+                issues.push(`\`package.packageJson.${key}["${name}"]\` must be a non-empty string`);
+            }
+        }
+    }
+    assertJsonValue(overrides, "package.packageJson", issues);
+}
+
+/**
+ * The override is serialized with JSON.stringify, which silently drops
+ * functions and symbols, turns NaN into null, and throws a bare TypeError on
+ * bigints and cycles — none of which should reach the emitted file unnoticed,
+ * and a cycle would otherwise overflow this walk before serialization even
+ * ran. `undefined` is the one non-JSON value accepted: the merge skips it, so
+ * `license: process.env["LICENSE"]` with the variable unset adds nothing.
+ * A `__proto__` key is refused for the same reason emitObjectKey computes it:
+ * assigning it during the merge invokes the setter instead of creating a key.
+ */
+function assertJsonValue(
+    value: unknown,
+    path: string,
+    issues: string[],
+    ancestors: WeakSet<object> = new WeakSet(),
+): void {
+    if (value === undefined || value === null || typeof value === "string" || typeof value === "boolean") {
+        return;
+    }
+    if (typeof value === "number") {
+        if (!Number.isFinite(value)) {
+            issues.push(`\`${path}\` must be a finite number, got ${String(value)}`);
+        }
+        return;
+    }
+    if (Array.isArray(value) || isPlainObject(value)) {
+        if (ancestors.has(value)) {
+            issues.push(`\`${path}\` refers back to one of its own ancestors — package.json cannot hold a cycle`);
+            return;
+        }
+        ancestors.add(value);
+        if (Array.isArray(value)) {
+            value.forEach((item, index) => assertJsonValue(item, `${path}[${index}]`, issues, ancestors));
+        } else {
+            for (const [key, item] of Object.entries(value)) {
+                if (key === "__proto__") {
+                    issues.push(`\`${path}\` must not contain a "__proto__" key`);
+                    continue;
+                }
+                assertJsonValue(item, `${path}.${key}`, issues, ancestors);
+            }
+        }
+        ancestors.delete(value);
+        return;
+    }
+    issues.push(`\`${path}\` must be a JSON value (string, number, boolean, null, array or plain object)`);
 }

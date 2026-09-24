@@ -126,7 +126,8 @@ what keeps the library embeddable and testable.
 User-facing failures are typed (`packages/shared/src/errors.ts`):
 `SpecLoadError` (input unreadable), `SpecParseError` (content unusable),
 `ConfigLoadError` (config file unreadable), `ConfigValidationError` (invalid
-config, collects all issues), `InvalidIdentifierError`,
+config, collects all issues), `OutputConflictError` (a scaffold file at the
+output path that ng-openapi did not write), `InvalidIdentifierError`,
 `DuplicateGeneratedNameError` and `UnresolvedPathTemplateError` (a name or path
 that cannot be emitted). Hosts branch on `instanceof`, never on message text —
 messages are presentation.
@@ -162,6 +163,20 @@ files from earlier runs, and a path-less spec legitimately generates no
 emit a file must remove it from the Project rather than leave it unsaved —
 otherwise it would show up in indexes and `filesWritten`.
 
+The same rule covers files that are not TypeScript. The npm package scaffold
+(`package-scaffold.generator.ts`: package.json, ng-package.json, tsconfig.json,
+README.md, .gitignore) registers them through `emitJsonFile`/`emitTextFile`
+(`packages/shared/src/emit/text-file.emit.ts`) so they ride the single
+`project.save()` and appear in `filesWritten`; ts-morph keeps their text
+verbatim as long as nothing formats them, and the `Deferred` script kind
+keeps a README out of the compiler program so auto-import and the checker
+never see it (the parser still runs, which is why import scans skip non-TS
+script kinds).
+The scaffold runs after every other generator because it reads
+package.json's peer dependencies off the manifest too
+(`listImportedPackageNames()`): a plugin's runtime imports become peer
+dependencies without the core importing the plugin.
+
 ### Spec text never reaches emitted code unescaped
 
 Wire names, property names and header values are free-form text. Interpolating
@@ -194,6 +209,10 @@ Project (see above).
   output with `strict` + `noImplicitAny`, after stripping the shipped
   `@ts-nocheck` pragma. The generated code is provably strict-clean.
 - **Unit tests** — parser/normalizer/emitters/type units directly.
+- **Package-scaffold build test** — generates with the `package` option and
+  builds the output with a real ng-packagr, resolved from the workspace's own
+  `node_modules`. Golden snapshots lock what the scaffold files say; only a
+  build shows they are right.
 - **Knowledge graph** — `graphify update .` after structural changes; god-node
   degrees and cycle counts are tracked in PRs.
 
@@ -206,6 +225,7 @@ Project (see above).
 | Anything that puts spec text into emitted code | `emit/literal.emit.ts` — never a local escaper                                                                                                                                                                                                                                                                                                                                                                                       |
 | A new generator option                         | `GeneratorConfig` + the narrow view that consumes it + `config-validation.ts`                                                                                                                                                                                                                                                                                                                                                        |
 | A new output file kind for the core            | a generator under `packages/ng-openapi/src/lib/generators/`                                                                                                                                                                                                                                                                                                                                                                          |
+| A file that is not TypeScript (JSON, Markdown) | through the shared Project via `emit/text-file.emit.ts` — never `fs.writeFile` from a generator, which would bypass the single save and `filesWritten`                                                                                                                                                                                                                                                                               |
 | An alternative client flavor                   | a plugin package implementing `PluginGeneratorContext`                                                                                                                                                                                                                                                                                                                                                                               |
 | A new user-facing failure mode                 | a typed error in `packages/shared/src/errors.ts` (or extend an existing one)                                                                                                                                                                                                                                                                                                                                                         |
 | A degradation the run survives                 | a message through the `onWarning` sink — never a silent fallback                                                                                                                                                                                                                                                                                                                                                                     |

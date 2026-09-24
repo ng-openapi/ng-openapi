@@ -7,6 +7,13 @@ export interface SpecVersion {
     version: string;
 }
 
+/** Descriptive metadata from the spec's `info` object, as authored. */
+export interface SpecInfo {
+    title?: string;
+    version?: string;
+    description?: string;
+}
+
 /**
  * Version-free view of a parsed spec: Swagger 2.0 vs OpenAPI 3.x differences
  * are resolved once at normalization time. Generators consume this instead of
@@ -14,6 +21,8 @@ export interface SpecVersion {
  */
 export interface NormalizedSpec {
     version: SpecVersion | null;
+    /** The spec's `info` block; its `version` defaults a generated package's own version. */
+    info?: SpecInfo;
     /** 2.0 `definitions` or 3.x `components.schemas`, whichever the spec has */
     definitions: Record<string, SwaggerDefinition>;
     operations: NormalizedOperation[];

@@ -1,7 +1,14 @@
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
-import { generateFromConfig, GenerationPhase, GeneratorConfig, SpecLoadError, SpecParseError } from "ng-openapi";
+import {
+    generateFromConfig,
+    GenerationPhase,
+    GeneratorConfig,
+    OutputConflictError,
+    SpecLoadError,
+    SpecParseError,
+} from "ng-openapi";
 
 const FIXTURE = resolve(__dirname, "../../testing/fixtures/specs/openapi-3.0.json");
 
@@ -81,6 +88,125 @@ describe("generateFromConfig result + reporter", () => {
         await generateFromConfig(buildConfig(output), { onPhase: (phase) => phases.push(phase) });
 
         expect(phases).toEqual(["processing-spec", "types-generated", "services-generated"]);
+    });
+
+    it("runs the package scaffold after plugins and lists its files in filesWritten", async () => {
+        const output = mkdtempSync(join(tmpRoot, "package-phase-"));
+        tempDirs.push(output);
+
+        // A plugin that emits nothing: enough to prove the phase ordering the
+        // scaffold depends on (peers are read from what plugins emitted)
+        class NoopPlugin {
+            async generate(): Promise<void> {
+                /* nothing to emit */
+            }
+        }
+        const phases: GenerationPhase[] = [];
+        const result = await generateFromConfig(
+            {
+                ...buildConfig(output),
+                plugins: [NoopPlugin],
+                package: { name: "@acme/pets-api-client", angularVersion: "^21.0.0" },
+            },
+            { onPhase: (phase) => phases.push(phase) },
+        );
+
+        expect(phases).toEqual([
+            "processing-spec",
+            "types-generated",
+            "services-generated",
+            "plugins-generated",
+            "package-generated",
+        ]);
+        const written = result.filesWritten.map((file) => file.replace(/\\/g, "/"));
+        for (const scaffold of ["package.json", "ng-package.json", "tsconfig.json", "README.md", ".gitignore"]) {
+            expect(written, scaffold).toContain(`${output.replace(/\\/g, "/")}/${scaffold}`);
+        }
+        expect(result.warnings).toEqual([]);
+    });
+
+    it("refuses to overwrite scaffold files it did not generate, and writes nothing", async () => {
+        const output = mkdtempSync(join(tmpRoot, "package-conflict-"));
+        tempDirs.push(output);
+        const { writeFileSync, readFileSync, readdirSync } = await import("node:fs");
+        // A user's own project root: output: "." in a client repo
+        const ownManifest = JSON.stringify({ name: "my-app", devDependencies: { "ng-openapi": "*" } });
+        writeFileSync(join(output, "package.json"), ownManifest);
+        writeFileSync(join(output, "README.md"), "# my-app\n");
+
+        const config = { ...buildConfig(output), package: { name: "pets", angularVersion: "^21.0.0" } };
+        await expect(generateFromConfig(config)).rejects.toMatchObject({
+            constructor: OutputConflictError,
+            paths: [join(output, "package.json"), join(output, "README.md")],
+        });
+        // One write per run: the failure happened before it
+        expect(readFileSync(join(output, "package.json"), "utf8")).toBe(ownManifest);
+        expect(readdirSync(output).sort()).toEqual(["README.md", "package.json"]);
+    });
+
+    it("leaves a user's package.json alone when the package option is off", async () => {
+        // The guard must stay inside `if (config.package)`: output: "." in an
+        // app that merely uses generated sources is the common case, and it
+        // has a package.json of its own
+        const output = mkdtempSync(join(tmpRoot, "no-package-option-"));
+        tempDirs.push(output);
+        const { writeFileSync, readFileSync } = await import("node:fs");
+        const ownManifest = JSON.stringify({ name: "my-app" });
+        writeFileSync(join(output, "package.json"), ownManifest);
+
+        const result = await generateFromConfig(buildConfig(output));
+
+        expect(result.filesWritten.some((file) => file.replace(/\\/g, "/").endsWith("models/index.ts"))).toBe(true);
+        expect(readFileSync(join(output, "package.json"), "utf8")).toBe(ownManifest);
+    });
+
+    it("says why a package.json could not be recognized instead of calling it foreign", async () => {
+        const output = mkdtempSync(join(tmpRoot, "package-unreadable-"));
+        tempDirs.push(output);
+        const { writeFileSync } = await import("node:fs");
+        // A BOM is the classic "looks like JSON, is not JSON.parse-able" case
+        writeFileSync(join(output, "package.json"), "﻿{}");
+
+        const config = { ...buildConfig(output), package: { name: "pets", angularVersion: "^21.0.0" } };
+        await expect(generateFromConfig(config)).rejects.toThrow(/package\.json \(could not be read: .*JSON/);
+    });
+
+    it("regenerates over its own scaffold files without complaint", async () => {
+        const output = mkdtempSync(join(tmpRoot, "package-regen-"));
+        tempDirs.push(output);
+        const config = { ...buildConfig(output), package: { name: "pets", angularVersion: "^21.0.0" } };
+
+        await generateFromConfig(config);
+        const { readFileSync } = await import("node:fs");
+        const first = readFileSync(join(output, "package.json"), "utf8");
+        await expect(generateFromConfig(config)).resolves.toBeDefined();
+        expect(readFileSync(join(output, "package.json"), "utf8")).toBe(first);
+    });
+
+    it("surfaces a package scaffold warning through the reporter and the result", async () => {
+        const output = mkdtempSync(join(tmpRoot, "package-warn-"));
+        tempDirs.push(output);
+        const input = join(output, "non-semver-version.json");
+        const { writeFileSync } = await import("node:fs");
+        writeFileSync(
+            input,
+            JSON.stringify({
+                openapi: "3.0.0",
+                info: { title: "versioned", version: "v1" },
+                paths: {},
+                components: { schemas: { Pet: { type: "object" } } },
+            }),
+        );
+
+        const reported: string[] = [];
+        const result = await generateFromConfig(
+            { ...buildConfig(output), input, package: { name: "pets", angularVersion: "^21.0.0" } },
+            { onWarning: (message) => reported.push(message) },
+        );
+
+        const versionWarning = expect.stringContaining('version "v1" taken from the spec\'s info.version');
+        expect(reported).toContainEqual(versionWarning);
+        expect(result.warnings).toEqual(reported);
     });
 
     it("delivers warnings to the reporter and the result", async () => {

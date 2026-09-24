@@ -112,6 +112,7 @@ ng-openapi -i ./swagger.json -o ./src/api --date-type string
 - `validateInput` - Custom acceptance check `(spec) => boolean`; returning `false` aborts generation
 - `plugins` - Plugin generator classes (e.g. `HttpResourcePlugin`, `ZodPlugin`), run after core generation
 - `compilerOptions` - TypeScript compiler options for code generation
+- `package` - `{ name, version?, repository?, publishRegistry?, angularVersion?, packageJson? }`; emits `package.json`, `ng-package.json`, `tsconfig.json`, `README.md` and `.gitignore` so the output builds with ng-packagr and publishes as a standalone Angular library (see the [publishing guide](https://ng-openapi.dev/guide/npm-package))
 - `options.generateServices` - Generate Angular services (default: `true`)
 - `options.generateEnumBasedOnDescription` - Parse enum values from description field (default: `false`)
 - `options.validation` - `{ response?: boolean }`; adds a `parse` hook to generated methods for response validation

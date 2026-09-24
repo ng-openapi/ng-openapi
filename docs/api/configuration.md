@@ -54,6 +54,7 @@ export default config;
 | [`validateInput`](configuration/validate-input.md) | `(spec) => boolean` | — | `undefined` | Acceptance check on the parsed spec; `false` aborts generation |
 | [`plugins`](configuration/plugins.md) | `IPluginGeneratorClass[]` | — | `undefined` | Plugin generators run after core generation |
 | [`compilerOptions`](configuration/compiler-options.md) | `object` | — | `undefined` | ts-morph compiler settings for generation |
+| [`package`](configuration/package.md) | `PackageConfig` | — | `undefined` | Emit package.json & co. so the output builds and publishes as an npm package |
 
 ## Configuration Properties
 
@@ -98,3 +99,9 @@ Plugin generator classes (e.g. `HttpResourcePlugin`, `ZodPlugin`), run after cor
 **Type:** `object | undefined` | **Default:** `undefined`
 
 TypeScript compiler options for the generated code.
+
+### [Package](configuration/package.md)
+
+**Type:** `PackageConfig | undefined` | **Default:** `undefined`
+
+Generates `package.json`, `ng-package.json`, `tsconfig.json`, `README.md` and `.gitignore` alongside the client, so the output directory builds with ng-packagr and publishes to npm as a standalone Angular library.

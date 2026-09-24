@@ -1,0 +1,7 @@
+.gitignore
+README.md
+index.ts
+models/index.ts
+ng-package.json
+package.json
+tsconfig.json
