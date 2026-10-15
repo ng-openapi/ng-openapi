@@ -30,7 +30,8 @@ export class SwaggerParser {
      *
      * @param onWarning receives non-fatal spec problems found while parsing or
      *   normalizing — a deep-pointer `$ref` that cannot be inlined, a parameter
-     *   with no usable name.
+     *   with no usable name, a `$ref` parameter, request body or response that
+     *   does not resolve.
      * @throws SpecLoadError when the file/URL cannot be read.
      * @throws SpecParseError when the content cannot be parsed, `$ref` inlining
      *   fails, or the config's `validateInput` hook rejects the spec.

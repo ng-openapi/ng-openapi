@@ -68,4 +68,55 @@ describe("extractPaths", () => {
     it("returns an empty array for missing paths", () => {
         expect(extractPaths(undefined)).toEqual([]);
     });
+
+    it("replaces $ref request bodies and responses with the component the resolver returns", () => {
+        const body = { content: { "application/json": { schema: { type: "string" as const } } } };
+        const ok = { description: "ok" };
+        const paths = extractPaths(
+            {
+                "/pets": {
+                    post: {
+                        requestBody: { $ref: "#/components/requestBodies/B" },
+                        responses: { "200": { $ref: "#/components/responses/Ok" }, "204": { description: "inline" } },
+                    },
+                },
+            } as never,
+            undefined,
+            undefined,
+            {
+                requestBody: (ref) => (ref === "#/components/requestBodies/B" ? { value: body } : { problem: "x" }),
+                response: (ref) => (ref === "#/components/responses/Ok" ? { value: ok } : { problem: "x" }),
+            },
+        );
+
+        expect(paths[0].requestBody).toBe(body);
+        expect(paths[0].responses).toEqual({ "200": ok, "204": { description: "inline" } });
+    });
+
+    it("skips a $ref it cannot resolve, out loud, and keeps the rest of the operation", () => {
+        const warnings: string[] = [];
+        const paths = extractPaths(
+            {
+                "/pets": {
+                    post: {
+                        requestBody: { $ref: "#/components/requestBodies/B" },
+                        responses: { "200": { $ref: "#/components/responses/Ok" }, "204": { description: "inline" } },
+                    },
+                },
+            } as never,
+            undefined,
+            (message) => warnings.push(message),
+        );
+
+        expect(paths[0].requestBody).toBeUndefined();
+        expect(paths[0].responses).toEqual({ "204": { description: "inline" } });
+        expect(warnings).toEqual([
+            'The request body of (POST) /pets references "#/components/requestBodies/B", which cannot be resolved ' +
+                "here: no resolver for it was provided. The request body was skipped: generated methods take no " +
+                "body and no validator is generated for it.",
+            'The "200" response of (POST) /pets references "#/components/responses/Ok", which cannot be resolved ' +
+                "here: no resolver for it was provided. The response was skipped: no return type or validator is " +
+                "generated from it.",
+        ]);
+    });
 });
