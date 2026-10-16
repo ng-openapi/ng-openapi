@@ -1,5 +1,8 @@
 import type { Parameter, PathInfo, RequestBody, SwaggerResponse } from "../../types/swagger.types";
 import { Path } from "swagger-schema-official";
+import { describeOperation } from "../../errors";
+import type { ComponentResolvers, ResolveComponent } from "./component-resolver";
+import { isPlainObject } from "./plain-object";
 
 /**
  * The raw operation shape as it appears in the spec: only the fields
@@ -21,6 +24,12 @@ type RawPathItem = { parameters?: Parameter[] } & { [method: string]: unknown };
 
 /** Outcome of resolving a `$ref` parameter: the component, or why not. */
 export type ParameterResolution = { parameter: Parameter } | { problem: string };
+/**
+ * The parameter-only resolver extractPaths took before it resolved request
+ * bodies and responses too. Still accepted in place of ComponentResolvers.
+ *
+ * @deprecated Pass `{ parameter }` (a ResolveComponent) instead.
+ */
 export type ResolveParameter = (ref: string) => ParameterResolution;
 
 /**
@@ -28,40 +37,123 @@ export type ResolveParameter = (ref: string) => ParameterResolution;
  * pair, merging path-level parameters into each operation. Supports both
  * Swagger 2.0 and OpenAPI 3.x path items; methods outside the given list
  * (and vendor extensions) are ignored.
+ *
+ * A `$ref` parameter, request body or response is replaced by the component
+ * its resolver returns; one the resolver cannot resolve is warned about and
+ * left out. With no resolver for its kind, a `$ref` request body or response
+ * is passed through as written, and a `$ref` parameter is warned about and
+ * left out — what extractPaths did before it took resolvers for them.
+ * normalizeSpec passes all three, so no consumer of the IR sees a `$ref`.
  */
 export function extractPaths(
     swaggerPaths: { [p: string]: Path } = {},
     methods = ["get", "post", "put", "patch", "delete", "options", "head"],
     onWarning?: (message: string) => void,
-    resolveParameter?: ResolveParameter,
+    resolvers: ComponentResolvers | ResolveParameter = {},
 ): PathInfo[] {
+    const { parameter, requestBody, response } = typeof resolvers === "function" ? fromLegacy(resolvers) : resolvers;
     const paths: PathInfo[] = [];
     Object.entries(swaggerPaths as Record<string, RawPathItem>).forEach(([path, pathItem]) => {
         methods.forEach((method) => {
             const operation = pathItem[method] as RawOperation | undefined;
             if (operation) {
+                const operationRef = { path, method: method.toUpperCase(), operationId: asName(operation.operationId) };
+                const described = describeOperation(operationRef);
                 paths.push({
-                    path,
-                    method: method.toUpperCase(),
-                    operationId: asName(operation.operationId),
+                    ...operationRef,
                     summary: operation.summary,
                     description: operation.description,
                     tags: Array.isArray(operation.tags) ? operation.tags.flatMap(nameOrNothing) : [],
                     parameters: parseParameters(
                         operation.parameters || [],
                         pathItem.parameters || [],
-                        `(${method.toUpperCase()}) ${path}`,
+                        `(${operationRef.method}) ${path}`,
                         onWarning,
-                        resolveParameter,
+                        parameter ??
+                            (() => ({ problem: "cannot be resolved here: no reusable parameters were provided" })),
                     ),
-                    requestBody: operation.requestBody,
-                    responses: operation.responses || {},
+                    requestBody:
+                        operation.requestBody &&
+                        dereference(
+                            operation.requestBody,
+                            requestBody,
+                            `The request body of ${described}`,
+                            "The request body was skipped: generated methods take no body and no validator is generated for it.",
+                            onWarning,
+                        ),
+                    responses: resolveResponses(operation.responses || {}, described, onWarning, response),
                 });
             }
         });
     });
 
     return paths;
+}
+
+/** Adapts the parameter-only resolver of the old signature. */
+function fromLegacy(resolveParameter: ResolveParameter): ComponentResolvers {
+    return {
+        parameter: (ref) => {
+            const resolution = resolveParameter(ref);
+            return "parameter" in resolution ? { value: resolution.parameter } : resolution;
+        },
+    };
+}
+
+/**
+ * The value itself, or — when it is a Reference Object — the component it
+ * points to. A ref that does not resolve yields undefined and a warning with
+ * the resolver's reason (an external document, a pointer to the wrong kind of
+ * component, a missing name, a cycle), so the user is sent to the actual
+ * problem, not a generic one. With no resolver, the ref is passed through.
+ */
+function dereference<T>(
+    value: T,
+    resolve: ResolveComponent<T> | undefined,
+    subject: string,
+    skipped: string,
+    onWarning?: (message: string) => void,
+): T | undefined {
+    const ref = (value as { $ref?: unknown } | null | undefined)?.$ref;
+    if (typeof ref !== "string" || !resolve) {
+        return value;
+    }
+    const resolution = resolve(ref);
+    if ("value" in resolution) {
+        return resolution.value;
+    }
+    onWarning?.(`${subject} references "${ref}", which ${resolution.problem}. ${skipped}`);
+    return undefined;
+}
+
+function resolveResponses(
+    responses: Record<string, SwaggerResponse>,
+    operation: string,
+    onWarning?: (message: string) => void,
+    resolveResponse?: ResolveComponent<SwaggerResponse>,
+): Record<string, SwaggerResponse> {
+    // fromEntries, not assignment: a "__proto__" status key would hit the
+    // prototype setter and vanish.
+    return Object.fromEntries(
+        Object.entries(responses).flatMap(([status, response]) => {
+            const subject = `The "${status}" response of ${operation}`;
+            // A success response is where the method's return type and
+            // response type come from, so losing one changes the signature,
+            // not just the validators.
+            const skipped = status.startsWith("2")
+                ? "The response was skipped: no validator is generated from it, and the method's return type and " +
+                  "response type come from its other success responses — `any`, read as JSON, if none is left."
+                : "The response was skipped: no validator is generated from it.";
+            // Nothing schema-validates the document: `"200": null` used to
+            // reach normalizeSpec and throw a raw TypeError out of the run.
+            if (!isPlainObject(response)) {
+                onWarning?.(`${subject} is not an object. ${skipped}`);
+                return [];
+            }
+            const resolved = dereference<SwaggerResponse>(response, resolveResponse, subject, skipped, onWarning);
+            return resolved === undefined ? [] : [[status, resolved] as const];
+        }),
+    );
 }
 
 /**
@@ -91,30 +183,19 @@ function parseParameters(
     pathParams: Parameter[],
     location: string,
     onWarning?: (message: string) => void,
-    resolveParameter?: ResolveParameter,
+    resolveParameter?: ResolveComponent<Parameter>,
 ): Parameter[] {
     const allParams = [...pathParams, ...operationParams].flatMap((param): Parameter[] => {
         // A `$ref` parameter has no name of its own — the referenced component
-        // does. Resolving it here means it is generated; before, it was reported
-        // as "no usable name", which sent users hunting for a problem that was
-        // not there, and then dropped.
-        const ref = (param as { $ref?: unknown }).$ref;
-        if (typeof ref !== "string") {
-            return [param];
-        }
-        const resolution = resolveParameter?.(ref) ?? {
-            problem: "cannot be resolved here: no reusable parameters were provided",
-        };
-        if ("parameter" in resolution) {
-            return [resolution.parameter];
-        }
-        // The resolver says why — an external document, a pointer to
-        // something that is not a parameter, a missing name, a cycle — so
-        // the user is sent to the actual problem, not a generic one.
-        onWarning?.(
-            `A parameter of ${location} references "${ref}", which ${resolution.problem}. The parameter was skipped.`,
+        // does, so it is resolved before the name check below.
+        const resolved = dereference(
+            param,
+            resolveParameter,
+            `A parameter of ${location}`,
+            "The parameter was skipped.",
+            onWarning,
         );
-        return [];
+        return resolved === undefined ? [] : [resolved];
     });
     // A parameter without a usable name cannot be bound to anything. A finite
     // number is a name (a YAML `name: 42` plainly means one); an empty string,

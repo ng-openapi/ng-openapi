@@ -50,6 +50,13 @@ Every generation run flows through the same stages:
   re-derive (`pathParams`, `queryParams`, `hasBody`, `isMultipart`,
   `responseType`, resolved `$ref`s, …). Output: **`NormalizedSpec`** /
   **`NormalizedOperation`** — the one internal model (the "IR").
+  Operation-level `$ref`s to reusable parameters, responses and request
+  bodies are replaced by their component in `extractPaths`, before anything
+  is derived from them; `component-resolver.ts` matches the _whole_ pointer
+  (`#/components/responses/X`, 2.0 `#/responses/X`, …), follows
+  component-to-component chains with a cycle guard, and says why a ref does
+  not resolve. Such a ref is warned about and left out, so the IR never
+  carries one.
 - **Generate** — each generator turns the IR into ts-morph structures. The
   orchestrator (`packages/ng-openapi/src/lib/core/generator.ts`) sequences them
   and stays pure: no logging, results returned as `GenerationResult`, progress
@@ -221,6 +228,7 @@ Project (see above).
 | You're adding…                                 | It goes…                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | A new per-operation derived fact               | `normalize.ts` + `NormalizedOperation`                                                                                                                                                                                                                                                                                                                                                                                               |
+| Resolving a `$ref` parameter, body or response | `utils/functions/component-resolver.ts`, applied in `extractPaths` — generators never dereference operation parts                                                                                                                                                                                                                                                                                                                    |
 | A code fragment used by ≥2 generators          | `packages/shared/src/emit/`                                                                                                                                                                                                                                                                                                                                                                                                          |
 | Anything that puts spec text into emitted code | `emit/literal.emit.ts` — never a local escaper                                                                                                                                                                                                                                                                                                                                                                                       |
 | A new generator option                         | `GeneratorConfig` + the narrow view that consumes it + `config-validation.ts`                                                                                                                                                                                                                                                                                                                                                        |

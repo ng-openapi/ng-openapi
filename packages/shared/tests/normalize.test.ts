@@ -104,6 +104,11 @@ describe("normalizeSpec", () => {
         expect(normalized.resolveReference("#/components/schemas/Nope")).toBeUndefined();
     });
 
+    it("does not resolve a schema ref to an inherited property", () => {
+        expect(normalized.resolveReference("#/components/schemas/constructor")).toBeUndefined();
+        expect(normalized.resolveReference("#/components/schemas/__proto__")).toBeUndefined();
+    });
+
     it("splits parameters by location", () => {
         const op = normalized.operations.find((o) => o.operationId === "getOrder")!;
         expect(op.pathParams.map((p) => p.name)).toEqual(["orderId"]);
@@ -140,6 +145,99 @@ describe("normalizeSpec", () => {
         expect(normalized.operations.find((o) => o.operationId === "token")!.acceptHeader).toBe("application/pdf");
         // 201 with no content → nothing to advertise
         expect(normalized.operations.find((o) => o.operationId === "upload")!.acceptHeader).toBeUndefined();
+    });
+});
+
+describe("normalizeSpec: $ref request bodies and responses (#132)", () => {
+    const refSpec = {
+        openapi: "3.1.0",
+        info: { title: "t", version: "1" },
+        paths: {
+            "/files": {
+                post: {
+                    operationId: "upload",
+                    requestBody: { $ref: "#/components/requestBodies/Upload" },
+                    responses: { "200": { $ref: "#/components/responses/File" } },
+                },
+            },
+            "/notes": {
+                get: {
+                    operationId: "note",
+                    responses: { "200": { $ref: "#/components/responses/Note~1Text" } },
+                },
+            },
+        },
+        components: {
+            requestBodies: {
+                Upload: {
+                    content: { "multipart/form-data": { schema: { $ref: "#/components/schemas/UploadForm" } } },
+                },
+            },
+            responses: {
+                File: { description: "f", content: { "application/pdf": {} } },
+                "Note/Text": {
+                    description: "n",
+                    content: { "application/json": { schema: { type: ["string", "null"] } } },
+                },
+            },
+            schemas: {
+                UploadForm: { type: "object", properties: { file: { type: "string", format: "binary" } } },
+            },
+        },
+    } as unknown as SwaggerSpec;
+    const pristine = structuredClone(refSpec);
+    const warnings: string[] = [];
+    const normalized = normalizeSpec(refSpec, (message) => warnings.push(message));
+    const op = (id: string) => normalized.operations.find((o) => o.operationId === id)!;
+
+    it("resolves them without a warning", () => {
+        expect(warnings).toEqual([]);
+    });
+
+    it("derives body facts from the referenced request body", () => {
+        expect(op("upload").hasBody).toBe(true);
+        expect(op("upload").isMultipart).toBe(true);
+        expect(op("upload").formDataFields).toEqual(["file"]);
+    });
+
+    it("derives response facts from the referenced response", () => {
+        expect(op("upload").responseType).toBe("arraybuffer");
+        expect(op("upload").acceptHeader).toBe("application/pdf");
+    });
+
+    it("unescapes the pointer and normalizes 3.1 schemas inside the referenced response", () => {
+        expect(op("note").responses?.["200"].content?.["application/json"].schema).toEqual({
+            type: "string",
+            nullable: true,
+        });
+    });
+
+    it("never mutates the raw spec", () => {
+        expect(refSpec).toEqual(pristine);
+    });
+
+    it("resolves Swagger 2.0 response refs against the top-level responses", () => {
+        const v2 = normalizeSpec({
+            swagger: "2.0",
+            responses: { NotFound: { description: "not found" } },
+            paths: { "/p": { get: { responses: { "404": { $ref: "#/responses/NotFound" } } } } },
+        } as never);
+        expect(v2.operations[0].responses?.["404"]).toEqual({ description: "not found" });
+    });
+
+    it("has nowhere to resolve a Swagger 2.0 request body ref from, and says so", () => {
+        const v2Warnings: string[] = [];
+        const v2 = normalizeSpec(
+            {
+                swagger: "2.0",
+                paths: { "/p": { post: { requestBody: { $ref: "#/components/requestBodies/B" }, responses: {} } } },
+            } as never,
+            (message) => v2Warnings.push(message),
+        );
+        expect(v2.operations[0].hasBody).toBe(false);
+        expect(v2Warnings.join("\n")).toContain(
+            "which is not supported: Swagger 2.0 has no reusable request body components",
+        );
     });
 });
 

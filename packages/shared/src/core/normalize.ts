@@ -2,11 +2,11 @@
 // import graph cycle-free — see swagger-parser.ts for the same rule.
 import { CONTENT_TYPES } from "../utils/content-types.constants";
 import { describeOperation } from "../errors";
+import { createComponentResolvers } from "../utils/functions/component-resolver";
 import { extractPaths } from "../utils/functions/extract-paths";
-import type { ResolveParameter } from "../utils/functions/extract-paths";
 import { getResponseInfoFromResponse } from "../utils/functions/extract-swagger-response-type";
 import type { ResponseTypeInfo } from "../utils/functions/extract-swagger-response-type";
-import type { Parameter, PathInfo, RequestBody, SwaggerDefinition, SwaggerSpec } from "../types/swagger.types";
+import type { PathInfo, RequestBody, SwaggerDefinition, SwaggerSpec } from "../types/swagger.types";
 import type { NormalizedOperation } from "../model/operation.model";
 import type { NormalizedSpec } from "../model/spec.model";
 
@@ -25,9 +25,10 @@ export function normalizeSpec(spec: SwaggerSpec, onWarning?: (message: string) =
     );
     const resolveReference: ResolveRef = (ref) => {
         const parts = ref.split("/");
-        return definitions[parts[parts.length - 1]];
+        const name = parts[parts.length - 1];
+        // Own properties only: `.../constructor` must not "resolve" to Object.
+        return Object.prototype.hasOwnProperty.call(definitions, name) ? definitions[name] : undefined;
     };
-    const resolveParameter = createParameterResolver(spec);
 
     return {
         version: spec.swagger
@@ -43,7 +44,7 @@ export function normalizeSpec(spec: SwaggerSpec, onWarning?: (message: string) =
               }
             : undefined,
         definitions,
-        operations: extractPaths(spec.paths, undefined, onWarning, resolveParameter).map((operation) =>
+        operations: extractPaths(spec.paths, undefined, onWarning, createComponentResolvers(spec)).map((operation) =>
             normalizeOperation(normalizeOperationSchemas(operation), resolveReference, onWarning),
         ),
         resolveReference,
@@ -238,63 +239,6 @@ function determineResponseInfo(operation: PathInfo): ResponseTypeInfo {
     }
 
     return { responseType: "json" };
-}
-
-/**
- * Resolves `$ref` parameters against the document's reusable parameters:
- * `components.parameters` in OpenAPI 3, top-level `parameters` in Swagger 2.0.
- *
- * Matches the whole pointer, not its last segment. `#/components/schemas/Foo`
- * and `common.yaml#/components/parameters/Foo` must not bind a local
- * parameter that happens to be called Foo: that sent a different parameter
- * on the wire with no warning. A component may itself be a Reference
- * Object, so the chain is followed, with a cycle guard — otherwise A → B
- * was reported as a parameter with no name, which it has, one step away.
- */
-function createParameterResolver(spec: SwaggerSpec): ResolveParameter {
-    // Read untyped: the raw spec types do not model either map fully, and a
-    // wrong shape must not throw here.
-    const components: Record<string, unknown> =
-        (spec.swagger
-            ? (spec as { parameters?: Record<string, unknown> }).parameters
-            : (spec as { components?: { parameters?: Record<string, unknown> } }).components?.parameters) ?? {};
-    const prefix = spec.swagger ? "#/parameters/" : "#/components/parameters/";
-
-    return (ref) => {
-        const chain: string[] = [];
-        let current = ref;
-        for (;;) {
-            if (chain.includes(current)) {
-                return {
-                    problem: `is part of a reference cycle (${[...chain, current].map((r) => `"${r}"`).join(" -> ")})`,
-                };
-            }
-            chain.push(current);
-            const hash = current.indexOf("#");
-            if (hash > 0) {
-                return {
-                    problem:
-                        `points into another document ("${current.slice(0, hash)}"); references into other documents ` +
-                        "are not supported, so bundle the spec into one document first",
-                };
-            }
-            if (!current.startsWith(prefix)) {
-                return { problem: `is not a parameter component pointer (expected "${prefix}<name>")` };
-            }
-            // JSON-pointer unescaping, so a component named "a/b" is reachable.
-            const name = current.slice(prefix.length).replace(/~1/g, "/").replace(/~0/g, "~");
-            const candidate = Object.prototype.hasOwnProperty.call(components, name) ? components[name] : undefined;
-            if (!candidate || typeof candidate !== "object") {
-                return { problem: `does not resolve: there is no parameter component named "${name}"` };
-            }
-            const next = (candidate as { $ref?: unknown }).$ref;
-            if (typeof next === "string") {
-                current = next;
-                continue;
-            }
-            return { parameter: candidate as Parameter };
-        }
-    };
 }
 
 /**

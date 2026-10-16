@@ -176,5 +176,12 @@
   "174": "scripts",
   "175": "Date Transformer",
   "176": "method-names.test.ts",
-  "177": "Schema Validation"
+  "177": "Schema Validation",
+  "178": "`responseTypeMapping`",
+  "179": "audio-data.js",
+  "180": "RequestParamsGenerator",
+  "181": "inline-nested-refs.test.ts",
+  "182": "HttpParamsBuilderGenerator",
+  "183": "operation.model.ts",
+  "184": "perf-benchmark.test.ts"
 }

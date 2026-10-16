@@ -30,7 +30,8 @@ export class SwaggerParser {
      *
      * @param onWarning receives non-fatal spec problems found while parsing or
      *   normalizing — a deep-pointer `$ref` that cannot be inlined, a parameter
-     *   with no usable name.
+     *   with no usable name, a `$ref` parameter, request body or response that
+     *   does not resolve.
      * @throws SpecLoadError when the file/URL cannot be read.
      * @throws SpecParseError when the content cannot be parsed, `$ref` inlining
      *   fails, or the config's `validateInput` hook rejects the spec.
@@ -88,7 +89,8 @@ export class SwaggerParser {
     /** One definition by bare name, or undefined when the spec has none by that name. */
     getDefinition(name: string): SwaggerDefinition | undefined {
         const definitions = this.getDefinitions();
-        return definitions[name];
+        // Own properties only: "constructor" or "__proto__" is not a definition.
+        return Object.prototype.hasOwnProperty.call(definitions, name) ? definitions[name] : undefined;
     }
 
     /** Resolves "#/definitions/X" / "#/components/schemas/X" style refs by their last segment. */
