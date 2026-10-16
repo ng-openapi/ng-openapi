@@ -144,7 +144,7 @@ describe("$ref responses and request bodies (#132)", () => {
                 "skipped: generated methods take no body and no validator is generated for it.",
             'The "400" response of createPet ((POST) /pets) references "#/components/schemas/Error", which is not a ' +
                 'response component pointer (expected "#/components/responses/<name>"). The response was skipped: ' +
-                "no return type or validator is generated from it.",
+                "no validator is generated from it.",
         ]);
 
         // The resolvable response is still generated; the skipped parts are not.
@@ -154,6 +154,43 @@ describe("$ref responses and request bodies (#132)", () => {
         expect(validators).toContain("export const createPet201Response =");
         expect(validators).not.toContain("createPetBody");
         expect(validators).not.toContain("createPet400Response");
+
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("resolves path-level $ref parameters alongside $ref responses", async () => {
+        // A path-level parameter that failed to resolve would leave {petId}
+        // unbound and fail generation for the whole spec.
+        const output = outputDirs.create("component-refs-path-params-");
+        const result = await generateFromConfig({
+            input: writeSpec(output, {
+                ...SPEC,
+                paths: {
+                    "/pets/{petId}": {
+                        parameters: [{ $ref: "#/components/parameters/PetId" }],
+                        get: {
+                            operationId: "getPet",
+                            tags: ["Pets"],
+                            responses: { "200": { $ref: "#/components/responses/PetResponse" } },
+                        },
+                    },
+                },
+                components: {
+                    ...SPEC.components,
+                    parameters: {
+                        PetId: { name: "petId", in: "path", required: true, schema: { type: "string" } },
+                    },
+                },
+            }),
+            output,
+            options: { dateType: "string", enumStyle: "union", generateServices: true },
+            plugins: [ZodPlugin],
+        });
+        expect(result.warnings).toEqual([]);
+
+        const service = read(output, "services", "pets.service.ts");
+        expect(service).toMatch(/getPet\(petId: string, observe\?: 'body', [^)]*\): Observable<Pet>;/);
+        expect(read(output, "validators", "pets.validator.ts")).toContain("export const getPet200Response =");
 
         expectGeneratedCodeCompiles(output);
     });

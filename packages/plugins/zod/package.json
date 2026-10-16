@@ -58,7 +58,7 @@
         "build": "tsup"
     },
     "peerDependencies": {
-        "ng-openapi": ">=0.2",
+        "ng-openapi": ">=0.5",
         "ts-morph": "*",
         "zod": ">=4"
     },

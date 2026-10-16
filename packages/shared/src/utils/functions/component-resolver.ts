@@ -1,4 +1,5 @@
 import type { Parameter, RequestBody, SwaggerResponse, SwaggerSpec } from "../../types/swagger.types";
+import { isPlainObject } from "./plain-object";
 
 /** Outcome of resolving a `$ref` to a reusable component: the component, or why not. */
 export type ComponentResolution<T> = { value: T } | { problem: string };
@@ -72,33 +73,50 @@ function createComponentResolver<T>({ noun, prefix, components }: ComponentLocat
                 };
             }
             chain.push(current);
-            const hash = current.indexOf("#");
-            if (hash > 0) {
+            const located = locate(current);
+            if ("problem" in located) {
+                // Name the hop that broke: with responses.A pointing at a
+                // schema, "#/components/responses/A" is a fine response
+                // pointer and blaming it sends the user to the wrong place.
                 return {
-                    problem:
-                        `points into another document ("${current.slice(0, hash)}"); references into other documents ` +
-                        "are not supported, so bundle the spec into one document first",
+                    problem: current === ref ? located.problem : `leads to "${current}", which ${located.problem}`,
                 };
             }
-            if (prefix === undefined) {
-                return { problem: `is not supported: Swagger 2.0 has no reusable ${noun} components` };
-            }
-            if (!current.startsWith(prefix)) {
-                return { problem: `is not a ${noun} component pointer (expected "${prefix}<name>")` };
-            }
-            // JSON-pointer unescaping (RFC 6901: `~1` first, then `~0`), so a
-            // component named "a/b" is reachable.
-            const name = current.slice(prefix.length).replace(/~1/g, "/").replace(/~0/g, "~");
-            const candidate = Object.prototype.hasOwnProperty.call(components, name) ? components[name] : undefined;
-            if (!candidate || typeof candidate !== "object") {
-                return { problem: `does not resolve: there is no ${noun} component named "${name}"` };
-            }
-            const next = (candidate as { $ref?: unknown }).$ref;
+            const next = located.component.$ref;
             if (typeof next === "string") {
                 current = next;
                 continue;
             }
-            return { value: candidate as T };
+            return { value: located.component as T };
         }
     };
+
+    /** The component one pointer names, or why it names none. */
+    function locate(pointer: string): { component: { $ref?: unknown } } | { problem: string } {
+        const hash = pointer.indexOf("#");
+        if (hash > 0) {
+            return {
+                problem:
+                    `points into another document ("${pointer.slice(0, hash)}"); references into other documents ` +
+                    "are not supported, so bundle the spec into one document first",
+            };
+        }
+        if (prefix === undefined) {
+            return { problem: `is not supported: Swagger 2.0 has no reusable ${noun} components` };
+        }
+        if (!pointer.startsWith(prefix)) {
+            return { problem: `is not a ${noun} component pointer (expected "${prefix}<name>")` };
+        }
+        // JSON-pointer unescaping (RFC 6901: `~1` first, then `~0`), so a
+        // component named "a/b" is reachable.
+        const name = pointer.slice(prefix.length).replace(/~1/g, "/").replace(/~0/g, "~");
+        if (!Object.prototype.hasOwnProperty.call(components, name)) {
+            return { problem: `does not resolve: there is no ${noun} component named "${name}"` };
+        }
+        const component = components[name];
+        if (!isPlainObject(component)) {
+            return { problem: `does not resolve: the ${noun} component "${name}" is not an object` };
+        }
+        return { component };
+    }
 }

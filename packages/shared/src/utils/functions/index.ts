@@ -19,6 +19,8 @@ export { groupOperationsByController } from "./controller-groups";
 export { getOperationMethodName, RESERVED_MEMBER_NAMES, reservedMemberCollision } from "./method-names";
 export { assertDistinctMemberNames } from "./distinct-member-names";
 export { hasDuplicateFunctionNames } from "./duplicate-function-name";
+export { createComponentResolvers } from "./component-resolver";
+export type { ComponentResolution, ComponentResolvers, ResolveComponent } from "./component-resolver";
 export { extractPaths } from "./extract-paths";
 export {
     getResponseInfoFromResponse,

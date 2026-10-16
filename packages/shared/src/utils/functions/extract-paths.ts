@@ -2,6 +2,7 @@ import type { Parameter, PathInfo, RequestBody, SwaggerResponse } from "../../ty
 import { Path } from "swagger-schema-official";
 import { describeOperation } from "../../errors";
 import type { ComponentResolvers, ResolveComponent } from "./component-resolver";
+import { isPlainObject } from "./plain-object";
 
 /**
  * The raw operation shape as it appears in the spec: only the fields
@@ -21,22 +22,36 @@ interface RawOperation {
 
 type RawPathItem = { parameters?: Parameter[] } & { [method: string]: unknown };
 
+/** Outcome of resolving a `$ref` parameter: the component, or why not. */
+export type ParameterResolution = { parameter: Parameter } | { problem: string };
+/**
+ * The parameter-only resolver extractPaths took before it resolved request
+ * bodies and responses too. Still accepted in place of ComponentResolvers.
+ *
+ * @deprecated Pass `{ parameter }` (a ResolveComponent) instead.
+ */
+export type ResolveParameter = (ref: string) => ParameterResolution;
+
 /**
  * Flattens the spec's `paths` object into one PathInfo per (path, method)
  * pair, merging path-level parameters into each operation. Supports both
  * Swagger 2.0 and OpenAPI 3.x path items; methods outside the given list
  * (and vendor extensions) are ignored.
  *
- * `$ref` parameters, request bodies and responses are replaced by the
- * component they point to, so no consumer of a PathInfo ever sees one. A ref
- * that does not resolve is warned about and left out.
+ * A `$ref` parameter, request body or response is replaced by the component
+ * its resolver returns; one the resolver cannot resolve is warned about and
+ * left out. With no resolver for its kind, a `$ref` request body or response
+ * is passed through as written, and a `$ref` parameter is warned about and
+ * left out — what extractPaths did before it took resolvers for them.
+ * normalizeSpec passes all three, so no consumer of the IR sees a `$ref`.
  */
 export function extractPaths(
     swaggerPaths: { [p: string]: Path } = {},
     methods = ["get", "post", "put", "patch", "delete", "options", "head"],
     onWarning?: (message: string) => void,
-    resolvers: ComponentResolvers = {},
+    resolvers: ComponentResolvers | ResolveParameter = {},
 ): PathInfo[] {
+    const { parameter, requestBody, response } = typeof resolvers === "function" ? fromLegacy(resolvers) : resolvers;
     const paths: PathInfo[] = [];
     Object.entries(swaggerPaths as Record<string, RawPathItem>).forEach(([path, pathItem]) => {
         methods.forEach((method) => {
@@ -54,18 +69,19 @@ export function extractPaths(
                         pathItem.parameters || [],
                         `(${operationRef.method}) ${path}`,
                         onWarning,
-                        resolvers.parameter,
+                        parameter ??
+                            (() => ({ problem: "cannot be resolved here: no reusable parameters were provided" })),
                     ),
                     requestBody:
                         operation.requestBody &&
                         dereference(
                             operation.requestBody,
-                            resolvers.requestBody,
+                            requestBody,
                             `The request body of ${described}`,
                             "The request body was skipped: generated methods take no body and no validator is generated for it.",
                             onWarning,
                         ),
-                    responses: resolveResponses(operation.responses || {}, described, onWarning, resolvers.response),
+                    responses: resolveResponses(operation.responses || {}, described, onWarning, response),
                 });
             }
         });
@@ -74,12 +90,22 @@ export function extractPaths(
     return paths;
 }
 
+/** Adapts the parameter-only resolver of the old signature. */
+function fromLegacy(resolveParameter: ResolveParameter): ComponentResolvers {
+    return {
+        parameter: (ref) => {
+            const resolution = resolveParameter(ref);
+            return "parameter" in resolution ? { value: resolution.parameter } : resolution;
+        },
+    };
+}
+
 /**
  * The value itself, or — when it is a Reference Object — the component it
  * points to. A ref that does not resolve yields undefined and a warning with
  * the resolver's reason (an external document, a pointer to the wrong kind of
  * component, a missing name, a cycle), so the user is sent to the actual
- * problem, not a generic one.
+ * problem, not a generic one. With no resolver, the ref is passed through.
  */
 function dereference<T>(
     value: T,
@@ -89,10 +115,10 @@ function dereference<T>(
     onWarning?: (message: string) => void,
 ): T | undefined {
     const ref = (value as { $ref?: unknown } | null | undefined)?.$ref;
-    if (typeof ref !== "string") {
+    if (typeof ref !== "string" || !resolve) {
         return value;
     }
-    const resolution = resolve?.(ref) ?? { problem: "cannot be resolved here: no resolver for it was provided" };
+    const resolution = resolve(ref);
     if ("value" in resolution) {
         return resolution.value;
     }
@@ -110,13 +136,21 @@ function resolveResponses(
     // prototype setter and vanish.
     return Object.fromEntries(
         Object.entries(responses).flatMap(([status, response]) => {
-            const resolved = dereference(
-                response,
-                resolveResponse,
-                `The "${status}" response of ${operation}`,
-                "The response was skipped: no return type or validator is generated from it.",
-                onWarning,
-            );
+            const subject = `The "${status}" response of ${operation}`;
+            // A success response is where the method's return type and
+            // response type come from, so losing one changes the signature,
+            // not just the validators.
+            const skipped = status.startsWith("2")
+                ? "The response was skipped: no validator is generated from it, and the method's return type and " +
+                  "response type come from its other success responses — `any`, read as JSON, if none is left."
+                : "The response was skipped: no validator is generated from it.";
+            // Nothing schema-validates the document: `"200": null` used to
+            // reach normalizeSpec and throw a raw TypeError out of the run.
+            if (!isPlainObject(response)) {
+                onWarning?.(`${subject} is not an object. ${skipped}`);
+                return [];
+            }
+            const resolved = dereference<SwaggerResponse>(response, resolveResponse, subject, skipped, onWarning);
             return resolved === undefined ? [] : [[status, resolved] as const];
         }),
     );

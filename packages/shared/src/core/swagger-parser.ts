@@ -89,7 +89,8 @@ export class SwaggerParser {
     /** One definition by bare name, or undefined when the spec has none by that name. */
     getDefinition(name: string): SwaggerDefinition | undefined {
         const definitions = this.getDefinitions();
-        return definitions[name];
+        // Own properties only: "constructor" or "__proto__" is not a definition.
+        return Object.prototype.hasOwnProperty.call(definitions, name) ? definitions[name] : undefined;
     }
 
     /** Resolves "#/definitions/X" / "#/components/schemas/X" style refs by their last segment. */

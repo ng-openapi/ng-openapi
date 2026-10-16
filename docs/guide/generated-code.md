@@ -116,7 +116,7 @@ Only pointers under `#/components/schemas/…` and `#/definitions/…` are inlin
 Reusable operation parts are resolved too: a parameter, request body or response written as a `$ref` to `#/components/parameters/…`, `#/components/requestBodies/…` or `#/components/responses/…` (Swagger 2.0: `#/parameters/…`, `#/responses/…`) generates exactly as if it were written inline. One that does not resolve — a missing name, a pointer to another kind of component, another document, a cycle — is skipped and warned about:
 
 ```
-⚠️ The "4XX" response of getPet ((GET) /pets/{petId}) references "#/components/responses/ClientError", which does not resolve: there is no response component named "ClientError". The response was skipped: no return type or validator is generated from it.
+⚠️ The "4XX" response of getPet ((GET) /pets/{petId}) references "#/components/responses/ClientError", which does not resolve: there is no response component named "ClientError". The response was skipped: no validator is generated from it.
 ```
 
 ## Regeneration Notes

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-// Package-internal (not on the public barrel) — imported from its module.
-import { createComponentResolvers } from "../src/utils/functions/component-resolver";
+import { createComponentResolvers } from "../src";
 import type { SwaggerSpec } from "../src";
 
 const spec = {
@@ -14,6 +13,9 @@ const spec = {
             Loop: { $ref: "#/components/responses/Loop2" },
             Loop2: { $ref: "#/components/responses/Loop" },
             NotAnObject: "nope",
+            AnArray: [{ description: "ok" }],
+            ToSchema: { $ref: "#/components/schemas/Ok" },
+            ToMissing: { $ref: "#/components/responses/Missing" },
         },
         requestBodies: { Body: { content: {} } },
         schemas: { Ok: { type: "object" } },
@@ -48,7 +50,10 @@ describe("createComponentResolvers", () => {
             problem: 'does not resolve: there is no response component named "Missing"',
         });
         expect(response("#/components/responses/NotAnObject")).toEqual({
-            problem: 'does not resolve: there is no response component named "NotAnObject"',
+            problem: 'does not resolve: the response component "NotAnObject" is not an object',
+        });
+        expect(response("#/components/responses/AnArray")).toEqual({
+            problem: 'does not resolve: the response component "AnArray" is not an object',
         });
         expect(requestBody("other.yaml#/components/requestBodies/Body")).toEqual({
             problem:
@@ -59,6 +64,19 @@ describe("createComponentResolvers", () => {
             problem:
                 'is part of a reference cycle ("#/components/responses/Loop" -> "#/components/responses/Loop2" -> ' +
                 '"#/components/responses/Loop")',
+        });
+    });
+
+    it("names the hop that broke when a chain breaks part-way", () => {
+        expect(response("#/components/responses/ToSchema")).toEqual({
+            problem:
+                'leads to "#/components/schemas/Ok", which is not a response component pointer ' +
+                '(expected "#/components/responses/<name>")',
+        });
+        expect(response("#/components/responses/ToMissing")).toEqual({
+            problem:
+                'leads to "#/components/responses/Missing", which does not resolve: there is no response ' +
+                'component named "Missing"',
         });
     });
 

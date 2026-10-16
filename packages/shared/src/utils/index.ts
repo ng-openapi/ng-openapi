@@ -16,6 +16,7 @@ export { CONTENT_TYPES } from "./content-types.constants";
 export { listGeneratedBarrelDirs, listGeneratedFileNames, listImportedPackageNames } from "./project.utils";
 // Helper functions (path extraction, response typing, token names, ...)
 export {
+    createComponentResolvers,
     extractPaths,
     generateParseRequestTypeParams,
     getBasePathTokenName,
@@ -46,4 +47,12 @@ export {
     resolveArgumentNames,
     SERVICE_ARGUMENT_PROFILE,
 } from "./functions";
-export type { ArgumentNameProfile, ArgumentNames, RenamedArgument, ResponseTypeInfo } from "./functions";
+export type {
+    ArgumentNameProfile,
+    ArgumentNames,
+    ComponentResolution,
+    ComponentResolvers,
+    RenamedArgument,
+    ResolveComponent,
+    ResponseTypeInfo,
+} from "./functions";
