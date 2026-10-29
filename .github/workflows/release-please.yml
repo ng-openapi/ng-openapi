@@ -13,10 +13,12 @@ jobs:
     release-please:
         name: Open / update release PR
         runs-on: ubuntu-latest
+        # release-please-action keys per-package outputs by package *path*
+        # (`<path>--release_created`), not by component name.
         outputs:
-            ng-openapi-released: ${{ steps.rp.outputs['ng-openapi--release_created'] }}
-            http-resource-released: ${{ steps.rp.outputs['http-resource--release_created'] }}
-            zod-released: ${{ steps.rp.outputs['zod--release_created'] }}
+            ng-openapi-released: ${{ steps.rp.outputs['packages/ng-openapi--release_created'] }}
+            http-resource-released: ${{ steps.rp.outputs['packages/plugins/http-resource--release_created'] }}
+            zod-released: ${{ steps.rp.outputs['packages/plugins/zod--release_created'] }}
         steps:
             - uses: googleapis/release-please-action@v4
               id: rp
