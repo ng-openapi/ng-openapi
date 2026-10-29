@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.0](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.4.1...ng-openapi-v0.5.0) (2026-10-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* **generator:** generated methods whose request body is a `$ref` to `components/requestBodies` now take that body as a parameter, and methods whose responses are `$ref`s to `components/responses` return the referenced model instead of `any`. Regenerate and fix the resulting compile errors; check positional calls on methods that gained an optional body, since it is inserted before the optional query parameters.
+
+### Bug Fixes
+
+* **generator:** resolve $ref responses and request bodies in the normalizer ([#133](https://github.com/ng-openapi/ng-openapi/issues/133)) ([242e8c7](https://github.com/ng-openapi/ng-openapi/commit/242e8c7c423658560f529398df76dab8a20c43c6)), closes [#132](https://github.com/ng-openapi/ng-openapi/issues/132)
+
 ## [0.4.1](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.4.0...ng-openapi-v0.4.1) (2026-09-24)
 
 
