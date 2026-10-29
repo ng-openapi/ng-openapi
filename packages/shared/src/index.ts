@@ -89,6 +89,7 @@ export {
     capitalizeFirst,
     CONTENT_TYPES,
     escapeString,
+    createComponentResolvers,
     extractPaths,
     generateParseRequestTypeParams,
     getBasePathTokenName,
@@ -129,7 +130,15 @@ export {
     screamingSnakeCase,
     SERVICE_ARGUMENT_PROFILE,
 } from "./utils";
-export type { ArgumentNameProfile, ArgumentNames, RenamedArgument, ResponseTypeInfo } from "./utils";
+export type {
+    ArgumentNameProfile,
+    ArgumentNames,
+    ComponentResolution,
+    ComponentResolvers,
+    RenamedArgument,
+    ResolveComponent,
+    ResponseTypeInfo,
+} from "./utils";
 
 // Typed config-file helper (user-facing)
 export { defineConfig } from "./config";

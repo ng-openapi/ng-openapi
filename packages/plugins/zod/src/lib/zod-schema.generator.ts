@@ -6,10 +6,8 @@ import {
     pascalCase,
     emitObjectKey,
     PathInfo,
-    RequestBody,
     SwaggerDefinition,
     NormalizedSpec,
-    SwaggerResponse,
 } from "@ng-openapi/shared";
 import { ZodSchemaBuilder } from "./zod-schema.builder";
 import { ZodPluginOptions } from "./utils/types";
@@ -54,8 +52,9 @@ export class ZodSchemaGenerator {
         if (!operation.requestBody) {
             return statements;
         }
-        const requestBody = this.resolveRequestBody(operation.requestBody);
-        const content = requestBody.content?.[CONTENT_TYPES.JSON] || requestBody.content?.["multipart/form-data"];
+        // `$ref` request bodies and responses arrive resolved (see extractPaths).
+        const { content: bodyContent } = operation.requestBody;
+        const content = bodyContent?.[CONTENT_TYPES.JSON] || bodyContent?.["multipart/form-data"];
         if (!content?.schema) {
             return statements;
         }
@@ -99,8 +98,7 @@ export class ZodSchemaGenerator {
         const responsesToGenerate = Object.entries(operation.responses);
         for (const [statusCode, response] of responsesToGenerate) {
             if (!response) continue;
-            const resolvedResponse = this.resolveResponse(response);
-            const content = resolvedResponse.content?.[CONTENT_TYPES.JSON];
+            const content = response.content?.[CONTENT_TYPES.JSON];
             if (!content?.schema) continue;
             const schema = this.resolveSchema(content.schema);
             const responseName = statusCode ? `${operationName}${statusCode}Response` : `${operationName}Response`;
@@ -162,20 +160,6 @@ export class ZodSchemaGenerator {
             type: parameter.type,
             format: parameter.format,
         } as SwaggerDefinition;
-    }
-    private resolveRequestBody(requestBody: RequestBody): RequestBody {
-        if (isReferenceObject(requestBody)) {
-            const resolved = this.spec.resolveReference(requestBody.$ref);
-            return resolved as RequestBody;
-        }
-        return requestBody;
-    }
-    private resolveResponse(response: SwaggerResponse): SwaggerResponse {
-        if (isReferenceObject(response)) {
-            const resolved = this.spec.resolveReference(response.$ref);
-            return resolved as SwaggerResponse;
-        }
-        return response;
     }
     private resolveSchema(schema: SwaggerDefinition | { $ref: string }): SwaggerDefinition {
         if (isReferenceObject(schema)) {
