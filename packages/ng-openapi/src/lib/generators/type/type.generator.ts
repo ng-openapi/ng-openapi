@@ -55,7 +55,7 @@ export class TypeGenerator {
         const outputPath = outputRoot + "/models/index.ts";
         this.sourceFile = project.createSourceFile(outputPath, "", { overwrite: true });
         this.resolver = new TypeResolver(config, onWarning);
-        this.enumBuilder = new EnumBuilder(config, onWarning);
+        this.enumBuilder = new EnumBuilder(config);
         this.interfaceBuilder = new InterfaceBuilder(this.resolver);
     }
 

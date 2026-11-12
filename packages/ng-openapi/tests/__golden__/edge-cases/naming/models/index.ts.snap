@@ -46,6 +46,24 @@ export const StringyEnumDto = {
     ItSDone: 'it\'s done' as StringyEnumDto,
     _1st: '1st' as StringyEnumDto
 };
+/** How much of the dataset a sync transfers */
+export type SyncModeDto = 0 | 1 | 2;
+export const SyncModeDto = {
+    _0: 0 as SyncModeDto,
+    _1: 1 as SyncModeDto,
+    _2: 2 as SyncModeDto
+};
+export type JobStatusDto = 'queued' | 'in-progress' | 'done';
+export const JobStatusDto = {
+    Queued: 'queued' as JobStatusDto,
+    InProgress: 'in-progress' as JobStatusDto,
+    Done: 'done' as JobStatusDto
+};
+export type MisnamedLevelDto = 1 | 2;
+export const MisnamedLevelDto = {
+    _1: 1 as MisnamedLevelDto,
+    _2: 2 as MisnamedLevelDto
+};
 export type FreeMapDto = Record<string, unknown>;
 export type ClosedBoxDto = Record<string, unknown>;
 export type TypedMapDto = Record<string, _123metaDto>;

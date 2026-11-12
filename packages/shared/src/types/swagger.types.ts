@@ -98,6 +98,12 @@ export interface SwaggerDefinition {
     maxProperties?: number | undefined;
     minProperties?: number | undefined;
     enum?: Array<string | number> | undefined;
+    /**
+     * One identifier per `enum` value, set by `normalizeSpec` on named enum
+     * schemas when `enumNameExtensions` or `generateEnumBasedOnDescription`
+     * yields usable names. Normalizer-owned: never read from the spec.
+     */
+    enumMemberNames?: string[] | undefined;
     /** OpenAPI 3.1 (JSON Schema); normalizeSchema folds it into a single-value `enum`. */
     const?: unknown;
     items?: SwaggerDefinition | SwaggerDefinition[] | undefined;
@@ -147,9 +153,10 @@ export interface SwaggerSpec {
 /**
  * Shape of a JSON-encoded enum description consumed when
  * `generateEnumBasedOnDescription` is enabled: the description holds
- * `[{"Name":"First","Value":1}, …]` and supplies the member names.
+ * `[{"Name":"First","Value":1}, …]` and names the `enum` member whose value
+ * equals `Value`.
  */
 export type EnumValueObject = {
     Name: string;
-    Value: number;
+    Value: string | number;
 };

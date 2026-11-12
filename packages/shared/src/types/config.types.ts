@@ -104,6 +104,13 @@ export interface GeneratorConfig {
         generateServices?: boolean;
         /** Read enum member names from JSON-encoded descriptions (see EnumValueObject). */
         generateEnumBasedOnDescription?: boolean;
+        /**
+         * Vendor extensions holding enum member names, checked in order — e.g.
+         * `["x-enum-varnames", "x-enumNames"]`. The first one that is a string
+         * array as long as the schema's `enum` names its members; it wins over
+         * `generateEnumBasedOnDescription`. Default: none.
+         */
+        enumNameExtensions?: string[];
         /** Default headers added to every request when not already present. */
         customHeaders?: Record<string, string>;
         /**
@@ -164,6 +171,14 @@ export interface TypeMappingConfig {
         naming?: {
             models?: NameDecoration;
         };
+    };
+}
+
+/** Options consumed by spec normalization: where enum member names come from. */
+export interface EnumNamingOptions {
+    options: {
+        enumNameExtensions?: string[];
+        generateEnumBasedOnDescription?: boolean;
     };
 }
 

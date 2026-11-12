@@ -33,6 +33,7 @@ describe("validateGeneratorConfig", () => {
                     enumStyle: "enum",
                     generateServices: true,
                     generateEnumBasedOnDescription: false,
+                    enumNameExtensions: ["x-enum-varnames", "x-enumNames"],
                     useSingleRequestParameter: true,
                     serviceDecorator: "service",
                     modelFileStructure: "per-type",
@@ -80,6 +81,22 @@ describe("validateGeneratorConfig", () => {
         expect(issues.find((i) => i.includes("enumStyle"))).toContain('"unions"');
         expect(issues.find((i) => i.includes("serviceDecorator"))).toContain('"Service"');
         expect(issues.find((i) => i.includes("modelFileStructure"))).toContain('"split"');
+    });
+
+    it("requires enumNameExtensions to be an array of x- extension names", () => {
+        const issuesFor = (enumNameExtensions: unknown) =>
+            issuesOf({ ...validConfig, options: { ...validConfig.options, enumNameExtensions } });
+
+        expect(issuesFor([])).toEqual([]);
+        expect(issuesFor(["x-enumNames"])).toEqual([]);
+        // A bare string is the likeliest slip; schema keywords and the empty
+        // extension name would read string arrays that are not names at all
+        for (const invalid of ["x-enumNames", ["x-enumNames", 1], ["required"], ["enumNames"], ["x-"]]) {
+            const issues = issuesFor(invalid);
+            expect(issues).toHaveLength(1);
+            expect(issues[0]).toContain("`options.enumNameExtensions`");
+            expect(issues[0]).toContain(JSON.stringify(invalid));
+        }
     });
 
     it("accepts an empty-string naming suffix (drops the default)", () => {

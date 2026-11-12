@@ -8,6 +8,7 @@
 
 // Spec shapes, generator config, plugin contract
 export type {
+    EnumNamingOptions,
     EnumValueObject,
     GeneratorConfig,
     GetMethodGenerationContext,

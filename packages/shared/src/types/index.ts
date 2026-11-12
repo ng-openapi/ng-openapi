@@ -11,6 +11,7 @@ export type {
 } from "./swagger.types";
 // User-facing generator configuration + segregated per-generator views
 export type {
+    EnumNamingOptions,
     GeneratorConfig,
     MethodGenOptions,
     NameDecoration,

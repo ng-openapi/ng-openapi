@@ -325,3 +325,210 @@ describe("normalizeSchema (OpenAPI 3.1 constructs)", () => {
         expect(arrayInput.type).toEqual(["string", "null"]);
     });
 });
+
+describe("normalizeSpec: enum member names (#31)", () => {
+    const EXTENSIONS = ["x-enum-varnames", "x-enumNames"];
+
+    type NamingOptions = { enumNameExtensions?: string[]; generateEnumBasedOnDescription?: boolean };
+
+    /** Normalizes one schema named `Kind` and returns its resolved names plus any warnings. */
+    function namesOf(
+        schema: Record<string, unknown>,
+        options: NamingOptions,
+    ): { names: string[] | undefined; warnings: string[] } {
+        const warnings: string[] = [];
+        const normalized = normalizeSpec(
+            { openapi: "3.0.3", paths: {}, components: { schemas: { Kind: schema } } } as never,
+            (message) => warnings.push(message),
+            { options },
+        );
+        return { names: normalized.definitions["Kind"].enumMemberNames, warnings };
+    }
+    const fromExtensions = (schema: Record<string, unknown>) => namesOf(schema, { enumNameExtensions: EXTENSIONS });
+
+    it("resolves nothing unless a source is configured", () => {
+        const schema = { type: "integer", enum: [0, 1], "x-enumNames": ["Unknown", "Full"] };
+        expect(namesOf(schema, {})).toEqual({ names: undefined, warnings: [] });
+        expect(
+            normalizeSpec({ openapi: "3.0.3", paths: {}, components: { schemas: { Kind: schema } } } as never)
+                .definitions["Kind"].enumMemberNames,
+        ).toBeUndefined();
+    });
+
+    it("reads names from a configured extension, positionally", () => {
+        expect(
+            fromExtensions({ type: "integer", enum: [0, 1, 2], "x-enumNames": ["Unknown", "Full", "Delta"] }),
+        ).toEqual({
+            names: ["Unknown", "Full", "Delta"],
+            warnings: [],
+        });
+    });
+
+    it("honors the configured order when several extensions are present", () => {
+        const schema = { enum: [0, 1], "x-enumNames": ["FromNSwag", "B"], "x-enum-varnames": ["FromOpenApiGen", "B"] };
+        expect(fromExtensions(schema).names).toEqual(["FromOpenApiGen", "B"]);
+        expect(namesOf(schema, { enumNameExtensions: ["x-enumNames", "x-enum-varnames"] }).names).toEqual([
+            "FromNSwag",
+            "B",
+        ]);
+    });
+
+    it("keeps valid identifiers verbatim and sanitizes the rest", () => {
+        expect(
+            fromExtensions({
+                enum: [1, 2, 3, 4],
+                "x-enumNames": ["snake_case", "$dollar", "two words", "1st"],
+            }).names,
+        ).toEqual(["snake_case", "$dollar", "TwoWords", "_1st"]);
+    });
+
+    it("never emits __proto__, which would set the prototype of the union style's const object", () => {
+        expect(fromExtensions({ enum: [1], "x-enumNames": ["__proto__"] }).names).toEqual(["_Proto__"]);
+    });
+
+    it("names a const the normalizer folded into a single-value enum", () => {
+        expect(fromExtensions({ const: "only", "x-enumNames": ["Only"] }).names).toEqual(["Only"]);
+    });
+
+    it("warns about a malformed extension and falls through to the next source", () => {
+        const { names, warnings } = fromExtensions({
+            enum: [0, 1],
+            "x-enum-varnames": ["OnlyOne"],
+            "x-enumNames": ["Unknown", "Full"],
+        });
+        expect(names).toEqual(["Unknown", "Full"]);
+        expect(warnings).toHaveLength(1);
+        expect(warnings[0]).toContain('Enum "Kind"');
+        expect(warnings[0]).toContain("x-enum-varnames");
+    });
+
+    it.each([
+        ["not an array", "Unknown,Full"],
+        ["non-string entries", ["Unknown", 1]],
+        ["too many names", ["Unknown", "Full", "Extra"]],
+    ])("rejects an extension that is %s", (_label, value) => {
+        const { names, warnings } = fromExtensions({ enum: [0, 1], "x-enumNames": value });
+        expect(names).toBeUndefined();
+        expect(warnings).toHaveLength(1);
+    });
+
+    it("rejects names that collide, also after sanitizing", () => {
+        const verbatim = fromExtensions({ enum: [0, 1], "x-enumNames": ["Same", "Same"] });
+        expect(verbatim.names).toBeUndefined();
+        expect(verbatim.warnings[0]).toContain('"Same"');
+
+        const sanitized = fromExtensions({ enum: [0, 1], "x-enumNames": ["two words", "two-words"] });
+        expect(sanitized.names).toBeUndefined();
+        expect(sanitized.warnings[0]).toContain('"TwoWords"');
+    });
+
+    it("never trusts an enumMemberNames key authored in the spec", () => {
+        expect(fromExtensions({ enum: [0, 1], enumMemberNames: ["evil key", "x"] }).names).toBeUndefined();
+        expect(
+            fromExtensions({ enum: [0, 1], enumMemberNames: ["evil key", "x"], "x-enumNames": ["Unknown", "Full"] })
+                .names,
+        ).toEqual(["Unknown", "Full"]);
+    });
+
+    it("leaves non-enum and nested schemas alone", () => {
+        const normalized = normalizeSpec(
+            {
+                openapi: "3.0.3",
+                paths: {},
+                components: {
+                    schemas: {
+                        Holder: {
+                            type: "object",
+                            "x-enumNames": ["A"],
+                            properties: { kind: { enum: [0], "x-enumNames": ["Unknown"] } },
+                        },
+                    },
+                },
+            } as never,
+            undefined,
+            { options: { enumNameExtensions: EXTENSIONS } },
+        );
+        expect(normalized.definitions["Holder"].enumMemberNames).toBeUndefined();
+        expect(normalized.definitions["Holder"].properties?.["kind"].enumMemberNames).toBeUndefined();
+    });
+
+    describe("generateEnumBasedOnDescription", () => {
+        const fromDescription = (schema: Record<string, unknown>) =>
+            namesOf(schema, { generateEnumBasedOnDescription: true });
+
+        it("matches names to enum values by Value, whatever the order", () => {
+            expect(
+                fromDescription({
+                    enum: [1, 2],
+                    description: '[{"Name":"Second","Value":2},{"Name":"First","Value":1}]',
+                }),
+            ).toEqual({ names: ["First", "Second"], warnings: [] });
+        });
+
+        it("names string enums", () => {
+            expect(
+                fromDescription({
+                    enum: ["a", "b"],
+                    description: '[{"Name":"Alpha","Value":"a"},{"Name":"Beta","Value":"b"}]',
+                }).names,
+            ).toEqual(["Alpha", "Beta"]);
+        });
+
+        it("ignores entries for values the enum does not have: enum is the source of truth", () => {
+            expect(
+                fromDescription({
+                    enum: [1],
+                    description: '[{"Name":"First","Value":1},{"Name":"Gone","Value":9}]',
+                }).names,
+            ).toEqual(["First"]);
+        });
+
+        it("sanitizes names instead of emitting them verbatim", () => {
+            // Same sanitizer as value-derived names: "in progress" as a value yields this key too
+            expect(fromDescription({ enum: [1], description: '[{"Name":"in progress","Value":1}]' }).names).toEqual([
+                "InProgress",
+            ]);
+        });
+
+        it("rejects a repeated enum value, which would give two members one name", () => {
+            const { names, warnings } = fromDescription({ enum: [1, 1], description: '[{"Name":"First","Value":1}]' });
+            expect(names).toBeUndefined();
+            expect(warnings[0]).toContain('"First"');
+        });
+
+        it("stays quiet on prose descriptions", () => {
+            expect(fromDescription({ enum: [1, 2], description: "Plain human-readable description" })).toEqual({
+                names: undefined,
+                warnings: [],
+            });
+            expect(fromDescription({ enum: [1, 2] })).toEqual({ names: undefined, warnings: [] });
+        });
+
+        it.each([
+            ["malformed JSON", '[{"Name":"First","Value":1},]'],
+            ["an object instead of an array", '{"Name":"First","Value":1}'],
+            ["entries of the wrong shape", '[{"name":"First","value":1},{"name":"Second","value":2}]'],
+            ["an enum value without a name", '[{"Name":"First","Value":1}]'],
+            ["a Value of the wrong type", '[{"Name":"First","Value":"1"},{"Name":"Second","Value":"2"}]'],
+        ])("warns and falls back on %s", (_label, description) => {
+            const { names, warnings } = fromDescription({ enum: [1, 2], description });
+            expect(names).toBeUndefined();
+            expect(warnings).toHaveLength(1);
+            expect(warnings[0]).toContain('Enum "Kind"');
+            expect(warnings[0]).toContain("generateEnumBasedOnDescription");
+        });
+
+        it("ranks below a configured extension", () => {
+            const described = {
+                enum: [1, 2],
+                description: '[{"Name":"FromDescription","Value":1},{"Name":"B","Value":2}]',
+            };
+            const options = { enumNameExtensions: EXTENSIONS, generateEnumBasedOnDescription: true };
+            expect(namesOf({ ...described, "x-enumNames": ["FromExtension", "B"] }, options).names).toEqual([
+                "FromExtension",
+                "B",
+            ]);
+            expect(namesOf(described, options)).toEqual({ names: ["FromDescription", "B"], warnings: [] });
+        });
+    });
+});

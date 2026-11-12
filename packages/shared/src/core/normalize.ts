@@ -6,6 +6,8 @@ import { createComponentResolvers } from "../utils/functions/component-resolver"
 import { extractPaths } from "../utils/functions/extract-paths";
 import { getResponseInfoFromResponse } from "../utils/functions/extract-swagger-response-type";
 import type { ResponseTypeInfo } from "../utils/functions/extract-swagger-response-type";
+import { resolveEnumMemberNames } from "./enum-member-names";
+import type { EnumNamingOptions } from "../types/config.types";
 import type { PathInfo, RequestBody, SwaggerDefinition, SwaggerSpec } from "../types/swagger.types";
 import type { NormalizedOperation } from "../model/operation.model";
 import type { NormalizedSpec } from "../model/spec.model";
@@ -18,10 +20,17 @@ type ResolveRef = (ref: string) => SwaggerDefinition | undefined;
  * http-resource body, overloads) — computing it once keeps the derivations
  * identical by construction.
  */
-export function normalizeSpec(spec: SwaggerSpec, onWarning?: (message: string) => void): NormalizedSpec {
+export function normalizeSpec(
+    spec: SwaggerSpec,
+    onWarning?: (message: string) => void,
+    enumNaming: EnumNamingOptions = { options: {} },
+): NormalizedSpec {
     const rawDefinitions = spec.definitions || spec.components?.schemas || {};
     const definitions = Object.fromEntries(
-        Object.entries(rawDefinitions).map(([name, definition]) => [name, normalizeSchema(definition)]),
+        Object.entries(rawDefinitions).map(([name, definition]) => [
+            name,
+            nameEnumMembers(name, normalizeSchema(definition), enumNaming, onWarning),
+        ]),
     );
     const resolveReference: ResolveRef = (ref) => {
         const parts = ref.split("/");
@@ -49,6 +58,29 @@ export function normalizeSpec(spec: SwaggerSpec, onWarning?: (message: string) =
         ),
         resolveReference,
     };
+}
+
+/**
+ * Attaches `enumMemberNames` to a top-level definition. Only these become
+ * named enums — an inline property enum is emitted as a literal union and has
+ * no members to name — so nested schemas are deliberately not visited.
+ *
+ * Updates `definition` in place: it is the copy `normalizeSchema` just made.
+ * The field is cleared first: it is normalizer-owned, and a spec that happens
+ * to carry a key of that name must not reach the enum builder unvalidated.
+ */
+function nameEnumMembers(
+    name: string,
+    definition: SwaggerDefinition,
+    enumNaming: EnumNamingOptions,
+    onWarning?: (message: string) => void,
+): SwaggerDefinition {
+    delete definition.enumMemberNames;
+    const names = resolveEnumMemberNames(name, definition, enumNaming, onWarning);
+    if (names) {
+        definition.enumMemberNames = names;
+    }
+    return definition;
 }
 
 /**

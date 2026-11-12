@@ -95,3 +95,30 @@ registerGoldenSuite("ng-openapi golden", {
         },
     },
 });
+
+// Enum member names from vendor extensions and JSON descriptions (#31), in
+// both enum styles. Only the edge-cases fixture carries the extensions, and
+// only the models differ, so the other fixtures and the services stay out of
+// the snapshots.
+const enumNamesConfig =
+    (enumStyle: "enum" | "union") =>
+    (input: string, output: string): GeneratorConfig => ({
+        input,
+        output,
+        options: {
+            dateType: "string",
+            enumStyle,
+            generateServices: false,
+            generateEnumBasedOnDescription: true,
+            enumNameExtensions: ["x-enum-varnames", "x-enumNames"],
+        },
+    });
+
+registerGoldenSuite("ng-openapi golden (enum names)", {
+    goldenDir: fileURLToPath(new URL("./__golden__", import.meta.url)),
+    fixtures: ["edge-cases"],
+    variants: {
+        "enum-names-union": enumNamesConfig("union"),
+        "enum-names-enum": enumNamesConfig("enum"),
+    },
+});

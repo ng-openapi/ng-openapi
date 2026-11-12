@@ -46,6 +46,24 @@ export enum StringyEnumDto {
     _1st = "1st"
 }
 
+/** How much of the dataset a sync transfers */
+export enum SyncModeDto {
+    _0 = 0,
+    _1 = 1,
+    _2 = 2
+}
+
+export enum JobStatusDto {
+    Queued = "queued",
+    InProgress = "in-progress",
+    Done = "done"
+}
+
+export enum MisnamedLevelDto {
+    _1 = 1,
+    _2 = 2
+}
+
 export type FreeMapDto = Record<string, unknown>;
 export type ClosedBoxDto = Record<string, unknown>;
 export type TypedMapDto = Record<string, _123metaDto>;

@@ -57,6 +57,14 @@ Every generation run flows through the same stages:
   component-to-component chains with a cycle guard, and says why a ref does
   not resolve. Such a ref is warned about and left out, so the IR never
   carries one.
+  Enum member names are resolved here too (`enum-member-names.ts`): the
+  sources the config enables — `enumNameExtensions` (`x-enum-varnames`,
+  `x-enumNames`, …), then the JSON description of
+  `generateEnumBasedOnDescription` — are validated, sanitized into
+  identifiers and attached to each top-level enum definition as
+  `enumMemberNames`. The enum builder takes its member names from that field
+  alone; a new naming source is a new branch in that module, not a new read
+  of the spec in a generator.
 - **Generate** — each generator turns the IR into ts-morph structures. The
   orchestrator (`packages/ng-openapi/src/lib/core/generator.ts`) sequences them
   and stays pure: no logging, results returned as `GenerationResult`, progress
