@@ -422,6 +422,37 @@ describe("normalizeSpec: enum member names (#31)", () => {
         expect(sanitized.warnings[0]).toContain('"TwoWords"');
     });
 
+    it("says it ignores a colliding extension, and still tries the next one", () => {
+        const { names, warnings } = fromExtensions({
+            enum: [0, 1],
+            "x-enum-varnames": ["A", "A"],
+            "x-enumNames": ["X", "Y"],
+        });
+        expect(names).toEqual(["X", "Y"]);
+        expect(warnings).toHaveLength(1);
+        expect(warnings[0]).toContain("x-enum-varnames");
+        expect(warnings[0]).toContain("ignoring it");
+        expect(warnings[0]).not.toContain("falling back");
+    });
+
+    // A nullable enum lists null among its values (the OpenAPI 3.1 spelling).
+    // Named in enum style, null became a member without an initializer, which
+    // TypeScript numbers itself, or the string "null".
+    it.each([
+        ["numbers", [0, 1, null], ["Zero", "One", "None"]],
+        ["strings", ["a", "b", null], ["A", "B", "None"]],
+        ["a boolean", [0, true], ["Zero", "Yes"]],
+    ])("does not name an enum of %s that holds a value which is not a string or number", (_label, values, names) => {
+        const result = fromExtensions({ enum: values, "x-enumNames": names });
+        expect(result.names).toBeUndefined();
+        expect(result.warnings).toHaveLength(1);
+        expect(result.warnings[0]).toContain("only enums of strings and numbers can be named");
+    });
+
+    it("stays quiet about a nullable enum that no source names", () => {
+        expect(fromExtensions({ enum: [0, 1, null] })).toEqual({ names: undefined, warnings: [] });
+    });
+
     it("never trusts an enumMemberNames key authored in the spec", () => {
         expect(fromExtensions({ enum: [0, 1], enumMemberNames: ["evil key", "x"] }).names).toBeUndefined();
         expect(
@@ -496,12 +527,52 @@ describe("normalizeSpec: enum member names (#31)", () => {
             expect(warnings[0]).toContain('"First"');
         });
 
-        it("stays quiet on prose descriptions", () => {
-            expect(fromDescription({ enum: [1, 2], description: "Plain human-readable description" })).toEqual({
-                names: undefined,
-                warnings: [],
-            });
+        it.each([
+            "Plain human-readable description",
+            "[Deprecated] use OtherKind",
+            "{braces} can open a sentence too",
+            "[1] first, [2] second",
+            "42",
+        ])("stays quiet on the prose description %j", (description) => {
+            expect(fromDescription({ enum: [1, 2], description })).toEqual({ names: undefined, warnings: [] });
+        });
+
+        it("stays quiet when there is no description", () => {
             expect(fromDescription({ enum: [1, 2] })).toEqual({ names: undefined, warnings: [] });
+        });
+
+        it("matches a Value written as text to a numeric enum value, and the other way round", () => {
+            expect(
+                fromDescription({
+                    enum: [1, 2],
+                    description: '[{"Name":"First","Value":"1"},{"Name":"Second","Value":"2"}]',
+                }),
+            ).toEqual({ names: ["First", "Second"], warnings: [] });
+            expect(
+                fromDescription({
+                    enum: ["1", "2"],
+                    description: '[{"Name":"First","Value":1},{"Name":"Second","Value":2}]',
+                }).names,
+            ).toEqual(["First", "Second"]);
+        });
+
+        it("prefers the entry whose Value has the enum value's own type", () => {
+            expect(
+                fromDescription({
+                    enum: [1, "1"],
+                    description: '[{"Name":"Text","Value":"1"},{"Name":"Num","Value":1}]',
+                }).names,
+            ).toEqual(["Num", "Text"]);
+        });
+
+        it("does not name a nullable enum", () => {
+            const { names, warnings } = fromDescription({
+                enum: [1, null],
+                description: '[{"Name":"First","Value":1},{"Name":"None","Value":"null"}]',
+            });
+            expect(names).toBeUndefined();
+            expect(warnings).toHaveLength(1);
+            expect(warnings[0]).toContain("no Name for enum value null");
         });
 
         it.each([
@@ -509,13 +580,13 @@ describe("normalizeSpec: enum member names (#31)", () => {
             ["an object instead of an array", '{"Name":"First","Value":1}'],
             ["entries of the wrong shape", '[{"name":"First","value":1},{"name":"Second","value":2}]'],
             ["an enum value without a name", '[{"Name":"First","Value":1}]'],
-            ["a Value of the wrong type", '[{"Name":"First","Value":"1"},{"Name":"Second","Value":"2"}]'],
+            ["names that collide", '[{"Name":"Same","Value":1},{"Name":"Same","Value":2}]'],
         ])("warns and falls back on %s", (_label, description) => {
             const { names, warnings } = fromDescription({ enum: [1, 2], description });
             expect(names).toBeUndefined();
             expect(warnings).toHaveLength(1);
             expect(warnings[0]).toContain('Enum "Kind"');
-            expect(warnings[0]).toContain("generateEnumBasedOnDescription");
+            expect(warnings[0]).toContain("falling back to raw enum values");
         });
 
         it("ranks below a configured extension", () => {

@@ -7,9 +7,6 @@ registerCompileCheckSuite("ng-openapi compile-check", (input, output) => ({
         dateType: "Date",
         enumStyle: "enum",
         generateEnumBasedOnDescription: true,
-        // Author-supplied member names reach the emitted enums (and, in the
-        // per-type suite below, the union style's const objects) verbatim
-        enumNameExtensions: ["x-enum-varnames", "x-enumNames"],
         generateServices: true,
     },
 }));
@@ -45,8 +42,6 @@ registerCompileCheckSuite("ng-openapi compile-check (per-type models)", (input, 
         generateServices: true,
         useSingleRequestParameter: true,
         modelFileStructure: "per-type",
-        generateEnumBasedOnDescription: true,
-        enumNameExtensions: ["x-enum-varnames", "x-enumNames"],
         naming: {
             models: { suffix: "Dto" },
         },

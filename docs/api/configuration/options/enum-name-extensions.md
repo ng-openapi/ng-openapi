@@ -76,6 +76,7 @@ String enums are named the same way.
 - A name that is a valid TypeScript identifier is used exactly as written, so `STATUS_ACTIVE` stays `STATUS_ACTIVE`. Any other name is converted the same way value-based names are (`"two words"` becomes `TwoWords`).
 - An extension is used as a whole or not at all. If it is not an array of strings, has the wrong length, or would give two members the same name, the generator prints a warning and moves on to the next source. With no usable source, the members are named after their values as usual.
 - A matching extension wins over [`generateEnumBasedOnDescription`](generate-enums-description) when both are set.
+- Only enums of strings and numbers are named. For an enum that lists `null` among its values (a nullable enum), the generator prints a warning and ignores the names.
 
 ## Notes
 

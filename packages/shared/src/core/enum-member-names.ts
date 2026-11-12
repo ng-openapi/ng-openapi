@@ -20,6 +20,11 @@ type Warn = (message: string) => void;
  * contributes names. A source is all-or-nothing — one that is malformed,
  * incomplete or ambiguous is reported and skipped as a whole, because a
  * half-named enum would mix two naming schemes in one declaration.
+ *
+ * Only enums of strings and numbers are named. Any other value (`null` in a
+ * nullable enum, most often) has no member a name could be attached to:
+ * emitted in enum style it would be a member without an initializer, which
+ * TypeScript numbers on its own, or the string `"null"`.
  */
 export function resolveEnumMemberNames(
     schemaName: string,
@@ -34,13 +39,39 @@ export function resolveEnumMemberNames(
     const { enumNameExtensions = [], generateEnumBasedOnDescription } = config.options;
     const warn: Warn = (message) => onWarning?.(`Enum "${schemaName}": ${message}`);
 
-    for (const extension of enumNameExtensions) {
-        const names = namesFromExtension(definition, extension, values.length, warn);
+    const names =
+        namesFromExtensions(definition, enumNameExtensions, values.length, warn) ??
+        (generateEnumBasedOnDescription ? namesFromDescription(definition.description, values, warn) : undefined);
+    if (!names) {
+        return undefined;
+    }
+    const unnameable = values.findIndex((value) => !isNameableValue(value));
+    if (unnameable !== -1) {
+        warn(
+            `only enums of strings and numbers can be named, but it contains ${JSON.stringify(values[unnameable])} — ignoring the names`,
+        );
+        return undefined;
+    }
+    return names;
+}
+
+function isNameableValue(value: unknown): value is string | number {
+    return typeof value === "string" || typeof value === "number";
+}
+
+function namesFromExtensions(
+    definition: SwaggerDefinition,
+    extensions: string[],
+    valueCount: number,
+    warn: Warn,
+): string[] | undefined {
+    for (const extension of extensions) {
+        const names = namesFromExtension(definition, extension, valueCount, warn);
         if (names) {
             return names;
         }
     }
-    return generateEnumBasedOnDescription ? namesFromDescription(definition.description, values, warn) : undefined;
+    return undefined;
 }
 
 function namesFromExtension(
@@ -62,21 +93,17 @@ function namesFromExtension(
         warn(`\`${extension}\` must be an array of ${valueCount} strings, one per enum value — ignoring it`);
         return undefined;
     }
-    return toMemberNames(`\`${extension}\``, candidates, warn);
+    return toMemberNames(`\`${extension}\``, candidates, "ignoring it", warn);
 }
 
 function namesFromDescription(description: unknown, values: unknown[], warn: Warn): string[] | undefined {
     if (typeof description !== "string") {
         return undefined;
     }
-    // Prose descriptions are expected to land here silently; only a
-    // description that looks like the JSON payload warrants a warning.
-    const reject = (reason: string): undefined => {
-        if (/^\s*[[{]/.test(description)) {
-            warn(
-                `description looks like JSON (generateEnumBasedOnDescription) but could not be used: ${reason} — falling back to raw enum values`,
-            );
-        }
+    const unusable = (reason: string): undefined => {
+        warn(
+            `description looks like JSON (generateEnumBasedOnDescription) but could not be used: ${reason} — falling back to raw enum values`,
+        );
         return undefined;
     };
 
@@ -84,28 +111,40 @@ function namesFromDescription(description: unknown, values: unknown[], warn: War
     try {
         parsed = JSON.parse(description);
     } catch {
-        return reject("it does not parse");
+        // Prose is expected here and stays silent, bracketed prose included
+        // ("[Deprecated] use X"). Only text that opens like the payload — an
+        // array of objects — is a failed attempt at it.
+        return /^\s*\[\s*\{/.test(description) ? unusable("it does not parse") : undefined;
+    }
+    if (typeof parsed !== "object" || parsed === null) {
+        // A description that is a bare JSON scalar ("42", "true") is prose too.
+        return undefined;
     }
     if (!Array.isArray(parsed) || !parsed.every(isEnumValueObject)) {
-        return reject('expected an array of { "Name": string, "Value": string | number } objects');
+        return unusable('expected an array of { "Name": string, "Value": string | number } objects');
     }
 
-    // The first entry for a Value names it.
-    const nameByValue = new Map<unknown, string>();
+    // The first entry for a Value names it. Values are also indexed by their
+    // text: descriptions commonly write `"Value": "1"` for the number 1.
+    const nameByValue = new Map<string | number, string>();
+    const nameByText = new Map<string, string>();
     for (const { Name, Value } of parsed) {
         if (!nameByValue.has(Value)) {
             nameByValue.set(Value, Name);
         }
+        if (!nameByText.has(String(Value))) {
+            nameByText.set(String(Value), Name);
+        }
     }
     const candidates: string[] = [];
     for (const value of values) {
-        const name = nameByValue.get(value);
+        const name = isNameableValue(value) ? (nameByValue.get(value) ?? nameByText.get(String(value))) : undefined;
         if (name === undefined) {
-            return reject(`no Name for enum value ${JSON.stringify(value)}`);
+            return unusable(`no Name for enum value ${JSON.stringify(value)}`);
         }
         candidates.push(name);
     }
-    return toMemberNames("the description", candidates, warn);
+    return toMemberNames("the description", candidates, "falling back to raw enum values", warn);
 }
 
 function isEnumValueObject(candidate: unknown): candidate is EnumValueObject {
@@ -121,14 +160,12 @@ function isEnumValueObject(candidate: unknown): candidate is EnumValueObject {
  * would share are rejected rather than disambiguated: duplicate keys do not
  * compile in enum style and silently drop a member in union style.
  */
-function toMemberNames(source: string, candidates: string[], warn: Warn): string[] | undefined {
+function toMemberNames(source: string, candidates: string[], consequence: string, warn: Warn): string[] | undefined {
     const names = candidates.map(toMemberName);
     const seen = new Set<string>();
     for (const name of names) {
         if (seen.has(name)) {
-            warn(
-                `names from ${source} are not unique ("${name}" occurs more than once) — falling back to raw enum values`,
-            );
+            warn(`names from ${source} are not unique ("${name}" occurs more than once) — ${consequence}`);
             return undefined;
         }
         seen.add(name);

@@ -154,7 +154,7 @@ export interface SwaggerSpec {
  * Shape of a JSON-encoded enum description consumed when
  * `generateEnumBasedOnDescription` is enabled: the description holds
  * `[{"Name":"First","Value":1}, …]` and names the `enum` member whose value
- * equals `Value`.
+ * equals `Value` — a number and its text form match each other.
  */
 export type EnumValueObject = {
     Name: string;

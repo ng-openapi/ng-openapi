@@ -37,7 +37,7 @@ interface EnumValueObject {
 }
 ```
 
-Each entry names the `enum` member whose value equals `Value`.
+Each entry names the `enum` member whose value equals `Value`. A number and its text form match each other, so `"Value": "1"` names the enum value `1`.
 
 ### Example OpenAPI Enum with Description
 
@@ -75,6 +75,8 @@ export const Status = {
 
 - The `enum` array stays the source of the values; the description only contributes names. Entries for values the enum does not have are ignored.
 - A name that is a valid TypeScript identifier is used exactly as written. Any other name is converted the same way value-based names are.
-- The description is used as a whole or not at all. If it is not JSON in the expected format, leaves an enum value without a name, or would give two members the same name, the generator falls back to naming the members after their values. It prints a warning when the description looks like JSON; a plain-text description falls back silently.
+- The description is used as a whole or not at all. If it is not JSON in the expected format, leaves an enum value without a name, or would give two members the same name, the generator falls back to naming the members after their values. It prints a warning when the description is JSON of the wrong shape or starts like the expected list (`[{`) but does not parse; any other text, such as `[Deprecated] use X`, is treated as a plain description and falls back silently.
+- Only enums of strings and numbers are named. An enum that lists `null` among its values (a nullable enum) keeps none of the names.
+- Running the CLI with `--input` and no configuration file turns this option on.
 - With this option on, enum descriptions are not emitted as doc comments.
 - If your spec carries the names in a vendor extension such as `x-enum-varnames` or `x-enumNames` instead, use [`enumNameExtensions`](enum-name-extensions). A matching extension wins when both options are set.
