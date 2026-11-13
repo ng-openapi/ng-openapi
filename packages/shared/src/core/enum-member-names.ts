@@ -14,7 +14,9 @@ type Warn = (message: string) => void;
  * 1. each `enumNameExtensions` entry (`x-enum-varnames`, `x-enumNames`, …) —
  *    a string array positionally aligned with `enum`;
  * 2. the JSON-encoded description under `generateEnumBasedOnDescription` —
- *    `[{"Name","Value"}]` pairs matched to `enum` by value.
+ *    `[{"Name","Value"}]` pairs matched to `enum` by value. A description
+ *    with no entry for any of the values is about something else and is
+ *    passed over without a warning.
  *
  * `enum` stays the single source of truth for the values: a source only ever
  * contributes names. A source is all-or-nothing — one that is malformed,
@@ -124,27 +126,66 @@ function namesFromDescription(description: unknown, values: unknown[], warn: War
         return unusable('expected an array of { "Name": string, "Value": string | number } objects');
     }
 
-    // The first entry for a Value names it. Values are also indexed by their
-    // text: descriptions commonly write `"Value": "1"` for the number 1.
-    const nameByValue = new Map<string | number, string>();
-    const nameByText = new Map<string, string>();
-    for (const { Name, Value } of parsed) {
-        if (!nameByValue.has(Value)) {
-            nameByValue.set(Value, Name);
-        }
-        if (!nameByText.has(String(Value))) {
-            nameByText.set(String(Value), Name);
+    // Entries are grouped by the text of their Value: descriptions commonly
+    // write `"Value": "1"` for the number 1.
+    const entriesByText = new Map<string, EnumValueObject[]>();
+    for (const entry of parsed) {
+        const text = String(entry.Value);
+        const group = entriesByText.get(text);
+        if (group) {
+            group.push(entry);
+        } else {
+            entriesByText.set(text, [entry]);
         }
     }
+
+    // An entry names one member. .NET lets an enum give one value several
+    // names (`Light = 1, Pale = 1`), which arrives as `enum: [1, 1]` next to
+    // both names — so the i-th occurrence of a value takes its i-th entry.
     const candidates: string[] = [];
+    let gap: string | undefined;
     for (const value of values) {
-        const name = isNameableValue(value) ? (nameByValue.get(value) ?? nameByText.get(String(value))) : undefined;
-        if (name === undefined) {
-            return unusable(`no Name for enum value ${JSON.stringify(value)}`);
+        const group = isNameableValue(value) ? entriesByText.get(String(value)) : undefined;
+        const entry = takeEntry(group, value);
+        if (entry) {
+            candidates.push(entry.Name);
+        } else {
+            gap ??= group
+                ? `enum value ${JSON.stringify(value)} is listed more often than the description names it`
+                : `no Name for enum value ${JSON.stringify(value)}`;
         }
-        candidates.push(name);
     }
-    return toMemberNames("the description", candidates, "falling back to raw enum values", warn);
+    if (candidates.length === 0) {
+        // No entry is about any of these values: the description describes
+        // something else — typically the numeric backing values of an enum
+        // that is sent as strings. Nothing was attempted, nothing to report.
+        return undefined;
+    }
+    if (gap) {
+        return unusable(gap);
+    }
+    const names = toMemberNames("the description", candidates, "falling back to raw enum values", warn);
+    if (!names) {
+        return undefined;
+    }
+
+    // What is left in a group the enum drew from is a name without a member:
+    // the description names that value more often than the enum lists it.
+    const dropped = [...new Set(values.map(String))].flatMap((text) => entriesByText.get(text) ?? []);
+    if (dropped.length > 0) {
+        const list = dropped.map(({ Name, Value }) => `"${Name}" (value ${JSON.stringify(Value)})`).join(", ");
+        warn(`the description names a value more often than the enum lists it — dropping ${list}`);
+    }
+    return names;
+}
+
+/** Removes and returns the next entry for `value`, one of the value's own type first. */
+function takeEntry(group: EnumValueObject[] | undefined, value: unknown): EnumValueObject | undefined {
+    if (!group?.length) {
+        return undefined;
+    }
+    const sameType = group.findIndex((entry) => entry.Value === value);
+    return group.splice(sameType === -1 ? 0 : sameType, 1)[0];
 }
 
 function isEnumValueObject(candidate: unknown): candidate is EnumValueObject {

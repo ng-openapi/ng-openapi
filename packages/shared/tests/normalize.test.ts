@@ -521,10 +521,53 @@ describe("normalizeSpec: enum member names (#31)", () => {
             ]);
         });
 
-        it("rejects a repeated enum value, which would give two members one name", () => {
+        // .NET aliases (`Light = 1, Pale = 1`) arrive as a repeated enum value
+        // next to both names
+        it("gives the i-th occurrence of a repeated value its i-th name", () => {
+            expect(
+                fromDescription({
+                    enum: [1, 1, 2],
+                    description: '[{"Name":"Light","Value":1},{"Name":"Pale","Value":1},{"Name":"Dark","Value":2}]',
+                }),
+            ).toEqual({ names: ["Light", "Pale", "Dark"], warnings: [] });
+            // Text-form matches are consumed the same way
+            expect(
+                fromDescription({
+                    enum: [1, 1],
+                    description: '[{"Name":"Light","Value":"1"},{"Name":"Pale","Value":"1"}]',
+                }).names,
+            ).toEqual(["Light", "Pale"]);
+        });
+
+        it("warns about a name it drops because the enum lists the value only once", () => {
+            const { names, warnings } = fromDescription({
+                enum: [1, 2],
+                description: '[{"Name":"Colour","Value":1},{"Name":"Color","Value":1},{"Name":"Dark","Value":2}]',
+            });
+            expect(names).toEqual(["Colour", "Dark"]);
+            expect(warnings).toHaveLength(1);
+            expect(warnings[0]).toContain('dropping "Color" (value 1)');
+            expect(warnings[0]).not.toContain("Colour");
+        });
+
+        it("falls back when a value is repeated more often than it is named", () => {
             const { names, warnings } = fromDescription({ enum: [1, 1], description: '[{"Name":"First","Value":1}]' });
             expect(names).toBeUndefined();
-            expect(warnings[0]).toContain('"First"');
+            expect(warnings).toHaveLength(1);
+            expect(warnings[0]).toContain("enum value 1 is listed more often than the description names it");
+        });
+
+        // Common in .NET APIs that send enums as strings while the description
+        // still lists the numeric backing values
+        it.each([
+            [
+                "the numeric backing values of a string enum",
+                ["Active", "Inactive"],
+                '[{"Name":"Active","Value":0},{"Name":"Inactive","Value":1}]',
+            ],
+            ["an empty list", [1, 2], "[]"],
+        ])("stays quiet when no entry is about any enum value: %s", (_label, values, description) => {
+            expect(fromDescription({ enum: values, description })).toEqual({ names: undefined, warnings: [] });
         });
 
         it.each([

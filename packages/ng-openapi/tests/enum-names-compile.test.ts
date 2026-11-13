@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { createOutputDirs, expectGeneratedCodeCompiles, fixturePath } from "@ng-openapi/testing";
@@ -49,5 +49,51 @@ describe("enum member names compile", () => {
                 expectGeneratedCodeCompiles(output);
             }, 120_000);
         }
+
+        // .NET aliases (`Light = 1, Pale = 1`) reach the spec as a repeated
+        // enum value. Named after their values the two members would share a
+        // key, which does not compile; the description has to name both.
+        it(`${enumStyle} style, an enum value with two names`, async () => {
+            const output = outputDirs.create(`enum-names-${enumStyle}-aliases-`);
+            const input = join(outputDirs.create("enum-names-aliases-spec-"), "spec.json");
+            writeFileSync(
+                input,
+                JSON.stringify({
+                    openapi: "3.0.3",
+                    info: { title: "Aliases", version: "1.0.0" },
+                    paths: {},
+                    components: {
+                        schemas: {
+                            Shade: {
+                                type: "integer",
+                                enum: [1, 1, 2],
+                                description: JSON.stringify([
+                                    { Name: "Light", Value: 1 },
+                                    { Name: "Pale", Value: 1 },
+                                    { Name: "Dark", Value: 2 },
+                                ]),
+                            },
+                        },
+                    },
+                }),
+            );
+
+            await generateFromConfig({
+                input,
+                output,
+                options: {
+                    dateType: "string",
+                    enumStyle,
+                    generateServices: false,
+                    generateEnumBasedOnDescription: true,
+                },
+            });
+
+            const models = readModels(output);
+            for (const name of ["Light", "Pale", "Dark"]) {
+                expect(models).toContain(name);
+            }
+            expectGeneratedCodeCompiles(output);
+        }, 120_000);
     }
 });
