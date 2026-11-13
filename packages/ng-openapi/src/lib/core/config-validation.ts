@@ -23,6 +23,10 @@ const NAMING_KEYS = ["services", "resources", "models"] as const;
 // identifier fragments themselves; the prefix additionally starts the name.
 const NAME_PREFIX_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const NAME_SUFFIX_PATTERN = /^[A-Za-z0-9_]*$/;
+// OpenAPI reserves the `x-` prefix for extensions. Requiring it keeps
+// `enumNameExtensions` from being pointed at a schema keyword that merely
+// happens to hold a string array (`required`, or `enum` itself).
+const VENDOR_EXTENSION_PATTERN = /^x-./;
 
 /**
  * Validates a config object at the user boundary (CLI config file or
@@ -99,6 +103,20 @@ export function validateGeneratorConfig(config: unknown): asserts config is Gene
             if (options[key] !== undefined && typeof options[key] !== "boolean") {
                 issues.push(`\`options.${key}\` must be a boolean`);
             }
+        }
+
+        if (
+            options.enumNameExtensions !== undefined &&
+            !(
+                Array.isArray(options.enumNameExtensions) &&
+                options.enumNameExtensions.every(
+                    (name) => typeof name === "string" && VENDOR_EXTENSION_PATTERN.test(name),
+                )
+            )
+        ) {
+            issues.push(
+                `\`options.enumNameExtensions\` must be an array of vendor extension names like ["x-enum-varnames", "x-enumNames"], got ${JSON.stringify(options.enumNameExtensions)}`,
+            );
         }
 
         if (options.customizeMethodName !== undefined && typeof options.customizeMethodName !== "function") {

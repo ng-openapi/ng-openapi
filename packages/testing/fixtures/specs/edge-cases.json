@@ -201,6 +201,23 @@
                 "type": "string",
                 "enum": ["in-progress", "it's done", "1st"]
             },
+            "SyncMode": {
+                "type": "integer",
+                "description": "How much of the dataset a sync transfers",
+                "enum": [0, 1, 2],
+                "x-enumNames": ["Unknown", "Full", "Delta"]
+            },
+            "JobStatus": {
+                "type": "string",
+                "enum": ["queued", "in-progress", "done"],
+                "x-enum-varnames": ["JOB_QUEUED", "JOB_IN_PROGRESS", "JOB_DONE"],
+                "x-enumNames": ["Ignored", "Because", "VarnamesComeFirst"]
+            },
+            "MisnamedLevel": {
+                "type": "integer",
+                "enum": [1, 2],
+                "x-enumNames": ["OnlyOne"]
+            },
             "FreeMap": {
                 "type": "object",
                 "additionalProperties": true
