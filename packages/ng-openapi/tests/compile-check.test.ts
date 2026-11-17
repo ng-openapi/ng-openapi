@@ -63,3 +63,20 @@ registerCompileCheckSuite("ng-openapi compile-check (custom headers)", (input, o
         },
     },
 }));
+
+// Author-supplied enum member names are spliced in as identifiers: enum
+// members in the suite above, where generateEnumBasedOnDescription names
+// ReminderLeadTime from its JSON description, and here the keys of the union
+// style's const object. The hosted specs name TaskEffort through x-enumNames
+// and SyncState through x-enum-varnames.
+registerCompileCheckSuite("ng-openapi compile-check (enum names)", (input, output) => ({
+    input,
+    output,
+    options: {
+        dateType: "Date",
+        enumStyle: "union",
+        generateServices: true,
+        generateEnumBasedOnDescription: true,
+        enumNameExtensions: ["x-enum-varnames", "x-enumNames"],
+    },
+}));
