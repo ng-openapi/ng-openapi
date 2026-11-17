@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { createOutputDirs, expectGeneratedCodeCompiles, fixturePath } from "@ng-openapi/testing";
@@ -9,10 +9,18 @@ import { generateFromConfig } from "ng-openapi";
 // string in union style. The golden snapshots only compare bytes, and the
 // URL-driven compile-check suite runs against specs that carry no naming
 // source, so this is the one place the named output is actually type-checked.
-// The edge-cases fixture has an extension-named integer enum, a string enum
-// naming two extensions, a malformed extension and a JSON description.
+//
+// - edge-cases: named enums next to services and every other construct;
+// - enum-names: one enum per naming case, including the sanitized names
+//   (`__proto__`, `class`, `2nd place`) and an enum value with two names,
+//   which only compiles when both names are used.
 const outputDirs = createOutputDirs();
 afterAll(outputDirs.cleanup);
+
+const FIXTURES = [
+    { fixture: "edge-cases", expected: ["Unknown", "JOB_IN_PROGRESS", "Archived"] },
+    { fixture: "enum-names", expected: ["Below", "JOB_IN_PROGRESS", "FromVarnames", "Light", "Pale", "Colour"] },
+] as const;
 
 function readModels(output: string): string {
     const modelsDir = join(output, "models");
@@ -22,78 +30,71 @@ function readModels(output: string): string {
 }
 
 describe("enum member names compile", () => {
-    for (const enumStyle of ["enum", "union"] as const) {
-        for (const modelFileStructure of ["single", "per-type"] as const) {
-            it(`${enumStyle} style, ${modelFileStructure} model files`, async () => {
-                const output = outputDirs.create(`enum-names-${enumStyle}-${modelFileStructure}-`);
+    for (const { fixture, expected } of FIXTURES) {
+        for (const enumStyle of ["enum", "union"] as const) {
+            for (const modelFileStructure of ["single", "per-type"] as const) {
+                it(`${fixture}: ${enumStyle} style, ${modelFileStructure} model files`, async () => {
+                    const output = outputDirs.create(`enum-names-${fixture}-${enumStyle}-${modelFileStructure}-`);
 
-                await generateFromConfig({
-                    input: fixturePath("edge-cases"),
-                    output,
-                    options: {
-                        dateType: "string",
-                        enumStyle,
-                        modelFileStructure,
-                        generateServices: true,
-                        generateEnumBasedOnDescription: true,
-                        enumNameExtensions: ["x-enum-varnames", "x-enumNames"],
-                    },
-                });
-
-                // Guards the check itself: compiling value-named fallbacks
-                // would prove nothing about the names
-                const models = readModels(output);
-                for (const name of ["Unknown", "JOB_IN_PROGRESS", "Archived"]) {
-                    expect(models).toContain(name);
-                }
-                expectGeneratedCodeCompiles(output);
-            }, 120_000);
-        }
-
-        // .NET aliases (`Light = 1, Pale = 1`) reach the spec as a repeated
-        // enum value. Named after their values the two members would share a
-        // key, which does not compile; the description has to name both.
-        it(`${enumStyle} style, an enum value with two names`, async () => {
-            const output = outputDirs.create(`enum-names-${enumStyle}-aliases-`);
-            const input = join(outputDirs.create("enum-names-aliases-spec-"), "spec.json");
-            writeFileSync(
-                input,
-                JSON.stringify({
-                    openapi: "3.0.3",
-                    info: { title: "Aliases", version: "1.0.0" },
-                    paths: {},
-                    components: {
-                        schemas: {
-                            Shade: {
-                                type: "integer",
-                                enum: [1, 1, 2],
-                                description: JSON.stringify([
-                                    { Name: "Light", Value: 1 },
-                                    { Name: "Pale", Value: 1 },
-                                    { Name: "Dark", Value: 2 },
-                                ]),
-                            },
+                    await generateFromConfig({
+                        input: fixturePath(fixture),
+                        output,
+                        options: {
+                            dateType: "string",
+                            enumStyle,
+                            modelFileStructure,
+                            generateServices: true,
+                            generateEnumBasedOnDescription: true,
+                            enumNameExtensions: ["x-enum-varnames", "x-enumNames"],
                         },
-                    },
-                }),
-            );
+                    });
 
-            await generateFromConfig({
-                input,
-                output,
+                    // Guards the check itself: compiling value-named fallbacks
+                    // would prove nothing about the names
+                    const models = readModels(output);
+                    for (const name of expected) {
+                        expect(models).toContain(name);
+                    }
+                    expectGeneratedCodeCompiles(output);
+                }, 120_000);
+            }
+        }
+    }
+});
+
+// The snapshots hold what was generated; this holds what was said about it.
+// One warning per enum whose source was rejected or lost a name, and none for
+// the enums whose description is simply not a list of names.
+describe("enum member names warnings", () => {
+    it("reports every rejected source of the enum-names fixture, and nothing else", async () => {
+        const warnings: string[] = [];
+        await generateFromConfig(
+            {
+                input: fixturePath("enum-names"),
+                output: outputDirs.create("enum-names-warnings-"),
                 options: {
                     dateType: "string",
-                    enumStyle,
+                    enumStyle: "enum",
                     generateServices: false,
                     generateEnumBasedOnDescription: true,
+                    enumNameExtensions: ["x-enum-varnames", "x-enumNames"],
                 },
-            });
+            },
+            { onWarning: (message) => warnings.push(message) },
+        );
 
-            const models = readModels(output);
-            for (const name of ["Light", "Pale", "Dark"]) {
-                expect(models).toContain(name);
-            }
-            expectGeneratedCodeCompiles(output);
-        }, 120_000);
-    }
+        expect(warnings).toMatchInlineSnapshot(`
+          [
+            "Enum "ExtensionWrongLength": \`x-enumNames\` must be an array of 3 strings, one per enum value — ignoring it",
+            "Enum "ExtensionNotStrings": \`x-enumNames\` must be an array of 2 strings, one per enum value — ignoring it",
+            "Enum "ExtensionCollision": names from \`x-enum-varnames\` are not unique ("Same" occurs more than once) — ignoring it",
+            "Enum "ExtensionBrokenThenDescription": \`x-enumNames\` must be an array of 2 strings, one per enum value — ignoring it",
+            "Enum "DescribedDroppedAlias": the description names a value more often than the enum lists it — dropping "Color" (value 1)",
+            "Enum "DescribedPartially": description looks like JSON (generateEnumBasedOnDescription) but could not be used: no Name for enum value 2 — falling back to raw enum values",
+            "Enum "DescribedCollision": names from the description are not unique ("Same" occurs more than once) — falling back to raw enum values",
+            "Enum "DescribedUnparseable": description looks like JSON (generateEnumBasedOnDescription) but could not be used: it does not parse — falling back to raw enum values",
+            "Enum "DescribedWrongShape": description looks like JSON (generateEnumBasedOnDescription) but could not be used: expected an array of { "Name": string, "Value": string | number } objects — falling back to raw enum values",
+          ]
+        `);
+    }, 120_000);
 });
