@@ -241,6 +241,62 @@ describe("normalizeSpec: $ref request bodies and responses (#132)", () => {
     });
 });
 
+describe("normalizeSpec: request bodies by method (#138)", () => {
+    const jsonBody = { content: { "application/json": { schema: { type: "object" } } } };
+    const formBody = {
+        content: { "multipart/form-data": { schema: { type: "object", properties: { file: { type: "string" } } } } },
+    };
+    const methodSpec = {
+        openapi: "3.0.3",
+        paths: {
+            "/items": {
+                get: { operationId: "searchItems", requestBody: jsonBody, responses: {} },
+                head: { requestBody: formBody, responses: {} },
+                delete: { operationId: "deleteItems", requestBody: jsonBody, responses: {} },
+                options: { operationId: "describeItems", requestBody: jsonBody, responses: {} },
+                post: { operationId: "createItem", requestBody: jsonBody, responses: {} },
+                put: { operationId: "replaceItems", requestBody: jsonBody, responses: {} },
+                patch: { operationId: "patchItems", requestBody: jsonBody, responses: {} },
+            },
+        },
+    } as unknown as SwaggerSpec;
+    const pristine = structuredClone(methodSpec);
+    const warnings: string[] = [];
+    const normalized = normalizeSpec(methodSpec, (message) => warnings.push(message));
+    const op = (method: string) => normalized.operations.find((o) => o.method === method)!;
+
+    it.each(["DELETE", "OPTIONS", "POST", "PUT", "PATCH"])("keeps the body of a %s operation", (method) => {
+        expect(op(method).hasBody).toBe(true);
+        expect(op(method).requestBody).toEqual(jsonBody);
+    });
+
+    it.each(["GET", "HEAD"])("leaves the body of a %s operation out: no browser sends one", (method) => {
+        expect(op(method).requestBody).toBeUndefined();
+        expect(op(method).hasBody).toBe(false);
+    });
+
+    it("derives no body facts from a body it left out", () => {
+        expect(op("HEAD").isMultipart).toBe(false);
+        expect(op("HEAD").formDataSchema).toBeUndefined();
+        expect(op("HEAD").formDataFields).toEqual([]);
+    });
+
+    it("warns once per skipped body, naming the operation, and about nothing else", () => {
+        expect(warnings).toEqual([
+            "The request body of searchItems ((GET) /items) was skipped: browsers do not send a body with GET " +
+                "requests. Generated methods take no body and no validator is generated for it. Describe the " +
+                "input as query parameters, or use a method that carries a body.",
+            "The request body of (HEAD) /items was skipped: browsers do not send a body with HEAD requests. " +
+                "Generated methods take no body and no validator is generated for it. Describe the input as " +
+                "query parameters, or use a method that carries a body.",
+        ]);
+    });
+
+    it("never mutates the raw spec", () => {
+        expect(methodSpec).toEqual(pristine);
+    });
+});
+
 describe("normalizeSchema (OpenAPI 3.1 constructs)", () => {
     it("folds null members of type arrays into nullable", () => {
         expect(normalizeSchema({ type: ["string", "null"] as never })).toMatchObject({

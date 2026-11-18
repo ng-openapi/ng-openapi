@@ -212,11 +212,12 @@ function normalizeContentSchemas(
 }
 
 function normalizeOperation(
-    operation: PathInfo,
+    rawOperation: PathInfo,
     resolveRef: ResolveRef,
     onWarning?: (message: string) => void,
 ): NormalizedOperation {
-    warnAboutUnboundParameters(operation, onWarning);
+    warnAboutUnboundParameters(rawOperation, onWarning);
+    const operation = dropUnsendableRequestBody(rawOperation, onWarning);
     const content = operation.requestBody?.content;
     const isMultipart = !!content?.[CONTENT_TYPES.MULTIPART];
     const isUrlEncoded = !!content?.[CONTENT_TYPES.FORM_URLENCODED] && !content?.[CONTENT_TYPES.JSON];
@@ -249,6 +250,31 @@ function normalizeOperation(
         responseType: responseInfo.responseType,
         acceptHeader: responseInfo.acceptHeader,
     };
+}
+
+/**
+ * Methods a browser never sends a body with: `fetch` rejects a GET or HEAD
+ * request that carries one, and XMLHttpRequest discards it. Every other
+ * method — DELETE and OPTIONS included — transmits the body it is given.
+ */
+const METHODS_WITHOUT_BODY: ReadonlySet<string> = new Set(["GET", "HEAD"]);
+
+/**
+ * Leaves a request body the client could never deliver out of the IR, out
+ * loud. Carrying it would give the method a body argument and a Content-Type
+ * header for a body that is not sent: a call that type-checks and reaches
+ * the server empty (#138).
+ */
+function dropUnsendableRequestBody(operation: PathInfo, onWarning?: (message: string) => void): PathInfo {
+    if (!operation.requestBody || !METHODS_WITHOUT_BODY.has(operation.method.toUpperCase())) {
+        return operation;
+    }
+    onWarning?.(
+        `The request body of ${describeOperation(operation)} was skipped: browsers do not send a body with ` +
+            `${operation.method.toUpperCase()} requests. Generated methods take no body and no validator is ` +
+            "generated for it. Describe the input as query parameters, or use a method that carries a body.",
+    );
+    return { ...operation, requestBody: undefined };
 }
 
 function resolveBodySchema(

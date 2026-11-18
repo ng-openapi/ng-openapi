@@ -49,6 +49,15 @@ export interface UpdateOrderRequestDto {
     note?: string | null;
 }
 
+export interface CancelOrderRequestDto {
+    reason?: string;
+}
+
+export interface DeleteOrdersRequestDto {
+    ids: Array<string>;
+    reason?: string;
+}
+
 export interface CardDto {
     cardNumber: string;
     expiry?: string;

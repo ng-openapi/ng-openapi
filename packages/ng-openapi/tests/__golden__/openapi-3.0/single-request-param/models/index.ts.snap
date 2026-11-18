@@ -50,6 +50,15 @@ export interface UpdateOrderRequest {
     note?: string | null;
 }
 
+export interface CancelOrderRequest {
+    reason?: string;
+}
+
+export interface DeleteOrdersRequest {
+    ids: Array<string>;
+    reason?: string;
+}
+
 export interface Card {
     cardNumber: string;
     expiry?: string;

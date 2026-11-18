@@ -12,6 +12,10 @@ export interface ListThingsParams {
     sortBy?: string;
 }
 
+export interface SearchThingsParams {
+    limit?: number;
+}
+
 export interface GetMiscByIdParams {
     id: string;
 }
