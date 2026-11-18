@@ -235,6 +235,12 @@ function normalizeOperation(
     const queryParams = operation.parameters?.filter((p) => p.in === "query") || [];
     const formDataFields = Object.keys(formDataSchema?.properties || {});
     const urlEncodedFields = Object.keys(urlEncodedSchema?.properties || {});
+    if (isMultipart && formDataFields.length === 0) {
+        warnAboutFieldlessFormBody(operation, CONTENT_TYPES.MULTIPART, onWarning);
+    }
+    if (isUrlEncoded && urlEncodedFields.length === 0) {
+        warnAboutFieldlessFormBody(operation, CONTENT_TYPES.FORM_URLENCODED, onWarning);
+    }
 
     return {
         ...operation,
@@ -275,6 +281,30 @@ function dropUnsendableRequestBody(operation: PathInfo, onWarning?: (message: st
             "generated for it. Describe the input as query parameters, or use a method that carries a body.",
     );
     return { ...operation, requestBody: undefined };
+}
+
+/**
+ * A form body is sent field by field, and the fields are the top-level
+ * `properties` of its schema — nothing else is expanded. A schema that lists
+ * none (`allOf` inheritance, `additionalProperties`, a bare object) leaves the
+ * method with no argument to take and no body to send, which the caller only
+ * finds out from the server unless it is said here.
+ */
+function warnAboutFieldlessFormBody(
+    operation: PathInfo,
+    contentType: string,
+    onWarning?: (message: string) => void,
+): void {
+    onWarning?.(
+        `The ${contentType} request body of ${describeOperation(operation)} has no fields to generate: form ` +
+            "fields are read from the top-level `properties` of its schema, and it lists none (`allOf`, " +
+            "`additionalProperties` and free-form objects are not expanded). Generated methods take no argument " +
+            "for it and send the request without a body" +
+            (contentType === CONTENT_TYPES.FORM_URLENCODED
+                ? `, still with the \`Content-Type: ${contentType}\` header`
+                : "") +
+            ". List the fields as `properties` of the body schema to have them generated.",
+    );
 }
 
 function resolveBodySchema(

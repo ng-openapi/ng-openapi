@@ -297,6 +297,93 @@ describe("normalizeSpec: request bodies by method (#138)", () => {
     });
 });
 
+describe("normalizeSpec: form bodies without listable fields", () => {
+    const form = (contentType: string, schema: object) => ({ content: { [contentType]: { schema } } });
+    const formSpec = {
+        openapi: "3.0.3",
+        paths: {
+            // DTO inheritance: the fields sit under `allOf`, not `properties`.
+            "/avatar": {
+                post: {
+                    operationId: "uploadAvatar",
+                    requestBody: form("multipart/form-data", { allOf: [{ $ref: "#/components/schemas/Upload" }] }),
+                    responses: {},
+                },
+            },
+            "/settings": {
+                put: {
+                    operationId: "replaceSettings",
+                    requestBody: form("application/x-www-form-urlencoded", {
+                        type: "object",
+                        additionalProperties: { type: "string" },
+                    }),
+                    responses: {},
+                },
+                // A bare object, on a method that sends bodies since #138.
+                delete: { requestBody: form("application/x-www-form-urlencoded", { type: "object" }), responses: {} },
+                // Fields behind a top-level $ref are listed: nothing to warn about.
+                post: {
+                    operationId: "createSettings",
+                    requestBody: form("multipart/form-data", { $ref: "#/components/schemas/Upload" }),
+                    responses: {},
+                },
+                // Left out as a GET body before its fields are ever looked at.
+                get: {
+                    operationId: "readSettings",
+                    requestBody: form("multipart/form-data", { type: "object" }),
+                    responses: {},
+                },
+            },
+        },
+        components: {
+            schemas: {
+                Upload: { type: "object", properties: { file: { type: "string", format: "binary" } } },
+            },
+        },
+    } as unknown as SwaggerSpec;
+    const warnings: string[] = [];
+    const normalized = normalizeSpec(formSpec, (message) => warnings.push(message));
+    const op = (path: string, method: string) =>
+        normalized.operations.find((o) => o.path === path && o.method === method)!;
+    const about = (operation: string) => warnings.filter((warning) => warning.includes(operation));
+
+    it("keeps the body in the IR with an empty field list", () => {
+        expect(op("/avatar", "POST")).toMatchObject({ hasBody: true, isMultipart: true, formDataFields: [] });
+        expect(op("/settings", "PUT")).toMatchObject({ hasBody: true, isUrlEncoded: true, urlEncodedFields: [] });
+    });
+
+    it("warns that a multipart body without top-level properties is not sent", () => {
+        expect(about("uploadAvatar")).toEqual([
+            "The multipart/form-data request body of uploadAvatar ((POST) /avatar) has no fields to generate: form " +
+                "fields are read from the top-level `properties` of its schema, and it lists none (`allOf`, " +
+                "`additionalProperties` and free-form objects are not expanded). Generated methods take no argument " +
+                "for it and send the request without a body. List the fields as `properties` of the body schema to " +
+                "have them generated.",
+        ]);
+    });
+
+    it("warns that a urlencoded one still sets its Content-Type", () => {
+        expect(about("replaceSettings")).toEqual([
+            "The application/x-www-form-urlencoded request body of replaceSettings ((PUT) /settings) has no fields " +
+                "to generate: form fields are read from the top-level `properties` of its schema, and it lists none " +
+                "(`allOf`, `additionalProperties` and free-form objects are not expanded). Generated methods take no " +
+                "argument for it and send the request without a body, still with the `Content-Type: " +
+                "application/x-www-form-urlencoded` header. List the fields as `properties` of the body schema to " +
+                "have them generated.",
+        ]);
+        expect(about("(DELETE) /settings")).toHaveLength(1);
+        expect(about("(DELETE) /settings")[0]).toContain("has no fields to generate");
+    });
+
+    it("says nothing about a form whose fields it can list, and only once about a GET body", () => {
+        expect(op("/settings", "POST").formDataFields).toEqual(["file"]);
+        expect(about("createSettings")).toEqual([]);
+        expect(about("readSettings")).toHaveLength(1);
+        expect(about("readSettings")[0]).toContain("was skipped: browsers do not send a body with GET requests");
+        expect(warnings).toHaveLength(4);
+    });
+});
+
 describe("normalizeSchema (OpenAPI 3.1 constructs)", () => {
     it("folds null members of type arrays into nullable", () => {
         expect(normalizeSchema({ type: ["string", "null"] as never })).toMatchObject({

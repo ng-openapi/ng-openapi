@@ -134,7 +134,8 @@ ${formBodyAppends}`;
         if (operation.hasBody) {
             // `formData`/`formBody` are declared only when the form has fields
             // (see the two generators above); a field-less form sends no body
-            // rather than an identifier nothing declares.
+            // rather than an identifier nothing declares. The normalizer
+            // warns about such a form.
             if (operation.isMultipart) {
                 bodyParam = operation.formDataFields.length > 0 ? "formData" : "";
             } else if (operation.isUrlEncoded) {

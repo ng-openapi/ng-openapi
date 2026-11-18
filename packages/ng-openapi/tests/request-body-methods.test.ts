@@ -86,7 +86,22 @@ const SPEC = {
                 responses: noContent,
             },
         },
-        // Forms without a single field: there is no `formData`/`formBody` to send.
+    },
+    components: {
+        schemas: {
+            ItemDto: { type: "object", required: ["id"], properties: { id: { type: "string" } } },
+        },
+    },
+};
+
+/**
+ * SPEC plus form bodies whose schema lists no top-level `properties`: a bare
+ * object, DTO inheritance through `allOf`, and `additionalProperties`.
+ */
+const FIELDLESS_FORM_SPEC = {
+    ...SPEC,
+    paths: {
+        ...SPEC.paths,
         "/items/empty-form": {
             delete: {
                 operationId: "deleteItemsByEmptyForm",
@@ -94,17 +109,31 @@ const SPEC = {
                 requestBody: form("application/x-www-form-urlencoded", { type: "object" }),
                 responses: noContent,
             },
+        },
+        "/items/avatar": {
             post: {
-                operationId: "createItemsByEmptyForm",
+                operationId: "uploadItemAvatar",
                 tags: ["Items"],
-                requestBody: form("multipart/form-data", { type: "object" }),
+                requestBody: form("multipart/form-data", { allOf: [{ $ref: "#/components/schemas/AvatarUpload" }] }),
+                responses: noContent,
+            },
+        },
+        "/items/tags": {
+            put: {
+                operationId: "replaceItemTags",
+                tags: ["Items"],
+                requestBody: form("application/x-www-form-urlencoded", {
+                    type: "object",
+                    additionalProperties: { type: "string" },
+                }),
                 responses: noContent,
             },
         },
     },
     components: {
         schemas: {
-            ItemDto: { type: "object", required: ["id"], properties: { id: { type: "string" } } },
+            ...SPEC.components.schemas,
+            AvatarUpload: { type: "object", properties: { file: { type: "string", format: "binary" } } },
         },
     },
 };
@@ -197,13 +226,41 @@ describe("request bodies on methods other than POST/PUT/PATCH (#138)", () => {
         expect(deletePlain).not.toContain("Content-Type");
         expect(sentBody(methodSource(service, "touchItem"))).toBe("null");
         expect(sentBody(methodSource(service, "createItem"))).toBe("itemDto");
+    });
+
+    // A form whose schema lists no top-level `properties` has no
+    // `formData`/`formBody` to send. The method silently takes nothing for the
+    // body, so the run has to say so.
+    it("warns about a form body it cannot list the fields of, and sends none", async () => {
+        const { output, result, service } = await generate("body-methods-fieldless-", { spec: FIELDLESS_FORM_SPEC });
+
+        // Wording is pinned in shared/tests/normalize.test.ts.
+        expect(result.warnings).toHaveLength(3);
+        const warningAbout = (operation: string) => result.warnings.find((warning) => warning.includes(operation));
+        expect(warningAbout("deleteItemsByEmptyForm ((DELETE) /items/empty-form)")).toContain(
+            "The application/x-www-form-urlencoded request body of",
+        );
+        expect(warningAbout("uploadItemAvatar ((POST) /items/avatar)")).toContain(
+            "The multipart/form-data request body of",
+        );
+        expect(warningAbout("replaceItemTags ((PUT) /items/tags)")).toContain("has no fields to generate");
 
         const deleteByEmptyForm = methodSource(service, "deleteItemsByEmptyForm");
         expect(deleteByEmptyForm).not.toContain("formBody");
         expect(deleteByEmptyForm).not.toContain("body:");
-        const createByEmptyForm = methodSource(service, "createItemsByEmptyForm");
-        expect(createByEmptyForm).not.toContain("formData");
-        expect(sentBody(createByEmptyForm)).toBe("null");
+
+        // The file field sits under `allOf`: no argument for it, nothing sent.
+        const uploadAvatar = methodSource(service, "uploadItemAvatar");
+        expect(uploadAvatar).toMatch(/^ {4}uploadItemAvatar\(observe\?:/);
+        expect(uploadAvatar).not.toContain("formData");
+        expect(sentBody(uploadAvatar)).toBe("null");
+
+        const replaceTags = methodSource(service, "replaceItemTags");
+        expect(replaceTags).toMatch(/^ {4}replaceItemTags\(observe\?:/);
+        expect(replaceTags).toContain("headers.set('Content-Type', 'application/x-www-form-urlencoded')");
+        expect(sentBody(replaceTags)).toBe("null");
+
+        expectGeneratedCodeCompiles(output);
     });
 
     // The options that reshape how the body is bound or how the request

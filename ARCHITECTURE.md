@@ -58,9 +58,13 @@ Every generation run flows through the same stages:
   not resolve. Such a ref is warned about and left out, so the IR never
   carries one.
   A request body on a method no browser sends one with (`GET`, `HEAD`) is
-  warned about and left out the same way, so `requestBody` in the IR always
-  means a body the client transmits: generators bind and send it without
-  looking at the method.
+  warned about and left out the same way, so generators never look at the
+  method before sending a body. What they bind is narrower than what the IR
+  carries: only a content key that is exactly `application/json`,
+  `multipart/form-data` or `application/x-www-form-urlencoded` gets
+  arguments, and a form contributes only the top-level `properties` of its
+  schema. A form that lists none stays in the IR with an empty field list
+  and is warned about here, because the method then sends no body.
   Enum member names are resolved here too (`enum-member-names.ts`): the
   sources the config enables — `enumNameExtensions` (`x-enum-varnames`,
   `x-enumNames`, …), then the JSON description of

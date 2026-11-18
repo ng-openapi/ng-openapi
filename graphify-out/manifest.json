@@ -115,8 +115,8 @@
     "semantic_hash": ""
   },
   "packages/ng-openapi/src/lib/generators/service/service-method/service-method-body.generator.ts": {
-    "mtime": 1794987333.0832827,
-    "ast_hash": "c1047f14d3b955a1a9016c615ab5ebbc",
+    "mtime": 1794999627.564433,
+    "ast_hash": "ed7b7b78f547dda8023da569220fc080",
     "semantic_hash": ""
   },
   "packages/ng-openapi/src/lib/generators/service/service-method/service-method-overloads.generator.ts": {
@@ -775,8 +775,8 @@
     "semantic_hash": ""
   },
   "docs/guide/generated-code.md": {
-    "mtime": 1794986764.3117669,
-    "ast_hash": "82cfbe41a75ed16b4fa91fdd081681df",
+    "mtime": 1794999663.7523987,
+    "ast_hash": "8371b1b146dd1b45bdf6e7f61ec96142",
     "semantic_hash": ""
   },
   "docs/guide/guides.md": {
@@ -1110,8 +1110,8 @@
     "semantic_hash": ""
   },
   "packages/shared/src/core/normalize.ts": {
-    "mtime": 1794987333.3559492,
-    "ast_hash": "bc37fa6be609e2a72d8597350f7925b1",
+    "mtime": 1794999555.6062157,
+    "ast_hash": "95dd70053c5e858d579c43700e49b04e",
     "semantic_hash": ""
   },
   "packages/shared/src/core/spec-format.ts": {
@@ -1140,8 +1140,8 @@
     "semantic_hash": ""
   },
   "packages/shared/tests/normalize.test.ts": {
-    "mtime": 1794986597.3999429,
-    "ast_hash": "e16af693f7270b8476d5ed04437a4e8e",
+    "mtime": 1794999618.3330402,
+    "ast_hash": "6b637ed79f0c71b3e96bfe0e697c16b2",
     "semantic_hash": ""
   },
   "packages/shared/tests/spec-format.test.ts": {
@@ -1255,8 +1255,8 @@
     "semantic_hash": ""
   },
   "ARCHITECTURE.md": {
-    "mtime": 1794993125.3315294,
-    "ast_hash": "58a2a15465512b5835b7e05770ed6e80",
+    "mtime": 1794999663.177578,
+    "ast_hash": "72cb9d9b519cdd5e4cbdf5ee389aeae0",
     "semantic_hash": ""
   },
   "packages/ng-openapi/tests/perf-benchmark.test.ts": {
@@ -2030,8 +2030,8 @@
     "semantic_hash": ""
   },
   "packages/ng-openapi/tests/request-body-methods.test.ts": {
-    "mtime": 1794987378.7106497,
-    "ast_hash": "06342ab2ce9828b1ed2e85995a2e427f",
+    "mtime": 1794999629.3152616,
+    "ast_hash": "cbc8147a17d4f171a676393d8d02d07a",
     "semantic_hash": ""
   },
   "packages/shared/src/core/enum-member-names.ts": {
