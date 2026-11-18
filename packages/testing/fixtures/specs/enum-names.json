@@ -1,0 +1,146 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Enum Names API (no paths)",
+        "version": "1.0.0"
+    },
+    "paths": {},
+    "components": {
+        "schemas": {
+            "ExtensionIntegers": {
+                "type": "integer",
+                "enum": [-1, 0, 1],
+                "x-enumNames": ["Below", "Zero", "Above"]
+            },
+            "ExtensionStrings": {
+                "type": "string",
+                "enum": ["queued", "in-progress"],
+                "x-enum-varnames": ["JOB_QUEUED", "JOB_IN_PROGRESS"]
+            },
+            "ExtensionOrder": {
+                "type": "integer",
+                "enum": [1, 2],
+                "x-enum-varnames": ["FromVarnames", "ListedFirst"],
+                "x-enumNames": ["FromEnumNames", "ListedSecond"]
+            },
+            "ExtensionSanitized": {
+                "type": "integer",
+                "enum": [1, 2, 3, 4, 5],
+                "x-enumNames": ["in progress", "2nd place", "N/A", "__proto__", "class"]
+            },
+            "ExtensionWrongLength": {
+                "type": "integer",
+                "enum": [1, 2, 3],
+                "x-enumNames": ["OnlyOne", "OnlyTwo"]
+            },
+            "ExtensionNotStrings": {
+                "type": "integer",
+                "enum": [1, 2],
+                "x-enumNames": [10, 20]
+            },
+            "ExtensionCollision": {
+                "type": "integer",
+                "enum": [1, 2],
+                "x-enum-varnames": ["Same", "Same"],
+                "x-enumNames": ["First", "Second"]
+            },
+            "ExtensionOverDescription": {
+                "type": "integer",
+                "enum": [1, 2],
+                "description": "[{\"Name\":\"DescribedOne\",\"Value\":1},{\"Name\":\"DescribedTwo\",\"Value\":2}]",
+                "x-enumNames": ["ExtensionOne", "ExtensionTwo"]
+            },
+            "ExtensionBrokenThenDescription": {
+                "type": "integer",
+                "enum": [1, 2],
+                "description": "[{\"Name\":\"DescribedOne\",\"Value\":1},{\"Name\":\"DescribedTwo\",\"Value\":2}]",
+                "x-enumNames": "not-an-array"
+            },
+            "DescribedIntegers": {
+                "type": "integer",
+                "format": "int32",
+                "enum": [0, 1],
+                "description": "[{\"Name\":\"Inactive\",\"Value\":1},{\"Name\":\"Active\",\"Value\":0}]"
+            },
+            "DescribedStrings": {
+                "type": "string",
+                "enum": ["a", "b"],
+                "description": "[{\"Name\":\"Alpha\",\"Value\":\"a\"},{\"Name\":\"Beta\",\"Value\":\"b\"}]"
+            },
+            "DescribedTextValues": {
+                "type": "integer",
+                "enum": [1, 2],
+                "description": "[{\"Name\":\"First\",\"Value\":\"1\"},{\"Name\":\"Second\",\"Value\":\"2\"}]"
+            },
+            "DescribedExtraEntries": {
+                "type": "integer",
+                "enum": [1],
+                "description": "[{\"Name\":\"Kept\",\"Value\":1},{\"Name\":\"NotInEnum\",\"Value\":9}]"
+            },
+            "DescribedSanitized": {
+                "type": "integer",
+                "enum": [1, 2],
+                "description": "[{\"Name\":\"in progress\",\"Value\":1},{\"Name\":\"N/A\",\"Value\":2}]"
+            },
+            "DescribedAliases": {
+                "type": "integer",
+                "enum": [1, 1, 2],
+                "description": "[{\"Name\":\"Light\",\"Value\":1},{\"Name\":\"Pale\",\"Value\":1},{\"Name\":\"Dark\",\"Value\":2}]"
+            },
+            "DescribedDroppedAlias": {
+                "type": "integer",
+                "enum": [1, 2],
+                "description": "[{\"Name\":\"Colour\",\"Value\":1},{\"Name\":\"Color\",\"Value\":1},{\"Name\":\"Dark\",\"Value\":2}]"
+            },
+            "DescribedBackingValues": {
+                "type": "string",
+                "enum": ["Active", "Inactive"],
+                "description": "[{\"Name\":\"Active\",\"Value\":0},{\"Name\":\"Inactive\",\"Value\":1}]"
+            },
+            "DescribedPartially": {
+                "type": "integer",
+                "enum": [1, 2],
+                "description": "[{\"Name\":\"First\",\"Value\":1}]"
+            },
+            "DescribedCollision": {
+                "type": "integer",
+                "enum": [1, 2],
+                "description": "[{\"Name\":\"Same\",\"Value\":1},{\"Name\":\"Same\",\"Value\":2}]"
+            },
+            "DescribedUnparseable": {
+                "type": "integer",
+                "enum": [1, 2],
+                "description": "[{\"Name\":\"First\",\"Value\":1},]"
+            },
+            "DescribedWrongShape": {
+                "type": "integer",
+                "enum": [1, 2],
+                "description": "{\"Name\":\"First\",\"Value\":1}"
+            },
+            "DescribedInProse": {
+                "type": "integer",
+                "enum": [1, 2],
+                "description": "[Deprecated] use DescribedIntegers"
+            },
+            "Unnamed": {
+                "type": "integer",
+                "enum": [1, 2]
+            },
+            "Holder": {
+                "type": "object",
+                "required": ["level"],
+                "properties": {
+                    "level": {
+                        "$ref": "#/components/schemas/ExtensionIntegers"
+                    },
+                    "inline": {
+                        "type": "integer",
+                        "enum": [0, 1],
+                        "description": "Inline enums stay literal unions: there is no member to name",
+                        "x-enumNames": ["Off", "On"]
+                    }
+                }
+            }
+        }
+    }
+}

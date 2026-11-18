@@ -510,8 +510,8 @@ function mergeSiblings(
  * for.
  *
  * `description` is on this list for scoping, not because it is inert:
- * `enum-builder.ts` does `JSON.parse(definition.description)` under
- * `generateEnumBasedOnDescription` and emits the result as the enum members. It
+ * `enum-member-names.ts` does `JSON.parse(definition.description)` under
+ * `generateEnumBasedOnDescription` and its names become the enum members. It
  * stays here because overriding a ref'd property's description is the ordinary
  * authoring shape and warning on it would be noise on every such spec.
  *

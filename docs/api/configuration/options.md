@@ -45,6 +45,7 @@ export default config;
 | [`generateServices`](options/generate-services) | `boolean` | — | `true` | Set `false` to generate models only |
 | [`validation`](options/validation) | `{ response?: boolean }` | — | `undefined` | Adds a `parse` hook to service methods for runtime response validation |
 | [`generateEnumBasedOnDescription`](options/generate-enums-description) | `boolean` | — | `false` | Read enum member names from JSON-encoded descriptions |
+| [`enumNameExtensions`](options/enum-name-extensions) | `string[]` | — | `undefined` | Read enum member names from vendor extensions such as `x-enum-varnames` and `x-enumNames` |
 | [`customHeaders`](options/custom-headers) | `Record<string, string>` | — | `undefined` | Default headers added to every request |
 | [`emitAcceptHeader`](options/emit-accept-header) | `boolean` | — | `true` | Send an `Accept` header derived from each operation's response content types |
 | [`responseTypeMapping`](options/response-type-mapping) | `Record<string, ResponseType>` | — | `undefined` | Pin the Angular `responseType` per content type |

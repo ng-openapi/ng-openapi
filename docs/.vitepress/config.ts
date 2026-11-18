@@ -285,6 +285,10 @@ export default defineConfig({
                                             link: "/api/configuration/options/generate-enums-description",
                                         },
                                         {
+                                            text: "Enum Name Extensions",
+                                            link: "/api/configuration/options/enum-name-extensions",
+                                        },
+                                        {
                                             text: "Generate Services",
                                             link: "/api/configuration/options/generate-services",
                                         },

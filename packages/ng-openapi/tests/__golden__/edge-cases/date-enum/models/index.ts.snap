@@ -45,6 +45,23 @@ export enum StringyEnum {
     _1st = "1st"
 }
 
+export enum SyncMode {
+    _0 = 0,
+    _1 = 1,
+    _2 = 2
+}
+
+export enum JobStatus {
+    Queued = "queued",
+    InProgress = "in-progress",
+    Done = "done"
+}
+
+export enum MisnamedLevel {
+    _1 = 1,
+    _2 = 2
+}
+
 export type FreeMap = Record<string, unknown>;
 export type ClosedBox = Record<string, unknown>;
 export type TypedMap = Record<string, _123meta>;

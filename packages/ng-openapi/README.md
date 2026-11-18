@@ -114,7 +114,8 @@ ng-openapi -i ./swagger.json -o ./src/api --date-type string
 - `compilerOptions` - TypeScript compiler options for code generation
 - `package` - `{ name, version?, repository?, publishRegistry?, angularVersion?, packageJson? }`; emits `package.json`, `ng-package.json`, `tsconfig.json`, `README.md` and `.gitignore` so the output builds with ng-packagr and publishes as a standalone Angular library (see the [publishing guide](https://ng-openapi.dev/guide/npm-package))
 - `options.generateServices` - Generate Angular services (default: `true`)
-- `options.generateEnumBasedOnDescription` - Parse enum values from description field (default: `false`)
+- `options.generateEnumBasedOnDescription` - Read enum member names from a JSON-encoded description field (default: `false`)
+- `options.enumNameExtensions` - Vendor extensions to read enum member names from, e.g. `['x-enum-varnames', 'x-enumNames']` (default: none)
 - `options.validation` - `{ response?: boolean }`; adds a `parse` hook to generated methods for response validation
 - `options.customHeaders` - Headers to add to all HTTP requests
 - `options.responseTypeMapping` - Map content types to Angular HttpClient response types

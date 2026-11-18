@@ -12,7 +12,15 @@ import { generateFromConfig, GeneratorConfig } from "ng-openapi";
  */
 
 export const GOLDEN_FIXTURES = ["swagger-2.0", "openapi-3.0", "openapi-3.1", "edge-cases", "models-only"] as const;
-export type GoldenFixture = (typeof GOLDEN_FIXTURES)[number];
+
+/**
+ * Fixtures about a single feature. A suite names them in `fixtures`; they are
+ * not part of the default matrix, where every variant of every package would
+ * snapshot output the feature does not touch.
+ */
+export const FOCUSED_FIXTURES = ["enum-names"] as const;
+
+export type GoldenFixture = (typeof GOLDEN_FIXTURES)[number] | (typeof FOCUSED_FIXTURES)[number];
 
 type ConfigBuilder = (input: string, output: string) => GeneratorConfig;
 
@@ -25,7 +33,7 @@ export interface GoldenSuiteOptions {
     goldenDir: string;
     /** Variant name → config builder. Each variant runs against every fixture. */
     variants: Record<string, ConfigBuilder>;
-    /** Restrict to a subset of fixtures (defaults to all). */
+    /** The fixtures to run against (defaults to every fixture in `GOLDEN_FIXTURES`). */
     fixtures?: readonly GoldenFixture[];
 }
 

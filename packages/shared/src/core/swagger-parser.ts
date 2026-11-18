@@ -1,6 +1,6 @@
 // Import the concrete type modules, not the ../types barrel: the barrel pulls in
 // plugin.types.ts, which needs this file — going through it re-creates the cycle.
-import type { GeneratorConfig } from "../types/config.types";
+import type { EnumNamingOptions, GeneratorConfig } from "../types/config.types";
 import type { SwaggerDefinition, SwaggerSpec } from "../types/swagger.types";
 import type { NormalizedSpec } from "../model/spec.model";
 import { loadSpecContent } from "./spec-loader";
@@ -19,10 +19,16 @@ export class SwaggerParser {
     private normalized?: NormalizedSpec;
     /** Non-fatal problems found while normalizing — a parameter with no usable name, for one. */
     private readonly onWarning?: (message: string) => void;
+    private readonly enumNaming: EnumNamingOptions;
 
-    private constructor(spec: SwaggerSpec, onWarning?: (message: string) => void) {
+    private constructor(
+        spec: SwaggerSpec,
+        onWarning: ((message: string) => void) | undefined,
+        enumNaming: EnumNamingOptions,
+    ) {
         this.spec = spec;
         this.onWarning = onWarning;
+        this.enumNaming = enumNaming;
     }
 
     /**
@@ -68,7 +74,7 @@ export class SwaggerParser {
                 error,
             );
         }
-        return new SwaggerParser(inlinedSpec, onWarning);
+        return new SwaggerParser(inlinedSpec, onWarning, config);
     }
 
     /**
@@ -77,7 +83,7 @@ export class SwaggerParser {
      * can be used as Map keys across generators.
      */
     getNormalizedSpec(): NormalizedSpec {
-        this.normalized ??= normalizeSpec(this.spec, this.onWarning);
+        this.normalized ??= normalizeSpec(this.spec, this.onWarning, this.enumNaming);
         return this.normalized;
     }
 

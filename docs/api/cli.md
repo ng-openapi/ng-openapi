@@ -58,6 +58,8 @@ Provide either a configuration file or a spec directly:
 | `--types-only` | Generate only TypeScript interfaces | `false` | `--types-only`       |
 | `--date-type`  | Date type to use                    | `Date`  | `--date-type string` |
 
+Runs with `--input` have no configuration file, so the remaining options are fixed: `enumStyle: 'enum'` and [`generateEnumBasedOnDescription: true`](configuration/options/generate-enums-description). Enums whose description holds a JSON list of names are therefore named from it without any further setting. Use a configuration file to change either.
+
 ### Help and Version
 
 | Option      | Description           |

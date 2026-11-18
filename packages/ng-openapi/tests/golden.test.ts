@@ -95,3 +95,35 @@ registerGoldenSuite("ng-openapi golden", {
         },
     },
 });
+
+// Enum member names from vendor extensions and JSON descriptions (#31). The
+// enum-names fixture holds one enum per case: each source in both value
+// types, source priority, sanitizing, every way a source is rejected, .NET
+// aliases, and inline enums, which are never named. Only the models differ,
+// so the services stay out of the snapshots.
+const enumNamesConfig =
+    (enumStyle: "enum" | "union", enumNameExtensions?: string[]) =>
+    (input: string, output: string): GeneratorConfig => ({
+        input,
+        output,
+        options: {
+            dateType: "string",
+            enumStyle,
+            generateServices: false,
+            generateEnumBasedOnDescription: true,
+            enumNameExtensions,
+        },
+    });
+const ENUM_NAME_EXTENSIONS = ["x-enum-varnames", "x-enumNames"];
+
+registerGoldenSuite("ng-openapi golden (enum names)", {
+    goldenDir: fileURLToPath(new URL("./__golden__", import.meta.url)),
+    fixtures: ["edge-cases", "enum-names"],
+    variants: {
+        "enum-names-union": enumNamesConfig("union", ENUM_NAME_EXTENSIONS),
+        "enum-names-enum": enumNamesConfig("enum", ENUM_NAME_EXTENSIONS),
+        // What `ng-openapi -i spec.json` produces: the CLI fixes enum style
+        // and turns the description source on, with no extensions
+        "enum-names-description-only": enumNamesConfig("enum"),
+    },
+});

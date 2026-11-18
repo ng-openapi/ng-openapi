@@ -165,6 +165,8 @@ describe("toEnumKey", () => {
 });
 
 describe("EnumBuilder", () => {
+    const unionConfig: TypeGenOptions = { options: { dateType: "string", enumStyle: "union" } };
+
     it("returns no statements for empty enums", () => {
         expect(new EnumBuilder(baseConfig).build("Empty", { enum: [] } as SwaggerDefinition)).toEqual([]);
     });
@@ -184,7 +186,6 @@ describe("EnumBuilder", () => {
     });
 
     it("builds a union type + const in union style", () => {
-        const unionConfig: TypeGenOptions = { options: { dateType: "string", enumStyle: "union" } };
         const [alias, constant] = new EnumBuilder(unionConfig).build("Status", {
             enum: ["active"],
         } as SwaggerDefinition);
@@ -192,42 +193,58 @@ describe("EnumBuilder", () => {
         expect(constant).toMatchObject({ kind: StructureKind.VariableStatement });
     });
 
-    it("warns when a JSON-looking description fails to parse, stays quiet on prose", () => {
-        const config: TypeGenOptions = {
-            options: { dateType: "string", enumStyle: "enum", generateEnumBasedOnDescription: true },
-        };
-        const warnings: string[] = [];
-        const builder = new EnumBuilder(config, (message) => warnings.push(message));
-
-        // Trailing comma → intended-but-malformed JSON payload
-        builder.build("Kind", {
-            enum: [1, 2],
-            description: '[{"Name":"First","Value":1},]',
-        } as SwaggerDefinition);
-        expect(warnings).toHaveLength(1);
-        expect(warnings[0]).toContain('Enum "Kind"');
-
-        // Prose descriptions are expected to fail JSON.parse silently
-        builder.build("Other", {
-            enum: [1, 2],
-            description: "Plain human-readable description",
-        } as SwaggerDefinition);
-        expect(warnings).toHaveLength(1);
-    });
-
-    it("uses description-encoded members when generateEnumBasedOnDescription is set", () => {
-        const config: TypeGenOptions = {
-            options: { dateType: "string", enumStyle: "enum", generateEnumBasedOnDescription: true },
-        };
-        const [statement] = new EnumBuilder(config).build("Kind", {
-            enum: [1, 2],
-            description: '[{"Name":"First","Value":1},{"Name":"Second","Value":2}]',
+    it("keeps mixed string/number enums all-strings in enum style", () => {
+        const [statement] = new EnumBuilder(baseConfig).build("Mixed", {
+            enum: ["a", 1],
         } as SwaggerDefinition);
         expect(statement).toMatchObject({
             members: [
-                { name: "First", value: 1 },
-                { name: "Second", value: 2 },
+                { name: "A", value: "a" },
+                { name: "_1", value: "1" },
             ],
+        });
+    });
+
+    // enumMemberNames is what the normalizer resolved from enumNameExtensions /
+    // generateEnumBasedOnDescription; the builder only consumes it
+    describe("with normalizer-resolved member names", () => {
+        it("names numeric enum members in enum style", () => {
+            const [statement] = new EnumBuilder(baseConfig).build("Kind", {
+                enum: [0, 1],
+                enumMemberNames: ["Unknown", "Full"],
+            } as SwaggerDefinition);
+            expect(statement).toMatchObject({
+                members: [
+                    { name: "Unknown", value: 0 },
+                    { name: "Full", value: 1 },
+                ],
+            });
+        });
+
+        it("names the const object keys in union style and leaves the union itself alone", () => {
+            const [alias, constant] = new EnumBuilder(unionConfig).build("Kind", {
+                enum: [0, "b"],
+                enumMemberNames: ["Unknown", "Beta"],
+            } as SwaggerDefinition);
+            expect(alias).toMatchObject({ type: "0 | 'b'" });
+            expect(constant).toMatchObject({
+                declarations: [{ name: "Kind", initializer: "{ Unknown: 0 as Kind,\nBeta: 'b' as Kind }" }],
+            });
+        });
+
+        it("drops the JSON description from the docs only under generateEnumBasedOnDescription", () => {
+            const definition = {
+                enum: [1],
+                enumMemberNames: ["First"],
+                description: "Plain prose",
+            } as SwaggerDefinition;
+            const [withDocs] = new EnumBuilder(baseConfig).build("Kind", definition);
+            expect(withDocs).toMatchObject({ docs: ["Plain prose"] });
+
+            const [withoutDocs] = new EnumBuilder({
+                options: { ...baseConfig.options, generateEnumBasedOnDescription: true },
+            }).build("Kind", definition);
+            expect(withoutDocs).toMatchObject({ docs: undefined });
         });
     });
 });

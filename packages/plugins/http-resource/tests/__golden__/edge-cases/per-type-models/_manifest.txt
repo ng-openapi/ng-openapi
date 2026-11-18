@@ -4,10 +4,13 @@ models/api-response.ts
 models/closed-box.ts
 models/free-map.ts
 models/index.ts
+models/job-status.ts
+models/misnamed-level.ts
 models/record-state.ts
 models/request-options.ts
 models/signed-level.ts
 models/stringy-enum.ts
+models/sync-mode.ts
 models/typed-map.ts
 models/untyped.ts
 models/user-profile.ts

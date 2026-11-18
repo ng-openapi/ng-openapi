@@ -60,4 +60,5 @@ export const Status = {
 ## Notes
 
 - OpenAPI only stores enum values, not names. The generator creates TypeScript enums with names based on values
+- If your OpenAPI spec lists the member names in a vendor extension such as `x-enum-varnames` or `x-enumNames`, `ng-openapi` can [read them from there](enum-name-extensions)
 - If your OpenAPI spec contains a description for the `enum` object, `ng-openapi` can generate [enums based on that description](generate-enums-description)
