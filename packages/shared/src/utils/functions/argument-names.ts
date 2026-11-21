@@ -74,8 +74,9 @@ export interface ArgumentNameProfile {
 /**
  * The core service method: `observe`/`options` are its trailing parameters,
  * the rest are locals its body declares (see `emit/url.emit.ts`,
- * `emit/query-params.emit.ts`, `emit/headers.emit.ts` and the form-data blocks
- * of `service-method-body.generator.ts`).
+ * `emit/query-params.emit.ts`, `emit/headers.emit.ts` and the form blocks of
+ * `emit/form-body.emit.ts`, built in the `formData`/`formBody` locals
+ * `service-method-body.generator.ts` names).
  */
 // Frozen: a module singleton whose mutation would be observed by every later
 // resolveArgumentNames call. `readonly` is compile-time only.
@@ -87,15 +88,18 @@ export const SERVICE_ARGUMENT_PROFILE: ArgumentNameProfile = Object.freeze({
 /**
  * The httpResource plugin's equivalent. Deliberately a different set, not a
  * copy: its trailing parameters are `resourceOptions`/`requestOptions` and it
- * emits no `url`/`formData`/`formBody` locals. Reserving the core's names here
- * would rename plugin parameters for no reason; reserving only the core's would
- * let a `requestOptions` query parameter capture the plugin's own. It also
- * wraps GETs only and never binds a request body, so reserving a body name
- * would burn an identifier no emitted parameter uses.
+ * emits no `url` local. Reserving the core's names here would rename plugin
+ * parameters for no reason; reserving only the core's would let a
+ * `requestOptions` query parameter capture the plugin's own.
+ *
+ * It binds a request body for the one read method that carries one (QUERY),
+ * and then builds forms too — but `formData`/`formBody` stay out of this set:
+ * the plugin derives those locals around the arguments (`deriveLocalName`), so
+ * a `formData` query parameter of a GET keeps its name.
  */
 export const RESOURCE_ARGUMENT_PROFILE: ArgumentNameProfile = Object.freeze({
     reserved: Object.freeze(["resourceOptions", "requestOptions", "params", "headers"]),
-    bindsRequestBody: false,
+    bindsRequestBody: true,
 });
 
 /** Key of the JSON request-body argument, which has no wire name of its own. */
@@ -181,10 +185,20 @@ function computeArgumentNames(
     config: MethodGenOptions,
     profile: ArgumentNameProfile,
 ): ArgumentNames {
+    // Only the fields of the form that is sent are arguments. An operation may
+    // declare both forms, and the IR carries both field lists; registering the
+    // one no method binds would take names from real arguments (a query `note`
+    // renamed `note2` for a form field that is not there) and report a field
+    // both forms list as declared twice.
+    const formFields =
+        operation.bodyKind === "multipart"
+            ? operation.formDataFields
+            : operation.bodyKind === "urlencoded"
+              ? operation.urlEncodedFields
+              : [];
     const entries: { key: ArgumentKey; base: string }[] = [
         ...operation.pathParams.map((param) => ({ key: param.name, base: camelCase(param.name) })),
-        ...operation.formDataFields.map((field) => ({ key: field, base: camelCase(field) })),
-        ...operation.urlEncodedFields.map((field) => ({ key: field, base: camelCase(field) })),
+        ...formFields.map((field) => ({ key: field, base: camelCase(field) })),
     ];
 
     const bodyBase = profile.bindsRequestBody ? jsonBodyIdentifier(operation, config) : undefined;

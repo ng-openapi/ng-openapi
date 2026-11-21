@@ -47,7 +47,7 @@ Every generation run flows through the same stages:
   keep branching on the typed errors.
 - **Normalize** (`normalize.ts`) — resolves _every_ Swagger 2.0 vs OpenAPI 3.x
   difference exactly once and precomputes what generators would otherwise
-  re-derive (`pathParams`, `queryParams`, `hasBody`, `isMultipart`,
+  re-derive (`pathParams`, `queryParams`, `hasBody`, `bodyKind`, `isMultipart`,
   `responseType`, resolved `$ref`s, …). Output: **`NormalizedSpec`** /
   **`NormalizedOperation`** — the one internal model (the "IR").
   Operation-level `$ref`s to reusable parameters, responses and request
@@ -64,7 +64,17 @@ Every generation run flows through the same stages:
   `multipart/form-data` or `application/x-www-form-urlencoded` gets
   arguments, and a form contributes only the top-level `properties` of its
   schema. A form that lists none stays in the IR with an empty field list
-  and is warned about here, because the method then sends no body.
+  and is warned about here, because the method then sends no body. So is a
+  body declared only under a content type nothing binds, and a field that
+  only the urlencoded form lists when an operation declares both forms
+  (multipart is the one sent): each is input the caller has no argument for. Which of
+  the three a request actually carries is the operation's `bodyKind` — unset
+  when it carries none — and every client reads that one field rather than
+  re-deriving it from `hasBody`, `isMultipart` and `isUrlEncoded`, which
+  describe what the spec declared and still decide the `Content-Type`.
+  The methods themselves are the path-item fields `extractPaths` lists,
+  OpenAPI 3.2's `query` (the HTTP QUERY method) among them. It needs no
+  rule of its own: it is a method that carries a body, so it keeps one.
   Enum member names are resolved here too (`enum-member-names.ts`): the
   sources the config enables — `enumNameExtensions` (`x-enum-varnames`,
   `x-enumNames`, …), then the JSON description of
@@ -125,10 +135,16 @@ in a generator.
 ### Shared emission layer
 
 All string-template fragments used by more than one method-body generator live
-in `packages/shared/src/emit/` (URL construction, query params, headers,
-request-option entries). The http-resource plugin's signal-aware reads are a
-parameter of these helpers, not a fork. A change to, say, header emission is a
-one-file change.
+in `packages/shared/src/emit/` (URL construction, query params, headers, form
+bodies, request-option entries). The http-resource plugin's signal-aware reads
+are a parameter of these helpers, not a fork. A change to, say, header emission
+is a one-file change.
+
+The plugin generates resources for the read methods only — GET and QUERY — and
+QUERY is why it binds request bodies at all. A resource's request function and
+a service method are different scopes with different names already taken, so
+the form emitters take the name of the container they append to from the
+caller instead of fixing one.
 
 ### Segregated config views
 
@@ -143,6 +159,17 @@ Only the CLI/orchestrator boundary and the plugin contract see all of it.
 and accepts a `Reporter` (`onPhase`, `onWarning`); it never logs. `console.*`
 exists **only** in `cli.ts` — this is asserted culturally and by grep, and it is
 what keeps the library embeddable and testable.
+
+### Angular version requirements are warnings
+
+The published peer ranges state what the generator as a whole needs
+(`>=15`, `>=19.2` for the http-resource plugin). A feature that needs a newer
+Angular — `@Service()` from 22, the HTTP QUERY method from 22.3 — is never a
+peer range, which would lock out everyone not using it, and never a hard
+failure: the workspace that runs the CLI is not always the one that compiles
+the output. `generateFromConfig` compares the detected `@angular/core`
+(`core/angular-version.ts`) against the feature's minimum and reports through
+`onWarning`; an Angular it cannot detect is unknown, not too old.
 
 ### Typed errors
 
@@ -225,7 +252,7 @@ Project (see above).
 
 ## Safety nets
 
-- **Golden suite** — every generated file from 5 spec fixtures × config
+- **Golden suite** — every generated file from 6 spec fixtures × config
   variants is snapshot-compared byte-for-byte. Structural refactors must keep
   them identical; intentional output changes are the review artifact.
 - **Compile-check suite** — generates from live/local specs and type-checks the

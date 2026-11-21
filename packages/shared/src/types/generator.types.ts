@@ -30,7 +30,7 @@ export interface TypeSchema {
     [key: string]: unknown;
 }
 
-/** MethodGenerationContext subset that GET-only generation (http-resource) needs. */
+/** The MethodGenerationContext fields that do not describe a request body. */
 export interface GetMethodGenerationContext {
     pathParams: Array<{ name: string; in: string }>;
     queryParams: Array<{ name: string; in: string }>;

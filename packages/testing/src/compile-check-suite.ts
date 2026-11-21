@@ -8,6 +8,7 @@ const SPEC_SOURCES = [
     { label: "OpenAPI 2.0", envVar: "OPENAPI_SPEC_V2_URL" },
     { label: "OpenAPI 3.0", envVar: "OPENAPI_SPEC_V3_URL" },
     { label: "OpenAPI 3.1", envVar: "OPENAPI_SPEC_V3_1_URL" },
+    { label: "OpenAPI 3.2", envVar: "OPENAPI_SPEC_V3_2_URL" },
 ] as const;
 
 type ConfigBuilder = (input: string, output: string) => GeneratorConfig;

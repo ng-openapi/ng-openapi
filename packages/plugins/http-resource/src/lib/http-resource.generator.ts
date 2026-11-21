@@ -24,6 +24,14 @@ import * as path from "path";
 import { HttpResourceMethodGenerator } from "./http-resource-method.generator";
 import { HttpResourceIndexGenerator } from "./http-resource-index.generator";
 
+/**
+ * The methods that become resources: the safe, idempotent reads. An
+ * httpResource re-sends its request whenever a signal it read changes, which
+ * is only sound for a request that changes nothing on the server — GET, and
+ * QUERY, the read that carries its input in a body (Angular 22.3+).
+ */
+const RESOURCE_METHODS: ReadonlySet<string> = new Set(["GET", "QUERY"]);
+
 export class HttpResourceGenerator implements IPluginGenerator {
     private project: Project;
     private spec: NormalizedSpec;
@@ -43,8 +51,7 @@ export class HttpResourceGenerator implements IPluginGenerator {
 
     async generate(outputRoot: string) {
         const outputDir = path.join(outputRoot, "resources");
-        // httpResource only wraps GETs
-        const paths = this.spec.operations.filter((operation) => operation.method === "GET");
+        const paths = this.spec.operations.filter((operation) => RESOURCE_METHODS.has(operation.method));
 
         if (paths.length === 0) {
             this.onWarning?.("No API paths found in the specification");

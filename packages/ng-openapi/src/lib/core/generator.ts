@@ -13,7 +13,12 @@ import {
 import { ServiceGenerator, ServiceIndexGenerator } from "../generators/service";
 import { GeneratorConfig, isUrl, SpecLoadError, SpecParseError, SwaggerParser } from "@ng-openapi/shared";
 import { validateGeneratorConfig } from "./config-validation";
-import { detectAngularCoreVersion } from "./angular-version";
+import {
+    describeQueryMethodSupport,
+    detectAngularCoreVersion,
+    isAngularVersionBelow,
+    SERVICE_DECORATOR_MIN_ANGULAR,
+} from "./angular-version";
 import { assertScaffoldTargetsWritable } from "./package-scaffold-guard";
 import { GenerationResult, Reporter } from "./reporter";
 import * as fs from "fs";
@@ -70,6 +75,9 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
 
     const outputPath = config.output;
     const generateServices = config.options.generateServices ?? true;
+    // A plugin is opaque here: any of them may emit code that sends requests,
+    // and all of them may import the client runtime.
+    const emitsClient = generateServices || !!config.plugins?.length;
 
     const warnings: string[] = [];
     const seenWarnings = new Set<string>();
@@ -93,7 +101,7 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
     // CLI runs in is not always the workspace that compiles the output, so an
     // undetectable or mismatched version must never block generation.
     if (config.options.serviceDecorator === "service") {
-        if (angularVersion !== undefined && parseInt(angularVersion, 10) < 22) {
+        if (angularVersion !== undefined && isAngularVersionBelow(angularVersion, SERVICE_DECORATOR_MIN_ANGULAR)) {
             onWarning(
                 `serviceDecorator "service" emits @Service(), which requires Angular 22+ — ` +
                     `found @angular/core ${angularVersion} in this workspace. ` +
@@ -132,6 +140,17 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
     }
     const normalizedSpec = swaggerParser.getNormalizedSpec();
 
+    // The same soft guard as @Service() above, for the HTTP QUERY method.
+    // Skipped for a types-only run, which generates nothing that sends a
+    // request; with plugins it errs towards warning, since what one emits is
+    // not known here.
+    if (emitsClient) {
+        const queryMethodWarning = describeQueryMethodSupport(normalizedSpec, angularVersion);
+        if (queryMethodWarning) {
+            onWarning(queryMethodWarning);
+        }
+    }
+
     const typeGenerator = new TypeGenerator(swaggerParser, project, config, outputPath, onWarning);
     await typeGenerator.generate();
     reporter.onPhase?.("types-generated");
@@ -141,7 +160,7 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
     // ../tokens and ../utils/http-params-builder too, so gating it on
     // generateServices alone made plugin-only output reference files that were
     // never emitted — non-compiling, and hidden from the user by @ts-nocheck.
-    if (generateServices || config.plugins?.length) {
+    if (emitsClient) {
         // Generate tokens first
         const tokenGenerator = new TokenGenerator(project, config.clientName);
         tokenGenerator.generate(outputPath);

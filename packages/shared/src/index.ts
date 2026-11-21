@@ -35,7 +35,14 @@ export type {
 } from "./types";
 
 // Normalized spec model (version-free view consumed by generators)
-export type { NormalizedOperation, NormalizedSpec, ResponseKind, SpecInfo, SpecVersion } from "./model";
+export type {
+    NormalizedOperation,
+    NormalizedSpec,
+    RequestBodyKind,
+    ResponseKind,
+    SpecInfo,
+    SpecVersion,
+} from "./model";
 
 // Spec loading and access. `inlineNestedRefs` is deliberately *not* re-exported:
 // it runs inside `SwaggerParser.create` and has no consumer outside this
@@ -60,13 +67,16 @@ export type { OperationRef } from "./errors";
 
 // Emission helpers (method-body fragments shared by core + plugins)
 export {
+    defaultContentType,
     emitDefaultHeadersMerge,
     emitHeaders,
+    emitMultipartFormData,
     emitQueryParams,
     emitResponseTypeOption,
     emitServiceDecorator,
     emitSignalAwareQueryParams,
     emitUrlConstruction,
+    emitUrlEncodedFormBody,
     emitUrlExpression,
     emitJsonFile,
     emitTextFile,
@@ -82,7 +92,13 @@ export {
     plainParamValue,
     signalAwareParamValue,
 } from "./emit";
-export type { HeadersEmitOptions, ServiceDecoratorEmit, ServiceDecoratorEmitOptions } from "./emit";
+export type {
+    DefaultHeadersMergeOptions,
+    FormBodyEmitOptions,
+    HeadersEmitOptions,
+    ServiceDecoratorEmit,
+    ServiceDecoratorEmitOptions,
+} from "./emit";
 
 // Utilities
 export {
@@ -100,6 +116,7 @@ export {
     getInterceptorsTokenName,
     getModelTypeName,
     assertDistinctMemberNames,
+    deriveLocalName,
     getOperationMethodName,
     RESERVED_MEMBER_NAMES,
     reservedMemberCollision,

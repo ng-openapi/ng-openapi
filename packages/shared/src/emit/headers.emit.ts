@@ -1,3 +1,4 @@
+import { CONTENT_TYPES } from "../utils/content-types.constants";
 import { emitObjectKey, quoteLiteral } from "./literal.emit";
 
 export interface HeadersEmitOptions {
@@ -7,7 +8,7 @@ export interface HeadersEmitOptions {
     customHeaders?: Record<string, string>;
     /** Accept value derived from the operation's response content types; omit to skip. */
     accept?: string;
-    /** Content-Type rules derived from the operation's body; omit to skip (http-resource is GET-only). */
+    /** Content-Type rules derived from the operation's body; omit to skip. */
     contentType?: {
         isMultipart: boolean;
         isUrlEncoded: boolean;
@@ -47,25 +48,51 @@ if (!headers.has('Accept')) {
 }`;
     }
 
+    const defaultType = contentType && defaultContentType(contentType);
     if (contentType?.isMultipart) {
         headerCode += `
 // Remove Content-Type for multipart (browser will set it with boundary)
 headers = headers.delete('Content-Type');`;
-    } else if (contentType?.isUrlEncoded) {
+    } else if (defaultType) {
+        const comment = contentType?.isUrlEncoded
+            ? "// Set Content-Type for URL-encoded form data"
+            : "// Set Content-Type for JSON requests if not already set";
         headerCode += `
-// Set Content-Type for URL-encoded form data
+${comment}
 if (!headers.has('Content-Type')) {
-  headers = headers.set('Content-Type', 'application/x-www-form-urlencoded');
-}`;
-    } else if (contentType?.hasBody) {
-        headerCode += `
-// Set Content-Type for JSON requests if not already set
-if (!headers.has('Content-Type')) {
-  headers = headers.set('Content-Type', 'application/json');
+  headers = headers.set('Content-Type', ${quoteLiteral(defaultType)});
 }`;
     }
 
     return headerCode;
+}
+
+/**
+ * The Content-Type a generated request declares when the caller set none, or
+ * undefined when it declares none: no body, or a multipart one, whose header
+ * only the browser can write (the boundary belongs in it) and which every
+ * client therefore removes instead.
+ *
+ * The one place this is decided. The core service applies it through
+ * `emitHeaders`, the http-resource plugin through its default-headers merge.
+ */
+export function defaultContentType(body: NonNullable<HeadersEmitOptions["contentType"]>): string | undefined {
+    if (body.isMultipart) {
+        return undefined;
+    }
+    if (body.isUrlEncoded) {
+        return CONTENT_TYPES.FORM_URLENCODED;
+    }
+    return body.hasBody ? CONTENT_TYPES.JSON : undefined;
+}
+
+export interface DefaultHeadersMergeOptions {
+    /**
+     * The request carries a `FormData` body: no Content-Type may survive the
+     * merge, whoever set it, because only the browser knows the boundary that
+     * belongs in it.
+     */
+    dropContentType?: boolean;
 }
 
 /**
@@ -74,22 +101,45 @@ if (!headers.has('Content-Type')) {
  * Cast-free: the plain record is never funneled through the HttpHeaders
  * constructor, whose accepted value types are narrower than
  * HttpResourceRequest's.
+ *
+ * With `dropContentType` the merge also removes the header from both shapes.
+ * A record is matched by name the way HttpHeaders matches one —
+ * case-insensitively — so `content-type` goes as surely as `Content-Type`,
+ * and a default the config declares is merged first and filtered with the rest.
  */
-export function emitDefaultHeadersMerge(optionsExpression: string, customHeaders: Record<string, string>): string {
-    const defaultsLiteral = Object.entries(customHeaders)
+export function emitDefaultHeadersMerge(
+    optionsExpression: string,
+    customHeaders: Record<string, string>,
+    options: DefaultHeadersMergeOptions = {},
+): string {
+    const defaults = Object.entries(customHeaders)
         // emitObjectKey, not quoteLiteral: this is a key position, and a
         // '__proto__' key hijacks the prototype exactly as a "__proto__" one does.
-        .map(([key, value]) => `${emitObjectKey(key, "single")}: ${quoteLiteral(value)}`)
-        .join(", ");
+        .map(([key, value]) => `${emitObjectKey(key, "single")}: ${quoteLiteral(value)}`);
+    const hasDefaults = defaults.length > 0;
+    // `...headers` is always there, so the literal is valid with no default at all.
+    const merged = `{ ${[...defaults, "...headers"].join(", ")} }`;
 
-    return `
-// Add default headers if not already present
-let headers = ${optionsExpression}?.headers;
-if (headers instanceof HttpHeaders) {
-${emitDefaultHeaderGuards(customHeaders)}
-} else {
-  headers = { ${defaultsLiteral}, ...headers };
-}`;
+    const statements = [
+        ...(hasDefaults ? ["// Add default headers if not already present"] : []),
+        `let headers = ${optionsExpression}?.headers;`,
+        "if (headers instanceof HttpHeaders) {",
+        ...(hasDefaults ? [emitDefaultHeaderGuards(customHeaders)] : []),
+        ...(options.dropContentType
+            ? [
+                  "  // Remove Content-Type for multipart (browser will set it with boundary)",
+                  "  headers = headers.delete('Content-Type');",
+              ]
+            : []),
+        "} else {",
+        options.dropContentType
+            ? `  headers = Object.fromEntries(Object.entries(${merged})` +
+              ".filter(([name]) => name.toLowerCase() !== 'content-type'));"
+            : `  headers = ${merged};`,
+        "}",
+    ];
+
+    return `\n${statements.join("\n")}`;
 }
 
 function emitDefaultHeaderGuards(customHeaders: Record<string, string>): string {

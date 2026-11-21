@@ -11,7 +11,14 @@ import { generateFromConfig, GeneratorConfig } from "ng-openapi";
  * changes show up as reviewable .ts diffs under __golden__/.
  */
 
-export const GOLDEN_FIXTURES = ["swagger-2.0", "openapi-3.0", "openapi-3.1", "edge-cases", "models-only"] as const;
+export const GOLDEN_FIXTURES = [
+    "swagger-2.0",
+    "openapi-3.0",
+    "openapi-3.1",
+    "openapi-3.2",
+    "edge-cases",
+    "models-only",
+] as const;
 
 /**
  * Fixtures about a single feature. A suite names them in `fixtures`; they are

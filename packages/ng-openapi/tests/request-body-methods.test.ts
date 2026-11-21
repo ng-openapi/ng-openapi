@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { createOutputDirs, expectGeneratedCodeCompiles } from "@ng-openapi/testing";
+import { createOutputDirs, expectGeneratedCodeCompiles, methodSource } from "@ng-openapi/testing";
 import { generateFromConfig, GeneratorConfig } from "ng-openapi";
 import { ZodPlugin } from "@ng-openapi/zod";
 
@@ -146,13 +146,6 @@ function writeSpec(dir: string, spec: unknown): string {
 
 function read(output: string, ...path: string[]): string {
     return readFileSync(join(output, ...path), "utf8");
-}
-
-/** The implementation of one generated method: from its last signature to its closing brace. */
-function methodSource(service: string, name: string): string {
-    const start = service.lastIndexOf(`    ${name}(`);
-    expect(start, `method ${name} was not generated`).toBeGreaterThan(-1);
-    return service.slice(start, service.indexOf("\n    }\n", start));
 }
 
 /** The expression a generated method passes as `body` to `request()`, if any. */
@@ -326,5 +319,102 @@ describe("request bodies on methods other than POST/PUT/PATCH (#138)", () => {
         expect(validators).not.toContain("searchItemsBody");
 
         expectGeneratedCodeCompiles(output);
+    });
+});
+
+describe("an operation that declares both a multipart and a urlencoded body", () => {
+    const fields = (properties: Record<string, object>, required: string[] = []) => ({
+        schema: { type: "object", required, properties },
+    });
+    const text = { type: "string" };
+    const file = { type: "string", format: "binary" };
+    const bothForms = (multipart: Record<string, object>, urlEncoded: Record<string, object>) => ({
+        required: true,
+        content: {
+            "multipart/form-data": fields(multipart, ["file"]),
+            "application/x-www-form-urlencoded": fields(urlEncoded),
+        },
+    });
+    const query = (name: string) => ({ name, in: "query", schema: text });
+    const spec = {
+        ...SPEC,
+        paths: {
+            // A field only the urlencoded form lists, next to a query parameter.
+            "/items/upload": {
+                post: {
+                    operationId: "upload",
+                    tags: ["Items"],
+                    parameters: [query("tag")],
+                    requestBody: bothForms({ file }, { note: text }),
+                    responses: noContent,
+                },
+            },
+            // The same, with a query parameter named like that field.
+            "/items/annotate": {
+                post: {
+                    operationId: "annotate",
+                    tags: ["Items"],
+                    parameters: [query("note")],
+                    requestBody: bothForms({ file }, { note: text }),
+                    responses: noContent,
+                },
+            },
+            // Both forms list the same fields, as ASP.NET publishes [FromForm].
+            "/items/submit": {
+                post: {
+                    operationId: "submit",
+                    tags: ["Items"],
+                    requestBody: bothForms({ file, caption: text }, { file, caption: text }),
+                    responses: noContent,
+                },
+            },
+        },
+    };
+
+    it("takes arguments for the multipart fields only, and says which field that leaves out", async () => {
+        const { output, result, service } = await generate("both-forms-", { spec });
+
+        // `note` used to be an argument here that no request carried, between
+        // `file` and `tag`: upload(file, "my note") compiled and sent nothing.
+        // It still compiles — and now sends `?tag=my%20note`, which is why
+        // this is a breaking change and why the warning names the field.
+        const upload = methodSource(service, "upload");
+        expect(upload).toMatch(/^ {4}upload\(file: Blob, tag\?: string, observe\?:/);
+        expect(upload).not.toContain("note");
+        expect(upload).not.toContain("formBody");
+        expect(sentBody(upload)).toBe("formData");
+
+        expect(result.warnings).toEqual([
+            "The request body of upload ((POST) /items/upload) is declared as both multipart/form-data and " +
+                "application/x-www-form-urlencoded. Generated methods send the multipart/form-data one, so the " +
+                'field "note", which only the application/x-www-form-urlencoded form lists, gets no argument and ' +
+                "is not sent. List it in the multipart/form-data schema too, or declare one form.",
+            expect.stringContaining("The request body of annotate ((POST) /items/annotate) is declared as both"),
+        ]);
+
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("does not take a name from a real argument for a field that is not one", async () => {
+        const { service } = await generate("both-forms-names-", { spec });
+        const annotate = methodSource(service, "annotate");
+
+        // The query parameter keeps its name: no `note2`, and no warning that
+        // it was renamed (the warnings are pinned in the test above).
+        expect(annotate).toMatch(/^ {4}annotate\(file: Blob, note\?: string, observe\?:/);
+        expect(annotate).toContain("params = HttpParamsBuilder.addToHttpParams(params, note, 'note');");
+        expect(annotate).not.toContain("note2");
+    });
+
+    it("keeps the signature, and reports nothing, when both forms list the same fields", async () => {
+        const { result, service } = await generate("both-forms-same-", { spec });
+        const submit = methodSource(service, "submit");
+
+        expect(submit).toMatch(/^ {4}submit\(file: Blob, caption\?: string, observe\?:/);
+        expect(submit).toContain("formData.append('caption', String(caption));");
+        expect(submit).not.toContain("formBody");
+        // In particular not "declared in more than one location … the same
+        // value is sent for both": one form is sent, so nothing is merged.
+        expect(result.warnings.filter((warning) => warning.includes("submit"))).toEqual([]);
     });
 });

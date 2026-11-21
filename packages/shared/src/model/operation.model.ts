@@ -2,6 +2,9 @@ import type { Parameter, PathInfo, SwaggerDefinition } from "../types/swagger.ty
 
 export type ResponseKind = "json" | "blob" | "arraybuffer" | "text";
 
+/** The request bodies a generated method can bind arguments for and send. */
+export type RequestBodyKind = "json" | "multipart" | "urlencoded";
+
 /**
  * A spec operation with everything the generators need precomputed once at
  * normalization time. Generators must not re-derive any of these fields or
@@ -14,6 +17,14 @@ export interface NormalizedOperation extends PathInfo {
     /** parameters with in === "query" */
     queryParams: Parameter[];
     hasBody: boolean;
+    /**
+     * The body a generated request actually carries, and so the arguments its
+     * method takes for one. Narrower than `hasBody`: unset when the operation
+     * declares no body, declares only a content type the generators do not
+     * bind, or declares a form that lists no fields. Every client reads this
+     * instead of re-deriving it from the three flags around it.
+     */
+    bodyKind?: RequestBodyKind;
     isMultipart: boolean;
     /** urlencoded body without a JSON alternative */
     isUrlEncoded: boolean;

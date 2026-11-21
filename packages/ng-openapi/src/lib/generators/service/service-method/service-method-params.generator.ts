@@ -1,11 +1,10 @@
 import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
 import {
     ArgumentNames,
-    CONTENT_TYPES,
     MethodGenOptions,
+    getRequestBodyType,
     getTypeScriptType,
     NormalizedOperation,
-    RequestBody,
     resolveArgumentNames,
     SERVICE_ARGUMENT_PROFILE,
     SwaggerDefinition,
@@ -45,29 +44,25 @@ export class ServiceMethodParamsGenerator {
 
         const requestBody = operation.requestBody;
 
-        if (requestBody) {
-            const jsonContent = requestBody.content?.[CONTENT_TYPES.JSON];
+        // form parameters
+        if (operation.bodyKind === "multipart") {
+            params.push(...this.convertObjectToSingleParams(operation.formDataSchema, argumentNames));
+        }
 
-            // form parameters
-            if (operation.isMultipart) {
-                params.push(...this.convertObjectToSingleParams(operation.formDataSchema, argumentNames));
-            }
+        // x-www-form-urlencoded parameters
+        if (operation.bodyKind === "urlencoded") {
+            params.push(...this.convertObjectToSingleParams(operation.urlEncodedSchema, argumentNames));
+        }
 
-            // x-www-form-urlencoded parameters
-            if (operation.isUrlEncoded) {
-                params.push(...this.convertObjectToSingleParams(operation.urlEncodedSchema, argumentNames));
-            }
-
-            // body parameters. The name comes from the resolver, not from the
-            // body type directly: it shares the method scope with the query
-            // params, so a `request_body` query param must not land on it.
-            if (jsonContent && !operation.isMultipart && argumentNames.body) {
-                params.push({
-                    name: argumentNames.body,
-                    type: this.getRequestBodyType(requestBody),
-                    hasQuestionToken: !requestBody.required,
-                });
-            }
+        // body parameters. The name comes from the resolver, not from the
+        // body type directly: it shares the method scope with the query
+        // params, so a `request_body` query param must not land on it.
+        if (operation.bodyKind === "json" && requestBody && argumentNames.body) {
+            params.push({
+                name: argumentNames.body,
+                type: getRequestBodyType(requestBody, this.config),
+                hasQuestionToken: !requestBody.required,
+            });
         }
 
         // Query parameters
@@ -115,17 +110,6 @@ export class ServiceMethodParamsGenerator {
             return `RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>`;
         }
         return `RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text', ${additionalTypeParameters.join(", ")}>`;
-    }
-
-    private getRequestBodyType(requestBody: RequestBody): string {
-        const content = requestBody.content || {};
-        const jsonContent = content[CONTENT_TYPES.JSON];
-
-        if (jsonContent?.schema) {
-            return getTypeScriptType(jsonContent.schema, this.config, jsonContent.schema.nullable);
-        }
-
-        return "any";
     }
 
     /** `schema` arrives ref-resolved from the normalizer (formData/urlEncoded schema). */

@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+    defaultContentType,
     emitDefaultHeadersMerge,
     emitHeaders,
+    emitMultipartFormData,
     emitQueryParams,
     emitResponseTypeOption,
     emitSignalAwareQueryParams,
     emitUrlConstruction,
+    emitUrlEncodedFormBody,
     emitUrlExpression,
     joinRequestOptionEntries,
     signalAwareParamValue,
@@ -116,6 +119,18 @@ describe("headers emission", () => {
         });
         expect(bodyless).not.toContain("Content-Type");
     });
+
+    it("decides the Content-Type a request declares in one place, for every client", () => {
+        const body = (isMultipart: boolean, isUrlEncoded: boolean, hasBody: boolean) =>
+            defaultContentType({ isMultipart, isUrlEncoded, hasBody });
+
+        expect(body(false, false, true)).toBe("application/json");
+        expect(body(false, true, true)).toBe("application/x-www-form-urlencoded");
+        // Only the browser can write a multipart header, and no body needs none.
+        expect(body(true, false, true)).toBeUndefined();
+        expect(body(true, true, true)).toBeUndefined();
+        expect(body(false, false, false)).toBeUndefined();
+    });
 });
 
 describe("default-headers merge (http-resource)", () => {
@@ -126,6 +141,108 @@ describe("default-headers merge (http-resource)", () => {
         expect(block).toContain("if (!headers.has('X-Api-Key'))");
         expect(block).toContain("headers = { 'X-Api-Key': 'secret', ...headers };");
         expect(block).not.toContain(" as ");
+    });
+
+    it("stays valid with no default to add", () => {
+        const block = emitDefaultHeadersMerge("requestOptions", {});
+        expect(block).toContain("headers = { ...headers };");
+        expect(block).not.toContain("Add default headers");
+    });
+
+    it("removes Content-Type from both shapes for a multipart body, after merging the defaults", () => {
+        const block = emitDefaultHeadersMerge("requestOptions", { "X-Api-Key": "secret" }, { dropContentType: true });
+        expect(block).toContain("if (!headers.has('X-Api-Key'))");
+        expect(block).toContain("headers = headers.delete('Content-Type');");
+        // The record is matched by name the way HttpHeaders matches one.
+        expect(block).toContain(
+            "headers = Object.fromEntries(Object.entries({ 'X-Api-Key': 'secret', ...headers })" +
+                ".filter(([name]) => name.toLowerCase() !== 'content-type'));",
+        );
+        expect(block.indexOf("headers.has('X-Api-Key')")).toBeLessThan(block.indexOf("headers.delete('Content-Type')"));
+        expect(block).not.toContain(" as ");
+    });
+
+    it("removes Content-Type for a multipart body even with no default to add", () => {
+        const block = emitDefaultHeadersMerge("requestOptions", {}, { dropContentType: true });
+        expect(block).not.toContain("Add default headers");
+        expect(block).not.toContain("headers.has(");
+        expect(block).toContain("headers = headers.delete('Content-Type');");
+        expect(block).toContain("Object.entries({ ...headers })");
+    });
+});
+
+describe("form-body emission", () => {
+    const multipart: Parameters<typeof emitMultipartFormData>[0] = {
+        bodyKind: "multipart",
+        formDataFields: ["file", "user-name", "attachments", "tags"],
+        formDataSchema: {
+            properties: {
+                file: { type: "string", format: "binary" },
+                "user-name": { type: "string" },
+                attachments: { type: "array", items: { type: "string", format: "binary" } },
+                tags: { type: "array", items: { type: "string" } },
+            },
+        },
+    };
+    const urlEncoded: Parameters<typeof emitUrlEncodedFormBody>[0] = {
+        bodyKind: "urlencoded",
+        urlEncodedFields: ["grant_type", "scope"],
+        urlEncodedSchema: {
+            properties: { grant_type: { type: "string" }, scope: { type: "array", items: { type: "string" } } },
+        },
+    };
+
+    it("appends multipart fields to the container the caller names: files as they are, the rest stringified", () => {
+        const block = emitMultipartFormData(multipart, names(...multipart.formDataFields), { container: "formData" });
+        expect(block).toContain("const formData = new FormData();");
+        expect(block).toContain("formData.append('file', file);");
+        // The wire name stays in the literal; only the identifier is an expression.
+        expect(block).toContain("formData.append('user-name', String(userName));");
+        expect(block).toMatch(/attachments\.forEach\(\(item\) => \{[^}]*formData\.append\('attachments', item\);/);
+        expect(block).toMatch(/tags\.forEach\(\(item\) => \{[^}]*formData\.append\('tags', String\(item\)\);/);
+    });
+
+    it("appends urlencoded fields, skipping null as well as undefined", () => {
+        const block = emitUrlEncodedFormBody(urlEncoded, names(...urlEncoded.urlEncodedFields), {
+            container: "formBody",
+        });
+        expect(block).toContain("const formBody = new URLSearchParams();");
+        expect(block).toContain("if (grantType !== undefined && grantType !== null) {");
+        expect(block).toContain("formBody.append('grant_type', String(grantType));");
+        expect(block).toMatch(/scope\.forEach\(\(item\) => \{[^}]*formBody\.append\('scope', String\(item\)\);/);
+    });
+
+    it("reads each field once before testing it when the arguments may be signals", () => {
+        const block = emitMultipartFormData(multipart, names(...multipart.formDataFields), {
+            container: "payload",
+            signalAware: true,
+        });
+        expect(block).toContain("const payload = new FormData();");
+        expect(block).toContain(`const fileField = ${signalAwareParamValue("file")};`);
+        expect(block).toContain("if (fileField !== undefined) {");
+        expect(block).toContain("payload.append('file', fileField);");
+        expect(block).toContain(`const tagsField = ${signalAwareParamValue("tags")};`);
+        expect(block).toContain("tagsField.forEach((item) => {");
+        // Nothing reads the argument a second time.
+        expect(block.match(/typeof file === 'function'/g)).toHaveLength(1);
+    });
+
+    it("keeps a signal-aware temp clear of the arguments it shares a scope with", () => {
+        const block = emitUrlEncodedFormBody(
+            { bodyKind: "urlencoded", urlEncodedFields: ["scope", "scopeField"], urlEncodedSchema: { properties: {} } },
+            names("scope", "scopeField"),
+            { container: "formBody", signalAware: true },
+        );
+        expect(block).toContain(`const scopeField2 = ${signalAwareParamValue("scope")};`);
+        expect(block).toContain(`const scopeFieldField = ${signalAwareParamValue("scopeField")};`);
+    });
+
+    it("emits nothing for an operation that sends another body, or a form without fields", () => {
+        const options = { container: "formData" };
+        expect(emitMultipartFormData({ ...multipart, bodyKind: "json" }, names(), options)).toBe("");
+        expect(emitMultipartFormData({ ...multipart, bodyKind: undefined }, names(), options)).toBe("");
+        expect(emitUrlEncodedFormBody({ ...urlEncoded, bodyKind: "multipart" }, names(), options)).toBe("");
+        expect(emitUrlEncodedFormBody({ ...urlEncoded, bodyKind: undefined }, names(), options)).toBe("");
     });
 });
 
