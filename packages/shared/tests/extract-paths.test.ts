@@ -65,6 +65,36 @@ describe("extractPaths", () => {
         expect(paths[0].parameters?.map((p) => p.name)).toEqual(["limit"]);
     });
 
+    it("extracts a TRACE operation for a caller that lists the field, without calling it skipped", () => {
+        const warnings: string[] = [];
+        const paths = extractPaths(
+            { "/pets": { trace: { operationId: "tracePets" }, get: { operationId: "listPets" } } } as never,
+            ["get", "trace"],
+            (m) => warnings.push(m),
+        );
+
+        expect(paths.map((p) => [p.method, p.operationId])).toEqual([
+            ["GET", "listPets"],
+            ["TRACE", "tracePets"],
+        ]);
+        expect(warnings).toEqual([]);
+    });
+
+    it("returns additionalOperations whatever fixed fields the caller lists", () => {
+        const paths = extractPaths(
+            {
+                "/pets": {
+                    get: { operationId: "listPets" },
+                    post: { operationId: "createPet" },
+                    additionalOperations: { PURGE: { operationId: "purgePets" } },
+                },
+            } as never,
+            ["get"],
+        );
+
+        expect(paths.map((p) => p.operationId)).toEqual(["listPets", "purgePets"]);
+    });
+
     describe("additionalOperations (OpenAPI 3.2)", () => {
         const extract = (additionalOperations: unknown, pathItem: Record<string, unknown> = {}) => {
             const warnings: string[] = [];
@@ -115,8 +145,36 @@ describe("extractPaths", () => {
 
             expect(paths.map((p) => p.operationId)).toEqual(["first"]);
             expect(warnings).toEqual([
-                'Operation "copy" under `additionalOperations` of path "/pets/{id}" was skipped: the path already ' +
+                'Operation "copy" under `additionalOperations` of path "/pets/{id}" was skipped: the path also ' +
                     "declares a COPY operation, and method names are sent upper-cased.",
+            ]);
+        });
+
+        it("keeps the key written as it is sent, wherever it stands", () => {
+            // Declared first, `copy` is still not the method that is sent.
+            const { paths, warnings } = extract({
+                copy: { operationId: "lowerCopy" },
+                Copy: { operationId: "mixedCopy" },
+                COPY: { operationId: "upperCopy" },
+            });
+
+            expect(paths.map((p) => [p.method, p.operationId])).toEqual([["COPY", "upperCopy"]]);
+            const also = "the path also declares a COPY operation, and method names are sent upper-cased.";
+            expect(warnings).toEqual([
+                `Operation "Copy" under \`additionalOperations\` of path "/pets/{id}" was skipped: ${also}`,
+                `Operation "copy" under \`additionalOperations\` of path "/pets/{id}" was skipped: ${also}`,
+            ]);
+        });
+
+        it("keeps the first of two keys when neither is written as it is sent", () => {
+            const { paths, warnings } = extract({ copy: { operationId: "first" }, Copy: { operationId: "second" } });
+
+            expect(paths.map((p) => [p.method, p.operationId])).toEqual([["COPY", "first"]]);
+            expect(warnings).toEqual([
+                'Operation "Copy" under `additionalOperations` of path "/pets/{id}" was skipped: the path also ' +
+                    "declares a COPY operation, and method names are sent upper-cased.",
+                'Operation "copy" under `additionalOperations` of path "/pets/{id}" is sent as COPY: Angular\'s ' +
+                    "HttpClient upper-cases method names.",
             ]);
         });
 
@@ -132,7 +190,9 @@ describe("extractPaths", () => {
             ]);
         });
 
-        it.each(["CONNECT", "TRACK", "connect"])("skips %s: no browser sends it", (method) => {
+        // TRACE has a field of its own, and is skipped there for the same
+        // reason: sending the user to that field would get them nowhere.
+        it.each(["CONNECT", "TRACK", "connect", "TRACE", "trace"])("skips %s: no browser sends it", (method) => {
             const { paths, warnings } = extract({ [method]: { operationId: "tunnel" } });
 
             expect(paths).toEqual([]);

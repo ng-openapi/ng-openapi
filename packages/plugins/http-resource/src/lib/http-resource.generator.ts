@@ -227,7 +227,7 @@ return context.set(this.clientContextToken, ${quoteLiteral(effectiveClientName(t
             if (collision) {
                 this.onWarning?.(
                     `Operation ${describeOperation(operation)} would be named "${collision.from}", which the generated ` +
-                        `class already binds — it is emitted as "${collision.to}". Rename the operationId to choose the name.`,
+                        `class already binds — it is emitted as "${collision.to}". ${collision.remedy}`,
                 );
             }
             this.methodGenerator.addResourceMethod(serviceClass, operation);

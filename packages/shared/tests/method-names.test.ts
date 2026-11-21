@@ -5,6 +5,7 @@ import {
     MethodGenOptions,
     NormalizedOperation,
     RESERVED_MEMBER_NAMES,
+    reservedMemberCollision,
 } from "../src";
 
 const operation = (overrides: Partial<NormalizedOperation> = {}): NormalizedOperation =>
@@ -38,6 +39,41 @@ describe("getOperationMethodName without a customize hook", () => {
 
     it("falls back to `resource` for a root path", () => {
         expect(getOperationMethodName(operation({ path: "/", method: "POST" }), config())).toBe("resourcePost");
+    });
+});
+
+describe("a derived name that is a member the generated class binds", () => {
+    // Reachable since additionalOperations: the fixed suffixes (Get, Post, …)
+    // never spelled one of these names.
+    it.each([
+        [{ path: "/http", method: "CLIENT" }, "httpClient"],
+        [{ path: "/base", method: "PATH" }, "basePath"],
+    ])("renames the name built from %o instead of failing the run", (fields, natural) => {
+        const withoutId = operation({ ...fields, operationId: undefined });
+
+        expect(getOperationMethodName(withoutId, config())).toBe(`_${natural}`);
+        expect(reservedMemberCollision(withoutId, config())).toEqual({
+            from: natural,
+            to: `_${natural}`,
+            // There is no operationId to rename.
+            remedy: "Give the operation an operationId to choose the name.",
+        });
+    });
+
+    it("says to rename the operationId when the name came from one", () => {
+        const withId = operation({ operationId: "base_path" });
+
+        expect(getOperationMethodName(withId, config())).toBe("_basePath");
+        expect(reservedMemberCollision(withId, config())).toEqual({
+            from: "basePath",
+            to: "_basePath",
+            remedy: "Rename the operationId to choose the name.",
+        });
+    });
+
+    it("reports nothing for a name that is free", () => {
+        expect(reservedMemberCollision(operation(), config())).toBeUndefined();
+        expect(reservedMemberCollision(operation({ operationId: "getPet" }), config())).toBeUndefined();
     });
 });
 

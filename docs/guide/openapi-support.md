@@ -16,7 +16,7 @@ ng-openapi generates from Swagger 2.0 and from OpenAPI 3.0, 3.1 and 3.2 document
 | OpenAPI 3.0 | ✅ Supported             |                                                                                                                 |
 | Swagger 2.0 | ⚠️ Supported with limits | `in: body` and `in: formData` parameters are not generated, and each is warned about. Responses are typed `any` |
 
-A parameter, request body or operation that cannot be generated is reported as a warning during generation. The warning names the operation and says what the generated code does instead.
+The limits on this page are reported as warnings during generation, except where the page says otherwise. A warning names the operation and says what the generated code does instead. Two things are neither followed nor reported: a path item that is a `$ref` (to `components.pathItems` or to another file), whose operations are left out, and a media type that is a `$ref` (to `components.mediaTypes`), whose content is typed `any`.
 
 ## OpenAPI 3.2 Features
 
@@ -94,7 +94,7 @@ A few entries cannot be generated, and each is skipped with a warning:
 - A method that has its own field (`POST` under `additionalOperations` instead of `post`), which OpenAPI does not allow.
 - A key that is not a valid HTTP method name.
 
-Method names are sent upper-cased, because Angular's `HttpClient` upper-cases them. A key written as `Copy` is sent as `COPY`, and generation says so.
+Method names are sent upper-cased, because Angular's `HttpClient` upper-cases them. A key written as `Copy` is sent as `COPY`, and generation says so. Two keys that differ only by case are one method: the one written in upper case is generated, and the other is skipped with a warning.
 
 ### Querystring Parameters
 

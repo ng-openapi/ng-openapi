@@ -33,17 +33,29 @@ const RESERVED_MEMBER_SET: ReadonlySet<string> = new Set(RESERVED_MEMBER_NAMES);
 /**
  * The derived method name that collided with a reserved member and was
  * renamed, or undefined when it did not. For the generators to warn on: a
- * rename is part of the public signature and must not be silent.
+ * rename is part of the public signature and must not be silent. `remedy` is
+ * what the user can do to choose the name, which depends on where the name
+ * came from: an operationId, or the path and method of an operation without
+ * one (`CLIENT /http` is `httpClient`).
  */
 export function reservedMemberCollision(
     operation: NormalizedOperation,
     config: MethodGenOptions,
-): { from: string; to: string } | undefined {
-    if (config.options.customizeMethodName || !operation.operationId) {
+): { from: string; to: string; remedy: string } | undefined {
+    if (config.options.customizeMethodName) {
         return undefined;
     }
-    const natural = camelCase(operation.operationId);
-    return RESERVED_MEMBER_SET.has(natural) ? { from: natural, to: `_${natural}` } : undefined;
+    const natural = derivedMethodName(operation);
+    if (!RESERVED_MEMBER_SET.has(natural)) {
+        return undefined;
+    }
+    return {
+        from: natural,
+        to: `_${natural}`,
+        remedy: operation.operationId
+            ? "Rename the operationId to choose the name."
+            : "Give the operation an operationId to choose the name.",
+    };
 }
 
 /**
@@ -89,11 +101,17 @@ export function getOperationMethodName(operation: NormalizedOperation, config: M
  * path and HTTP method (`GET /pets/{id}` → `petsIdGet`).
  */
 function defaultOperationMethodName(operation: NormalizedOperation): string {
+    const name = derivedMethodName(operation);
+    // Derived names are sanitized rather than rejected: the spec is valid,
+    // so generation must succeed without the user editing it. That holds for
+    // a name built from the path and method as much as for an operationId.
+    return RESERVED_MEMBER_SET.has(name) ? `_${name}` : name;
+}
+
+/** The name before the reserved members are taken into account. */
+function derivedMethodName(operation: NormalizedOperation): string {
     if (operation.operationId) {
-        const name = camelCase(operation.operationId);
-        // Derived names are sanitized rather than rejected: the spec is valid,
-        // so generation must succeed without the user editing it.
-        return RESERVED_MEMBER_SET.has(name) ? `_${name}` : name;
+        return camelCase(operation.operationId);
     }
 
     const method = pascalCase(operation.method.toLowerCase());
