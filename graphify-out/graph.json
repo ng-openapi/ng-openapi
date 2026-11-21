@@ -560,7 +560,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "nx_namedinputs",
-      "community": 46,
+      "community": 173,
       "norm_label": "namedinputs"
     },
     {
@@ -570,7 +570,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "nx_namedinputs_sharedglobals",
-      "community": 46,
+      "community": 173,
       "norm_label": "sharedglobals"
     },
     {
@@ -580,7 +580,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "nx_namedinputs_default",
-      "community": 46,
+      "community": 173,
       "norm_label": "default"
     },
     {
@@ -1500,7 +1500,7 @@
       "source_location": "L74",
       "_origin": "ast",
       "id": "package_devdependencies_zod",
-      "community": 9,
+      "community": 107,
       "norm_label": "zod"
     },
     {
@@ -8140,7 +8140,7 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "packages_plugins_zod_package_peerdependencies_zod",
-      "community": 101,
+      "community": 107,
       "norm_label": "zod"
     },
     {
@@ -17090,7 +17090,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "docs_api_configuration_options_enum_name_extensions_enumnameextensions",
-      "community": 163,
+      "community": 50,
       "norm_label": "`enumnameextensions`"
     },
     {
@@ -17100,7 +17100,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "docs_api_configuration_options_enum_name_extensions_usage",
-      "community": 163,
+      "community": 50,
       "norm_label": "usage"
     },
     {
@@ -17110,7 +17110,7 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "docs_api_configuration_options_enum_name_extensions_example",
-      "community": 163,
+      "community": 50,
       "norm_label": "example"
     },
     {
@@ -17120,7 +17120,7 @@
       "source_location": "L73",
       "_origin": "ast",
       "id": "docs_api_configuration_options_enum_name_extensions_how_names_are_resolved",
-      "community": 163,
+      "community": 50,
       "norm_label": "how names are resolved"
     },
     {
@@ -17130,7 +17130,7 @@
       "source_location": "L81",
       "_origin": "ast",
       "id": "docs_api_configuration_options_enum_name_extensions_notes",
-      "community": 163,
+      "community": 50,
       "norm_label": "notes"
     },
     {
@@ -17590,7 +17590,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_api_configuration_output",
-      "community": 200,
+      "community": 163,
       "norm_label": "output.md"
     },
     {
@@ -17600,7 +17600,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "docs_api_configuration_output_output",
-      "community": 200,
+      "community": 163,
       "norm_label": "`output`"
     },
     {
@@ -17610,7 +17610,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "docs_api_configuration_output_usage",
-      "community": 200,
+      "community": 163,
       "norm_label": "usage"
     },
     {
@@ -17620,7 +17620,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "docs_api_configuration_output_notes",
-      "community": 200,
+      "community": 163,
       "norm_label": "notes"
     },
     {
@@ -23462,7 +23462,7 @@
       "weight": 1.0,
       "context": "import",
       "source": "package_devdependencies_zod",
-      "target": "docs_api_configuration_plugins_zod",
+      "target": "docs_changelog_zod",
       "confidence_score": 1.0
     },
     {
@@ -40551,7 +40551,7 @@
       "weight": 1.0,
       "context": "import",
       "source": "packages_plugins_zod_package_peerdependencies_zod",
-      "target": "docs_api_configuration_plugins_zod",
+      "target": "docs_changelog_zod",
       "confidence_score": 1.0
     },
     {
@@ -64090,5 +64090,5 @@
       "source_file": ".github/workflows/release.yml"
     }
   ],
-  "built_at_commit": "13c20161d5c5c9931bffe05c0c5034a4dba9ad55"
+  "built_at_commit": "110a80084484c8f1ec842242ff8cd7c895aee647"
 }

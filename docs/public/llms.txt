@@ -67,7 +67,7 @@ export default config;
 - [CLI usage and workflows](https://ng-openapi.dev/guide/cli-usage): npm scripts, watch mode, fetching specs, multiple APIs
 - [Angular integration](https://ng-openapi.dev/guide/angular-integration): providers, environments, manual token setup
 - [Generated output](https://ng-openapi.dev/guide/generated-code): file-by-file tour of everything the generator writes
-- [OpenAPI support](https://ng-openapi.dev/guide/openapi-support): supported specification versions, OpenAPI 3.2 features (QUERY, additionalOperations, in: querystring), what is skipped and whether it is warned about, Angular version per feature
+- [OpenAPI support](https://ng-openapi.dev/guide/openapi-support): supported specification versions, OpenAPI 3.2 features (QUERY, additionalOperations, in: querystring, itemSchema streams), what is skipped and whether it is warned about, Angular version per feature
 - [Providers](https://ng-openapi.dev/api/providers): provide<ClientName>Client options (basePath, interceptors, enableDateTransform, dateTransformRegex)
 - [Multiple clients](https://ng-openapi.dev/guide/multiple-clients): several APIs in one app with isolated interceptors
 - [Date handling](https://ng-openapi.dev/guide/date-handling): automatic Date transformation and custom regex
