@@ -58,6 +58,40 @@
                 }
             }
         },
+        "/things/search": {
+            "get": {
+                "tags": ["things"],
+                "operationId": "searchThings",
+                "summary": "GET with a request body: no browser sends one, so it is left out and warned about (issue #138)",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer" }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": { "$ref": "#/components/schemas/user-profile" }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "matches",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": { "$ref": "#/components/schemas/user-profile" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/misc/no-tags/{id}": {
             "get": {
                 "operationId": "getMiscById",

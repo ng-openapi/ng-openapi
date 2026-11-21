@@ -2,8 +2,10 @@ index.ts
 models/api-error.ts
 models/audited-order.ts
 models/bank-transfer.ts
+models/cancel-order-request.ts
 models/card.ts
 models/create-order-request.ts
+models/delete-orders-request.ts
 models/file-info.ts
 models/index.ts
 models/order-item.ts

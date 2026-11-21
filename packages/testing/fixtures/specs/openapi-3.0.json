@@ -122,6 +122,46 @@
                         }
                     }
                 }
+            },
+            "delete": {
+                "tags": ["orders"],
+                "operationId": "cancelOrder",
+                "summary": "DELETE with an optional JSON body next to a path and a query parameter (issue #138)",
+                "parameters": [
+                    {
+                        "name": "notify",
+                        "in": "query",
+                        "schema": { "type": "boolean" }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": { "$ref": "#/components/schemas/CancelOrderRequest" }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": { "description": "cancelled" }
+                }
+            }
+        },
+        "/orders/batch": {
+            "delete": {
+                "tags": ["orders"],
+                "operationId": "deleteOrders",
+                "summary": "DELETE with a required JSON body (issue #138)",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": { "$ref": "#/components/schemas/DeleteOrdersRequest" }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": { "description": "deleted" }
+                }
             }
         },
         "/orders/{orderId}/invoice": {
@@ -216,6 +256,29 @@
                         }
                     }
                 }
+            },
+            "delete": {
+                "tags": ["auth"],
+                "operationId": "revokeToken",
+                "summary": "DELETE with a urlencoded body (issue #138)",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["token"],
+                                "properties": {
+                                    "token": { "type": "string" },
+                                    "token_type_hint": { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": { "description": "revoked" }
+                }
             }
         },
         "/status": {
@@ -290,6 +353,23 @@
                 "properties": {
                     "status": { "$ref": "#/components/schemas/OrderStatus" },
                     "note": { "type": "string", "nullable": true }
+                }
+            },
+            "CancelOrderRequest": {
+                "type": "object",
+                "properties": {
+                    "reason": { "type": "string" }
+                }
+            },
+            "DeleteOrdersRequest": {
+                "type": "object",
+                "required": ["ids"],
+                "properties": {
+                    "ids": {
+                        "type": "array",
+                        "items": { "type": "string", "format": "uuid" }
+                    },
+                    "reason": { "type": "string" }
                 }
             },
             "Card": {

@@ -13,6 +13,13 @@ import {
     SERVICE_ARGUMENT_PROFILE,
 } from "@ng-openapi/shared";
 
+/**
+ * Methods that spell out `body: null` when the operation declares no body.
+ * It is what HttpClient sends for an absent body anyway; these three have
+ * always emitted it, and dropping it would churn every generated client.
+ */
+const METHODS_WITH_EXPLICIT_EMPTY_BODY = ["post", "put", "patch"];
+
 export class ServiceMethodBodyGenerator {
     private config: MethodGenOptions;
 
@@ -125,16 +132,19 @@ ${formBodyAppends}`;
 
         let bodyParam = "";
         if (operation.hasBody) {
+            // `formData`/`formBody` are declared only when the form has fields
+            // (see the two generators above); a field-less form sends no body
+            // rather than an identifier nothing declares. The normalizer
+            // warns about such a form.
             if (operation.isMultipart) {
-                bodyParam = "formData";
+                bodyParam = operation.formDataFields.length > 0 ? "formData" : "";
             } else if (operation.isUrlEncoded) {
-                bodyParam = "formBody.toString()";
+                bodyParam = operation.urlEncodedFields.length > 0 ? "formBody.toString()" : "";
             } else if (operation.requestBody?.content?.[CONTENT_TYPES.JSON]) {
                 bodyParam = argumentNames.body ?? "requestBody";
             }
         }
 
-        const methodsWithBody = ["post", "put", "patch"];
         const parseResponse = this.config.options.validation?.response
             ? `.pipe(map(response => options?.parse?.(response) ?? response))`
             : "";
@@ -144,8 +154,13 @@ ${formBodyAppends}`;
         // method whose overloads accept a union `observe` / `responseType`,
         // which is what lets the generated code stay cast-free.
         const entries: string[] = [];
-        if (methodsWithBody.includes(httpMethod)) {
-            entries.push(`body: ${bodyParam || "null"}`);
+        if (bodyParam) {
+            // Whatever the method: a body the signature takes is a body the
+            // request carries (#138). The normalizer keeps the bodies no
+            // browser sends — GET, HEAD — out of the IR.
+            entries.push(`body: ${bodyParam}`);
+        } else if (METHODS_WITH_EXPLICIT_EMPTY_BODY.includes(httpMethod)) {
+            entries.push("body: null");
         }
         entries.push("observe");
         entries.push("headers");

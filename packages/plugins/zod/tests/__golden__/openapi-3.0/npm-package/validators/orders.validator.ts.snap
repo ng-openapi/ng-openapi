@@ -107,6 +107,23 @@ export const updateOrder200Response = z.object({
     "payment": z.any().optional()
 });
 export type UpdateOrder200Response = z.infer<typeof updateOrder200Response>;
+export const cancelOrderParams = z.object({
+    "orderId": z.string().uuid()
+});
+export type CancelOrderParams = z.infer<typeof cancelOrderParams>;
+export const cancelOrderQueryParams = z.object({
+    "notify": z.boolean().optional()
+});
+export type CancelOrderQueryParams = z.infer<typeof cancelOrderQueryParams>;
+export const cancelOrderBody = z.object({
+    "reason": z.string().optional()
+});
+export type CancelOrderBody = z.infer<typeof cancelOrderBody>;
+export const deleteOrdersBody = z.object({
+    "ids": z.array(z.string().uuid()),
+    "reason": z.string().optional()
+});
+export type DeleteOrdersBody = z.infer<typeof deleteOrdersBody>;
 export const downloadInvoiceParams = z.object({
     "orderId": z.string()
 });

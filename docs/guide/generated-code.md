@@ -54,6 +54,30 @@ Only generated with [`useSingleRequestParameter`](../api/configuration/options/u
 
 One injectable service per controller (OpenAPI tag), using `inject(HttpClient)` and this client's base-path token. Class names default to `<Tag>Service` and can be decorated via [`naming.services`](../api/configuration/options/naming.md) (file names are unaffected). Classes are decorated with `@Injectable({ providedIn: "root" })`, or Angular 22+'s `@Service()` when [`serviceDecorator`](../api/configuration/options/service-decorator.md) is set to `'service'`. Method names come from `operationId`, optionally transformed by [`customizeMethodName`](../api/configuration/options/customize-method-name.md). Tags and `operationId`s are free-form text in a valid spec, so characters that cannot appear in a TypeScript identifier are treated as word separators: the tag `Groups (yes)` yields `GroupsYesService` in `groupsYes.service.ts`, and the `operationId` `groups_{group_id}_delete` yields the method `groupsGroupIdDelete`. When [`validation.response`](../api/configuration/options/validation.md) is enabled, each method accepts a `parse` hook in its trailing options parameter.
 
+A request body declared as `application/json`, `multipart/form-data` or `application/x-www-form-urlencoded` becomes method arguments — one for a JSON body, one per field for a form — and is sent with the request, whatever the HTTP method. That includes `DELETE`, which Angular's `HttpClient` sends a body with just like `POST`, `PUT` and `PATCH`:
+
+```typescript
+// DELETE /orders/batch with a JSON requestBody
+deleteOrders(deleteOrdersRequest: DeleteOrdersRequest, /* observe, options */): Observable<any> {
+    // …
+    return this.httpClient.request('delete', url, { body: deleteOrdersRequest, /* … */ });
+}
+```
+
+The content type must match one of those three keys exactly. A body declared only under another one — `text/plain`, `application/octet-stream`, `application/merge-patch+json`, or `application/json; charset=utf-8` — gets no argument and is not sent.
+
+The fields of a form are the top-level `properties` of its schema. A form schema that lists none — fields inherited through `allOf`, `additionalProperties`, a bare `type: object` — leaves the method with no argument for the body and nothing to send, and is warned about:
+
+```
+⚠️ The multipart/form-data request body of uploadAvatar ((POST) /avatar) has no fields to generate: form fields are read from the top-level `properties` of its schema, and it lists none (`allOf`, `additionalProperties` and free-form objects are not expanded). Generated methods take no argument for it and send the request without a body. List the fields as `properties` of the body schema to have them generated.
+```
+
+`GET` and `HEAD` are the exception among the methods, because no browser sends a body with them: `fetch` rejects such a request and `XMLHttpRequest` drops the body. A request body declared on one is left out — the method takes no body argument and sets no `Content-Type` — and warned about:
+
+```
+⚠️ The request body of searchItems ((GET) /items/search) was skipped: browsers do not send a body with GET requests. Generated methods take no body and no validator is generated for it. Describe the input as query parameters, or use a method that carries a body.
+```
+
 ### `tokens/index.ts`
 
 Injection tokens namespaced per client so multiple clients can coexist (see [Multiple Clients](./multiple-clients.md)):

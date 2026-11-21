@@ -80,4 +80,34 @@ export class ThingsResource {
             }
         }, resourceOptions);
     }
+
+    searchThings(limit: Signal<number | undefined> | number | undefined, resourceOptions: HttpResourceOptions<Array<UserProfile>, unknown> & { defaultValue: NoInfer<Array<UserProfile>> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<UserProfile>>;
+    searchThings(limit?: Signal<number | undefined> | number, resourceOptions?: HttpResourceOptions<Array<UserProfile>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<UserProfile> | undefined>;
+    searchThings(limit?: Signal<number | undefined> | number, resourceOptions?: HttpResourceOptions<Array<UserProfile>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<UserProfile> | undefined> {
+
+        // Add default headers if not already present
+        let headers = requestOptions?.headers;
+        if (headers instanceof HttpHeaders) {
+            if (!headers.has('Accept')) {
+                headers = headers.set('Accept', 'application/json');
+            }
+        } else {
+            headers = { 'Accept': 'application/json', ...headers };
+        }
+        return httpResource(() => {
+            let params = new HttpParams();
+            const limitValue = typeof limit === 'function' ? limit() : limit;
+            if (limitValue != null) {
+                params = HttpParamsBuilder.addToHttpParams(params, limitValue, 'limit');
+            }
+            return {
+                url: `${this.basePath}/things/search`,
+                method: "GET",
+                ...requestOptions,
+                params,
+                headers,
+                context: this.createContextWithClientId(requestOptions?.context)
+            }
+        }, resourceOptions);
+    }
 }

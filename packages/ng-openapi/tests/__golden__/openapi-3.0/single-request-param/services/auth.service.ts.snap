@@ -12,7 +12,7 @@ import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { RequestTokenParams, RequestOptions, TokenResponse } from "../models";
+import { RequestTokenParams, RequestOptions, TokenResponse, RevokeTokenParams } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class AuthService {
@@ -63,6 +63,42 @@ export class AuthService {
         }
 
         return this.httpClient.request('post', url, {
+            body: formBody.toString(),
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    revokeToken(request: RevokeTokenParams, observe?: 'body', options?: RequestOptions<'json'>): Observable<any>;
+    revokeToken(request: RevokeTokenParams, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<any>>;
+    revokeToken(request: RevokeTokenParams, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<any>>;
+    revokeToken(request: RevokeTokenParams, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const { token, tokenTypeHint } = request;
+        const url = `${this.basePath}/auth/token`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Set Content-Type for URL-encoded form data
+        if (!headers.has('Content-Type')) {
+            headers = headers.set('Content-Type', 'application/x-www-form-urlencoded');
+        }
+
+        const formBody = new URLSearchParams();
+        if (token !== undefined && token !== null) {
+            formBody.append('token', String(token));
+        }
+        if (tokenTypeHint !== undefined && tokenTypeHint !== null) {
+            formBody.append('token_type_hint', String(tokenTypeHint));
+        }
+
+        return this.httpClient.request('delete', url, {
             body: formBody.toString(),
             observe,
             headers,

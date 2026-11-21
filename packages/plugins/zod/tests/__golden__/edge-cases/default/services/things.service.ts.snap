@@ -108,4 +108,36 @@ export class ThingsService {
             context: this.createContextWithClientId(options?.context)
         }).pipe(map(response => options?.parse?.(response) ?? response));
     }
+
+    searchThings(limit?: number, observe?: 'body', options?: RequestOptions<'json', Array<UserProfile>>): Observable<Array<UserProfile>>;
+    searchThings(limit?: number, observe?: 'response', options?: RequestOptions<'json', Array<UserProfile>>): Observable<HttpResponse<Array<UserProfile>>>;
+    searchThings(limit?: number, observe?: 'events', options?: RequestOptions<'json', Array<UserProfile>>): Observable<HttpEvent<Array<UserProfile>>>;
+    searchThings(limit?: number, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text', any>): Observable<any> {
+        const url = `${this.basePath}/things/search`;
+
+        let params = new HttpParams();
+        if (limit != null) {
+            params = HttpParamsBuilder.addToHttpParams(params, limit, 'limit');
+        }
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe,
+            headers,
+            params,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        }).pipe(map(response => options?.parse?.(response) ?? response));
+    }
 }

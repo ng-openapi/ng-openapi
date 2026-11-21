@@ -12,7 +12,7 @@ import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { OrderStatusDto, RequestOptions, OrderDto, CreateOrderRequestDto, UpdateOrderRequestDto } from "../models";
+import { OrderStatusDto, RequestOptions, OrderDto, CreateOrderRequestDto, UpdateOrderRequestDto, CancelOrderRequestDto, DeleteOrdersRequestDto } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class ApiOrdersService {
@@ -143,6 +143,66 @@ export class ApiOrdersService {
 
         return this.httpClient.request('patch', url, {
             body: updateOrderRequestDto,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    cancelOrder(orderId: string, cancelOrderRequestDto?: CancelOrderRequestDto, notify?: boolean, observe?: 'body', options?: RequestOptions<'json'>): Observable<any>;
+    cancelOrder(orderId: string, cancelOrderRequestDto?: CancelOrderRequestDto, notify?: boolean, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<any>>;
+    cancelOrder(orderId: string, cancelOrderRequestDto?: CancelOrderRequestDto, notify?: boolean, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<any>>;
+    cancelOrder(orderId: string, cancelOrderRequestDto?: CancelOrderRequestDto, notify?: boolean, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/orders/${orderId}`;
+
+        let params = new HttpParams();
+        if (notify != null) {
+            params = HttpParamsBuilder.addToHttpParams(params, notify, 'notify');
+        }
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Set Content-Type for JSON requests if not already set
+        if (!headers.has('Content-Type')) {
+            headers = headers.set('Content-Type', 'application/json');
+        }
+
+        return this.httpClient.request('delete', url, {
+            body: cancelOrderRequestDto,
+            observe,
+            headers,
+            params,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    deleteOrders(deleteOrdersRequestDto: DeleteOrdersRequestDto, observe?: 'body', options?: RequestOptions<'json'>): Observable<any>;
+    deleteOrders(deleteOrdersRequestDto: DeleteOrdersRequestDto, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<any>>;
+    deleteOrders(deleteOrdersRequestDto: DeleteOrdersRequestDto, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<any>>;
+    deleteOrders(deleteOrdersRequestDto: DeleteOrdersRequestDto, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/orders/batch`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Set Content-Type for JSON requests if not already set
+        if (!headers.has('Content-Type')) {
+            headers = headers.set('Content-Type', 'application/json');
+        }
+
+        return this.httpClient.request('delete', url, {
+            body: deleteOrdersRequestDto,
             observe,
             headers,
             reportProgress: options?.reportProgress,

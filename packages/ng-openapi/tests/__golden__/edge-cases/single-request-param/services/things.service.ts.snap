@@ -12,7 +12,7 @@ import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { ListThingsParams, RequestOptions, UserProfile } from "../models";
+import { ListThingsParams, RequestOptions, UserProfile, SearchThingsParams } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class ThingsService {
@@ -104,6 +104,39 @@ export class ThingsService {
         return this.httpClient.request('get', url, {
             observe,
             headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    searchThings(request?: SearchThingsParams, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<UserProfile>>;
+    searchThings(request?: SearchThingsParams, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<UserProfile>>>;
+    searchThings(request?: SearchThingsParams, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<UserProfile>>>;
+    searchThings(request?: SearchThingsParams, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const { limit } = request ?? {};
+        const url = `${this.basePath}/things/search`;
+
+        let params = new HttpParams();
+        if (limit != null) {
+            params = HttpParamsBuilder.addToHttpParams(params, limit, 'limit');
+        }
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe,
+            headers,
+            params,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
