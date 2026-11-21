@@ -87,7 +87,26 @@ export class DateInterceptor implements HttpInterceptor {
             }),
         );
     }
+
+    /** Converts the date strings in a value this interceptor did not see as a JSON body. */
+    transform<T>(value: T): T {
+        return transformDates(value, this.dateRegex);
+    }
 }
+```
+
+## Streamed Responses
+
+A response in a sequential media type (JSON Lines, NDJSON, a JSON text sequence) reaches the interceptor as text, and its items are parsed afterwards, in the generated service. So that their dates are converted like everywhere else, a service or resource that reads such a response looks up the client's `DateInterceptor` and passes each item through its `transform()` method. See [Streamed Responses](../../guide/openapi-support.md#streamed-responses).
+
+The interceptor is looked up under the client's interceptor token (`HTTP_INTERCEPTORS_DEFAULT`, or `HTTP_INTERCEPTORS_<CLIENTNAME>`), which is where the generated provider function puts it. The pattern from `dateTransformRegex` applies, and with `enableDateTransform: false` the items are left as they are.
+
+In a [manual setup](#manual-setup), provide the interceptor under that token as well, or the items of a streamed response keep their date strings:
+
+```typescript
+import { HTTP_INTERCEPTORS_DEFAULT } from "./client/tokens";
+
+{ provide: HTTP_INTERCEPTORS_DEFAULT, useValue: [new DateInterceptor()] },
 ```
 
 ## Recognized Formats

@@ -42,9 +42,10 @@ import { map, Observable, OperatorFunction } from "rxjs";
  * One event of a "text/event-stream" response, as the Server-Sent Events
  * format defines it. "data" is the text the server sent, joined with "\n" when
  * it spans several lines: an event whose data is JSON carries it as a string.
+ * A block without a "data" field is not an event, and is never emitted.
  */
 export interface ServerSentEvent {
-    data?: string;
+    data: string;
     event?: string;
     id?: string;
     retry?: number;
@@ -83,20 +84,42 @@ function jsonLines<T>(): SequenceReader<T> {
     };
 }
 
+/**
+ * Whether the last record of a JSON text sequence has arrived in full. It
+ * ends with a line feed, but so may any line of a record that spans several:
+ * the line feed counts once what precedes it reads as JSON.
+ */
+function isCompleteRecord(record: string): boolean {
+    if (!record.endsWith("\n")) {
+        return false;
+    }
+    try {
+        JSON.parse(record.startsWith(RECORD_SEPARATOR) ? record.slice(1) : record);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 /** JSON documents that each start with a record separator, and may span lines. */
 function jsonSequence<T>(): SequenceReader<T> {
     return {
         split: (text, final) => {
-            // A record is complete once the next one has started.
-            const consumed = final ? text.length : Math.max(text.lastIndexOf(RECORD_SEPARATOR), 0);
+            // Every record but the last is complete: the next one has started.
+            const lastRecord = Math.max(text.lastIndexOf(RECORD_SEPARATOR), 0);
+            const consumed = final || isCompleteRecord(text.slice(lastRecord)) ? text.length : lastRecord;
             return { items: text.slice(0, consumed).split(RECORD_SEPARATOR), consumed };
         },
         parse: parseJsonItem,
     };
 }
 
-/** Events that each end with a blank line. */
-function serverSentEvents<T>(): SequenceReader<T> {
+/**
+ * Events that each end with a blank line. What follows the last blank line
+ * when the response ends is an event the server did not finish: a stream
+ * discards it, as the format says, since its data may be cut short.
+ */
+function serverSentEvents<T>(discardUnfinished: boolean): SequenceReader<T> {
     return {
         split: (text, final) => {
             // Lines end with CRLF, LF or CR.
@@ -108,7 +131,9 @@ function serverSentEvents<T>(): SequenceReader<T> {
                 consumed = match.index + match[0].length;
             }
             if (final && consumed < text.length) {
-                items.push(text.slice(consumed));
+                if (!discardUnfinished) {
+                    items.push(text.slice(consumed));
+                }
                 consumed = text.length;
             }
             return { items, consumed };
@@ -117,9 +142,13 @@ function serverSentEvents<T>(): SequenceReader<T> {
     };
 }
 
-/** One block of an event stream, or undefined when it holds only comments and unknown fields. */
+/**
+ * One block of an event stream, or undefined when it is not an event: the
+ * format dispatches a block only if it has data, so one that holds only
+ * comments, unknown fields, or an "id" or "retry" on their own is none.
+ */
 function parseServerSentEvent(block: string): ServerSentEvent | undefined {
-    const event: ServerSentEvent = {};
+    const event: Omit<ServerSentEvent, "data"> = {};
     const data: string[] = [];
     for (const line of block.replace(/^\uFEFF/, "").split(/\r\n|\n|\r/)) {
         // An empty line, or a comment.
@@ -140,10 +169,7 @@ function parseServerSentEvent(block: string): ServerSentEvent | undefined {
             event.retry = Number(value);
         }
     }
-    if (data.length > 0) {
-        event.data = data.join("\n");
-    }
-    return Object.keys(event).length > 0 ? event : undefined;
+    return data.length > 0 ? { ...event, data: data.join("\n") } : undefined;
 }
 
 /**
@@ -215,7 +241,7 @@ export function streamJsonSequence<T>(): OperatorFunction<HttpEvent<string>, T> 
 
 /** Emits each event of a Server-Sent Events response ("text/event-stream") as it arrives. */
 export function streamServerSentEvents<T = ServerSentEvent>(): OperatorFunction<HttpEvent<string>, T> {
-    return streamItems(serverSentEvents<T>());
+    return streamItems(serverSentEvents<T>(true));
 }
 
 /** All the lines of a JSON Lines / NDJSON response that has ended. */
@@ -228,9 +254,12 @@ export function parseJsonSequence<T>(text: string): T[] {
     return parseItems(jsonSequence<T>(), text);
 }
 
-/** All the events of a Server-Sent Events response that has ended. */
+/**
+ * All the events of a Server-Sent Events document. Given whole, its last
+ * event counts even without the blank line after it.
+ */
 export function parseServerSentEvents<T = ServerSentEvent>(text: string): T[] {
-    return parseItems(serverSentEvents<T>(), text);
+    return parseItems(serverSentEvents<T>(false), text);
 }
 
 /**

@@ -175,6 +175,8 @@ Only generated when the specification has a response in a sequential media type 
 - `streamJsonLines()`, `streamJsonSequence()` and `streamServerSentEvents()` are RxJS operators that turn the events of a request into the items of its response, emitting each one as soon as it is complete. They are what a method for a response with [`itemSchema`](./openapi-support.md#streamed-responses) pipes through.
 - `parseJsonLines()`, `parseJsonSequence()` and `parseServerSentEvents()` split a response that has ended into all its items.
 
+With `dateType: "Date"`, a service that reads such a response also passes its items through the client's date interceptor. See [Streamed responses](../api/utilities/date-transformer.md#streamed-responses).
+
 They are exported from the output root, so you can use them with requests of your own.
 
 ### `providers.ts`

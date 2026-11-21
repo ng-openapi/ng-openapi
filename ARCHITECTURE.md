@@ -98,7 +98,10 @@ Every generation run flows through the same stages:
   complete. Either way it is fetched as text — `JSON.parse` fails on the
   second item — and split by the readers of the generated
   `utils/http-stream.ts`, whose names both clients take from
-  `emit/sequence.emit.ts`.
+  `emit/sequence.emit.ts`. The date interceptor converts JSON bodies and
+  sees these as text, so with `dateType: "Date"` the class that parses the
+  items passes them through it (`revivesDates`, `emitDateReviver` in the
+  same file).
   Enum member names are resolved here too (`enum-member-names.ts`): the
   sources the config enables — `enumNameExtensions` (`x-enum-varnames`,
   `x-enumNames`, …), then the JSON description of

@@ -9,9 +9,10 @@
 */
 import { HttpClient, HttpContext, HttpContextToken, HttpEvent, HttpHeaders, HttpParams, HttpResponse } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
-import { Observable } from "rxjs";
-import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
+import { map, Observable } from "rxjs";
+import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT, HTTP_INTERCEPTORS_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
+import { DateInterceptor } from "../utils/date-transformer";
 import { OrderStatus, RequestOptions, Order, OrderExportRequest, OrderEvent } from "../models";
 import { streamJsonLines, streamServerSentEvents, streamJsonSequence, parseSequenceBody, parseJsonLines } from "../utils/http-stream";
 
@@ -20,6 +21,12 @@ export class OrdersService {
     private readonly httpClient: HttpClient = inject(HttpClient);
     private readonly basePath: string = inject(BASE_PATH_DEFAULT);
     private readonly clientContextToken: HttpContextToken<string> = CLIENT_CONTEXT_TOKEN_DEFAULT;
+    private readonly dateInterceptor = inject(HTTP_INTERCEPTORS_DEFAULT, { optional: true })?.find((interceptor): interceptor is DateInterceptor => interceptor instanceof DateInterceptor);
+
+    /** Applies this client's date conversion to the items of a sequential response: they are parsed from text, after the date interceptor has seen the response. */
+    private reviveDates<T>(value: T): T {
+        return this.dateInterceptor ? this.dateInterceptor.transform(value) : value;
+    }
 
     private createContextWithClientId(existingContext?: HttpContext): HttpContext {
         const context = existingContext || new HttpContext();
@@ -134,7 +141,7 @@ export class OrdersService {
             reportProgress: true,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        }).pipe(streamJsonLines<Order>());
+        }).pipe(streamJsonLines<Order>(), map(item => this.reviveDates(item)));
     }
 
     /** Server-Sent Events: a stream that does not end. */
@@ -189,7 +196,7 @@ export class OrdersService {
             reportProgress: true,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        }).pipe(streamJsonSequence<Order>());
+        }).pipe(streamJsonSequence<Order>(), map(item => this.reviveDates(item)));
     }
 
     listArchivedOrders(observe?: 'body', options?: RequestOptions<'text'>): Observable<Array<Order>>;
@@ -217,6 +224,6 @@ export class OrdersService {
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
-        }).pipe(parseSequenceBody(parseJsonLines));
+        }).pipe(parseSequenceBody(text => this.reviveDates(parseJsonLines(text))));
     }
 }

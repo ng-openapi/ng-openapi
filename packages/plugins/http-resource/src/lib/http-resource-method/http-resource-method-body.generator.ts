@@ -15,6 +15,7 @@ import {
     QueryStringEmit,
     RESOURCE_ARGUMENT_PROFILE,
     resolveArgumentNames,
+    revivesDates,
     signalAwareParamValue,
 } from "@ng-openapi/shared";
 
@@ -203,7 +204,10 @@ export class HttpResourceMethodBodyGenerator {
         // The return type is spelled out: left to inference, the parser's own
         // type parameter would make the resource one of `unknown[]`.
         const itemsType = this.sequenceItemsType(operation);
-        return `{ parse: (text: string): ${itemsType} => ${emitSequenceParser(sequence.format)}(text), ...resourceOptions }`;
+        const items = `${emitSequenceParser(sequence.format)}(text)`;
+        // Parsed from text, so the date interceptor has not converted them.
+        const parsed = revivesDates(operation, this.config) ? `this.reviveDates(${items})` : items;
+        return `{ parse: (text: string): ${itemsType} => ${parsed}, ...resourceOptions }`;
     }
 
     /** The array a complete sequential response is declared as: the type of the response it was found on. */

@@ -70,4 +70,27 @@ describe("httpResource and sequential responses (#136)", () => {
         );
         expect(orders).toContain(`import { parseJsonLines } from "../utils/http-stream";`);
     });
+
+    it("converts the dates of a parsed sequence with the client's date interceptor", async () => {
+        const output = outputDirs.create("hr-sequence-dates-");
+        await generateFromConfig({
+            input: fixturePath("openapi-3.2"),
+            output,
+            options: { dateType: "Date", enumStyle: "union", generateServices: true },
+            plugins: [HttpResourcePlugin],
+        });
+        const orders = readFileSync(join(output, "resources", "orders.resource.ts"), "utf8");
+
+        expect(orders).toContain(
+            "private readonly dateInterceptor = inject(HTTP_INTERCEPTORS_DEFAULT, { optional: true })",
+        );
+        expect(methodSource(orders, "listArchivedOrders")).toContain(
+            "}, { parse: (text: string): Array<Order> => this.reviveDates(parseJsonLines(text)), ...resourceOptions });",
+        );
+        // A resource class without such a response is left as it was.
+        const products = readFileSync(join(output, "resources", "products.resource.ts"), "utf8");
+        expect(products).not.toContain("dateInterceptor");
+
+        expectGeneratedCodeCompiles(output, "httpResource output");
+    });
 });

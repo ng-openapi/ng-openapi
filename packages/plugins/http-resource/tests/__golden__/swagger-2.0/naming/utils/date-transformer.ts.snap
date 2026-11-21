@@ -51,4 +51,9 @@ export class DateInterceptor implements HttpInterceptor {
             })
         );
     }
+
+    /** Converts the date strings in a value this interceptor did not see as a JSON body, with the same pattern: an item of a streamed response, parsed from text after it passed through here. */
+    transform<T>(value: T): T {
+        return transformDates(value, this.dateRegex);
+    }
 }

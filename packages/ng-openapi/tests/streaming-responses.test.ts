@@ -145,6 +145,95 @@ describe("sequential responses declared complete: an array schema", () => {
     });
 });
 
+describe("dates in the items of a sequential response", () => {
+    const withDates = { dateType: "Date" as const, enumStyle: "union" as const, generateServices: true };
+
+    it("converts them where the items are parsed, with the client's own date interceptor", async () => {
+        const { output, service } = await generate("streaming-dates-", { options: withDates });
+        const orders = service("orders");
+
+        // `Order.placedAt` is typed Date. The interceptor sees the response as
+        // text, so without this each item would carry the string instead.
+        expect(orders).toContain(
+            "    private readonly dateInterceptor = inject(HTTP_INTERCEPTORS_DEFAULT, { optional: true })" +
+                "?.find((interceptor): interceptor is DateInterceptor => interceptor instanceof DateInterceptor);",
+        );
+        expect(orders).toMatch(
+            /private reviveDates<T>\(value: T\): T \{\s+return this\.dateInterceptor \? this\.dateInterceptor\.transform\(value\) : value;\s+\}/,
+        );
+        expect(methodSource(orders, "streamOrders")).toContain(
+            "}).pipe(streamJsonLines<Order>(), map(item => this.reviveDates(item)));",
+        );
+        expect(methodSource(orders, "replayOrders")).toContain(
+            "}).pipe(streamJsonSequence<Order>(), map(item => this.reviveDates(item)));",
+        );
+        // Complete: the whole array, inside the parse, so every `observe` gets it.
+        expect(methodSource(orders, "listArchivedOrders")).toContain(
+            "}).pipe(parseSequenceBody(text => this.reviveDates(parseJsonLines(text))));",
+        );
+
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("leaves a Server-Sent Event alone: its fields are text by definition", async () => {
+        const { service } = await generate("streaming-dates-sse-", { options: withDates });
+        expect(methodSource(service("orders"), "watchOrderEvents")).toContain(
+            "}).pipe(streamServerSentEvents<OrderEvent>());",
+        );
+    });
+
+    it("converts before the caller's parse hook sees the item", async () => {
+        const { output, service } = await generate("streaming-dates-validation-", {
+            options: { ...withDates, validation: { response: true } },
+        });
+        expect(methodSource(service("orders"), "streamOrders")).toContain(
+            "}).pipe(streamJsonLines<Order>(), map(item => this.reviveDates(item)), " +
+                "map(item => options?.parse?.(item) ?? item));",
+        );
+
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("adds nothing to a class without a sequential response, or with dateType string", async () => {
+        const withDateType = await generate("streaming-dates-other-class-", { options: withDates });
+        expect(withDateType.service("products")).not.toContain("dateInterceptor");
+        expect(withDateType.service("products")).not.toContain("HTTP_INTERCEPTORS_DEFAULT");
+
+        const withStrings = await generate("streaming-dates-strings-");
+        expect(withStrings.service("orders")).not.toContain("dateInterceptor");
+        expect(withStrings.service("orders")).not.toContain("reviveDates");
+    });
+
+    it("renames an operation that would take the name of one of these members", async () => {
+        const { result, service } = await generate("streaming-dates-reserved-", {
+            options: withDates,
+            spec: {
+                openapi: "3.2.0",
+                info: { title: "Names", version: "1.0.0" },
+                paths: {
+                    "/revive": {
+                        get: {
+                            operationId: "reviveDates",
+                            tags: ["Names"],
+                            responses: {
+                                "200": {
+                                    description: "ok",
+                                    content: { "application/jsonl": { itemSchema: { type: "object" } } },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        expect(service("names")).toContain("    _reviveDates(options?: RequestOptions<'text'>): Observable<");
+        expect(result.warnings).toContainEqual(
+            expect.stringContaining('would be named "reviveDates", which the generated class already binds'),
+        );
+    });
+});
+
 describe("the generated http-stream helper file", () => {
     it("is generated and exported for a spec with a sequential response", async () => {
         const { output, read, service } = await generate("stream-helper-");

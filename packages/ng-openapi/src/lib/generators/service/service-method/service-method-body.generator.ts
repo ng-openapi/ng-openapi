@@ -15,6 +15,7 @@ import {
     NormalizedOperation,
     QueryStringEmit,
     resolveArgumentNames,
+    revivesDates,
     SERVICE_ARGUMENT_PROFILE,
 } from "@ng-openapi/shared";
 
@@ -127,10 +128,21 @@ return this.httpClient.request(${quoteLiteral(httpMethod)}, url, {
     private responsePipe(operation: NormalizedOperation, streamItemType: string | undefined): string {
         const operators: string[] = [];
         const sequence = operation.responseSequence;
+        // The date interceptor saw this response as text: its items get the
+        // conversion here, where they are parsed (see `revivesDates`).
+        const reviveDates = revivesDates(operation, this.config);
         if (sequence && streamItemType !== undefined) {
             operators.push(emitSequenceStreamOperator(sequence.format, streamItemType));
+            if (reviveDates) {
+                operators.push("map(item => this.reviveDates(item))");
+            }
         } else if (sequence) {
-            operators.push(`parseSequenceBody(${emitSequenceParser(sequence.format)})`);
+            const parser = emitSequenceParser(sequence.format);
+            operators.push(
+                reviveDates
+                    ? `parseSequenceBody(text => this.reviveDates(${parser}(text)))`
+                    : `parseSequenceBody(${parser})`,
+            );
         }
         if (this.config.options.validation?.response) {
             operators.push(

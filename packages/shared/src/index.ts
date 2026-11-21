@@ -74,6 +74,7 @@ export {
     emitHeaders,
     emitMultipartFormData,
     emitQueryParams,
+    emitDateReviver,
     emitResponseTypeOption,
     emitSequenceParser,
     emitSequenceStreamOperator,
@@ -96,8 +97,10 @@ export {
     plainParamValue,
     signalAwareParamValue,
     getStreamItemType,
+    revivesDates,
 } from "./emit";
 export type {
+    DateReviverEmit,
     DefaultHeadersMergeOptions,
     FormBodyEmitOptions,
     HeadersEmitOptions,

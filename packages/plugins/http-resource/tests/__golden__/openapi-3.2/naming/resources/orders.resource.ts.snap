@@ -9,8 +9,9 @@
 */
 import { HttpContext, HttpContextToken, HttpHeaders, HttpParams, httpResource, HttpResourceOptions, HttpResourceRef, HttpResourceRequest } from "@angular/common/http";
 import { inject, Injectable, Signal } from "@angular/core";
-import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
+import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT, HTTP_INTERCEPTORS_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
+import { DateInterceptor } from "../utils/date-transformer";
 import { OrderStatusDto, OrderDto, OrderExportRequestDto } from "../models";
 import { parseJsonLines } from "../utils/http-stream";
 
@@ -18,6 +19,12 @@ import { parseJsonLines } from "../utils/http-stream";
 export class OrdersApiResource {
     private readonly basePath: string = inject(BASE_PATH_DEFAULT);
     private readonly clientContextToken: HttpContextToken<string> = CLIENT_CONTEXT_TOKEN_DEFAULT;
+    private readonly dateInterceptor = inject(HTTP_INTERCEPTORS_DEFAULT, { optional: true })?.find((interceptor): interceptor is DateInterceptor => interceptor instanceof DateInterceptor);
+
+    /** Applies this client's date conversion to the items of a sequential response: they are parsed from text, after the date interceptor has seen the response. */
+    private reviveDates<T>(value: T): T {
+        return this.dateInterceptor ? this.dateInterceptor.transform(value) : value;
+    }
 
     private createContextWithClientId(existingContext?: HttpContext): HttpContext {
         const context = existingContext || new HttpContext();
@@ -121,6 +128,6 @@ export class OrdersApiResource {
                 headers,
                 context: this.createContextWithClientId(requestOptions?.context)
             }
-        }, { parse: (text: string): Array<OrderDto> => parseJsonLines(text), ...resourceOptions });
+        }, { parse: (text: string): Array<OrderDto> => this.reviveDates(parseJsonLines(text)), ...resourceOptions });
     }
 }

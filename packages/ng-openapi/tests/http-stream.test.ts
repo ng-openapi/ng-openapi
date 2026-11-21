@@ -137,13 +137,28 @@ describe("generated http-stream helper: JSON Lines", () => {
 describe("generated http-stream helper: JSON text sequences", () => {
     const RS = "\u001e";
 
-    it("emits a record once the next one has started, and the last one when the response ends", () => {
+    it("emits a record at the line feed that ends it, without waiting for the next one", () => {
         const stream = collect(httpStream.streamJsonSequence<{ n: number }>());
 
-        // A record may span lines, so its own line feed does not end it.
-        expect(stream.push(progress(`${RS}{"n":1}\n`))).toEqual([]);
-        expect(stream.push(progress(`${RS}{"n":1}\n${RS}{\n  "n": 2`))).toEqual([{ n: 1 }]);
-        expect(stream.push(response(`${RS}{"n":1}\n${RS}{\n  "n": 2\n}\n`))).toEqual([{ n: 1 }, { n: 2 }]);
+        expect(stream.push(progress(`${RS}{"n":1}`))).toEqual([]);
+        expect(stream.push(progress(`${RS}{"n":1}\n`))).toEqual([{ n: 1 }]);
+        // Never twice: not at the next record, and not when the response ends.
+        expect(stream.push(progress(`${RS}{"n":1}\n${RS}`))).toEqual([{ n: 1 }]);
+        expect(stream.push(response(`${RS}{"n":1}\n${RS}{"n":2}\n`))).toEqual([{ n: 1 }, { n: 2 }]);
+    });
+
+    it("does not take a line feed inside a record for its end", () => {
+        const stream = collect(httpStream.streamJsonSequence<{ n: number }>());
+
+        // Pretty-printed over several lines: complete only once it reads as JSON.
+        expect(stream.push(progress(`${RS}{\n`))).toEqual([]);
+        expect(stream.push(progress(`${RS}{\n  "n": 1,\n`))).toEqual([]);
+        expect(stream.push(progress(`${RS}{\n  "n": 1,\n  "m": 2\n}\n`))).toEqual([{ n: 1, m: 2 }]);
+        // A record the response ends in the middle of is not JSON, and fails the stream.
+        const cut = collect(httpStream.streamJsonSequence());
+        cut.push(response(`${RS}{"n":1}\n${RS}{"n":`));
+        expect(cut.items).toEqual([{ n: 1 }]);
+        expect(cut.error).toBeInstanceOf(SyntaxError);
     });
 
     it("parses a complete sequence", () => {
@@ -197,6 +212,23 @@ describe("generated http-stream helper: Server-Sent Events", () => {
         const text = "id: 7\r\ndata\r\n\r\n: keep-alive\r\n\r\nretry: soon\r\n\r\ndata:no space\r\n\r\n";
 
         expect(httpStream.parseServerSentEvents(text)).toEqual([{ id: "7", data: "" }, { data: "no space" }]);
+    });
+
+    it("emits only blocks that carry data, as the format dispatches them", () => {
+        // A bare event name, an id and a retry delay on their own are not events.
+        const text = "event: ping\n\nid: 9\n\nretry: 3000\n\nevent: created\nid: 10\nretry: 5\ndata: 1\n\n";
+
+        expect(httpStream.parseServerSentEvents(text)).toEqual([{ event: "created", id: "10", retry: 5, data: "1" }]);
+    });
+
+    it("discards an event the stream ended in the middle of, and keeps the last event of a whole document", () => {
+        const stream = collect(httpStream.streamServerSentEvents<object>());
+        // The connection closed before the blank line: `2 and a ha` may be cut short.
+        expect(stream.push(response("data: 1\n\ndata: 2 and a ha"))).toEqual([{ data: "1" }]);
+        expect(stream.error).toBeUndefined();
+
+        // A document handed over whole is not a stream that broke off.
+        expect(httpStream.parseServerSentEvents("data: 1\n\ndata: 2")).toEqual([{ data: "1" }, { data: "2" }]);
     });
 
     it("ignores a byte-order mark at the start of the stream", () => {
