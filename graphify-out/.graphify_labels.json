@@ -188,6 +188,16 @@
   "186": "`enumNameExtensions`",
   "187": "`responseTypeMapping`",
   "188": "Plugin Authoring",
+  "189": "exports",
   "190": "request-body-methods.test.ts",
+  "191": "repository",
+  "192": "compile-generated.test.ts",
+  "193": "`HttpResourcePlugin`",
+  "194": "Schema Validation",
+  "195": "namedInputs",
+  "196": "engines",
+  "197": "funding",
+  "198": "publishConfig",
+  "199": "scripts",
   "200": "`validateInput`"
 }
