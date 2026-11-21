@@ -47,10 +47,23 @@ const PATH_ITEM_METHODS = ["get", "post", "put", "patch", "delete", "options", "
 const FIXED_FIELD_METHODS: ReadonlySet<string> = new Set([...PATH_ITEM_METHODS, "trace"]);
 
 /**
- * Methods `fetch` and XMLHttpRequest refuse to send, whatever the server
- * allows: a generated method for one could only ever throw.
+ * Methods a generated method could never send, each with the reason the
+ * warning gives. `fetch` and XMLHttpRequest refuse the first three, whatever
+ * the server allows. JSONP is not an HTTP method to Angular: `HttpClient`
+ * takes the name for a script-tag request, and throws when JSONP support is
+ * not configured or the request carries a body or headers.
  */
-const FORBIDDEN_METHODS: ReadonlySet<string> = new Set(["CONNECT", "TRACE", "TRACK"]);
+const FORBIDDEN_METHODS: ReadonlyMap<string, string> = new Map([
+    ...["CONNECT", "TRACE", "TRACK"].map((method): [string, string] => [
+        method,
+        `browsers refuse to send ${method} requests, so no method is generated for it.`,
+    ]),
+    [
+        "JSONP",
+        "Angular's HttpClient reserves the name JSONP for script-tag requests and never sends it as an HTTP " +
+            "method, so no method is generated for it.",
+    ],
+]);
 
 /** An HTTP method is a `token` (RFC 9110, section 5.6.2). */
 const HTTP_TOKEN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
@@ -174,8 +187,9 @@ function additionalOperations(
         const method = key.toUpperCase();
         // Before the fixed-field check, which would send a TRACE to the
         // `trace` field: it is skipped there too, for this reason.
-        if (FORBIDDEN_METHODS.has(method)) {
-            skipped(`browsers refuse to send ${method} requests, so no method is generated for it.`);
+        const forbidden = FORBIDDEN_METHODS.get(method);
+        if (forbidden !== undefined) {
+            skipped(forbidden);
             continue;
         }
         if (FIXED_FIELD_METHODS.has(method.toLowerCase())) {
