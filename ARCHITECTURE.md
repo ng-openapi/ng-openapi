@@ -76,9 +76,10 @@ Every generation run flows through the same stages:
   OpenAPI 3.2's `query` (the HTTP QUERY method) among them, plus whatever
   a path item declares under 3.2's `additionalOperations`. None needs a
   rule of its own: each is a method that carries a body, so it keeps one.
-  A method that is declared and cannot be sent — TRACE, CONNECT and
-  TRACK, which no browser sends, and JSONP, which Angular takes for a
-  script-tag request — is skipped there with a warning. A method declared
+  A method that is declared and not generated — TRACE, CONNECT and
+  TRACK, which no browser sends, and JSONP, which Angular refuses, turns
+  into a script-tag request or sends, depending on the app's `HttpClient`
+  setup — is skipped there with a warning. A method declared
   under `additionalOperations` is spec text, not one of a fixed set of
   words: a generator that emits it writes it through
   `emit/literal.emit.ts`, like any other text from the spec.

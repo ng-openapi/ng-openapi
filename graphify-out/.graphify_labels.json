@@ -195,5 +195,6 @@
   "193": "funding",
   "194": "publishConfig",
   "195": "scripts",
-  "200": "`validateInput`"
+  "196": "`modelFileStructure`",
+  "197": "`responseTypeMapping`"
 }

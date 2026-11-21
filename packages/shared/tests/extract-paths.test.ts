@@ -150,14 +150,15 @@ describe("extractPaths", () => {
             ]);
         });
 
-        it.each(["JSONP", "jsonp"])("skips %s: Angular does not send it as a method", (method) => {
+        it.each(["JSONP", "jsonp"])("skips %s: whether Angular sends it depends on the app", (method) => {
             const { paths, warnings } = extract({ [method]: { operationId: "callback" } });
 
             expect(paths).toEqual([]);
             expect(warnings).toEqual([
                 `Operation "${method}" under \`additionalOperations\` of path "/pets/{id}" was skipped: Angular's ` +
-                    "HttpClient reserves the name JSONP for script-tag requests and never sends it as an HTTP " +
-                    "method, so no method is generated for it.",
+                    "HttpClient treats JSONP specially: its XHR backend refuses it and withJsonpSupport() turns it " +
+                    "into a script-tag request, so whether it is sent depends on how the app sets up HttpClient. " +
+                    "No method is generated for it.",
             ]);
         });
 
