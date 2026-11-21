@@ -47,11 +47,16 @@ const PATH_ITEM_METHODS = ["get", "post", "put", "patch", "delete", "options", "
 const FIXED_FIELD_METHODS: ReadonlySet<string> = new Set([...PATH_ITEM_METHODS, "trace"]);
 
 /**
- * Methods a generated method could never send, each with the reason the
- * warning gives. `fetch` and XMLHttpRequest refuse the first three, whatever
- * the server allows. JSONP is not an HTTP method to Angular: `HttpClient`
- * takes the name for a script-tag request, and throws when JSONP support is
- * not configured or the request carries a body or headers.
+ * Methods no method is generated for, each with the reason the warning
+ * gives. `fetch` and XMLHttpRequest refuse the first three, whatever the
+ * server allows, so a generated method could only ever throw.
+ *
+ * JSONP is different: what happens to it is decided by the app, not by the
+ * method. `HttpXhrBackend` throws on it, `withJsonpSupport()` intercepts it
+ * and loads a script tag instead (and throws on the headers a generated
+ * method sets), and only the fetch backend without JSONP support sends it as
+ * the method it is. A generated method cannot know which of those it runs
+ * under, so there is none.
  */
 const FORBIDDEN_METHODS: ReadonlyMap<string, string> = new Map([
     ...["CONNECT", "TRACE", "TRACK"].map((method): [string, string] => [
@@ -60,8 +65,9 @@ const FORBIDDEN_METHODS: ReadonlyMap<string, string> = new Map([
     ]),
     [
         "JSONP",
-        "Angular's HttpClient reserves the name JSONP for script-tag requests and never sends it as an HTTP " +
-            "method, so no method is generated for it.",
+        "Angular's HttpClient treats JSONP specially: its XHR backend refuses it and withJsonpSupport() " +
+            "turns it into a script-tag request, so whether it is sent depends on how the app sets up " +
+            "HttpClient. No method is generated for it.",
     ],
 ]);
 
