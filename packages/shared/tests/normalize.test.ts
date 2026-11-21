@@ -582,6 +582,65 @@ describe("normalizeSpec: the body a generated request carries", () => {
     });
 });
 
+describe("normalizeSpec: a form declared under a content key with parameters", () => {
+    const fields = (...names: string[]) => ({
+        schema: { type: "object", properties: Object.fromEntries(names.map((name) => [name, { type: "string" }])) },
+    });
+    const spec = {
+        openapi: "3.1.0",
+        paths: {
+            "/urlencoded": {
+                post: {
+                    operationId: "urlencoded",
+                    requestBody: { content: { "application/x-www-form-urlencoded; charset=UTF-8": fields("a", "b") } },
+                    responses: {},
+                },
+            },
+            "/multipart": {
+                post: {
+                    operationId: "multipart",
+                    requestBody: { content: { "Multipart/Form-Data; boundary=x": fields("file") } },
+                    responses: {},
+                },
+            },
+            // Both spellings: the exact key is the one that was always read.
+            "/both-spellings": {
+                post: {
+                    operationId: "bothSpellings",
+                    requestBody: {
+                        content: {
+                            "application/x-www-form-urlencoded; charset=UTF-8": fields("ignored"),
+                            "application/x-www-form-urlencoded": fields("kept"),
+                        },
+                    },
+                    responses: {},
+                },
+            },
+        },
+    } as unknown as SwaggerSpec;
+    const warnings: string[] = [];
+    const normalized = normalizeSpec(spec, (message) => warnings.push(message));
+    const op = (operationId: string) => normalized.operations.find((o) => o.operationId === operationId)!;
+
+    it("binds it field by field, like the same form without parameters", () => {
+        expect(op("urlencoded")).toMatchObject({
+            isUrlEncoded: true,
+            bodyKind: "urlencoded",
+            urlEncodedFields: ["a", "b"],
+            // What the request declares is what the spec wrote.
+            bodyContentType: "application/x-www-form-urlencoded; charset=UTF-8",
+        });
+        expect(op("multipart")).toMatchObject({ isMultipart: true, bodyKind: "multipart", formDataFields: ["file"] });
+        // Not one Blob argument, and nothing to warn about.
+        expect(warnings).toEqual([]);
+    });
+
+    it("reads the exact key when a spec declares the form both ways", () => {
+        expect(op("bothSpellings").urlEncodedFields).toEqual(["kept"]);
+        expect(op("bothSpellings").bodyContentType).toBe("application/x-www-form-urlencoded");
+    });
+});
+
 describe("normalizeSpec: the Content-Type of a body whose type the value states", () => {
     const binary = { schema: { type: "string", format: "binary" } };
     const spec = {

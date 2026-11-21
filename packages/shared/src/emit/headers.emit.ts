@@ -91,7 +91,7 @@ export function defaultContentType(body: BodyContentTypeFacts): string | undefin
         return undefined;
     }
     if (body.isUrlEncoded) {
-        return CONTENT_TYPES.FORM_URLENCODED;
+        return body.bodyContentType ?? CONTENT_TYPES.FORM_URLENCODED;
     }
     return body.bodyContentType;
 }

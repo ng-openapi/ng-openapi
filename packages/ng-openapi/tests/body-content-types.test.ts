@@ -210,3 +210,67 @@ describe("a body declared several ways, or in no way a method can send", () => {
         ]);
     });
 });
+
+describe("forms under a parameterised content key, and the body a validator describes", () => {
+    const noContent = { "204": { description: "done" } };
+    const form = (properties: Record<string, object>) => ({ schema: { type: "object", properties } });
+    const text = { type: "string" };
+    const spec = {
+        openapi: "3.1.0",
+        info: { title: "Forms", version: "1.0.0" },
+        paths: {
+            "/token": {
+                post: {
+                    operationId: "createToken",
+                    tags: ["Forms"],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            "application/x-www-form-urlencoded; charset=UTF-8": form({ user: text, scope: text }),
+                        },
+                    },
+                    responses: noContent,
+                },
+            },
+            // Two descriptions of one body. The request carries the multipart one.
+            "/documents": {
+                post: {
+                    operationId: "uploadDocument",
+                    tags: ["Forms"],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            "application/json": form({ jsonOnly: text }),
+                            "multipart/form-data": form({ title: text }),
+                        },
+                    },
+                    responses: noContent,
+                },
+            },
+        },
+    };
+
+    it("takes one argument per field of a form whose content key carries a parameter", async () => {
+        const { output, result, service } = await generate("body-types-form-params-", { spec });
+        const createToken = methodSource(service("forms"), "createToken");
+
+        // Not `requestBody: Blob`.
+        expect(createToken).toMatch(/^ {4}createToken\(user\?: string, scope\?: string, observe\?:/);
+        expect(createToken).toContain("formBody.append('user', String(user));");
+        expect(sentBody(createToken)).toBe("formBody.toString()");
+        expect(declaredContentType(createToken)).toBe("application/x-www-form-urlencoded; charset=UTF-8");
+
+        // Bound, so there is nothing to say about the body.
+        expect(result.warnings.filter((warning) => warning.includes("request body"))).toEqual([]);
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("validates the body that is sent, not another one the operation also declares", async () => {
+        const { output, service } = await generate("body-types-validator-", { spec, plugins: [ZodPlugin] });
+
+        expect(sentBody(methodSource(service("forms"), "uploadDocument"))).toBe("formData");
+        const validators = readFileSync(join(output, "validators", "forms.validator.ts"), "utf8");
+        expect(validators).toMatch(/export const uploadDocumentBody = z\.object\(\{\s+"title":/);
+        expect(validators).not.toContain("jsonOnly");
+    });
+});

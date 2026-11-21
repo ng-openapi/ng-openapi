@@ -222,15 +222,20 @@ function normalizeOperation(
     warnAboutUnboundParameters(rawOperation, onWarning);
     const operation = dropUnsendableRequestBody(rawOperation, onWarning);
     const content = operation.requestBody?.content;
-    const isMultipart = !!content?.[CONTENT_TYPES.MULTIPART];
-    const isUrlEncoded = !!content?.[CONTENT_TYPES.FORM_URLENCODED] && !content?.[CONTENT_TYPES.JSON];
+    // A form is a form whatever parameters its content key carries
+    // (`application/x-www-form-urlencoded; charset=UTF-8`): it is found by
+    // what the media type is, and its schema read under the key as written.
+    const multipartKey = contentKeyOf(content, CONTENT_TYPES.MULTIPART);
+    const urlEncodedKey = contentKeyOf(content, CONTENT_TYPES.FORM_URLENCODED);
+    const isMultipart = multipartKey !== undefined;
+    const isUrlEncoded = urlEncodedKey !== undefined && !content?.[CONTENT_TYPES.JSON];
 
-    const formDataSchema = isMultipart
-        ? resolveBodySchema(operation.requestBody, CONTENT_TYPES.MULTIPART, resolveRef)
-        : undefined;
-    const urlEncodedSchema = isUrlEncoded
-        ? resolveBodySchema(operation.requestBody, CONTENT_TYPES.FORM_URLENCODED, resolveRef)
-        : undefined;
+    const formDataSchema =
+        multipartKey !== undefined ? resolveBodySchema(operation.requestBody, multipartKey, resolveRef) : undefined;
+    const urlEncodedSchema =
+        isUrlEncoded && urlEncodedKey !== undefined
+            ? resolveBodySchema(operation.requestBody, urlEncodedKey, resolveRef)
+            : undefined;
 
     const responseInfo = determineResponseInfo(operation);
 
@@ -249,11 +254,17 @@ function normalizeOperation(
     // The content key, not `isUrlEncoded`: that flag, and `urlEncodedFields`
     // with it, is off whenever a JSON alternative is declared too, and the
     // fields of the urlencoded form are just as unsent then.
-    if (isMultipart && content?.[CONTENT_TYPES.FORM_URLENCODED]) {
-        const declared = resolveBodySchema(operation.requestBody, CONTENT_TYPES.FORM_URLENCODED, resolveRef);
+    if (isMultipart && urlEncodedKey !== undefined) {
+        const declared = resolveBodySchema(operation.requestBody, urlEncodedKey, resolveRef);
         warnAboutUnsentFormFields(operation, formDataFields, Object.keys(declared?.properties || {}), onWarning);
     }
-    const body = boundBody(content, isMultipart, isUrlEncoded, formDataFields, urlEncodedFields);
+    const body = boundBody(
+        content,
+        isMultipart,
+        isUrlEncoded ? urlEncodedKey : undefined,
+        formDataFields,
+        urlEncodedFields,
+    );
     if (operation.requestBody && !isMultipart && !isUrlEncoded && !body) {
         warnAboutUnboundBody(operation, onWarning);
     }
@@ -381,6 +392,22 @@ function resolveQueryString(
 }
 
 /**
+ * The key `content` declares a media type under: `essence` itself when it is
+ * a key, otherwise the first key that is that media type with parameters.
+ * The exact key comes first so that a spec declaring both keeps the one that
+ * was always read.
+ */
+function contentKeyOf(content: RequestBody["content"] | undefined, essence: string): string | undefined {
+    if (!content) {
+        return undefined;
+    }
+    if (Object.prototype.hasOwnProperty.call(content, essence)) {
+        return essence;
+    }
+    return Object.keys(content).find((contentType) => mediaTypeEssence(contentType) === essence);
+}
+
+/**
  * Which body the generated request carries, and the content key it is
  * declared under. One body is sent, so a body declared several ways resolves
  * to one of them, in this order:
@@ -404,17 +431,16 @@ function resolveQueryString(
 function boundBody(
     content: RequestBody["content"] | undefined,
     isMultipart: boolean,
-    isUrlEncoded: boolean,
+    /** The content key of the urlencoded form, when that is the form the operation sends. */
+    urlEncodedKey: string | undefined,
     formDataFields: readonly string[],
     urlEncodedFields: readonly string[],
 ): { kind: RequestBodyKind; contentType?: string } | undefined {
     if (isMultipart) {
         return formDataFields.length > 0 ? { kind: "multipart" } : undefined;
     }
-    if (isUrlEncoded) {
-        return urlEncodedFields.length > 0
-            ? { kind: "urlencoded", contentType: CONTENT_TYPES.FORM_URLENCODED }
-            : undefined;
+    if (urlEncodedKey !== undefined) {
+        return urlEncodedFields.length > 0 ? { kind: "urlencoded", contentType: urlEncodedKey } : undefined;
     }
     if (content?.[CONTENT_TYPES.JSON]) {
         return { kind: "json", contentType: CONTENT_TYPES.JSON };
