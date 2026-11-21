@@ -13,6 +13,7 @@ export type { BodyContentTypeFacts, DefaultHeadersMergeOptions, HeadersEmitOptio
 export { emitMultipartFormData, emitUrlEncodedFormBody } from "./form-body.emit";
 export type { FormBodyEmitOptions } from "./form-body.emit";
 export { emitQueryParams, emitSignalAwareQueryParams } from "./query-params.emit";
+export { emitSequenceParser, emitSequenceStreamOperator, getStreamItemType } from "./sequence.emit";
 export { emitServiceDecorator } from "./service-decorator.emit";
 export type { ServiceDecoratorEmit, ServiceDecoratorEmitOptions } from "./service-decorator.emit";
 export { emitResponseTypeOption, joinRequestOptionEntries } from "./response-type.emit";

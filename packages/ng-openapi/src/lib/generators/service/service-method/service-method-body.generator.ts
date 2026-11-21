@@ -4,6 +4,9 @@ import {
     emitMultipartFormData,
     emitQueryParams,
     emitResponseTypeOption,
+    emitSequenceParser,
+    emitSequenceStreamOperator,
+    getStreamItemType,
     emitUrlConstruction,
     emitUrlEncodedFormBody,
     joinRequestOptionEntries,
@@ -80,9 +83,11 @@ export class ServiceMethodBodyGenerator {
 
         const bodyParam = this.bodyExpression(operation, argumentNames);
 
-        const parseResponse = this.config.options.validation?.response
-            ? `.pipe(map(response => options?.parse?.(response) ?? response))`
-            : "";
+        // A stream is read from the request's events: each progress event
+        // carries the text received so far, so the method asks for them
+        // itself instead of handing `observe` and `reportProgress` to the caller.
+        const streamItemType = getStreamItemType(operation.responseSequence, this.config);
+        const isStream = streamItemType !== undefined;
 
         // The options object is inlined into the request() call so that the
         // literals stay contextually typed — `request` is the only HttpClient
@@ -97,20 +102,44 @@ export class ServiceMethodBodyGenerator {
         } else if (METHODS_WITH_EXPLICIT_EMPTY_BODY.includes(httpMethod)) {
             entries.push("body: null");
         }
-        entries.push("observe");
+        entries.push(isStream ? "observe: 'events'" : "observe");
         entries.push("headers");
         if (operation.queryParams.length > 0) {
             entries.push("params");
         }
         entries.push(emitResponseTypeOption(operation.responseType));
-        entries.push("reportProgress: options?.reportProgress");
+        entries.push(isStream ? "reportProgress: true" : "reportProgress: options?.reportProgress");
         entries.push("withCredentials: options?.withCredentials");
         entries.push("context: this.createContextWithClientId(options?.context)");
 
         return `
 return this.httpClient.request(${quoteLiteral(httpMethod)}, url, {
   ${joinRequestOptionEntries(entries)}
-})${parseResponse};`;
+})${this.responsePipe(operation, streamItemType)};`;
+    }
+
+    /**
+     * What the response goes through before the caller sees it: the reader of
+     * a sequential response — item by item for a stream, all at once for one
+     * declared complete — and then the caller's `parse` hook, which is handed
+     * each item of a stream and the whole value of anything else.
+     */
+    private responsePipe(operation: NormalizedOperation, streamItemType: string | undefined): string {
+        const operators: string[] = [];
+        const sequence = operation.responseSequence;
+        if (sequence && streamItemType !== undefined) {
+            operators.push(emitSequenceStreamOperator(sequence.format, streamItemType));
+        } else if (sequence) {
+            operators.push(`parseSequenceBody(${emitSequenceParser(sequence.format)})`);
+        }
+        if (this.config.options.validation?.response) {
+            operators.push(
+                streamItemType !== undefined
+                    ? "map(item => options?.parse?.(item) ?? item)"
+                    : "map(response => options?.parse?.(response) ?? response)",
+            );
+        }
+        return operators.length > 0 ? `.pipe(${operators.join(", ")})` : "";
     }
 
     /**

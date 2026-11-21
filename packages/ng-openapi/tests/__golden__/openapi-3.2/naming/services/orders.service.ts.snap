@@ -12,7 +12,8 @@ import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { OrderStatusDto, RequestOptions, OrderDto, OrderExportRequestDto } from "../models";
+import { OrderStatusDto, RequestOptions, OrderDto, OrderExportRequestDto, OrderEventDto } from "../models";
+import { streamJsonLines, streamServerSentEvents, streamJsonSequence, parseSequenceBody, parseJsonLines } from "../utils/http-stream";
 
 @Injectable({ providedIn: "root" })
 export class ApiOrdersService {
@@ -103,5 +104,119 @@ export class ApiOrdersService {
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
         });
+    }
+
+    /** A JSON Lines stream: `itemSchema` describes each line, and the method emits each one as it arrives. */
+    streamOrders(status?: OrderStatusDto, options?: RequestOptions<'text'>): Observable<OrderDto> {
+        const url = `${this.basePath}/orders/feed`;
+
+        let params = new HttpParams();
+        if (status != null) {
+            params = HttpParamsBuilder.addToHttpParams(params, status, 'status');
+        }
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/jsonl');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe: 'events',
+            headers,
+            params,
+            responseType: 'text',
+            reportProgress: true,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        }).pipe(streamJsonLines<OrderDto>());
+    }
+
+    /** Server-Sent Events: a stream that does not end. */
+    watchOrderEvents(options?: RequestOptions<'text'>): Observable<OrderEventDto> {
+        const url = `${this.basePath}/orders/events`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'text/event-stream');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe: 'events',
+            headers,
+            responseType: 'text',
+            reportProgress: true,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        }).pipe(streamServerSentEvents<OrderEventDto>());
+    }
+
+    /** A stream in answer to a request body, as a JSON text sequence. */
+    replayOrders(orderExportRequestDto: OrderExportRequestDto, options?: RequestOptions<'text'>): Observable<OrderDto> {
+        const url = `${this.basePath}/orders/replay`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json-seq');
+        }
+        // Set Content-Type for JSON requests if not already set
+        if (!headers.has('Content-Type')) {
+            headers = headers.set('Content-Type', 'application/json');
+        }
+
+        return this.httpClient.request('post', url, {
+            body: orderExportRequestDto,
+            observe: 'events',
+            headers,
+            responseType: 'text',
+            reportProgress: true,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        }).pipe(streamJsonSequence<OrderDto>());
+    }
+
+    listArchivedOrders(observe?: 'body', options?: RequestOptions<'text'>): Observable<Array<OrderDto>>;
+    listArchivedOrders(observe?: 'response', options?: RequestOptions<'text'>): Observable<HttpResponse<Array<OrderDto>>>;
+    listArchivedOrders(observe?: 'events', options?: RequestOptions<'text'>): Observable<HttpEvent<Array<OrderDto>>>;
+    /** A sequential media type declared complete, with an array `schema`: read once it has ended. */
+    listArchivedOrders(observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/orders/archive`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/x-ndjson');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe,
+            headers,
+            responseType: 'text',
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        }).pipe(parseSequenceBody(parseJsonLines));
     }
 }

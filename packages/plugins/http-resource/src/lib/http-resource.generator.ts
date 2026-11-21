@@ -53,7 +53,21 @@ export class HttpResourceGenerator implements IPluginGenerator {
 
     async generate(outputRoot: string) {
         const outputDir = path.join(outputRoot, "resources");
-        const paths = this.spec.operations.filter((operation) => RESOURCE_METHODS.has(operation.method));
+        const readable = this.spec.operations.filter((operation) => RESOURCE_METHODS.has(operation.method));
+        // A resource holds one value at a time; a streamed response is a
+        // series of them. It has a service method instead.
+        const paths = readable.filter((operation) => !operation.responseSequence?.itemSchema);
+        for (const operation of readable) {
+            if (operation.responseSequence?.itemSchema) {
+                this.onWarning?.(
+                    `No resource is generated for ${describeOperation(operation)}: its response is a stream of ` +
+                        "items (`itemSchema`), and an httpResource holds one value, not a series. " +
+                        (this.config.options.generateServices === false
+                            ? "Enable `generateServices` to get it as a service method that emits each item."
+                            : "Use the generated service method, which emits each item as it arrives."),
+                );
+            }
+        }
 
         if (paths.length === 0) {
             this.onWarning?.("No API paths found in the specification");

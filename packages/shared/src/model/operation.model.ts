@@ -1,4 +1,5 @@
 import type { Parameter, PathInfo, SwaggerDefinition } from "../types/swagger.types";
+import type { SequenceFormat } from "../utils/functions/media-types";
 
 export type ResponseKind = "json" | "blob" | "arraybuffer" | "text";
 
@@ -7,6 +8,25 @@ export type ResponseKind = "json" | "blob" | "arraybuffer" | "text";
  * value serialized as JSON, a form sent field by field, a string, or a Blob.
  */
 export type RequestBodyKind = "json" | "multipart" | "urlencoded" | "text" | "binary";
+
+/**
+ * A success response in a sequential media type: a series of items — one JSON
+ * document per line, JSON text sequences, Server-Sent Events — rather than
+ * one document. `HttpClient` has no parser for any of them, so it is fetched
+ * as text and split by the generated client.
+ */
+export interface NormalizedResponseSequence {
+    format: SequenceFormat;
+    /** The content key it is declared under: the one type the request accepts. */
+    contentType: string;
+    /**
+     * Schema of one item, from OpenAPI 3.2's `itemSchema`. Set, the response
+     * is a stream: the method emits each item as it arrives. Unset, the
+     * response is declared complete, with an array `schema`, and the method
+     * emits that array once the response has ended.
+     */
+    itemSchema?: SwaggerDefinition;
+}
 
 /**
  * An OpenAPI 3.2 `in: querystring` parameter that is sent in one piece: its
@@ -82,4 +102,6 @@ export interface NormalizedOperation extends PathInfo {
      * types that agree with responseType (unset when none are declared).
      */
     acceptHeader?: string;
+    /** Set when that response is a sequence of items; `responseType` is then "text". */
+    responseSequence?: NormalizedResponseSequence;
 }

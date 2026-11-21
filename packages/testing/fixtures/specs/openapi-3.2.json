@@ -318,6 +318,92 @@
                 }
             }
         },
+        "/orders/feed": {
+            "get": {
+                "operationId": "streamOrders",
+                "tags": ["Orders"],
+                "description": "A JSON Lines stream: `itemSchema` describes each line, and the method emits each one as it arrives.",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": { "$ref": "#/components/schemas/OrderStatus" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Orders, one JSON document per line",
+                        "content": {
+                            "application/jsonl": {
+                                "itemSchema": { "$ref": "#/components/schemas/Order" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/events": {
+            "get": {
+                "operationId": "watchOrderEvents",
+                "tags": ["Orders"],
+                "description": "Server-Sent Events: a stream that does not end.",
+                "responses": {
+                    "200": {
+                        "description": "An event per change to an order",
+                        "content": {
+                            "text/event-stream": {
+                                "itemSchema": { "$ref": "#/components/schemas/OrderEvent" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/replay": {
+            "post": {
+                "operationId": "replayOrders",
+                "tags": ["Orders"],
+                "description": "A stream in answer to a request body, as a JSON text sequence.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": { "$ref": "#/components/schemas/OrderExportRequest" }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The orders of the period, in order",
+                        "content": {
+                            "application/json-seq": {
+                                "itemSchema": { "$ref": "#/components/schemas/Order" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/archive": {
+            "get": {
+                "operationId": "listArchivedOrders",
+                "tags": ["Orders"],
+                "description": "A sequential media type declared complete, with an array `schema`: read once it has ended.",
+                "responses": {
+                    "200": {
+                        "description": "Every archived order, one JSON document per line",
+                        "content": {
+                            "application/x-ndjson": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": { "$ref": "#/components/schemas/Order" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/images/match": {
             "query": {
                 "operationId": "matchImages",
@@ -439,6 +525,16 @@
                     "id": { "type": "string", "format": "uuid" },
                     "status": { "$ref": "#/components/schemas/OrderStatus" },
                     "placedAt": { "type": "string", "format": "date-time" }
+                }
+            },
+            "OrderEvent": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {
+                    "event": { "type": "string", "enum": ["created", "shipped", "cancelled"] },
+                    "data": { "type": "string" },
+                    "id": { "type": "string" },
+                    "retry": { "type": "integer", "minimum": 0 }
                 }
             },
             "OrderExportRequest": {

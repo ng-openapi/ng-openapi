@@ -6,7 +6,13 @@ import {
     ServiceMethodParamsGenerator,
     ServiceMethodRequestObjectGenerator,
 } from "./service-method";
-import { emitDocs, getOperationMethodName, MethodGenOptions, NormalizedOperation } from "@ng-openapi/shared";
+import {
+    emitDocs,
+    getOperationMethodName,
+    getStreamItemType,
+    MethodGenOptions,
+    NormalizedOperation,
+} from "@ng-openapi/shared";
 
 export class ServiceMethodGenerator {
     private config: MethodGenOptions;
@@ -27,14 +33,29 @@ export class ServiceMethodGenerator {
         requestObject?: RequestObjectEntry,
     ): void {
         const methodName = this.generateMethodName(operation);
-        const parameters = requestObject
-            ? this.generateSingleRequestParameters(requestObject)
-            : this.paramsGenerator.generateMethodParameters(operation);
-        const returnType = this.generateReturnType();
         let methodBody = this.bodyGenerator.generateMethodBody(operation);
         if (requestObject) {
             methodBody = `${ServiceMethodRequestObjectGenerator.toDestructureStatement(requestObject)}\n${methodBody}`;
         }
+
+        // A streamed response is one signature, not three: there is no
+        // `observe` to overload on, and the method returns the items themselves.
+        const streamItemType = getStreamItemType(operation.responseSequence, this.config);
+        if (streamItemType !== undefined) {
+            serviceClass.addMethod({
+                name: methodName,
+                parameters: this.generateStreamParameters(operation, streamItemType, requestObject),
+                returnType: `Observable<${streamItemType}>`,
+                statements: methodBody,
+                docs: emitDocs(operation.description),
+            });
+            return;
+        }
+
+        const parameters = requestObject
+            ? this.generateSingleRequestParameters(requestObject)
+            : this.paramsGenerator.generateMethodParameters(operation);
+        const returnType = this.generateReturnType();
         const methodOverLoads = this.overloadsGenerator.generateMethodOverloads(operation, requestObject);
 
         serviceClass.addMethod({
@@ -52,6 +73,21 @@ export class ServiceMethodGenerator {
             ServiceMethodRequestObjectGenerator.toRequestParameter(requestObject),
             ...this.paramsGenerator.addOptionsParameter(requestObject.parameters),
         ];
+    }
+
+    /** The API arguments (or the single request object), then `options`. */
+    private generateStreamParameters(
+        operation: NormalizedOperation,
+        itemType: string,
+        requestObject?: RequestObjectEntry,
+    ): OptionalKind<ParameterDeclarationStructure>[] {
+        const apiParameters = requestObject
+            ? [ServiceMethodRequestObjectGenerator.toRequestParameter(requestObject)]
+            : this.paramsGenerator.generateApiParameters(operation);
+        return ServiceMethodRequestObjectGenerator.dedupe([
+            ...apiParameters,
+            ...this.paramsGenerator.addStreamOptionsParameter(itemType),
+        ]);
     }
 
     generateMethodName(operation: NormalizedOperation): string {

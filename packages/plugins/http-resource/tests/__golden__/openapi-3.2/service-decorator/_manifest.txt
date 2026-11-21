@@ -14,3 +14,4 @@ utils/base-interceptor.ts
 utils/date-transformer.ts
 utils/file-download.ts
 utils/http-params-builder.ts
+utils/http-stream.ts

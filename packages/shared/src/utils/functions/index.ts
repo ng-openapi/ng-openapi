@@ -37,8 +37,9 @@ export {
     isMediaTypeRange,
     isSequentialMediaType,
     mediaTypeEssence,
+    sequenceFormat,
 } from "./media-types";
-export type { BodyMediaFamily } from "./media-types";
+export type { BodyMediaFamily, SequenceFormat } from "./media-types";
 export { isDataTypeInterface } from "./is-data-type-interface";
 export { generateParseRequestTypeParams } from "./generate-parse-request-type-params";
 export { isUrl } from "./is-url";

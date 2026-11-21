@@ -195,5 +195,20 @@
   "193": "publishConfig",
   "194": "scripts",
   "195": "`HttpResourcePlugin`",
-  "200": "`validateInput`"
+  "196": "index.ts",
+  "197": "ZodGenerator",
+  "198": "ZodSchemaGenerator",
+  "199": "operation.model.ts",
+  "200": "`validateInput`",
+  "201": "Configuration Options",
+  "202": "main-index.generator.ts",
+  "203": "type.utils.ts",
+  "204": "ServiceGenerator",
+  "205": "http-resource.generator.ts",
+  "206": ".addServiceClass",
+  "207": "`plugins`",
+  "208": "build",
+  "209": "`validation`",
+  "210": "`ZodPlugin`",
+  "211": "namedInputs"
 }

@@ -104,6 +104,22 @@ export class ServiceMethodParamsGenerator {
         ];
     }
 
+    /**
+     * The trailing parameter of a method that returns a stream. There is no
+     * `observe`: the method reads the request's events itself, and what it
+     * emits is the items. With response validation, `parse` is handed each one.
+     */
+    addStreamOptionsParameter(itemType: string): OptionalKind<ParameterDeclarationStructure>[] {
+        const { response } = this.config.options.validation ?? {};
+        return [
+            {
+                name: "options",
+                type: response ? `RequestOptions<'text', ${itemType}>` : `RequestOptions<'text'>`,
+                hasQuestionToken: true,
+            },
+        ];
+    }
+
     private getHttpRequestOptionsParameter(params: OptionalKind<ParameterDeclarationStructure>[]): string {
         const { response } = this.config.options.validation ?? {};
         // const parseRequest = request ? generateParseRequestTypeParams(params) : "";

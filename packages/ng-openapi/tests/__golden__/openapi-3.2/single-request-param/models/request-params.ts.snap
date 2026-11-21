@@ -67,6 +67,16 @@ export interface ExportOrdersParams {
     orderExportRequest: OrderExportRequest;
 }
 
+/** A JSON Lines stream: `itemSchema` describes each line, and the method emits each one as it arrives. */
+export interface StreamOrdersParams {
+    status?: OrderStatus;
+}
+
+/** A stream in answer to a request body, as a JSON text sequence. */
+export interface ReplayOrdersParams {
+    orderExportRequest: OrderExportRequest;
+}
+
 /** A multipart query: find the products that look like an uploaded picture. */
 export interface MatchImagesParams {
     image: Blob;

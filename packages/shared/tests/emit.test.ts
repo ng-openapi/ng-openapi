@@ -6,10 +6,13 @@ import {
     emitMultipartFormData,
     emitQueryParams,
     emitResponseTypeOption,
+    emitSequenceParser,
+    emitSequenceStreamOperator,
     emitSignalAwareQueryParams,
     emitUrlConstruction,
     emitUrlEncodedFormBody,
     emitUrlExpression,
+    getStreamItemType,
     joinRequestOptionEntries,
     signalAwareParamValue,
 } from "@ng-openapi/shared";
@@ -83,6 +86,35 @@ describe("url emission: a value that is the whole query string", () => {
             "const url = `${this.basePath}/items?${encodeURIComponent(q)}`;",
         );
         expect(emitUrlConstruction("/items", [], names())).toBe("const url = `${this.basePath}/items`;");
+    });
+});
+
+describe("sequence readers", () => {
+    it("names the stream operator of each format, typed with the item", () => {
+        expect(emitSequenceStreamOperator("json-lines", "Order")).toBe("streamJsonLines<Order>()");
+        expect(emitSequenceStreamOperator("json-seq", "Array<string>")).toBe("streamJsonSequence<Array<string>>()");
+        expect(emitSequenceStreamOperator("event-stream", "OrderEvent")).toBe("streamServerSentEvents<OrderEvent>()");
+    });
+
+    it("names the parser of each format", () => {
+        expect(emitSequenceParser("json-lines")).toBe("parseJsonLines");
+        expect(emitSequenceParser("json-seq")).toBe("parseJsonSequence");
+        expect(emitSequenceParser("event-stream")).toBe("parseServerSentEvents");
+    });
+
+    it("types the items of a stream, and nothing for a response that is not one", () => {
+        const config = { options: { dateType: "string" as const } };
+        const stream = { format: "json-lines" as const, contentType: "application/jsonl" };
+
+        expect(getStreamItemType({ ...stream, itemSchema: { $ref: "#/components/schemas/Order" } }, config)).toBe(
+            "Order",
+        );
+        expect(getStreamItemType({ ...stream, itemSchema: { type: "string", nullable: true } }, config)).toBe(
+            "string | null",
+        );
+        // Declared complete, or no sequence at all.
+        expect(getStreamItemType(stream, config)).toBeUndefined();
+        expect(getStreamItemType(undefined, config)).toBeUndefined();
     });
 });
 

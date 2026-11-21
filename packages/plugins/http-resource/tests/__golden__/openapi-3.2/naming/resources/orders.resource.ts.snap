@@ -12,6 +12,7 @@ import { inject, Injectable, Signal } from "@angular/core";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
 import { OrderStatusDto, OrderDto, OrderExportRequestDto } from "../models";
+import { parseJsonLines } from "../utils/http-stream";
 
 @Injectable({ providedIn: "root" })
 export class OrdersApiResource {
@@ -96,5 +97,30 @@ export class OrdersApiResource {
                 context: this.createContextWithClientId(requestOptions?.context)
             }
         }, resourceOptions);
+    }
+
+    listArchivedOrders(resourceOptions: HttpResourceOptions<Array<OrderDto>, unknown> & { defaultValue: NoInfer<Array<OrderDto>> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<OrderDto>>;
+    listArchivedOrders(resourceOptions?: HttpResourceOptions<Array<OrderDto>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<OrderDto> | undefined>;
+    /** A sequential media type declared complete, with an array `schema`: read once it has ended. */
+    listArchivedOrders(resourceOptions?: HttpResourceOptions<Array<OrderDto>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<OrderDto> | undefined> {
+
+        // Add default headers if not already present
+        let headers = requestOptions?.headers;
+        if (headers instanceof HttpHeaders) {
+            if (!headers.has('Accept')) {
+                headers = headers.set('Accept', 'application/x-ndjson');
+            }
+        } else {
+            headers = { 'Accept': 'application/x-ndjson', ...headers };
+        }
+        return httpResource.text(() => {
+            return {
+                url: `${this.basePath}/orders/archive`,
+                method: "GET",
+                ...requestOptions,
+                headers,
+                context: this.createContextWithClientId(requestOptions?.context)
+            }
+        }, { parse: (text: string): Array<OrderDto> => parseJsonLines(text), ...resourceOptions });
     }
 }

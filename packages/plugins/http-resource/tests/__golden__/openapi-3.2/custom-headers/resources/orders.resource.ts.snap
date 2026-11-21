@@ -12,6 +12,7 @@ import { inject, Injectable, Signal } from "@angular/core";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
 import { OrderStatus, Order, OrderExportRequest } from "../models";
+import { parseJsonLines } from "../utils/http-stream";
 
 @Injectable({ providedIn: "root" })
 export class OrdersResource {
@@ -108,5 +109,36 @@ export class OrdersResource {
                 context: this.createContextWithClientId(requestOptions?.context)
             }
         }, resourceOptions);
+    }
+
+    listArchivedOrders(resourceOptions: HttpResourceOptions<Array<Order>, unknown> & { defaultValue: NoInfer<Array<Order>> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<Order>>;
+    listArchivedOrders(resourceOptions?: HttpResourceOptions<Array<Order>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<Order> | undefined>;
+    /** A sequential media type declared complete, with an array `schema`: read once it has ended. */
+    listArchivedOrders(resourceOptions?: HttpResourceOptions<Array<Order>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<Order> | undefined> {
+
+        // Add default headers if not already present
+        let headers = requestOptions?.headers;
+        if (headers instanceof HttpHeaders) {
+            if (!headers.has('Accept')) {
+                headers = headers.set('Accept', 'application/x-ndjson');
+            }
+            if (!headers.has('X-Api-Key')) {
+                headers = headers.set('X-Api-Key', 'demo-key');
+            }
+            if (!headers.has('X-Client-Version')) {
+                headers = headers.set('X-Client-Version', '1.2.3');
+            }
+        } else {
+            headers = { 'Accept': 'application/x-ndjson', 'X-Api-Key': 'demo-key', 'X-Client-Version': '1.2.3', ...headers };
+        }
+        return httpResource.text(() => {
+            return {
+                url: `${this.basePath}/orders/archive`,
+                method: "GET",
+                ...requestOptions,
+                headers,
+                context: this.createContextWithClientId(requestOptions?.context)
+            }
+        }, { parse: (text: string): Array<Order> => parseJsonLines(text), ...resourceOptions });
     }
 }

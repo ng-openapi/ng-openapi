@@ -1,0 +1,211 @@
+import { HttpDownloadProgressEvent, HttpEvent, HttpEventType, HttpResponse } from "@angular/common/http";
+import { map, Observable, OperatorFunction } from "rxjs";
+
+/**
+ * One event of a "text/event-stream" response, as the Server-Sent Events
+ * format defines it. "data" is the text the server sent, joined with "\n" when
+ * it spans several lines: an event whose data is JSON carries it as a string.
+ */
+export interface ServerSentEvent {
+    data?: string;
+    event?: string;
+    id?: string;
+    retry?: number;
+}
+
+/** One sequential format: where its items end, and what the text of an item holds. */
+interface SequenceReader<T> {
+    /**
+     * Cuts text into the texts of its complete items, and says how much of it
+     * they used up. Unless "final" is set, more text may follow, so an item
+     * that might still be growing is left unconsumed.
+     */
+    split(text: string, final: boolean): { items: string[]; consumed: number };
+    /** The item one of those texts holds, or undefined when it holds none. */
+    parse(item: string): T | undefined;
+}
+
+/** The record separator that starts every item of a JSON text sequence. */
+const RECORD_SEPARATOR = "\u001e";
+
+function parseJsonItem<T>(item: string): T | undefined {
+    const text = item.trim();
+    return text === "" ? undefined : (JSON.parse(text) as T);
+}
+
+/** One JSON document per line. */
+function jsonLines<T>(): SequenceReader<T> {
+    return {
+        split: (text, final) => {
+            // A line is complete once its line feed has arrived; the last line
+            // of a response that has ended needs none.
+            const consumed = final ? text.length : text.lastIndexOf("\n") + 1;
+            return { items: text.slice(0, consumed).split("\n"), consumed };
+        },
+        parse: parseJsonItem,
+    };
+}
+
+/** JSON documents that each start with a record separator, and may span lines. */
+function jsonSequence<T>(): SequenceReader<T> {
+    return {
+        split: (text, final) => {
+            // A record is complete once the next one has started.
+            const consumed = final ? text.length : Math.max(text.lastIndexOf(RECORD_SEPARATOR), 0);
+            return { items: text.slice(0, consumed).split(RECORD_SEPARATOR), consumed };
+        },
+        parse: parseJsonItem,
+    };
+}
+
+/** Events that each end with a blank line. */
+function serverSentEvents<T>(): SequenceReader<T> {
+    return {
+        split: (text, final) => {
+            // Lines end with CRLF, LF or CR.
+            const blankLine = /\r\n\r\n|\n\n|\r\r|\n\r\n|\r\n\n/g;
+            const items: string[] = [];
+            let consumed = 0;
+            for (let match = blankLine.exec(text); match !== null; match = blankLine.exec(text)) {
+                items.push(text.slice(consumed, match.index));
+                consumed = match.index + match[0].length;
+            }
+            if (final && consumed < text.length) {
+                items.push(text.slice(consumed));
+                consumed = text.length;
+            }
+            return { items, consumed };
+        },
+        parse: (item) => parseServerSentEvent(item) as T | undefined,
+    };
+}
+
+/** One block of an event stream, or undefined when it holds only comments and unknown fields. */
+function parseServerSentEvent(block: string): ServerSentEvent | undefined {
+    const event: ServerSentEvent = {};
+    const data: string[] = [];
+    for (const line of block.replace(/^\uFEFF/, "").split(/\r\n|\n|\r/)) {
+        // An empty line, or a comment.
+        if (line === "" || line.startsWith(":")) {
+            continue;
+        }
+        const colon = line.indexOf(":");
+        const field = colon === -1 ? line : line.slice(0, colon);
+        const rest = colon === -1 ? "" : line.slice(colon + 1);
+        const value = rest.startsWith(" ") ? rest.slice(1) : rest;
+        if (field === "data") {
+            data.push(value);
+        } else if (field === "event") {
+            event.event = value;
+        } else if (field === "id" && !value.includes("\u0000")) {
+            event.id = value;
+        } else if (field === "retry" && /^\d+$/.test(value)) {
+            event.retry = Number(value);
+        }
+    }
+    if (data.length > 0) {
+        event.data = data.join("\n");
+    }
+    return Object.keys(event).length > 0 ? event : undefined;
+}
+
+/**
+ * Emits the items of a response as they arrive. The source is a request made
+ * with "observe: 'events'", "responseType: 'text'" and "reportProgress: true":
+ * each progress event carries all the text received so far, and the items that
+ * have become complete since the last one are emitted, one at a time. An item
+ * that is not what its format says fails the stream, after the items before it.
+ *
+ * HttpClient keeps the whole text of a response in memory until it ends, so a
+ * stream that never ends grows for as long as it is subscribed to.
+ */
+function streamItems<T>(reader: SequenceReader<T>): OperatorFunction<HttpEvent<string>, T> {
+    return (source) =>
+        new Observable<T>((subscriber) => {
+            let consumed = 0;
+            const read = (text: string, final: boolean): void => {
+                const chunk = reader.split(text.slice(consumed), final);
+                consumed += chunk.consumed;
+                for (const itemText of chunk.items) {
+                    const item = reader.parse(itemText);
+                    if (item !== undefined) {
+                        subscriber.next(item);
+                    }
+                }
+            };
+            return source.subscribe({
+                next: (event) => {
+                    try {
+                        if (event.type === HttpEventType.DownloadProgress) {
+                            const partialText = (event as HttpDownloadProgressEvent).partialText;
+                            if (partialText !== undefined) {
+                                read(partialText, false);
+                            }
+                        } else if (event.type === HttpEventType.Response) {
+                            read(event.body ?? "", true);
+                        }
+                    } catch (error) {
+                        subscriber.error(error);
+                    }
+                },
+                error: (error) => subscriber.error(error),
+                complete: () => subscriber.complete(),
+            });
+        });
+}
+
+/** All the items of a response that has ended. */
+function parseItems<T>(reader: SequenceReader<T>, text: string): T[] {
+    const items: T[] = [];
+    for (const itemText of reader.split(text, true).items) {
+        const item = reader.parse(itemText);
+        if (item !== undefined) {
+            items.push(item);
+        }
+    }
+    return items;
+}
+
+/** Emits each line of a JSON Lines / NDJSON response as it arrives. */
+export function streamJsonLines<T>(): OperatorFunction<HttpEvent<string>, T> {
+    return streamItems(jsonLines<T>());
+}
+
+/** Emits each record of a JSON text sequence ("application/json-seq") as it arrives. */
+export function streamJsonSequence<T>(): OperatorFunction<HttpEvent<string>, T> {
+    return streamItems(jsonSequence<T>());
+}
+
+/** Emits each event of a Server-Sent Events response ("text/event-stream") as it arrives. */
+export function streamServerSentEvents<T = ServerSentEvent>(): OperatorFunction<HttpEvent<string>, T> {
+    return streamItems(serverSentEvents<T>());
+}
+
+/** All the lines of a JSON Lines / NDJSON response that has ended. */
+export function parseJsonLines<T>(text: string): T[] {
+    return parseItems(jsonLines<T>(), text);
+}
+
+/** All the records of a JSON text sequence that has ended. */
+export function parseJsonSequence<T>(text: string): T[] {
+    return parseItems(jsonSequence<T>(), text);
+}
+
+/** All the events of a Server-Sent Events response that has ended. */
+export function parseServerSentEvents<T = ServerSentEvent>(text: string): T[] {
+    return parseItems(serverSentEvents<T>(), text);
+}
+
+/**
+ * Replaces the text of a response fetched with "responseType: 'text'" by its
+ * items, whichever "observe" the request was made with: the body itself, the
+ * body of the response, or the body of the response event among the others.
+ */
+export function parseSequenceBody<T>(parse: (text: string) => T[]): OperatorFunction<unknown, unknown> {
+    return map((result) => {
+        if (result instanceof HttpResponse) {
+            return typeof result.body === "string" ? result.clone({ body: parse(result.body) }) : result;
+        }
+        return typeof result === "string" ? parse(result) : result;
+    });
+}

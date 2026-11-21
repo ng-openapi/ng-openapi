@@ -20,12 +20,12 @@ Anything a version declares that cannot be generated is reported as a warning du
 
 ## OpenAPI 3.2 Features
 
-| Feature                                            | Status           | What is generated                                                                                                              |
-| -------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `query` operations (the HTTP `QUERY` method)       | ✅ Supported     | A service method, and a resource with the [HTTP Resource plugin](./http-resource.md#query-operations). Requires Angular 22.3+  |
-| `additionalOperations` (`COPY`, `PURGE`, custom …) | ✅ Supported     | A service method that sends the declared method. No resource: nothing says such a method is safe to repeat                     |
-| `in: querystring` parameters                       | ✅ Supported     | Form-encoded: one argument per property. JSON or text: one argument, sent as the whole query string. In services and resources |
-| `itemSchema` (JSON Lines, Server-Sent Events, …)   | ❌ Not supported | The item schema is not read                                                                                                    |
+| Feature                                            | Status       | What is generated                                                                                                              |
+| -------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `query` operations (the HTTP `QUERY` method)       | ✅ Supported | A service method, and a resource with the [HTTP Resource plugin](./http-resource.md#query-operations). Requires Angular 22.3+  |
+| `additionalOperations` (`COPY`, `PURGE`, custom …) | ✅ Supported | A service method that sends the declared method. No resource: nothing says such a method is safe to repeat                     |
+| `in: querystring` parameters                       | ✅ Supported | Form-encoded: one argument per property. JSON or text: one argument, sent as the whole query string. In services and resources |
+| `itemSchema` (JSON Lines, Server-Sent Events, …)   | ✅ Supported | A service method that returns the items as a stream, one emission per item. No resource: an `httpResource` holds one value     |
 
 ### The `QUERY` Method
 
@@ -139,6 +139,57 @@ selectProducts(selector: string, /* observe, options */): Observable<Product[]>
 With [`useSingleRequestParameter`](../api/configuration/options/use-single-request-parameter.md), these arguments are properties of the request object like every other. The [HTTP Resource plugin](./http-resource.md) takes each of them as a value or a signal.
 
 A querystring parameter that cannot be generated is skipped with a warning: one without `content`, a form whose schema lists no top-level `properties`, a media type that is neither form-encoded, JSON nor text, and a JSON or text one declared next to `in: query` parameters, which OpenAPI does not allow.
+
+### Streamed Responses
+
+Some media types are a sequence of items rather than one document: JSON Lines and NDJSON (one JSON document per line), JSON text sequences, and Server-Sent Events. OpenAPI 3.2 describes each item of such a response with `itemSchema`, which says the response is meant to be read as it arrives:
+
+```yaml
+paths:
+    /orders/feed:
+        get:
+            operationId: streamOrders
+            responses:
+                "200":
+                    description: Orders, one JSON document per line
+                    content:
+                        application/jsonl:
+                            itemSchema:
+                                $ref: "#/components/schemas/Order"
+```
+
+The generated service method returns the items themselves, one emission per item, as soon as each is complete:
+
+```typescript
+streamOrders(status?: OrderStatus, options?: RequestOptions<'text'>): Observable<Order>
+```
+
+```typescript
+this.orders.streamOrders("open").subscribe((order) => {
+    // called once per line, while the response is still arriving
+});
+```
+
+There is no `observe` argument and there are no overloads: the method reads the request's progress events itself, through the readers in the generated [`utils/http-stream.ts`](./generated-code.md#utils-http-stream-ts). Unsubscribing cancels the request.
+
+| Media type                                   | Each emission is                                                          |
+| -------------------------------------------- | ------------------------------------------------------------------------- |
+| `application/jsonl`, `application/x-ndjson`  | One line, parsed as JSON                                                  |
+| `application/json-seq`, any `+json-seq` type | One record, parsed as JSON                                                |
+| `text/event-stream`                          | One event: `{ event?, data?, id?, retry? }`, with `data` as the text sent |
+
+For Server-Sent Events the item schema describes that event object. `data` is delivered as a string even when the server puts JSON in it; parse it where you consume it.
+
+::: tip Complete responses
+The same media types with an array `schema` instead of `itemSchema` are a response that is read once it has ended. The method then keeps the standard signature, and returns the array: `listArchivedOrders(): Observable<Order[]>`.
+:::
+
+Things to know:
+
+- `HttpClient` keeps the whole text of a response in memory until it ends, so a stream that never ends grows for as long as it is subscribed to. Unsubscribe when you no longer need it.
+- With [`validation.response`](../api/configuration/options/validation.md), the `parse` hook is called with each item.
+- The [HTTP Resource plugin](./http-resource.md) generates no resource for a streamed response, since a resource holds one value at a time. A response declared complete does get one.
+- `multipart/mixed` streams and `itemSchema` on request bodies are not generated; both are reported during generation.
 
 ## Angular Versions
 
