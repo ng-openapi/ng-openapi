@@ -26,6 +26,12 @@ export interface NewWidget {
     kind?: WidgetKind;
 }
 
+export interface WidgetPatch {
+    name?: string;
+    nickname?: string | null;
+    kind?: WidgetKind;
+}
+
 export enum WidgetKind {
     Gadget = "gadget",
     Gizmo = "gizmo"

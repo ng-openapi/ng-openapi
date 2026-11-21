@@ -2,7 +2,7 @@ import { CONTENT_TYPES } from "../content-types.constants";
 import type { NormalizedOperation } from "../../model/operation.model";
 import type { MethodGenOptions } from "../../types/config.types";
 import { camelCase } from "../string.utils";
-import { getRequestBodyType } from "./get-request-body-type";
+import { getBodyArgumentType, getRequestBodyType } from "./get-request-body-type";
 import { isDataTypeInterface } from "./is-data-type-interface";
 
 /**
@@ -201,7 +201,7 @@ function computeArgumentNames(
         ...formFields.map((field) => ({ key: field, base: camelCase(field) })),
     ];
 
-    const bodyBase = profile.bindsRequestBody ? jsonBodyIdentifier(operation, config) : undefined;
+    const bodyBase = profile.bindsRequestBody ? bodyIdentifier(operation, config) : undefined;
     if (bodyBase !== undefined) {
         entries.push({ key: REQUEST_BODY_KEY, base: bodyBase });
     }
@@ -259,20 +259,38 @@ function computeArgumentNames(
 }
 
 /**
- * The identifier the JSON request body is bound to, or undefined when the
- * operation has no JSON body. Kept here rather than at the two call sites so
- * the name that lands in the signature is the one the resolver reserved.
+ * The identifier the request body is bound to when it is one argument — a
+ * JSON, text or binary body — or undefined when the operation has none: a
+ * form is bound field by field, under its fields' names. Kept here rather
+ * than at the call sites so the name that lands in the signature is the one
+ * the resolver reserved.
+ *
+ * A JSON body is named after its type where that is a model (`ItemDto` →
+ * `itemDto`). Everything else is `requestBody`: `string` and `Blob` say what
+ * the argument is made of, not what it is.
  */
-function jsonBodyIdentifier(operation: NormalizedOperation, config: MethodGenOptions): string | undefined {
-    if (!operation.requestBody || operation.isMultipart) {
+function bodyIdentifier(operation: NormalizedOperation, config: MethodGenOptions): string | undefined {
+    const bodyType = getBodyArgumentType(operation, config) ?? legacyJsonBodyType(operation, config);
+    if (bodyType === undefined) {
+        return undefined;
+    }
+    const isJson = operation.bodyKind === "json" || operation.bodyKind === undefined;
+    return isJson && isDataTypeInterface(bodyType) ? camelCase(bodyType) : "requestBody";
+}
+
+/**
+ * The JSON body type of an operation that carries no `bodyKind`: one built
+ * outside the normalizer. The resolver is public API and predates that
+ * field, so such an operation keeps the answer it has always had.
+ */
+function legacyJsonBodyType(operation: NormalizedOperation, config: MethodGenOptions): string | undefined {
+    if ("bodyKind" in operation || !operation.requestBody || operation.isMultipart) {
         return undefined;
     }
     if (!operation.requestBody.content?.[CONTENT_TYPES.JSON]) {
         return undefined;
     }
-
-    const bodyType = getRequestBodyType(operation.requestBody, config);
-    return isDataTypeInterface(bodyType) ? camelCase(bodyType) : "requestBody";
+    return getRequestBodyType(operation.requestBody, config);
 }
 
 /**

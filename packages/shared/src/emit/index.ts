@@ -9,7 +9,7 @@ export {
     quoteLiteral,
 } from "./literal.emit";
 export { defaultContentType, emitDefaultHeadersMerge, emitHeaders } from "./headers.emit";
-export type { DefaultHeadersMergeOptions, HeadersEmitOptions } from "./headers.emit";
+export type { BodyContentTypeFacts, DefaultHeadersMergeOptions, HeadersEmitOptions } from "./headers.emit";
 export { emitMultipartFormData, emitUrlEncodedFormBody } from "./form-body.emit";
 export type { FormBodyEmitOptions } from "./form-body.emit";
 export { emitQueryParams, emitSignalAwareQueryParams } from "./query-params.emit";

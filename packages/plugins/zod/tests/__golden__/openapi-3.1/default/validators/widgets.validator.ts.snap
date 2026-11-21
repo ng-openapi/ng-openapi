@@ -59,3 +59,44 @@ export const getWidget200Response = z.object({
     "schemaVersion": z.enum(['v2']).optional()
 });
 export type GetWidget200Response = z.infer<typeof getWidget200Response>;
+export const patchWidgetParams = z.object({
+    "widgetId": z.string()
+});
+export type PatchWidgetParams = z.infer<typeof patchWidgetParams>;
+export const patchWidgetBody = z.object({
+    "name": z.string().optional(),
+    "nickname": z.string().nullish(),
+    "kind": z.enum(['gadget', 'gizmo']).optional()
+});
+export type PatchWidgetBody = z.infer<typeof patchWidgetBody>;
+export const patchWidget200Response = z.object({
+    "id": z.string(),
+    "name": z.string(),
+    "nickname": z.string().nullish(),
+    "externalId": z.string().uuid().nullish(),
+    "weight": z.number().nullish(),
+    "kind": z.enum(['gadget', 'gizmo']).optional(),
+    "createdAt": z.date().optional(),
+    "lastSeenAt": z.date().nullish(),
+    "schemaVersion": z.enum(['v2']).optional()
+});
+export type PatchWidget200Response = z.infer<typeof patchWidget200Response>;
+export const importWidgetsBodyItem = z.object({
+    "name": z.string(),
+    "nickname": z.string().nullish(),
+    "kind": z.enum(['gadget', 'gizmo']).optional()
+});
+export const importWidgetsBody = z.array(importWidgetsBodyItem);
+export type ImportWidgetsBody = z.infer<typeof importWidgetsBody>;
+export const replaceWidgetNotesParams = z.object({
+    "widgetId": z.string()
+});
+export type ReplaceWidgetNotesParams = z.infer<typeof replaceWidgetNotesParams>;
+export const uploadWidgetManualParams = z.object({
+    "widgetId": z.string()
+});
+export type UploadWidgetManualParams = z.infer<typeof uploadWidgetManualParams>;
+export const uploadWidgetImageParams = z.object({
+    "widgetId": z.string()
+});
+export type UploadWidgetImageParams = z.infer<typeof uploadWidgetImageParams>;

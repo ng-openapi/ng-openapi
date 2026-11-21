@@ -5,6 +5,7 @@ import {
     Parameter,
     pascalCase,
     emitObjectKey,
+    NormalizedOperation,
     PathInfo,
     SwaggerDefinition,
     NormalizedSpec,
@@ -47,14 +48,18 @@ export class ZodSchemaGenerator {
         }
         return this.generateObjectValidator(operationName + suffix, properties);
     }
-    async generateBodyValidator(operation: PathInfo, operationName: string): Promise<string[]> {
+    async generateBodyValidator(operation: NormalizedOperation, operationName: string): Promise<string[]> {
         const statements: string[] = [];
         if (!operation.requestBody) {
             return statements;
         }
         // `$ref` request bodies and responses arrive resolved (see extractPaths).
         const { content: bodyContent } = operation.requestBody;
-        const content = bodyContent?.[CONTENT_TYPES.JSON] || bodyContent?.["multipart/form-data"];
+        // A JSON body under another content key (`application/merge-patch+json`)
+        // is described by a schema like any other; a text or binary body is not
+        // a value there is anything to validate about.
+        const boundJson = operation.bodyKind === "json" ? bodyContent?.[operation.bodyContentType ?? ""] : undefined;
+        const content = bodyContent?.[CONTENT_TYPES.JSON] || bodyContent?.["multipart/form-data"] || boundJson;
         if (!content?.schema) {
             return statements;
         }

@@ -109,4 +109,11 @@ The first two are peer dependencies. The last two depend on what your configurat
 
 ## Request Bodies
 
-A request body becomes method arguments when it is declared as `application/json`, `multipart/form-data` or `application/x-www-form-urlencoded`, on every method that can carry one. See [Generated Output](./generated-code.md#services-service-ts) for the details and for what happens to a body under another content type.
+A request body becomes method arguments on every method that can carry one. It is taken and sent by content type:
+
+- **JSON** — `application/json`, also with parameters, and any `+json` type such as `application/merge-patch+json` — is one typed argument.
+- **Forms** — `multipart/form-data` and `application/x-www-form-urlencoded` — are one argument per field.
+- **Text** — `text/*`, XML, YAML — is one `string`.
+- **Binary** — everything else, including ranges such as `image/*` — is one `Blob`.
+
+Sequential types (`application/jsonl`, `text/event-stream`) and other `multipart` types are not generated as request bodies, and are warned about. See [Generated Output](./generated-code.md#services-service-ts) for the `Content-Type` each one is sent with and for what happens when a body is declared several ways.

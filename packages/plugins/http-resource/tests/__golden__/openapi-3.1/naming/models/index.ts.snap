@@ -26,6 +26,12 @@ export interface NewWidgetDto {
     kind?: WidgetKindDto;
 }
 
+export interface WidgetPatchDto {
+    name?: string;
+    nickname?: string | null;
+    kind?: WidgetKindDto;
+}
+
 export enum WidgetKindDto {
     Gadget = "gadget",
     Gizmo = "gizmo"
