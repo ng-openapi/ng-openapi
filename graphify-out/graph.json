@@ -9957,7 +9957,7 @@
       "label": "resolveQueryString()",
       "file_type": "code",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L309",
+      "source_location": "L314",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_resolvequerystring",
       "community": 108,
@@ -9967,7 +9967,7 @@
       "label": "contentKeyOf()",
       "file_type": "code",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L400",
+      "source_location": "L415",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_contentkeyof",
       "community": 68,
@@ -9977,7 +9977,7 @@
       "label": "boundBody()",
       "file_type": "code",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L431",
+      "source_location": "L446",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_boundbody",
       "community": 108,
@@ -9987,7 +9987,7 @@
       "label": "METHODS_WITHOUT_BODY",
       "file_type": "code",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L466",
+      "source_location": "L481",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_methods_without_body",
       "community": 68,
@@ -9997,7 +9997,7 @@
       "label": "dropUnsendableRequestBody()",
       "file_type": "code",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L474",
+      "source_location": "L489",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_dropunsendablerequestbody",
       "community": 68,
@@ -10007,7 +10007,7 @@
       "label": "warnAboutFieldlessFormBody()",
       "file_type": "code",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L493",
+      "source_location": "L508",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_warnaboutfieldlessformbody",
       "community": 68,
@@ -10017,7 +10017,7 @@
       "label": "warnAboutUnsentFormFields()",
       "file_type": "code",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L518",
+      "source_location": "L533",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_warnaboutunsentformfields",
       "community": 68,
@@ -10027,7 +10027,7 @@
       "label": "warnAboutUnboundBody()",
       "file_type": "code",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L547",
+      "source_location": "L562",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_warnaboutunboundbody",
       "community": 68,
@@ -10037,7 +10037,7 @@
       "label": "resolveBodySchema()",
       "file_type": "code",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L563",
+      "source_location": "L578",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_resolvebodyschema",
       "community": 68,
@@ -10047,7 +10047,7 @@
       "label": "determineResponseInfo()",
       "file_type": "code",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L572",
+      "source_location": "L587",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_determineresponseinfo",
       "community": 68,
@@ -10057,7 +10057,7 @@
       "label": "warnAboutUnboundParameters()",
       "file_type": "code",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L601",
+      "source_location": "L616",
       "_origin": "ast",
       "id": "packages_shared_src_core_normalize_warnaboutunboundparameters",
       "community": 68,
@@ -10677,7 +10677,7 @@
       "label": "emitQueryStringSuffix()",
       "file_type": "code",
       "source_file": "packages/shared/src/emit/url.emit.ts",
-      "source_location": "L31",
+      "source_location": "L35",
       "_origin": "ast",
       "id": "packages_shared_src_emit_url_emit_emitquerystringsuffix",
       "community": 164,
@@ -10687,7 +10687,7 @@
       "label": "emitUrlExpression()",
       "file_type": "code",
       "source_file": "packages/shared/src/emit/url.emit.ts",
-      "source_location": "L41",
+      "source_location": "L45",
       "_origin": "ast",
       "id": "packages_shared_src_emit_url_emit_emiturlexpression",
       "community": 164,
@@ -10697,7 +10697,7 @@
       "label": "emitUrlConstruction()",
       "file_type": "code",
       "source_file": "packages/shared/src/emit/url.emit.ts",
-      "source_location": "L88",
+      "source_location": "L92",
       "_origin": "ast",
       "id": "packages_shared_src_emit_url_emit_emiturlconstruction",
       "community": 164,
@@ -13137,7 +13137,7 @@
       "label": "NamingOptions",
       "file_type": "code",
       "source_file": "packages/shared/tests/normalize.test.ts",
-      "source_location": "L1036",
+      "source_location": "L1052",
       "_origin": "ast",
       "id": "packages_shared_tests_normalize_test_namingoptions",
       "community": 68,
@@ -13147,7 +13147,7 @@
       "label": "namesOf()",
       "file_type": "code",
       "source_file": "packages/shared/tests/normalize.test.ts",
-      "source_location": "L1039",
+      "source_location": "L1055",
       "_origin": "ast",
       "id": "packages_shared_tests_normalize_test_namesof",
       "community": 68,
@@ -16280,7 +16280,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_api_configuration_compiler_options",
-      "community": 168,
+      "community": 200,
       "norm_label": "compiler-options.md"
     },
     {
@@ -16290,7 +16290,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "docs_api_configuration_compiler_options_compileroptions",
-      "community": 168,
+      "community": 200,
       "norm_label": "`compileroptions`"
     },
     {
@@ -16300,7 +16300,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "docs_api_configuration_compiler_options_usage",
-      "community": 168,
+      "community": 200,
       "norm_label": "usage"
     },
     {
@@ -16310,7 +16310,7 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "docs_api_configuration_compiler_options_schema",
-      "community": 168,
+      "community": 200,
       "norm_label": "schema"
     },
     {
@@ -16320,7 +16320,7 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "docs_api_configuration_compiler_options_notes",
-      "community": 168,
+      "community": 200,
       "norm_label": "notes"
     },
     {
@@ -16420,7 +16420,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_api_configuration_options_custom_headers",
-      "community": 50,
+      "community": 168,
       "norm_label": "custom-headers.md"
     },
     {
@@ -16430,7 +16430,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "docs_api_configuration_options_custom_headers_customheaders",
-      "community": 50,
+      "community": 168,
       "norm_label": "`customheaders`"
     },
     {
@@ -16440,7 +16440,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "docs_api_configuration_options_custom_headers_usage",
-      "community": 50,
+      "community": 168,
       "norm_label": "usage"
     },
     {
@@ -16450,7 +16450,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_api_configuration_options_customize_method_name",
-      "community": 174,
+      "community": 50,
       "norm_label": "customize-method-name.md"
     },
     {
@@ -16460,7 +16460,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "docs_api_configuration_options_customize_method_name_customizemethodname",
-      "community": 174,
+      "community": 50,
       "norm_label": "`customizemethodname`"
     },
     {
@@ -16470,7 +16470,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "docs_api_configuration_options_customize_method_name_usage",
-      "community": 174,
+      "community": 50,
       "norm_label": "usage"
     },
     {
@@ -16480,7 +16480,7 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "docs_api_configuration_options_customize_method_name_notes",
-      "community": 174,
+      "community": 50,
       "norm_label": "notes"
     },
     {
@@ -16490,7 +16490,7 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "docs_api_configuration_options_customize_method_name_return_a_valid_identifier",
-      "community": 174,
+      "community": 50,
       "norm_label": "return a valid identifier"
     },
     {
@@ -16570,7 +16570,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_api_configuration_options_emit_accept_header",
-      "community": 50,
+      "community": 168,
       "norm_label": "emit-accept-header.md"
     },
     {
@@ -16580,7 +16580,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "docs_api_configuration_options_emit_accept_header_emitacceptheader",
-      "community": 50,
+      "community": 168,
       "norm_label": "`emitacceptheader`"
     },
     {
@@ -16590,7 +16590,7 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "docs_api_configuration_options_emit_accept_header_usage",
-      "community": 50,
+      "community": 168,
       "norm_label": "usage"
     },
     {
@@ -16790,7 +16790,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_api_configuration_options_generate_services",
-      "community": 50,
+      "community": 187,
       "norm_label": "generate-services.md"
     },
     {
@@ -16800,7 +16800,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "docs_api_configuration_options_generate_services_generateservices",
-      "community": 50,
+      "community": 187,
       "norm_label": "`generateservices`"
     },
     {
@@ -16810,7 +16810,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "docs_api_configuration_options_generate_services_usage",
-      "community": 50,
+      "community": 187,
       "norm_label": "usage"
     },
     {
@@ -16820,7 +16820,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "docs_api_configuration_options_generate_services_notes",
-      "community": 50,
+      "community": 187,
       "norm_label": "notes"
     },
     {
@@ -16930,7 +16930,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_api_configuration_options_response_type_mapping",
-      "community": 187,
+      "community": 50,
       "norm_label": "response-type-mapping.md"
     },
     {
@@ -16940,7 +16940,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "docs_api_configuration_options_response_type_mapping_responsetypemapping",
-      "community": 187,
+      "community": 50,
       "norm_label": "`responsetypemapping`"
     },
     {
@@ -16950,7 +16950,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "docs_api_configuration_options_response_type_mapping_usage",
-      "community": 187,
+      "community": 50,
       "norm_label": "usage"
     },
     {
@@ -16960,7 +16960,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "docs_api_configuration_options_response_type_mapping_schema",
-      "community": 187,
+      "community": 50,
       "norm_label": "schema"
     },
     {
@@ -17070,7 +17070,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_api_configuration_options_validation",
-      "community": 189,
+      "community": 50,
       "norm_label": "validation.md"
     },
     {
@@ -17080,7 +17080,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "docs_api_configuration_options_validation_validation",
-      "community": 189,
+      "community": 50,
       "norm_label": "`validation`"
     },
     {
@@ -17090,7 +17090,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "docs_api_configuration_options_validation_usage",
-      "community": 189,
+      "community": 50,
       "norm_label": "usage"
     },
     {
@@ -17100,7 +17100,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "docs_api_configuration_options_validation_resources",
-      "community": 189,
+      "community": 50,
       "norm_label": "resources"
     },
     {
@@ -17530,7 +17530,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_api_utilities",
-      "community": 78,
+      "community": 90,
       "norm_label": "utilities.md"
     },
     {
@@ -17660,7 +17660,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_api_utilities_file_download_helper",
-      "community": 78,
+      "community": 90,
       "norm_label": "file-download-helper.md"
     },
     {
@@ -17670,7 +17670,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "docs_api_utilities_file_download_helper_file_download_helper",
-      "community": 78,
+      "community": 90,
       "norm_label": "file download helper"
     },
     {
@@ -17680,7 +17680,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "docs_api_utilities_file_download_helper_usage",
-      "community": 78,
+      "community": 90,
       "norm_label": "usage"
     },
     {
@@ -17690,7 +17690,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "docs_api_utilities_file_download_helper_generated_source",
-      "community": 78,
+      "community": 90,
       "norm_label": "generated source"
     },
     {
@@ -19480,7 +19480,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_index",
-      "community": 90,
+      "community": 174,
       "norm_label": "index.md"
     },
     {
@@ -19490,7 +19490,7 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "docs_index_introduction",
-      "community": 90,
+      "community": 174,
       "norm_label": "introduction"
     },
     {
@@ -19500,7 +19500,7 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "docs_index_quick_example",
-      "community": 90,
+      "community": 174,
       "norm_label": "quick example"
     },
     {
@@ -19510,7 +19510,7 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "docs_index_what_s_included",
-      "community": 90,
+      "community": 174,
       "norm_label": "what's included"
     },
     {
@@ -19520,7 +19520,7 @@
       "source_location": "L102",
       "_origin": "ast",
       "id": "docs_index_support_the_project",
-      "community": 90,
+      "community": 174,
       "norm_label": "support the project"
     },
     {
@@ -26030,7 +26030,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L478",
+      "source_location": "L493",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_dropunsendablerequestbody",
       "target": "packages_ng_openapi_src_lib_core_reporter_reporter_onwarning"
@@ -26041,7 +26041,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L323",
+      "source_location": "L338",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_resolvequerystring",
       "target": "packages_ng_openapi_src_lib_core_reporter_reporter_onwarning"
@@ -26052,7 +26052,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L498",
+      "source_location": "L513",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_warnaboutfieldlessformbody",
       "target": "packages_ng_openapi_src_lib_core_reporter_reporter_onwarning"
@@ -26063,7 +26063,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L553",
+      "source_location": "L568",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_warnaboutunboundbody",
       "target": "packages_ng_openapi_src_lib_core_reporter_reporter_onwarning"
@@ -26074,7 +26074,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L610",
+      "source_location": "L625",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_warnaboutunboundparameters",
       "target": "packages_ng_openapi_src_lib_core_reporter_reporter_onwarning"
@@ -26085,7 +26085,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L529",
+      "source_location": "L544",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_warnaboutunsentformfields",
       "target": "packages_ng_openapi_src_lib_core_reporter_reporter_onwarning"
@@ -43811,7 +43811,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L431",
+      "source_location": "L446",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize",
       "target": "packages_shared_src_core_normalize_boundbody",
@@ -43821,7 +43821,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L400",
+      "source_location": "L415",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize",
       "target": "packages_shared_src_core_normalize_contentkeyof",
@@ -43831,7 +43831,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L572",
+      "source_location": "L587",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize",
       "target": "packages_shared_src_core_normalize_determineresponseinfo",
@@ -43841,7 +43841,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L474",
+      "source_location": "L489",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize",
       "target": "packages_shared_src_core_normalize_dropunsendablerequestbody",
@@ -43861,7 +43861,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L466",
+      "source_location": "L481",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize",
       "target": "packages_shared_src_core_normalize_methods_without_body",
@@ -43931,7 +43931,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L563",
+      "source_location": "L578",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize",
       "target": "packages_shared_src_core_normalize_resolvebodyschema",
@@ -43941,7 +43941,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L309",
+      "source_location": "L314",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize",
       "target": "packages_shared_src_core_normalize_resolvequerystring",
@@ -43961,7 +43961,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L493",
+      "source_location": "L508",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize",
       "target": "packages_shared_src_core_normalize_warnaboutfieldlessformbody",
@@ -43971,7 +43971,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L547",
+      "source_location": "L562",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize",
       "target": "packages_shared_src_core_normalize_warnaboutunboundbody",
@@ -43981,7 +43981,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L601",
+      "source_location": "L616",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize",
       "target": "packages_shared_src_core_normalize_warnaboutunboundparameters",
@@ -43991,7 +43991,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L518",
+      "source_location": "L533",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize",
       "target": "packages_shared_src_core_normalize_warnaboutunsentformfields",
@@ -44443,7 +44443,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/shared/tests/normalize.test.ts",
-      "source_location": "L1044",
+      "source_location": "L1060",
       "weight": 1.0,
       "source": "packages_shared_tests_normalize_test_namesof",
       "target": "packages_shared_src_core_normalize_normalizespec"
@@ -44607,7 +44607,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L320",
+      "source_location": "L335",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_resolvequerystring",
       "target": "packages_shared_src_errors_describeoperation",
@@ -44618,7 +44618,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L368",
+      "source_location": "L383",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_resolvequerystring",
       "target": "packages_shared_src_utils_functions_media_types_bodymediafamily",
@@ -44629,7 +44629,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L343",
+      "source_location": "L358",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_resolvequerystring",
       "target": "packages_shared_src_utils_functions_media_types_mediatypeessence",
@@ -44640,7 +44640,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L407",
+      "source_location": "L422",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_contentkeyof",
       "target": "packages_shared_src_utils_functions_media_types_mediatypeessence",
@@ -44651,7 +44651,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L450",
+      "source_location": "L465",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_boundbody",
       "target": "packages_shared_src_utils_functions_media_types_bodymediafamily",
@@ -44662,7 +44662,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L454",
+      "source_location": "L469",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_boundbody",
       "target": "packages_shared_src_utils_functions_media_types_ismediatyperange",
@@ -44674,7 +44674,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L475",
+      "source_location": "L490",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_dropunsendablerequestbody",
       "target": "packages_shared_src_core_normalize_methods_without_body"
@@ -44684,7 +44684,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L479",
+      "source_location": "L494",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_dropunsendablerequestbody",
       "target": "packages_shared_src_errors_describeoperation",
@@ -44695,7 +44695,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L499",
+      "source_location": "L514",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_warnaboutfieldlessformbody",
       "target": "packages_shared_src_errors_describeoperation",
@@ -44706,7 +44706,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L530",
+      "source_location": "L545",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_warnaboutunsentformfields",
       "target": "packages_shared_src_errors_describeoperation",
@@ -44717,7 +44717,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L554",
+      "source_location": "L569",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_warnaboutunboundbody",
       "target": "packages_shared_src_errors_describeoperation",
@@ -44728,7 +44728,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L579",
+      "source_location": "L594",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_determineresponseinfo",
       "target": "packages_shared_src_utils_functions_extract_swagger_response_type_getresponseinfofromresponse",
@@ -44739,7 +44739,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/core/normalize.ts",
-      "source_location": "L611",
+      "source_location": "L626",
       "weight": 1.0,
       "source": "packages_shared_src_core_normalize_warnaboutunboundparameters",
       "target": "packages_shared_src_errors_describeoperation",
@@ -46683,7 +46683,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/shared/src/emit/url.emit.ts",
-      "source_location": "L69",
+      "source_location": "L73",
       "weight": 1.0,
       "source": "packages_shared_src_emit_url_emit_emiturlexpression",
       "target": "packages_shared_src_emit_literal_emit_escapetemplateliteral"
@@ -47046,7 +47046,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/emit/url.emit.ts",
-      "source_location": "L31",
+      "source_location": "L35",
       "weight": 1.0,
       "source": "packages_shared_src_emit_url_emit",
       "target": "packages_shared_src_emit_url_emit_emitquerystringsuffix",
@@ -47056,7 +47056,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/emit/url.emit.ts",
-      "source_location": "L88",
+      "source_location": "L92",
       "weight": 1.0,
       "source": "packages_shared_src_emit_url_emit",
       "target": "packages_shared_src_emit_url_emit_emiturlconstruction",
@@ -47066,7 +47066,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/emit/url.emit.ts",
-      "source_location": "L41",
+      "source_location": "L45",
       "weight": 1.0,
       "source": "packages_shared_src_emit_url_emit",
       "target": "packages_shared_src_emit_url_emit_emiturlexpression",
@@ -47173,7 +47173,7 @@
       "context": "argument",
       "confidence": "INFERRED",
       "source_file": "packages/shared/src/emit/url.emit.ts",
-      "source_location": "L94",
+      "source_location": "L98",
       "weight": 1.0,
       "source": "packages_shared_src_emit_url_emit_emiturlconstruction",
       "target": "packages_shared_src_emit_url_emit_plainparamvalue",
@@ -47195,7 +47195,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/emit/url.emit.ts",
-      "source_location": "L70",
+      "source_location": "L74",
       "weight": 1.0,
       "source": "packages_shared_src_emit_url_emit_emiturlexpression",
       "target": "packages_shared_src_emit_url_emit_emitquerystringsuffix",
@@ -47206,7 +47206,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/src/emit/url.emit.ts",
-      "source_location": "L94",
+      "source_location": "L98",
       "weight": 1.0,
       "source": "packages_shared_src_emit_url_emit_emiturlconstruction",
       "target": "packages_shared_src_emit_url_emit_emiturlexpression",
@@ -47218,7 +47218,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/shared/src/emit/url.emit.ts",
-      "source_location": "L74",
+      "source_location": "L78",
       "weight": 1.0,
       "source": "packages_shared_src_emit_url_emit_emiturlexpression",
       "target": "packages_shared_src_utils_functions_argument_names_argumentnames_of"
@@ -54041,7 +54041,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/tests/normalize.test.ts",
-      "source_location": "L1039",
+      "source_location": "L1055",
       "weight": 1.0,
       "source": "packages_shared_tests_normalize_test",
       "target": "packages_shared_tests_normalize_test_namesof",
@@ -54051,7 +54051,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/shared/tests/normalize.test.ts",
-      "source_location": "L1036",
+      "source_location": "L1052",
       "weight": 1.0,
       "source": "packages_shared_tests_normalize_test",
       "target": "packages_shared_tests_normalize_test_namingoptions",
@@ -61912,5 +61912,5 @@
       "source_file": ".github/workflows/release.yml"
     }
   ],
-  "built_at_commit": "d1a5e6c7c7120af59a3fd3430ef6a22e9c443774"
+  "built_at_commit": "23085fd8ff8703726e508eea28a7e1f41c3c2739"
 }

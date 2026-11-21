@@ -343,6 +343,16 @@ describe("normalizeSpec: in: querystring parameters (OpenAPI 3.2)", () => {
                 querystring("second", form(filter)),
                 querystring("third", form(filter)),
             ]),
+            // Path-level, and re-declared by one of the two operations.
+            "/shared": {
+                parameters: [querystring("filter", { "text/plain": {} })],
+                get: { operationId: "inherited", responses: {} },
+                post: {
+                    operationId: "overridden",
+                    parameters: [querystring("filter", { "application/json": { schema: filter } }, true)],
+                    responses: {},
+                },
+            },
             "/no-content": get("noContent", [{ ...querystring("filter", undefined), schema: filter }]),
             "/fieldless": get("fieldless", [
                 querystring("filter", form({ allOf: [{ $ref: "#/components/schemas/Filter" }] })),
@@ -428,13 +438,19 @@ describe("normalizeSpec: in: querystring parameters (OpenAPI 3.2)", () => {
         ]);
     });
 
-    it("generates the first of several, and names the rest", () => {
-        expect(op("two").queryString).toMatchObject({ name: "first", kind: "text" });
-        expect(op("two").queryParams).toEqual([]);
+    it("generates the last of several, and names the rest", () => {
+        expect(op("two").queryString).toBeUndefined();
+        expect(names("two")).toEqual(["text", "max-price"]);
         expect(about("two")).toEqual([
-            'two ((GET) /two) declares 3 `in: querystring` parameters, and a request has one query string. "first" ' +
-                'is generated; "second", "third" are skipped.',
+            'two ((GET) /two) declares 3 `in: querystring` parameters, and a request has one query string. "third", ' +
+                'the last one declared, is generated; "first", "second" are skipped.',
         ]);
+    });
+
+    it("lets the operation re-declare the querystring parameter of its path item, without a word", () => {
+        expect(op("overridden").queryString).toMatchObject({ name: "filter", kind: "json", required: true });
+        expect(op("inherited").queryString).toMatchObject({ name: "filter", kind: "text", required: false });
+        expect([...about("overridden"), ...about("inherited")]).toEqual([]);
     });
 
     it.each([

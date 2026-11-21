@@ -67,7 +67,7 @@ describe("url emission: a value that is the whole query string", () => {
 
     it("appends nothing, not even the question mark, for an optional value that is left out", () => {
         expect(url({ value: "criteria", kind: "json", required: false })).toBe(
-            "`${this.basePath}/items/${id}${criteria === undefined ? '' : '?' + " +
+            "`${this.basePath}/items/${id}${criteria == null ? '' : '?' + " +
                 "encodeURIComponent(JSON.stringify(criteria))}`",
         );
     });
@@ -325,7 +325,7 @@ describe("request-option entries", () => {
     });
 
     it("keeps an entry that only mentions undefined", () => {
-        const url = "url: `${this.basePath}/undefined-items${q === undefined ? '' : '?' + encodeURIComponent(q)}`";
+        const url = "url: `${this.basePath}/undefined-items${q == null ? '' : '?' + encodeURIComponent(q)}`";
         expect(joinRequestOptionEntries([url, "body: undefinedValue", "context: undefined"])).toBe(
             `${url},\n  body: undefinedValue`,
         );

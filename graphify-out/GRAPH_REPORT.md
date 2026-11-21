@@ -1,16 +1,16 @@
 # Graph Report - ng-openapi  (2026-11-21)
 
 ## Corpus Check
-- 303 files · ~171,967 words
+- 303 files · ~172,176 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2118 nodes · 3853 edges · 192 communities (145 shown, 47 thin omitted)
+- 2118 nodes · 3853 edges · 191 communities (144 shown, 47 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 51 edges (avg confidence: 0.71)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d1a5e6c7`
+- Built from commit: `23085fd8`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -193,7 +193,6 @@
 - [[_COMMUNITY_`enumNameExtensions`|`enumNameExtensions`]]
 - [[_COMMUNITY_`responseTypeMapping`|`responseTypeMapping`]]
 - [[_COMMUNITY_Plugin Authoring|Plugin Authoring]]
-- [[_COMMUNITY_validation|validation.md]]
 - [[_COMMUNITY_request-body-methods.test.ts|request-body-methods.test.ts]]
 - [[_COMMUNITY_`validateInput`|`validateInput`]]
 
@@ -228,7 +227,7 @@
 - **NPM Release Pipeline** — _github_workflows_release_please_release_please_workflow, _github_workflows_publish_publish_workflow, _github_workflows_release_pr_prerelease_workflow [EXTRACTED 0.90]
 - **Monorepo Published Packages** — pkg_ng_openapi, pkg_http_resource, pkg_zod, pkg_shared [EXTRACTED 0.85]
 
-## Communities (192 total, 47 thin omitted)
+## Communities (191 total, 47 thin omitted)
 
 ### Community 0 - "Core Generation Pipeline"
 Cohesion: 0.25
@@ -423,8 +422,8 @@ Cohesion: 0.10
 Nodes (19): Advanced Provider Options, Angular Integration, CLI Usage, Command Line Options, Configuration Options, Contributing, 🚀 Easy Setup (Recommended), File Download Example (+11 more)
 
 ### Community 50 - "Enum Generation Options"
-Cohesion: 0.08
-Nodes (19): `customHeaders`, Usage, `emitAcceptHeader`, Usage, `enumNameExtensions`, Example, How Names Are Resolved, Notes (+11 more)
+Cohesion: 0.07
+Nodes (22): `customizeMethodName`, Notes, Return a valid identifier, Usage, `enumNameExtensions`, Example, How Names Are Resolved, Notes (+14 more)
 
 ### Community 51 - "generator.ts"
 Cohesion: 0.10
@@ -507,8 +506,8 @@ Cohesion: 0.25
 Nodes (7): Development Dependency (Recommended), Global Installation, Install, Installation, Next Step, Prerequisites, Verify Installation
 
 ### Community 78 - "generateFromConfig"
-Cohesion: 0.20
-Nodes (8): Available Utilities, [Date Transformer](utilities/date-transformer.md), File Download Helper, Generated Source, Usage, [File Download Helper](utilities/file-download-helper.md), Usage, Utilities
+Cohesion: 0.40
+Nodes (5): Available Utilities, [Date Transformer](utilities/date-transformer.md), [File Download Helper](utilities/file-download-helper.md), Usage, Utilities
 
 ### Community 80 - "BaseInterceptorGenerator"
 Cohesion: 0.25
@@ -552,7 +551,7 @@ Nodes (8): DEFAULT_OPTIONS, isReferenceObject(), ZodPluginOptions, emitEnumMembe
 
 ### Community 90 - "errors.test.ts"
 Cohesion: 0.17
-Nodes (7): Example using Zod, Overview, Schema Validation, Introduction, Quick Example, Support the Project, What's Included
+Nodes (6): File Download Helper, Generated Source, Usage, Example using Zod, Overview, Schema Validation
 
 ### Community 91 - "guides.md"
 Cohesion: 0.16
@@ -683,8 +682,8 @@ Cohesion: 0.29
 Nodes (5): ALIASES, listSourceFiles(), resolveSpecifier(), ROOT, SOURCE_ROOTS
 
 ### Community 168 - "exports"
-Cohesion: 0.40
-Nodes (4): `compilerOptions`, Notes, Schema, Usage
+Cohesion: 0.33
+Nodes (4): `customHeaders`, Usage, `emitAcceptHeader`, Usage
 
 ### Community 169 - "HttpResourceGenerator"
 Cohesion: 0.18
@@ -708,7 +707,7 @@ Nodes (4): Example, Notes, Usage, `useSingleRequestParameter`
 
 ### Community 174 - "peerDependenciesMeta"
 Cohesion: 0.40
-Nodes (4): `customizeMethodName`, Notes, Return a valid identifier, Usage
+Nodes (4): Introduction, Quick Example, Support the Project, What's Included
 
 ### Community 175 - "ZodGenerator"
 Cohesion: 0.21
@@ -748,23 +747,19 @@ Nodes (4): assertScaffoldTargetsWritable(), inspectPackageJson(), SCAFFOLD_FILES
 
 ### Community 187 - "`responseTypeMapping`"
 Cohesion: 0.50
-Nodes (3): `responseTypeMapping`, Schema, Usage
+Nodes (3): `generateServices`, Notes, Usage
 
 ### Community 188 - "Plugin Authoring"
 Cohesion: 0.11
 Nodes (15): Available Plugins, `HttpResourcePlugin`, Notes, Usage, Notes, `plugins`, Usage, Notes (+7 more)
-
-### Community 189 - "validation.md"
-Cohesion: 0.50
-Nodes (3): Resources, Usage, `validation`
 
 ### Community 190 - "request-body-methods.test.ts"
 Cohesion: 0.22
 Nodes (7): FIELDLESS_FORM_SPEC, generate(), noContent, outputDirs, read(), SPEC, writeSpec()
 
 ### Community 200 - "`validateInput`"
-Cohesion: 0.10
-Nodes (15): `clientName`, Notes, Usage, `input`, Notes, Supported Formats, Usage, Notes (+7 more)
+Cohesion: 0.08
+Nodes (19): `clientName`, Notes, Usage, `compilerOptions`, Notes, Schema, Usage, `input` (+11 more)
 
 ## Knowledge Gaps
 - **977 isolated node(s):** `$schema`, `registry`, `blocks`, `components`, `assets` (+972 more)

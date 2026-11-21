@@ -303,6 +303,11 @@ function normalizeOperation(
  * that is not required may be left out entirely, and with one argument per
  * property that is only expressible by making each of them optional.
  *
+ * A request has one query string. The parameters of a path item come before
+ * the operation's own, and the operation's override them, so the last one
+ * declared is the one generated: re-declared under the same name it simply
+ * replaces the path item's, and any other is skipped out loud.
+ *
  * Anything that cannot be generated is skipped with a warning that says what
  * the client then sends: no query string from it.
  */
@@ -312,11 +317,21 @@ function resolveQueryString(
     resolveRef: ResolveRef,
     onWarning?: (message: string) => void,
 ): { params: Parameter[]; whole?: NormalizedQueryString } {
-    const declared = (operation.parameters ?? []).filter((p) => p.in === "querystring");
-    if (declared.length === 0) {
+    // By name, the later declaration over the earlier: an operation-level
+    // parameter overrides the path-level one it re-declares.
+    const byName = new Map<string, Parameter>();
+    for (const candidate of operation.parameters ?? []) {
+        if (candidate.in === "querystring") {
+            byName.delete(candidate.name);
+            byName.set(candidate.name, candidate);
+        }
+    }
+    const declared = [...byName.values()];
+    const parameter = declared[declared.length - 1];
+    if (parameter === undefined) {
         return { params: [] };
     }
-    const [parameter, ...others] = declared;
+    const others = declared.slice(0, -1);
     const described = describeOperation(operation);
     const subject = `\`in: querystring\` parameter "${parameter.name}" of ${described}`;
     const skipped = (reason: string): { params: Parameter[] } => {
@@ -326,8 +341,8 @@ function resolveQueryString(
     if (others.length > 0) {
         onWarning?.(
             `${described} declares ${declared.length} \`in: querystring\` parameters, and a request has one query ` +
-                `string. "${parameter.name}" is generated; ${others.map((p) => `"${p.name}"`).join(", ")} ` +
-                `${others.length === 1 ? "is" : "are"} skipped.`,
+                `string. "${parameter.name}", the last one declared, is generated; ` +
+                `${others.map((p) => `"${p.name}"`).join(", ")} ${others.length === 1 ? "is" : "are"} skipped.`,
         );
     }
 

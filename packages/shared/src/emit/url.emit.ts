@@ -19,7 +19,11 @@ export interface QueryStringEmit {
     value: string;
     /** `json`: sent as its JSON text; `text`: a string, sent as it is. Percent-encoded either way. */
     kind: "json" | "text";
-    /** When false, an `undefined` value appends nothing, not even the `?`. */
+    /**
+     * When false, a value that is left out appends nothing, not even the `?`.
+     * Left out means `undefined` or `null`, as for an ordinary query
+     * parameter: `?null` is not what passing no criteria is meant to send.
+     */
     required: boolean;
 }
 
@@ -30,7 +34,7 @@ export interface QueryStringEmit {
  */
 function emitQueryStringSuffix({ value, kind, required }: QueryStringEmit): string {
     const encoded = kind === "json" ? `encodeURIComponent(JSON.stringify(${value}))` : `encodeURIComponent(${value})`;
-    return required ? "?${" + encoded + "}" : "${" + `${value} === undefined ? '' : '?' + ${encoded}` + "}";
+    return required ? "?${" + encoded + "}" : "${" + `${value} == null ? '' : '?' + ${encoded}` + "}";
 }
 
 /**
