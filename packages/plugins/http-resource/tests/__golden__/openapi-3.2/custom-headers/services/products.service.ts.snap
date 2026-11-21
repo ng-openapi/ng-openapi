@@ -166,7 +166,7 @@ export class ProductsService {
     matchProducts(criteria?: ProductSearch, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<Product>>>;
     /** A JSON `in: querystring` parameter: the whole query string is one percent-encoded JSON document. It is optional. */
     matchProducts(criteria?: ProductSearch, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
-        const url = `${this.basePath}/products/match${criteria === undefined ? '' : '?' + encodeURIComponent(JSON.stringify(criteria))}`;
+        const url = `${this.basePath}/products/match${criteria == null ? '' : '?' + encodeURIComponent(JSON.stringify(criteria))}`;
 
         let headers: HttpHeaders;
         if (options?.headers instanceof HttpHeaders) {

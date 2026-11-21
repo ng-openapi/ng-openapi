@@ -1,16 +1,16 @@
 # Graph Report - ng-openapi  (2026-11-21)
 
 ## Corpus Check
-- 308 files · ~178,762 words
+- 308 files · ~179,623 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2161 nodes · 3979 edges · 212 communities (165 shown, 47 thin omitted)
+- 2162 nodes · 3982 edges · 207 communities (159 shown, 48 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 54 edges (avg confidence: 0.72)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d1a5e6c7`
+- Built from commit: `fa246150`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -183,38 +183,33 @@
 - [[_COMMUNITY_method-names.test.ts|method-names.test.ts]]
 - [[_COMMUNITY_no-import-cycles.test.ts|no-import-cycles.test.ts]]
 - [[_COMMUNITY_author|author]]
-- [[_COMMUNITY_exports|exports]]
-- [[_COMMUNITY_inline-nested-refs.test.ts|inline-nested-refs.test.ts]]
-- [[_COMMUNITY_HttpParamsBuilderGenerator|HttpParamsBuilderGenerator]]
-- [[_COMMUNITY_custom-headers|custom-headers.md]]
-- [[_COMMUNITY_perf-benchmark.test.ts|perf-benchmark.test.ts]]
-- [[_COMMUNITY_repository|repository]]
-- [[_COMMUNITY_`enumNameExtensions`|`enumNameExtensions`]]
-- [[_COMMUNITY_`output`|`output`]]
-- [[_COMMUNITY_Plugin Authoring|Plugin Authoring]]
-- [[_COMMUNITY_engines|engines]]
-- [[_COMMUNITY_request-body-methods.test.ts|request-body-methods.test.ts]]
-- [[_COMMUNITY_`useSingleRequestParameter`|`useSingleRequestParameter`]]
-- [[_COMMUNITY_`ZodPlugin`|`ZodPlugin`]]
-- [[_COMMUNITY_publishConfig|publishConfig]]
-- [[_COMMUNITY_scripts|scripts]]
-- [[_COMMUNITY_`HttpResourcePlugin`|`HttpResourcePlugin`]]
-- [[_COMMUNITY_index.ts|index.ts]]
 - [[_COMMUNITY_ZodGenerator|ZodGenerator]]
+- [[_COMMUNITY_inline-nested-refs.test.ts|inline-nested-refs.test.ts]]
 - [[_COMMUNITY_ZodSchemaGenerator|ZodSchemaGenerator]]
 - [[_COMMUNITY_operation.model.ts|operation.model.ts]]
+- [[_COMMUNITY_perf-benchmark.test.ts|perf-benchmark.test.ts]]
+- [[_COMMUNITY_Date Transformer|Date Transformer]]
+- [[_COMMUNITY_`enumNameExtensions`|`enumNameExtensions`]]
+- [[_COMMUNITY_`responseTypeMapping`|`responseTypeMapping`]]
+- [[_COMMUNITY_Plugin Authoring|Plugin Authoring]]
+- [[_COMMUNITY_http-stream.test.ts|http-stream.test.ts]]
+- [[_COMMUNITY_request-body-methods.test.ts|request-body-methods.test.ts]]
+- [[_COMMUNITY_peerDependenciesMeta|peerDependenciesMeta]]
+- [[_COMMUNITY_`enumNameExtensions`|`enumNameExtensions`]]
 - [[_COMMUNITY_`validateInput`|`validateInput`]]
-- [[_COMMUNITY_Configuration Options|Configuration Options]]
-- [[_COMMUNITY_main-index.generator.ts|main-index.generator.ts]]
-- [[_COMMUNITY_type.utils.ts|type.utils.ts]]
-- [[_COMMUNITY_ServiceGenerator|ServiceGenerator]]
-- [[_COMMUNITY_http-resource.generator.ts|http-resource.generator.ts]]
-- [[_COMMUNITY_.addServiceClass|.addServiceClass]]
-- [[_COMMUNITY_`plugins`|`plugins`]]
-- [[_COMMUNITY_build|build]]
+- [[_COMMUNITY_`input`|`input`]]
+- [[_COMMUNITY_author|author]]
+- [[_COMMUNITY_exports|exports]]
+- [[_COMMUNITY_repository|repository]]
+- [[_COMMUNITY_compile-generated.test.ts|compile-generated.test.ts]]
 - [[_COMMUNITY_`validation`|`validation`]]
-- [[_COMMUNITY_`ZodPlugin`|`ZodPlugin`]]
-- [[_COMMUNITY_namedInputs|namedInputs]]
+- [[_COMMUNITY_`validateInput`|`validateInput`]]
+- [[_COMMUNITY_`output`|`output`]]
+- [[_COMMUNITY_Schema Validation|Schema Validation]]
+- [[_COMMUNITY_engines|engines]]
+- [[_COMMUNITY_funding|funding]]
+- [[_COMMUNITY_publishConfig|publishConfig]]
+- [[_COMMUNITY_scripts|scripts]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `NormalizedOperation` - 78 edges
@@ -235,10 +230,10 @@
   packages/shared/src/utils/functions/extract-paths.ts → packages/ng-openapi/tests/http-stream.test.ts
 - `registerCompileCheckSuite()` --calls--> `buildConfig()`  [INFERRED]
   packages/testing/src/compile-check-suite.ts → packages/ng-openapi/tests/generation-result.test.ts
-- `parseParameters()` --indirect_call--> `param()`  [INFERRED]
-  packages/shared/src/utils/functions/extract-paths.ts → packages/shared/tests/argument-names.test.ts
-- `createConsoleReporter()` --calls--> `isUrl()`  [EXTRACTED]
-  packages/ng-openapi/src/lib/cli.ts → packages/shared/src/utils/functions/is-url.ts
+- `registerGoldenSuite()` --calls--> `buildConfig()`  [INFERRED]
+  packages/testing/src/golden-suite.ts → packages/ng-openapi/tests/generation-result.test.ts
+- `assertDistinctMemberNames()` --indirect_call--> `describeOperation()`  [INFERRED]
+  packages/shared/src/utils/functions/distinct-member-names.ts → packages/shared/src/errors.ts
 
 ## Import Cycles
 - None detected.
@@ -247,31 +242,27 @@
 - **NPM Release Pipeline** — _github_workflows_release_please_release_please_workflow, _github_workflows_publish_publish_workflow, _github_workflows_release_pr_prerelease_workflow [EXTRACTED 0.90]
 - **Monorepo Published Packages** — pkg_ng_openapi, pkg_http_resource, pkg_zod, pkg_shared [EXTRACTED 0.85]
 
-## Communities (212 total, 47 thin omitted)
+## Communities (207 total, 48 thin omitted)
 
 ### Community 0 - "Core Generation Pipeline"
-Cohesion: 0.25
-Nodes (7): EnumBuilder, EnumValue, toEnumKey(), buildSdkTypes(), escapeString, baseConfig, TypeGenOptions
+Cohesion: 0.23
+Nodes (8): EnumBuilder, EnumValue, toEnumKey(), buildSdkTypes(), escapeString, sanitizePropertyName, baseConfig, TypeGenOptions
 
 ### Community 1 - "Service Method Generators"
 Cohesion: 0.12
 Nodes (17): File by File, Generated Output, `index.ts`, `models/index.ts`, `models/request-params.ts`, `package.json`, `ng-package.json`, `tsconfig.json`, `README.md`, `.gitignore`, `providers.ts`, Regeneration Notes (+9 more)
 
 ### Community 2 - "Method Body Generation"
-Cohesion: 0.18
-Nodes (13): defineConfig(), EnumNamingOptions, GeneratorConfig, NamingOptions, NgOpenapiClientConfig, PackageGenOptions, GetMethodGenerationContext, MethodGenerationContext (+5 more)
+Cohesion: 0.19
+Nodes (16): OpenApiSecurityScheme, Parameter, RequestBody, SwaggerResponse, ComponentLocation, ComponentResolution, ComponentResolvers, ResolveComponent (+8 more)
 
 ### Community 3 - "Package Manifests & Exports"
 Cohesion: 0.15
 Nodes (12): bugs, url, description, files, homepage, keywords, license, main (+4 more)
 
-### Community 4 - "Zod Schema Generation"
-Cohesion: 0.16
-Nodes (5): ModelFileRegistry, sanitizeFileBaseName(), TypeGenerator, emitDocs(), names()
-
 ### Community 5 - "Documentation & Guides"
-Cohesion: 0.13
-Nodes (12): captureOperation(), DuplicateGeneratedNameError, ERROR_LINEAGE, ErrorClass, FALLBACK_LINEAGE, inheritedLineage(), InvalidIdentifierError, NgOpenApiError (+4 more)
+Cohesion: 0.33
+Nodes (3): ServiceGenerator, NormalizedOperation, op()
 
 ### Community 6 - "Type Resolution & Params"
 Cohesion: 0.15
@@ -286,8 +277,8 @@ Cohesion: 0.07
 Nodes (26): Angular version requirements are warnings, Key design decisions, ng-openapi — Architecture, One normalized model (IR), One write per run, Package layout and boundaries, Plugin contract, Project as the manifest (+18 more)
 
 ### Community 9 - "Dev Dependencies"
-Cohesion: 0.07
-Nodes (30): devDependencies, @angular/common, @angular/compiler, @angular/compiler-cli, @angular/core, eslint, eslint-config-prettier, @eslint/js (+22 more)
+Cohesion: 0.06
+Nodes (31): devDependencies, @angular/common, @angular/compiler, @angular/compiler-cli, @angular/core, eslint, eslint-config-prettier, @eslint/js (+23 more)
 
 ### Community 10 - "Nx Project Targets"
 Cohesion: 0.08
@@ -346,12 +337,12 @@ Cohesion: 0.04
 Nodes (45): optional, optional, author, email, name, url, bugs, url (+37 more)
 
 ### Community 24 - "Date Transformation"
-Cohesion: 0.67
-Nodes (3): Example using Zod, Overview, Schema Validation
+Cohesion: 0.09
+Nodes (22): generateFromConfig(), generate(), outputDirs, generate(), outputDirs, FIXTURE, generateAndBuild(), generate() (+14 more)
 
 ### Community 25 - "Plugins Changelog"
-Cohesion: 0.05
-Nodes (58): assertJsonValue(), NAMING_KEYS, PACKAGE_JSON_OWNED_KEYS, PACKAGE_JSON_STRING_MAPS, RESPONSE_TYPES, UnknownShape, validateGeneratorConfig(), validatePackageConfig() (+50 more)
+Cohesion: 0.12
+Nodes (17): collapseWhitespace(), LIBRARY_TSCONFIG, mergePackageJson(), PackageScaffoldGenerator, DEV_DEPENDENCY_RANGES, KNOWN_PEER_RANGES, leadingMajor(), PACKAGE_JSON_MARKER (+9 more)
 
 ### Community 26 - "Nx Workspace Config"
 Cohesion: 0.13
@@ -430,15 +421,15 @@ Cohesion: 0.50
 Nodes (4): repository, directory, type, url
 
 ### Community 46 - "HttpResourceGenerator"
-Cohesion: 0.18
-Nodes (10): analytics, defaultBase, extends, neverConnectToCloud, plugins, release, version, $schema (+2 more)
+Cohesion: 0.14
+Nodes (13): analytics, defaultBase, extends, namedInputs, default, sharedGlobals, neverConnectToCloud, plugins (+5 more)
 
 ### Community 47 - "Author Metadata"
 Cohesion: 0.17
 Nodes (12): [Client Name](configuration/client-name.md), [Compiler Options](configuration/compiler-options.md), Configuration, Configuration Properties, [Input](configuration/input.md), [Options](configuration/options.md), [Output](configuration/output.md), [Package](configuration/package.md) (+4 more)
 
 ### Community 48 - "Export Map"
-Cohesion: 0.13
+Cohesion: 0.12
 Nodes (15): Automatic Date Transformation, Configuration, Configuration, Custom Date Regex, Date Handling, Date Transformer Interceptor, Disable Transformation, Generated Models (+7 more)
 
 ### Community 49 - "Repository Metadata"
@@ -446,8 +437,8 @@ Cohesion: 0.10
 Nodes (19): Advanced Provider Options, Angular Integration, CLI Usage, Command Line Options, Configuration Options, Contributing, 🚀 Easy Setup (Recommended), File Download Example (+11 more)
 
 ### Community 50 - "Enum Generation Options"
-Cohesion: 0.07
-Nodes (22): `customHeaders`, Usage, `customizeMethodName`, Notes, Return a valid identifier, Usage, `emitAcceptHeader`, Usage (+14 more)
+Cohesion: 0.09
+Nodes (17): `customHeaders`, Usage, `customizeMethodName`, Notes, Return a valid identifier, Usage, `emitAcceptHeader`, Usage (+9 more)
 
 ### Community 51 - "generator.ts"
 Cohesion: 0.10
@@ -475,19 +466,19 @@ Nodes (3): scripts, build, prepublishOnly
 
 ### Community 57 - "isUrl"
 Cohesion: 0.19
-Nodes (4): InterfaceBuilder, sanitizePropertyName, TypeResolver, r()
+Nodes (3): InterfaceBuilder, TypeResolver, r()
 
 ### Community 58 - "Funding Metadata"
 Cohesion: 0.14
 Nodes (14): Best Practices, Client Isolation, Directory Organization, Environment Configuration, Generated Structure, Generating Multiple Clients, Independent Interceptors, Multiple Clients (+6 more)
 
 ### Community 59 - "Publish Config"
-Cohesion: 0.10
-Nodes (25): HttpResourceMethodParamsGenerator, CONTENT_TYPES, ArgumentKey, ArgumentNames, bodyIdentifier(), computeArgumentNames(), legacyJsonBodyType(), QUERY_STRING_KEY (+17 more)
+Cohesion: 0.17
+Nodes (8): HttpResourceMethodParamsGenerator, CONTENT_TYPES, getBodyArgumentType(), getQueryStringArgumentType(), getRequestBodyType(), getTypeScriptType(), nullableType(), param()
 
 ### Community 60 - "Publish Scripts"
-Cohesion: 0.31
-Nodes (5): BaseInterceptorGenerator, BASE_INTERCEPTOR_HEADER_COMMENT(), HTTP_RESOURCE_GENERATOR_HEADER_COMMENT(), SERVICE_GENERATOR_HEADER_COMMENT(), ZOD_PLUGIN_GENERATOR_HEADER_COMMENT()
+Cohesion: 0.15
+Nodes (30): ANNOTATION_ONLY_KEYS, countNodes(), describeKind(), firstNonSchemaSegment(), flushDeferredWarnings(), InlineContext, inlineNestedRefs(), inlineTarget() (+22 more)
 
 ### Community 62 - "Config/Metadata Fragment"
 Cohesion: 0.14
@@ -506,12 +497,12 @@ Cohesion: 0.25
 Nodes (8): Angular Integration, Basic Setup, Configure Providers, Disable Date Transformation, Environment Configuration, Inject Services, Manual Configuration, Resources
 
 ### Community 67 - "custom-headers.md"
-Cohesion: 0.14
-Nodes (6): specVersionOf(), SwaggerParser, SwaggerSpec, spec, config, tempDir
+Cohesion: 0.06
+Nodes (30): DEFAULT_OPTIONS, isReferenceObject(), BuildOptions, ZodPluginOptions, emitEnumMember(), stripRegexDelimiters(), ZodSchemaBuilder, ZodSchemaGenerator (+22 more)
 
 ### Community 68 - "Config/Metadata Fragment"
-Cohesion: 0.26
-Nodes (9): ArgumentNameProfile, hasDuplicateFunctionNames(), getResponseInfoFromResponse(), getResponseTypeFromResponse(), isPrimitiveType(), ResponseTypeInfo, generateParseRequestTypeParams(), isDataTypeInterface() (+1 more)
+Cohesion: 0.17
+Nodes (16): determineResponseInfo(), infoText(), nameEnumMembers(), normalizeContentSchemas(), normalizeOperationSchemas(), normalizeSchema(), normalizeSpec(), ResolveRef (+8 more)
 
 ### Community 69 - "Config/Metadata Fragment"
 Cohesion: 0.25
@@ -534,8 +525,8 @@ Cohesion: 0.20
 Nodes (8): Available Utilities, [Date Transformer](utilities/date-transformer.md), File Download Helper, Generated Source, Usage, [File Download Helper](utilities/file-download-helper.md), Usage, Utilities
 
 ### Community 80 - "BaseInterceptorGenerator"
-Cohesion: 0.11
-Nodes (15): `clientName`, Notes, Usage, `'Date'` (Default), `dateType`, Notes, `'string'`, Supported Options (+7 more)
+Cohesion: 0.10
+Nodes (17): `clientName`, Notes, Usage, `'Date'` (Default), `dateType`, Notes, `'string'`, Supported Options (+9 more)
 
 ### Community 81 - "swagger-parser.test.ts"
 Cohesion: 0.22
@@ -550,60 +541,60 @@ Cohesion: 0.20
 Nodes (9): 1. Configure Plugin, 2. Generate Schemas, 3. Setup Providers, 4. Use Generated Schemas, Documentation, Generated Structure, Installation, Quick Start (+1 more)
 
 ### Community 84 - "`naming`"
-Cohesion: 0.12
-Nodes (15): outputDirs, outputDirs, tempDirs, tmpRoot, generate(), outputDirs, outputDirs, dirs (+7 more)
+Cohesion: 0.20
+Nodes (17): contentKeyOf(), dropUnsendableRequestBody(), METHODS_WITHOUT_BODY, normalizeOperation(), resolveBodySchema(), warnAboutFieldlessFormBody(), warnAboutUnboundBody(), warnAboutUnboundParameters() (+9 more)
 
 ### Community 85 - "author"
-Cohesion: 0.26
-Nodes (4): HttpResourceMethodGenerator, HttpResourceMethodBodyGenerator, QueryStringEmit, NormalizedOperation
+Cohesion: 0.21
+Nodes (11): HttpResourceMethodBodyGenerator, ResourceBody, emitMultipartFormData(), emitUrlEncodedFormBody(), FieldRead, FormBodyEmitOptions, readField(), emitSignalAwareQueryParams() (+3 more)
 
 ### Community 86 - "Contributor Covenant Code of Conduct"
 Cohesion: 0.25
 Nodes (7): Attribution, Contributor Covenant Code of Conduct, Enforcement, Our Pledge, Our Responsibilities, Our Standards, Scope
 
 ### Community 87 - "getTypeScriptType"
-Cohesion: 0.22
-Nodes (8): DEFAULT_OPTIONS, isReferenceObject(), ZodPluginOptions, emitEnumMember(), stripRegexDelimiters(), NormalizedSpec, TypeMappingConfig, PathInfo
+Cohesion: 0.16
+Nodes (11): METHODS_WITH_EXPLICIT_EMPTY_BODY, ServiceMethodBodyGenerator, emitQueryParams(), emitResponseTypeOption(), joinRequestOptionEntries(), emitSequenceParser(), emitSequenceStreamOperator(), getStreamItemType() (+3 more)
 
 ### Community 88 - "Development Workflow"
 Cohesion: 0.33
 Nodes (6): `'enum'` (Default), `enumStyle`, Notes, Supported Options, `'union'`, Usage
 
 ### Community 89 - "index.ts"
-Cohesion: 0.24
-Nodes (14): additionalOperations(), asName(), dereference(), extractPaths(), FIXED_FIELD_METHODS, FORBIDDEN_METHODS, fromLegacy(), nameOrNothing() (+6 more)
+Cohesion: 0.13
+Nodes (17): RESOURCE_METHODS, ArgumentKey, ArgumentNameProfile, bodyIdentifier(), computeArgumentNames(), legacyJsonBodyType(), QUERY_STRING_KEY, RenamedArgument (+9 more)
 
 ### Community 91 - "guides.md"
-Cohesion: 0.13
-Nodes (15): buildConfig(), FIXTURE, NoopPlugin, tempDirs, tmpRoot, ConfigBuilder, FIXTURES_DIR, FOCUSED_FIXTURES (+7 more)
+Cohesion: 0.16
+Nodes (11): ENUM_NAME_EXTENSIONS, ConfigBuilder, FIXTURES_DIR, FOCUSED_FIXTURES, GOLDEN_FIXTURES, GoldenFixture, GoldenSuiteOptions, listFilesRecursively() (+3 more)
 
 ### Community 92 - "HttpResourceMethodBodyGenerator"
-Cohesion: 0.22
-Nodes (14): groupOperationsByController(), defaultOperationMethodName(), getOperationMethodName(), RESERVED_MEMBER_NAMES, RESERVED_MEMBER_SET, reservedMemberCollision(), camelCase(), capitalizeFirst() (+6 more)
+Cohesion: 0.23
+Nodes (13): defaultOperationMethodName(), getOperationMethodName(), RESERVED_MEMBER_NAMES, RESERVED_MEMBER_SET, reservedMemberCollision(), camelCase(), capitalizeFirst(), isValidIdentifier() (+5 more)
 
 ### Community 93 - "ServiceMethodParamsGenerator"
 Cohesion: 0.40
 Nodes (5): Description Format, Example OpenAPI Enum with Description, `generateEnumBasedOnDescription`, Notes, Usage
 
 ### Community 94 - "peerDependenciesMeta"
-Cohesion: 0.10
-Nodes (7): RequestParamsGenerator, ServiceMethodGenerator, ServiceMethodOverloadsGenerator, ServiceMethodParamsGenerator, RequestObjectEntry, ServiceMethodRequestObjectGenerator, MethodGenOptions
+Cohesion: 0.13
+Nodes (5): RequestParamsGenerator, ServiceMethodGenerator, ServiceMethodParamsGenerator, RequestObjectEntry, ServiceMethodRequestObjectGenerator
 
 ### Community 95 - "index.md"
-Cohesion: 0.40
-Nodes (4): Introduction, Quick Example, Support the Project, What's Included
+Cohesion: 0.08
+Nodes (11): BaseInterceptorGenerator, DateTransformerGenerator, FileDownloadGenerator, HttpParamsBuilderGenerator, HTTP_STREAM_SOURCE, HttpStreamGenerator, BASE_INTERCEPTOR_HEADER_COMMENT(), HTTP_RESOURCE_GENERATOR_HEADER_COMMENT() (+3 more)
 
 ### Community 96 - "swagger-parser.test.ts"
-Cohesion: 0.12
-Nodes (6): FIXTURES, outputDirs, ENUM_NAME_EXTENSIONS, REPRO_SPEC, tempDirs, tmpRoot
+Cohesion: 0.17
+Nodes (5): FIXTURES, outputDirs, REPRO_SPEC, tempDirs, tmpRoot
 
 ### Community 97 - "Changelog"
 Cohesion: 0.07
 Nodes (27): [0.2.19](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi@0.2.18...ng-openapi-v0.2.19) (2026-05-16), [0.2.20](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.2.19...ng-openapi-v0.2.20) (2026-06-10), [0.2.21](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.2.20...ng-openapi-v0.2.21) (2026-07-05), [0.2.22](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.2.21...ng-openapi-v0.2.22) (2026-07-05), [0.3.0](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.2.22...ng-openapi-v0.3.0) (2026-07-06), [0.3.1](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.3.0...ng-openapi-v0.3.1) (2026-07-06), [0.3.2](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.3.1...ng-openapi-v0.3.2) (2026-07-27), [0.3.3](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.3.2...ng-openapi-v0.3.3) (2026-08-13) (+19 more)
 
 ### Community 98 - "getTypeScriptType"
-Cohesion: 0.13
-Nodes (24): determineResponseInfo(), dropUnsendableRequestBody(), infoText(), METHODS_WITHOUT_BODY, nameEnumMembers(), normalizeContentSchemas(), normalizeOperation(), normalizeOperationSchemas() (+16 more)
+Cohesion: 0.28
+Nodes (9): hasDuplicateFunctionNames(), getResponseInfoFromResponse(), getResponseType(), getResponseTypeFromResponse(), isPrimitiveType(), ResponseTypeInfo, generateParseRequestTypeParams(), isDataTypeInterface() (+1 more)
 
 ### Community 99 - "normalizeSpec"
 Cohesion: 0.27
@@ -614,8 +605,8 @@ Cohesion: 0.20
 Nodes (9): Audio, Creative Direction, Hyperframes Composition Brief: ng-openapi, Hyperframes Instructions, Objective, Output, Source Material, Storyboard (+1 more)
 
 ### Community 101 - "peerDependencies"
-Cohesion: 0.20
-Nodes (9): `ng-openapi`, peerDependencies, @angular/common, @angular/core, ng-openapi, ts-morph, peerDependencies, ng-openapi (+1 more)
+Cohesion: 0.18
+Nodes (10): `ng-openapi`, peerDependencies, @angular/common, @angular/core, ng-openapi, ts-morph, peerDependencies, ng-openapi (+2 more)
 
 ### Community 102 - "Changelog"
 Cohesion: 0.11
@@ -630,32 +621,32 @@ Cohesion: 0.50
 Nodes (3): Checklist, How to verify, Summary
 
 ### Community 105 - "targetDefaults"
-Cohesion: 0.20
-Nodes (10): cache, inputs, targetDefaults, lint, test, typecheck, cache, inputs (+2 more)
+Cohesion: 0.14
+Nodes (14): cache, dependsOn, inputs, cache, inputs, targetDefaults, build, lint (+6 more)
 
 ### Community 106 - "`validateInput`"
 Cohesion: 0.20
 Nodes (9): media, autoProxy, paths, assets, blocks, components, registry, registryItems (+1 more)
 
 ### Community 107 - "index.md"
-Cohesion: 0.25
-Nodes (5): `@ng-openapi/http-resource`, Changelog, `@ng-openapi/zod`, zod, zod
+Cohesion: 0.33
+Nodes (3): `@ng-openapi/http-resource`, Changelog, `@ng-openapi/zod`
 
 ### Community 108 - "peerDependenciesMeta"
-Cohesion: 0.12
-Nodes (6): generate(), outputDirs, outputDirs, SPEC, tempDirs, tmpRoot
+Cohesion: 0.44
+Nodes (11): boundBody(), resolveQueryString(), bodyMediaFamily, inferResponseTypeFromContentType(), isJsonMediaType(), isMediaTypeRange(), isSequentialMediaType(), JSON_LINES_MEDIA_TYPES (+3 more)
 
 ### Community 109 - "BaseInterceptorGenerator"
 Cohesion: 0.29
 Nodes (6): compilerOptions, noEmit, outDir, types, extends, include
 
 ### Community 110 - "`input`"
-Cohesion: 0.28
-Nodes (6): METHODS_WITH_EXPLICIT_EMPTY_BODY, ServiceMethodBodyGenerator, emitSequenceParser(), emitSequenceStreamOperator(), getStreamItemType(), SEQUENCE_READERS
+Cohesion: 0.17
+Nodes (12): assertJsonValue(), NAMING_KEYS, PACKAGE_JSON_OWNED_KEYS, PACKAGE_JSON_STRING_MAPS, RESPONSE_TYPES, UnknownShape, validateGeneratorConfig(), validatePackageConfig() (+4 more)
 
 ### Community 111 - "`useSingleRequestParameter`"
-Cohesion: 0.24
-Nodes (8): inlineNestedRefs(), detectFormat(), parseSpecContent(), fetchUrlContent(), loadSpecContent(), SpecParseError, isUrl(), tempDir
+Cohesion: 0.21
+Nodes (8): detectFormat(), parseSpecContent(), fetchUrlContent(), loadSpecContent(), SpecParseError, tempDir, config, tempDir
 
 ### Community 113 - "validation.md"
 Cohesion: 0.29
@@ -670,8 +661,8 @@ Cohesion: 0.29
 Nodes (6): compilerOptions, noEmit, outDir, types, extends, include
 
 ### Community 159 - "ServiceMethodOverloadsGenerator"
-Cohesion: 0.09
-Nodes (19): describeQueryMethodSupport(), detectAngularCoreVersion(), isAngularVersionBelow(), QUERY_METHOD_MIN_ANGULAR, SERVICE_DECORATOR_MIN_ANGULAR, generateFromConfig(), validateInput(), assertScaffoldTargetsWritable() (+11 more)
+Cohesion: 0.15
+Nodes (13): describeQueryMethodSupport(), detectAngularCoreVersion(), isAngularVersionBelow(), QUERY_METHOD_MIN_ANGULAR, SERVICE_DECORATOR_MIN_ANGULAR, validateInput(), assertScaffoldTargetsWritable(), inspectPackageJson() (+5 more)
 
 ### Community 160 - "inline-nested-refs.test.ts"
 Cohesion: 0.22
@@ -686,28 +677,28 @@ Cohesion: 0.25
 Nodes (7): Commands, Documentation, HyperFrames Composition Project, Key Rules, Linting — ALWAYS RUN AFTER CHANGES, Project Structure, Skills — USE THESE FIRST
 
 ### Community 163 - "HttpParamsBuilderGenerator"
-Cohesion: 0.21
-Nodes (7): SpecLoadError, Deep, Deeper, Forged, Tighter, TighterSpecLoadError, Unrelated
+Cohesion: 0.24
+Nodes (7): ServiceIndexGenerator, HttpResourceIndexGenerator, NameDecoration, decorate(), getModelTypeName(), getResourceClassName(), getServiceClassName()
 
 ### Community 164 - "Plugin Authoring"
-Cohesion: 0.14
-Nodes (30): ResourceBody, emitMultipartFormData(), emitUrlEncodedFormBody(), FieldRead, FormBodyEmitOptions, readField(), BodyContentTypeFacts, defaultContentType() (+22 more)
+Cohesion: 0.19
+Nodes (20): BodyContentTypeFacts, defaultContentType(), DefaultHeadersMergeOptions, emitDefaultHeaderGuards(), emitDefaultHeadersMerge(), emitHeaders(), HeadersEmitOptions, emitObjectKey() (+12 more)
 
 ### Community 165 - "validation.md"
 Cohesion: 0.33
 Nodes (5): Music Cues: happy-beats-business-moves-vol-12-by-ende-dot-app, Reveal Candidates, Strong Cues In Window, Use Policy, Useful Beat Grid
 
 ### Community 166 - "`responseTypeMapping`"
-Cohesion: 0.29
-Nodes (4): config, tempDir, v2Spec, v3Spec
+Cohesion: 0.21
+Nodes (5): CORE_BARREL_DIRS, MainIndexGenerator, ZodIndexGenerator, listGeneratedBarrelDirs(), listGeneratedFileNames()
 
 ### Community 167 - "author"
 Cohesion: 0.29
 Nodes (5): ALIASES, listSourceFiles(), resolveSpecifier(), ROOT, SOURCE_ROOTS
 
 ### Community 168 - "exports"
-Cohesion: 0.40
-Nodes (4): `compilerOptions`, Notes, Schema, Usage
+Cohesion: 0.32
+Nodes (11): isEnumValueObject(), isNameableValue(), namesFromDescription(), namesFromExtension(), namesFromExtensions(), resolveEnumMemberNames(), takeEntry(), toMemberName() (+3 more)
 
 ### Community 169 - "HttpResourceGenerator"
 Cohesion: 0.18
@@ -719,167 +710,147 @@ Nodes (9): Additional Operations, Angular Versions, OpenAPI 3.2 Features, OpenAP
 
 ### Community 171 - "namedInputs"
 Cohesion: 0.20
-Nodes (13): EnumValueObject, MediaTypeObject, OpenApiSecurityScheme, Parameter, RequestBody, SwaggerResponse, ComponentLocation, ComponentResolution (+5 more)
-
-### Community 172 - "swagger.types.ts"
-Cohesion: 0.17
-Nodes (11): CliOptions, countWarnings(), createConsoleReporter(), generateFromOptions(), program, runGeneration(), loadConfigFile(), dirs (+3 more)
+Nodes (8): Example, `modelFileStructure`, Notes, Usage, Example, `naming`, Notes, Usage
 
 ### Community 173 - "query-method.test.ts"
-Cohesion: 0.29
-Nodes (7): optional, peerDependenciesMeta, ng-openapi, ts-morph, zod, optional, optional
+Cohesion: 0.50
+Nodes (4): Example, Notes, Usage, `useSingleRequestParameter`
 
 ### Community 174 - "peerDependenciesMeta"
-Cohesion: 0.13
-Nodes (4): HttpStream, outputDirs, response(), sent
+Cohesion: 0.40
+Nodes (4): Introduction, Quick Example, Support the Project, What's Included
 
 ### Community 175 - "ZodGenerator"
-Cohesion: 0.50
-Nodes (4): `input`, Notes, Supported Formats, Usage
+Cohesion: 0.10
+Nodes (21): captureOperation(), ConfigLoadError, ConfigValidationError, DuplicateGeneratedNameError, ERROR_LINEAGE, ErrorClass, FALLBACK_LINEAGE, inheritedLineage() (+13 more)
 
 ### Community 176 - "method-names.test.ts"
-Cohesion: 0.36
-Nodes (10): isEnumValueObject(), isNameableValue(), namesFromDescription(), namesFromExtension(), namesFromExtensions(), resolveEnumMemberNames(), takeEntry(), toMemberName() (+2 more)
+Cohesion: 0.23
+Nodes (10): CliOptions, countWarnings(), createConsoleReporter(), generateFromOptions(), program, runGeneration(), loadConfigFile(), dirs (+2 more)
 
 ### Community 177 - "no-import-cycles.test.ts"
-Cohesion: 0.44
-Nodes (11): boundBody(), resolveQueryString(), bodyMediaFamily, inferResponseTypeFromContentType(), isJsonMediaType(), isMediaTypeRange(), isSequentialMediaType(), JSON_LINES_MEDIA_TYPES (+3 more)
+Cohesion: 0.24
+Nodes (3): ModelFileRegistry, sanitizeFileBaseName(), names()
 
 ### Community 178 - "author"
-Cohesion: 0.23
-Nodes (5): ServiceIndexGenerator, HttpResourceIndexGenerator, ZodIndexGenerator, NameDecoration, listGeneratedFileNames()
+Cohesion: 0.29
+Nodes (5): buildConfig(), FIXTURE, NoopPlugin, tempDirs, tmpRoot
 
-### Community 180 - "exports"
-Cohesion: 0.50
-Nodes (4): author, email, name, url
+### Community 180 - "ZodGenerator"
+Cohesion: 0.15
+Nodes (5): outputDirs, SPEC, ZodGenerator, tempDirs, tmpRoot
 
 ### Community 181 - "inline-nested-refs.test.ts"
 Cohesion: 0.32
 Nodes (6): composedSchemas, LooseOperation, operation(), policyEntrySchemas, responseSchema(), setResponseSchema()
 
-### Community 182 - "HttpParamsBuilderGenerator"
-Cohesion: 0.20
-Nodes (8): Example, `modelFileStructure`, Notes, Usage, Example, `naming`, Notes, Usage
-
-### Community 183 - "custom-headers.md"
-Cohesion: 0.50
-Nodes (4): exports, import, require, types
+### Community 183 - "operation.model.ts"
+Cohesion: 0.26
+Nodes (7): NormalizedQueryString, NormalizedResponseSequence, RequestBodyKind, ResponseKind, SpecVersion, assertDistinctMemberNames(), ClassMembers
 
 ### Community 184 - "perf-benchmark.test.ts"
-Cohesion: 0.10
-Nodes (16): generate(), outputDirs, generate(), outputDirs, workspace, generate(), outputDirs, outputDirs (+8 more)
+Cohesion: 0.15
+Nodes (14): HttpResourceGenerator, outputDirs, outputDirs, tempDirs, tmpRoot, outputDirs, generate(), outputDirs (+6 more)
 
-### Community 185 - "repository"
-Cohesion: 0.50
-Nodes (4): repository, directory, type, url
+### Community 185 - "Date Transformer"
+Cohesion: 0.33
+Nodes (6): Customizing the Regex, Date Transformer, Generated Source, Manual Setup, Recognized Formats, Usage
 
-### Community 186 - "`enumNameExtensions`"
-Cohesion: 0.67
-Nodes (3): Notes, `output`, Usage
-
-### Community 187 - "`output`"
-Cohesion: 0.42
-Nodes (3): BuildOptions, ZodSchemaBuilder, SwaggerDefinition
+### Community 187 - "`responseTypeMapping`"
+Cohesion: 0.48
+Nodes (3): ProviderGenerator, emitDocs(), escapeJsDoc()
 
 ### Community 188 - "Plugin Authoring"
-Cohesion: 0.40
-Nodes (5): Plugin Authoring, Rules a plugin must follow, Rules of engagement, The contract, What the context provides
+Cohesion: 0.12
+Nodes (15): Available Plugins, `HttpResourcePlugin`, Notes, Usage, Notes, `plugins`, Usage, Notes (+7 more)
 
-### Community 189 - "engines"
-Cohesion: 0.67
-Nodes (3): engines, node, npm
+### Community 189 - "http-stream.test.ts"
+Cohesion: 0.29
+Nodes (3): outputDirs, response(), sent
 
 ### Community 190 - "request-body-methods.test.ts"
 Cohesion: 0.22
 Nodes (7): FIELDLESS_FORM_SPEC, generate(), noContent, outputDirs, read(), SPEC, writeSpec()
 
-### Community 191 - "`useSingleRequestParameter`"
-Cohesion: 0.50
-Nodes (4): Example, Notes, Usage, `useSingleRequestParameter`
+### Community 191 - "peerDependenciesMeta"
+Cohesion: 0.29
+Nodes (7): optional, peerDependenciesMeta, ng-openapi, ts-morph, zod, optional, optional
 
-### Community 192 - "`ZodPlugin`"
-Cohesion: 0.67
-Nodes (3): funding, type, url
+### Community 192 - "`enumNameExtensions`"
+Cohesion: 0.40
+Nodes (5): `enumNameExtensions`, Example, How Names Are Resolved, Notes, Usage
 
-### Community 193 - "publishConfig"
-Cohesion: 0.67
-Nodes (3): publishConfig, access, registry
-
-### Community 194 - "scripts"
-Cohesion: 0.67
-Nodes (3): scripts, build, prepublishOnly
-
-### Community 195 - "`HttpResourcePlugin`"
-Cohesion: 0.67
-Nodes (3): `HttpResourcePlugin`, Notes, Usage
-
-### Community 196 - "index.ts"
-Cohesion: 0.20
-Nodes (3): HTTP_STREAM_SOURCE, HttpStreamGenerator, ProviderGenerator
-
-### Community 199 - "operation.model.ts"
-Cohesion: 0.42
-Nodes (5): NormalizedQueryString, NormalizedResponseSequence, RequestBodyKind, ResponseKind, SpecVersion
-
-### Community 200 - "`validateInput`"
+### Community 193 - "`validateInput`"
 Cohesion: 0.40
 Nodes (5): Notes, Parameters, Return Value, Usage, `validateInput`
 
-### Community 201 - "Configuration Options"
-Cohesion: 0.25
-Nodes (8): `basePath`, Configuration Options, `dateTransformRegex`, `enableDateTransform`, `interceptors`, Manual Configuration, Providers, Usage
-
-### Community 202 - "main-index.generator.ts"
-Cohesion: 0.32
-Nodes (3): CORE_BARREL_DIRS, MainIndexGenerator, listGeneratedBarrelDirs()
-
-### Community 203 - "type.utils.ts"
-Cohesion: 0.57
-Nodes (4): decorate(), getModelTypeName(), getResourceClassName(), getServiceClassName()
-
-### Community 206 - ".addServiceClass"
-Cohesion: 0.33
-Nodes (3): emitServiceDecorator(), ServiceDecoratorEmit, ServiceDecoratorEmitOptions
-
-### Community 207 - "`plugins`"
+### Community 194 - "`input`"
 Cohesion: 0.50
-Nodes (4): Available Plugins, Notes, `plugins`, Usage
+Nodes (4): `input`, Notes, Supported Formats, Usage
 
-### Community 208 - "build"
+### Community 195 - "author"
 Cohesion: 0.50
-Nodes (4): cache, dependsOn, inputs, build
+Nodes (4): author, email, name, url
 
-### Community 209 - "`validation`"
+### Community 196 - "exports"
+Cohesion: 0.50
+Nodes (4): exports, import, require, types
+
+### Community 197 - "repository"
+Cohesion: 0.50
+Nodes (4): repository, directory, type, url
+
+### Community 199 - "`validation`"
 Cohesion: 0.67
 Nodes (3): Resources, Usage, `validation`
 
-### Community 210 - "`ZodPlugin`"
-Cohesion: 0.67
-Nodes (3): Notes, Usage, `ZodPlugin`
+### Community 200 - "`validateInput`"
+Cohesion: 0.40
+Nodes (4): `compilerOptions`, Notes, Schema, Usage
 
-### Community 211 - "namedInputs"
+### Community 201 - "`output`"
 Cohesion: 0.67
-Nodes (3): namedInputs, default, sharedGlobals
+Nodes (3): Notes, `output`, Usage
+
+### Community 202 - "Schema Validation"
+Cohesion: 0.67
+Nodes (3): Example using Zod, Overview, Schema Validation
+
+### Community 203 - "engines"
+Cohesion: 0.67
+Nodes (3): engines, node, npm
+
+### Community 204 - "funding"
+Cohesion: 0.67
+Nodes (3): funding, type, url
+
+### Community 205 - "publishConfig"
+Cohesion: 0.67
+Nodes (3): publishConfig, access, registry
+
+### Community 206 - "scripts"
+Cohesion: 0.67
+Nodes (3): scripts, build, prepublishOnly
 
 ## Knowledge Gaps
 - **985 isolated node(s):** `$schema`, `registry`, `blocks`, `components`, `assets` (+980 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **47 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **48 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `GeneratorConfig` connect `Method Body Generation` to `Plugins Changelog`, `ServiceMethodOverloadsGenerator`, ``responseTypeMapping``, `HttpResourceGenerator`, `swagger.types.ts`, `perf-benchmark.test.ts`, `Publish Config`, `request-body-methods.test.ts`, `custom-headers.md`, `index.ts`, `ZodGenerator`, `Config/Metadata Fragment`, `main-index.generator.ts`, `ServiceGenerator`, `http-resource.generator.ts`, ``naming``, `getTypeScriptType`, `guides.md`, `peerDependenciesMeta`, `swagger-parser.test.ts`, `peerDependenciesMeta`, ``useSingleRequestParameter``?**
-  _High betweenness centrality (0.025) - this node is a cross-community bridge._
-- **Why does `generateFromConfig()` connect `ServiceMethodOverloadsGenerator` to `swagger-parser.test.ts`, `Zod Schema Generation`, `index.ts`, `HttpResourceGenerator`, `main-index.generator.ts`, `ServiceGenerator`, `swagger.types.ts`, `peerDependenciesMeta`, ``useSingleRequestParameter``, `peerDependenciesMeta`, `request-body-methods.test.ts`, `author`, ``naming``, `perf-benchmark.test.ts`, `index.ts`, `guides.md`, `Publish Scripts`, `Plugins Changelog`?**
+- **Why does `GeneratorConfig` connect `Date Transformation` to `Documentation & Guides`, `ServiceMethodOverloadsGenerator`, ``responseTypeMapping``, `HttpResourceGenerator`, `ZodGenerator`, `method-names.test.ts`, `author`, `ZodGenerator`, `perf-benchmark.test.ts`, ``responseTypeMapping``, `Publish Config`, `request-body-methods.test.ts`, `custom-headers.md`, `index.ts`, `guides.md`, `peerDependenciesMeta`, `index.md`, `getTypeScriptType`, ``input``, ``useSingleRequestParameter``?**
   _High betweenness centrality (0.024) - this node is a cross-community bridge._
-- **Why does `NormalizedOperation` connect `author` to `getTypeScriptType`, `Plugin Authoring`, `ZodGenerator`, `ZodSchemaGenerator`, `operation.model.ts`, `Documentation & Guides`, `namedInputs`, `ServiceGenerator`, `http-resource.generator.ts`, ``input``, `.addServiceClass`, ``output``, `getTypeScriptType`, `Publish Config`, `HttpResourceMethodBodyGenerator`, `peerDependenciesMeta`, `ServiceMethodOverloadsGenerator`?**
+- **Why does `generateFromConfig()` connect `Date Transformation` to `Zod Schema Generation`, `Documentation & Guides`, `Plugins Changelog`, `ServiceMethodOverloadsGenerator`, `HttpParamsBuilderGenerator`, ``responseTypeMapping``, `HttpResourceGenerator`, `method-names.test.ts`, `author`, `ZodGenerator`, `perf-benchmark.test.ts`, ``responseTypeMapping``, `http-stream.test.ts`, `request-body-methods.test.ts`, ``naming``, `guides.md`, `index.md`, `swagger-parser.test.ts`, ``input``?**
+  _High betweenness centrality (0.024) - this node is a cross-community bridge._
+- **Why does `devDependencies` connect `Dev Dependencies` to `HttpResourceGenerator`, `Build Scripts`?**
   _High betweenness centrality (0.019) - this node is a cross-community bridge._
 - **What connects `$schema`, `registry`, `blocks` to the rest of the system?**
   _987 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Service Method Generators` be split into smaller, more focused modules?**
   _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._
-- **Should `Documentation & Guides` be split into smaller, more focused modules?**
-  _Cohesion score 0.13333333333333333 - nodes in this community are weakly interconnected._
 - **Should `Build Scripts` be split into smaller, more focused modules?**
   _Cohesion score 0.045454545454545456 - nodes in this community are weakly interconnected._
+- **Should `Swagger Type Generation` be split into smaller, more focused modules?**
+  _Cohesion score 0.07142857142857142 - nodes in this community are weakly interconnected._

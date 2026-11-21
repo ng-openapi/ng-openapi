@@ -64,7 +64,7 @@ describe("in: querystring parameters (#136)", () => {
 
         expect(matchProducts).toMatch(/^ {4}matchProducts\(criteria\?: ProductSearch, observe\?:/);
         expect(matchProducts).toContain(
-            "const url = `${this.basePath}/products/match${criteria === undefined ? '' : '?' + " +
+            "const url = `${this.basePath}/products/match${criteria == null ? '' : '?' + " +
                 "encodeURIComponent(JSON.stringify(criteria))}`;",
         );
         // One piece: there are no key=value pairs to build.

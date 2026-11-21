@@ -458,6 +458,16 @@ describe("normalizeSpec: in: querystring parameters (OpenAPI 3.2)", () => {
                 querystring("second", form(filter)),
                 querystring("third", form(filter)),
             ]),
+            // Path-level, and re-declared by one of the two operations.
+            "/shared": {
+                parameters: [querystring("filter", { "text/plain": {} })],
+                get: { operationId: "inherited", responses: {} },
+                post: {
+                    operationId: "overridden",
+                    parameters: [querystring("filter", { "application/json": { schema: filter } }, true)],
+                    responses: {},
+                },
+            },
             "/no-content": get("noContent", [{ ...querystring("filter", undefined), schema: filter }]),
             "/fieldless": get("fieldless", [
                 querystring("filter", form({ allOf: [{ $ref: "#/components/schemas/Filter" }] })),
@@ -543,13 +553,19 @@ describe("normalizeSpec: in: querystring parameters (OpenAPI 3.2)", () => {
         ]);
     });
 
-    it("generates the first of several, and names the rest", () => {
-        expect(op("two").queryString).toMatchObject({ name: "first", kind: "text" });
-        expect(op("two").queryParams).toEqual([]);
+    it("generates the last of several, and names the rest", () => {
+        expect(op("two").queryString).toBeUndefined();
+        expect(names("two")).toEqual(["text", "max-price"]);
         expect(about("two")).toEqual([
-            'two ((GET) /two) declares 3 `in: querystring` parameters, and a request has one query string. "first" ' +
-                'is generated; "second", "third" are skipped.',
+            'two ((GET) /two) declares 3 `in: querystring` parameters, and a request has one query string. "third", ' +
+                'the last one declared, is generated; "first", "second" are skipped.',
         ]);
+    });
+
+    it("lets the operation re-declare the querystring parameter of its path item, without a word", () => {
+        expect(op("overridden").queryString).toMatchObject({ name: "filter", kind: "json", required: true });
+        expect(op("inherited").queryString).toMatchObject({ name: "filter", kind: "text", required: false });
+        expect([...about("overridden"), ...about("inherited")]).toEqual([]);
     });
 
     it.each([
@@ -694,6 +710,65 @@ describe("normalizeSpec: the body a generated request carries", () => {
 
     it("leaves the Content-Type of a multipart body to the browser", () => {
         expect(operation("/multipart").bodyContentType).toBeUndefined();
+    });
+});
+
+describe("normalizeSpec: a form declared under a content key with parameters", () => {
+    const fields = (...names: string[]) => ({
+        schema: { type: "object", properties: Object.fromEntries(names.map((name) => [name, { type: "string" }])) },
+    });
+    const spec = {
+        openapi: "3.1.0",
+        paths: {
+            "/urlencoded": {
+                post: {
+                    operationId: "urlencoded",
+                    requestBody: { content: { "application/x-www-form-urlencoded; charset=UTF-8": fields("a", "b") } },
+                    responses: {},
+                },
+            },
+            "/multipart": {
+                post: {
+                    operationId: "multipart",
+                    requestBody: { content: { "Multipart/Form-Data; boundary=x": fields("file") } },
+                    responses: {},
+                },
+            },
+            // Both spellings: the exact key is the one that was always read.
+            "/both-spellings": {
+                post: {
+                    operationId: "bothSpellings",
+                    requestBody: {
+                        content: {
+                            "application/x-www-form-urlencoded; charset=UTF-8": fields("ignored"),
+                            "application/x-www-form-urlencoded": fields("kept"),
+                        },
+                    },
+                    responses: {},
+                },
+            },
+        },
+    } as unknown as SwaggerSpec;
+    const warnings: string[] = [];
+    const normalized = normalizeSpec(spec, (message) => warnings.push(message));
+    const op = (operationId: string) => normalized.operations.find((o) => o.operationId === operationId)!;
+
+    it("binds it field by field, like the same form without parameters", () => {
+        expect(op("urlencoded")).toMatchObject({
+            isUrlEncoded: true,
+            bodyKind: "urlencoded",
+            urlEncodedFields: ["a", "b"],
+            // What the request declares is what the spec wrote.
+            bodyContentType: "application/x-www-form-urlencoded; charset=UTF-8",
+        });
+        expect(op("multipart")).toMatchObject({ isMultipart: true, bodyKind: "multipart", formDataFields: ["file"] });
+        // Not one Blob argument, and nothing to warn about.
+        expect(warnings).toEqual([]);
+    });
+
+    it("reads the exact key when a spec declares the form both ways", () => {
+        expect(op("bothSpellings").urlEncodedFields).toEqual(["kept"]);
+        expect(op("bothSpellings").bodyContentType).toBe("application/x-www-form-urlencoded");
     });
 });
 

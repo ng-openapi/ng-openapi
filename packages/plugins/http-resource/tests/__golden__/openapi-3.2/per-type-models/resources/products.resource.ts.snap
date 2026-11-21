@@ -152,7 +152,7 @@ export class ProductsResource {
         return httpResource(() => {
             const criteriaValue = typeof criteria === 'function' ? criteria() : criteria;
             return {
-                url: `${this.basePath}/products/match${criteriaValue === undefined ? '' : '?' + encodeURIComponent(JSON.stringify(criteriaValue))}`,
+                url: `${this.basePath}/products/match${criteriaValue == null ? '' : '?' + encodeURIComponent(JSON.stringify(criteriaValue))}`,
                 method: "GET",
                 ...requestOptions,
                 headers,

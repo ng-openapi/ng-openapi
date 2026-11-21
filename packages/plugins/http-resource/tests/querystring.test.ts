@@ -40,7 +40,7 @@ it("generates querystring parameters as signal-aware resource arguments", async 
     );
     expect(matchProducts).toContain("const criteriaValue = typeof criteria === 'function' ? criteria() : criteria;");
     expect(matchProducts).toContain(
-        "url: `${this.basePath}/products/match${criteriaValue === undefined ? '' : '?' + " +
+        "url: `${this.basePath}/products/match${criteriaValue == null ? '' : '?' + " +
             "encodeURIComponent(JSON.stringify(criteriaValue))}`,",
     );
     expect(matchProducts.match(/typeof criteria === 'function'/g)).toHaveLength(1);
