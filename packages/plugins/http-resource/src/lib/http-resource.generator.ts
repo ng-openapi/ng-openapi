@@ -28,7 +28,9 @@ import { HttpResourceIndexGenerator } from "./http-resource-index.generator";
  * The methods that become resources: the safe, idempotent reads. An
  * httpResource re-sends its request whenever a signal it read changes, which
  * is only sound for a request that changes nothing on the server — GET, and
- * QUERY, the read that carries its input in a body (Angular 22.3+).
+ * QUERY, the read that carries its input in a body (Angular 22.3+). A method
+ * declared under `additionalOperations` is never one: nothing in the spec
+ * says whether COPY or a custom method is safe to repeat.
  */
 const RESOURCE_METHODS: ReadonlySet<string> = new Set(["GET", "QUERY"]);
 

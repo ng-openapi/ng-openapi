@@ -7,6 +7,7 @@ import {
     emitUrlConstruction,
     emitUrlEncodedFormBody,
     joinRequestOptionEntries,
+    quoteLiteral,
     MethodGenOptions,
     NormalizedOperation,
     resolveArgumentNames,
@@ -57,6 +58,9 @@ export class ServiceMethodBodyGenerator {
     }
 
     private generateHttpRequest(operation: NormalizedOperation, argumentNames: ArgumentNames): string {
+        // Lower-cased as it has always been emitted; HttpRequest upper-cases it
+        // again. Quoted below because it can be spec text: a method declared
+        // under `additionalOperations` is any HTTP token, `'` included.
         const httpMethod = operation.method.toLowerCase();
 
         const bodyParam = this.bodyExpression(operation, argumentNames);
@@ -89,7 +93,7 @@ export class ServiceMethodBodyGenerator {
         entries.push("context: this.createContextWithClientId(options?.context)");
 
         return `
-return this.httpClient.request('${httpMethod}', url, {
+return this.httpClient.request(${quoteLiteral(httpMethod)}, url, {
   ${joinRequestOptionEntries(entries)}
 })${parseResponse};`;
     }

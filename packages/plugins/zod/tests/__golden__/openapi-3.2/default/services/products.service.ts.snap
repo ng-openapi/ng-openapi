@@ -12,7 +12,7 @@ import { inject, Injectable } from "@angular/core";
 import { map, Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { RequestOptions, ProductPage, ProductSearch, Product, RelatedFilter } from "../models";
+import { RequestOptions, ProductPage, ProductSearch, Product, ProductCopy, RelatedFilter } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class ProductsService {
@@ -117,6 +117,61 @@ export class ProductsService {
         }
 
         return this.httpClient.request('query', url, {
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        }).pipe(map(response => options?.parse?.(response) ?? response));
+    }
+
+    copyProduct(productId: string, productCopy: ProductCopy, observe?: 'body', options?: RequestOptions<'json', Product>): Observable<Product>;
+    copyProduct(productId: string, productCopy: ProductCopy, observe?: 'response', options?: RequestOptions<'json', Product>): Observable<HttpResponse<Product>>;
+    copyProduct(productId: string, productCopy: ProductCopy, observe?: 'events', options?: RequestOptions<'json', Product>): Observable<HttpEvent<Product>>;
+    /** A method the Path Item Object has no field for, declared under additionalOperations. */
+    copyProduct(productId: string, productCopy: ProductCopy, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text', any>): Observable<any> {
+        const url = `${this.basePath}/products/${productId}`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+        // Set Content-Type for JSON requests if not already set
+        if (!headers.has('Content-Type')) {
+            headers = headers.set('Content-Type', 'application/json');
+        }
+
+        return this.httpClient.request('copy', url, {
+            body: productCopy,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        }).pipe(map(response => options?.parse?.(response) ?? response));
+    }
+
+    productsProductIdPurge(productId: string, observe?: 'body', options?: RequestOptions<'json', any>): Observable<any>;
+    productsProductIdPurge(productId: string, observe?: 'response', options?: RequestOptions<'json', any>): Observable<HttpResponse<any>>;
+    productsProductIdPurge(productId: string, observe?: 'events', options?: RequestOptions<'json', any>): Observable<HttpEvent<any>>;
+    /** No operationId: the method name falls back to the path and the method. */
+    productsProductIdPurge(productId: string, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text', any>): Observable<any> {
+        const url = `${this.basePath}/products/${productId}`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+
+        return this.httpClient.request('purge', url, {
             observe,
             headers,
             reportProgress: options?.reportProgress,

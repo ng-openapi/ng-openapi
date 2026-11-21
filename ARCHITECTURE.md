@@ -73,8 +73,13 @@ Every generation run flows through the same stages:
   re-deriving it from `hasBody`, `isMultipart` and `isUrlEncoded`, which
   describe what the spec declared and still decide the `Content-Type`.
   The methods themselves are the path-item fields `extractPaths` lists,
-  OpenAPI 3.2's `query` (the HTTP QUERY method) among them. It needs no
-  rule of its own: it is a method that carries a body, so it keeps one.
+  OpenAPI 3.2's `query` (the HTTP QUERY method) among them, plus whatever
+  a path item declares under 3.2's `additionalOperations`. None needs a
+  rule of its own: each is a method that carries a body, so it keeps one.
+  A method that is declared and cannot be generated — `trace`, or
+  CONNECT and TRACK, which no browser sends — is skipped there with a
+  warning. From `additionalOperations` on, the method is spec text: it is
+  written into generated code through `emit/literal.emit.ts` like any other.
   Enum member names are resolved here too (`enum-member-names.ts`): the
   sources the config enables — `enumNameExtensions` (`x-enum-varnames`,
   `x-enumNames`, …), then the JSON description of

@@ -3,7 +3,7 @@
     "info": {
         "title": "Catalog Search API",
         "version": "1.0.0",
-        "description": "OpenAPI 3.2 fixture: the HTTP QUERY method (the `query` path-item field) next to an ordinary GET, with every request body a generated client binds."
+        "description": "OpenAPI 3.2 fixture: the HTTP QUERY method (the `query` path-item field) next to an ordinary GET, with every request body a generated client binds, and methods declared under `additionalOperations`."
     },
     "paths": {
         "/products": {
@@ -82,6 +82,48 @@
                                 }
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/products/{productId}": {
+            "parameters": [
+                {
+                    "name": "productId",
+                    "in": "path",
+                    "required": true,
+                    "schema": { "type": "string", "format": "uuid" }
+                }
+            ],
+            "additionalOperations": {
+                "COPY": {
+                    "operationId": "copyProduct",
+                    "tags": ["Products"],
+                    "description": "A method the Path Item Object has no field for, declared under additionalOperations.",
+                    "requestBody": {
+                        "required": true,
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/ProductCopy" }
+                            }
+                        }
+                    },
+                    "responses": {
+                        "201": {
+                            "description": "The copy",
+                            "content": {
+                                "application/json": {
+                                    "schema": { "$ref": "#/components/schemas/Product" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "PURGE": {
+                    "tags": ["Products"],
+                    "description": "No operationId: the method name falls back to the path and the method.",
+                    "responses": {
+                        "204": { "description": "Cached representations were dropped" }
                     }
                 }
             }
@@ -264,6 +306,14 @@
                     },
                     "createdAfter": { "type": "string", "format": "date-time" },
                     "sort": { "$ref": "#/components/schemas/ProductSort" }
+                }
+            },
+            "ProductCopy": {
+                "type": "object",
+                "required": ["targetCatalog"],
+                "properties": {
+                    "targetCatalog": { "type": "string" },
+                    "name": { "type": "string" }
                 }
             },
             "RelatedFilter": {
