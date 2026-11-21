@@ -9,6 +9,24 @@ export type ResponseKind = "json" | "blob" | "arraybuffer" | "text";
 export type RequestBodyKind = "json" | "multipart" | "urlencoded" | "text" | "binary";
 
 /**
+ * An OpenAPI 3.2 `in: querystring` parameter that is sent in one piece: its
+ * value, serialized, is the entire query string (`/search?%7B%22q%22...%7D`).
+ *
+ * A form-encoded querystring is not one of these. Its properties are ordinary
+ * `key=value` pairs, so the normalizer lists them in `queryParams` instead.
+ */
+export interface NormalizedQueryString {
+    /** The parameter's name. It is never sent: it only names the argument. */
+    name: string;
+    /** `json`: the value's JSON text; `text`: the value itself, a string. Both percent-encoded. */
+    kind: "json" | "text";
+    required: boolean;
+    /** Schema of the value, for a `json` one. */
+    schema?: SwaggerDefinition;
+    description?: string;
+}
+
+/**
  * A spec operation with everything the generators need precomputed once at
  * normalization time. Generators must not re-derive any of these fields or
  * resolve $refs during emission — that is exactly the duplication this model
@@ -17,8 +35,14 @@ export type RequestBodyKind = "json" | "multipart" | "urlencoded" | "text" | "bi
 export interface NormalizedOperation extends PathInfo {
     /** parameters with in === "path" */
     pathParams: Parameter[];
-    /** parameters with in === "query" */
+    /**
+     * Everything sent as a `key=value` pair of the query string: parameters
+     * with in === "query", and the top-level properties of a form-encoded
+     * `in: querystring` parameter (OpenAPI 3.2).
+     */
     queryParams: Parameter[];
+    /** A querystring parameter sent in one piece; never set together with query parameters. */
+    queryString?: NormalizedQueryString;
     hasBody: boolean;
     /**
      * The body a generated request actually carries, and so the arguments its

@@ -36,6 +36,13 @@ export interface ProductSearchDto {
     sort?: ProductSortDto;
 }
 
+export interface ProductFilterDto {
+    text: string;
+    "max-price"?: number;
+    categories?: Array<string>;
+    sort?: ProductSortDto;
+}
+
 export interface ProductCopyDto {
     targetCatalog: string;
     name?: string;

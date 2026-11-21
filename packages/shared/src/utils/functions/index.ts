@@ -30,7 +30,7 @@ export {
     isPrimitiveType,
 } from "./extract-swagger-response-type";
 export type { ResponseTypeInfo } from "./extract-swagger-response-type";
-export { getBodyArgumentType, getRequestBodyType } from "./get-request-body-type";
+export { getBodyArgumentType, getQueryStringArgumentType, getRequestBodyType } from "./get-request-body-type";
 export {
     bodyMediaFamily,
     isJsonMediaType,

@@ -5,12 +5,12 @@ import { describeOperation } from "../errors";
 import { createComponentResolvers } from "../utils/functions/component-resolver";
 import { extractPaths } from "../utils/functions/extract-paths";
 import { getResponseInfoFromResponse } from "../utils/functions/extract-swagger-response-type";
-import { bodyMediaFamily, isMediaTypeRange } from "../utils/functions/media-types";
+import { bodyMediaFamily, isMediaTypeRange, mediaTypeEssence } from "../utils/functions/media-types";
 import type { ResponseTypeInfo } from "../utils/functions/extract-swagger-response-type";
 import { resolveEnumMemberNames } from "./enum-member-names";
 import type { EnumNamingOptions } from "../types/config.types";
-import type { PathInfo, RequestBody, SwaggerDefinition, SwaggerSpec } from "../types/swagger.types";
-import type { NormalizedOperation, RequestBodyKind } from "../model/operation.model";
+import type { Parameter, PathInfo, RequestBody, SwaggerDefinition, SwaggerSpec } from "../types/swagger.types";
+import type { NormalizedOperation, NormalizedQueryString, RequestBodyKind } from "../model/operation.model";
 import type { NormalizedSpec } from "../model/spec.model";
 
 type ResolveRef = (ref: string) => SwaggerDefinition | undefined;
@@ -183,9 +183,11 @@ export function normalizeSchema(schema: SwaggerDefinition): SwaggerDefinition {
 function normalizeOperationSchemas(operation: PathInfo): PathInfo {
     return {
         ...operation,
-        parameters: operation.parameters?.map((parameter) =>
-            parameter.schema ? { ...parameter, schema: normalizeSchema(parameter.schema) } : parameter,
-        ),
+        parameters: operation.parameters?.map((parameter) => ({
+            ...parameter,
+            ...(parameter.schema ? { schema: normalizeSchema(parameter.schema) } : {}),
+            ...(parameter.content ? { content: normalizeContentSchemas(parameter.content) } : {}),
+        })),
         requestBody: operation.requestBody
             ? { ...operation.requestBody, content: normalizeContentSchemas(operation.requestBody.content) }
             : operation.requestBody,
@@ -233,7 +235,9 @@ function normalizeOperation(
     const responseInfo = determineResponseInfo(operation);
 
     const pathParams = operation.parameters?.filter((p) => p.in === "path") || [];
-    const queryParams = operation.parameters?.filter((p) => p.in === "query") || [];
+    const declaredQueryParams = operation.parameters?.filter((p) => p.in === "query") || [];
+    const queryString = resolveQueryString(operation, declaredQueryParams, resolveRef, onWarning);
+    const queryParams = [...declaredQueryParams, ...queryString.params];
     const formDataFields = Object.keys(formDataSchema?.properties || {});
     const urlEncodedFields = Object.keys(urlEncodedSchema?.properties || {});
     if (isMultipart && formDataFields.length === 0) {
@@ -258,6 +262,7 @@ function normalizeOperation(
         ...operation,
         pathParams,
         queryParams,
+        queryString: queryString.whole,
         hasBody: !!operation.requestBody,
         bodyKind: body?.kind,
         bodyContentType: body?.contentType,
@@ -269,6 +274,109 @@ function normalizeOperation(
         urlEncodedFields,
         responseType: responseInfo.responseType,
         acceptHeader: responseInfo.acceptHeader,
+    };
+}
+
+/**
+ * What an operation's `in: querystring` parameter (OpenAPI 3.2) contributes.
+ * The parameter is the entire query string, described by one media type:
+ *
+ * - `application/x-www-form-urlencoded` with an object schema is a list of
+ *   `key=value` pairs, which is exactly what query parameters are. Its
+ *   top-level properties come back as `params` and are generated as ordinary
+ *   query parameters — one argument each, like the fields of a form body.
+ * - A JSON or text media type is one value whose serialization is the whole
+ *   query string. It comes back as `whole`.
+ *
+ * A property is required only when the parameter is: a querystring parameter
+ * that is not required may be left out entirely, and with one argument per
+ * property that is only expressible by making each of them optional.
+ *
+ * Anything that cannot be generated is skipped with a warning that says what
+ * the client then sends: no query string from it.
+ */
+function resolveQueryString(
+    operation: PathInfo,
+    declaredQueryParams: readonly Parameter[],
+    resolveRef: ResolveRef,
+    onWarning?: (message: string) => void,
+): { params: Parameter[]; whole?: NormalizedQueryString } {
+    const declared = (operation.parameters ?? []).filter((p) => p.in === "querystring");
+    if (declared.length === 0) {
+        return { params: [] };
+    }
+    const [parameter, ...others] = declared;
+    const described = describeOperation(operation);
+    const subject = `\`in: querystring\` parameter "${parameter.name}" of ${described}`;
+    const skipped = (reason: string): { params: Parameter[] } => {
+        onWarning?.(`${subject} was skipped: ${reason} Generated methods take no argument for it.`);
+        return { params: [] };
+    };
+    if (others.length > 0) {
+        onWarning?.(
+            `${described} declares ${declared.length} \`in: querystring\` parameters, and a request has one query ` +
+                `string. "${parameter.name}" is generated; ${others.map((p) => `"${p.name}"`).join(", ")} ` +
+                `${others.length === 1 ? "is" : "are"} skipped.`,
+        );
+    }
+
+    const media = Object.entries(parameter.content ?? {});
+    if (media.length === 0) {
+        return skipped(
+            "it declares no `content`. A querystring parameter is described by one media type under `content`, " +
+                "not by `schema`.",
+        );
+    }
+    const [contentType, mediaType] = media[0];
+
+    if (mediaTypeEssence(contentType) === CONTENT_TYPES.FORM_URLENCODED) {
+        const schema = mediaType?.schema?.$ref ? resolveRef(mediaType.schema.$ref) : mediaType?.schema;
+        const properties = Object.entries(schema?.properties ?? {});
+        if (properties.length === 0) {
+            return skipped(
+                "its form schema lists no top-level `properties` to send as `key=value` pairs (`allOf`, " +
+                    "`additionalProperties` and free-form objects are not expanded).",
+            );
+        }
+        const required = new Set(parameter.required ? (schema?.required ?? []) : []);
+        // A property an `in: query` parameter already sends is sent once.
+        const taken = new Set(declaredQueryParams.map((p) => p.name));
+        return {
+            params: properties
+                .filter(([name]) => !taken.has(name))
+                .map(([name, propertySchema]) => ({
+                    name,
+                    in: "query" as const,
+                    required: required.has(name),
+                    schema: propertySchema,
+                    description: propertySchema.description,
+                })),
+        };
+    }
+
+    const family = bodyMediaFamily(contentType);
+    if (family !== "json" && family !== "text") {
+        return skipped(
+            `its content type ${contentType} is not one a query string is generated from. ` +
+                `${CONTENT_TYPES.FORM_URLENCODED}, JSON and text content types are.`,
+        );
+    }
+    if (declaredQueryParams.length > 0) {
+        return skipped(
+            `the operation also declares \`in: query\` parameters ` +
+                `(${declaredQueryParams.map((p) => `"${p.name}"`).join(", ")}), which OpenAPI does not allow next ` +
+                "to it: its value is the entire query string, so there is nowhere to put them.",
+        );
+    }
+    return {
+        params: [],
+        whole: {
+            name: parameter.name,
+            kind: family,
+            required: !!parameter.required,
+            schema: family === "json" ? mediaType?.schema : undefined,
+            description: parameter.description,
+        },
     };
 }
 
@@ -466,7 +574,9 @@ function determineResponseInfo(operation: PathInfo): ResponseTypeInfo {
  */
 function warnAboutUnboundParameters(operation: PathInfo, onWarning?: (message: string) => void): void {
     for (const param of operation.parameters ?? []) {
-        if (param.in === "path" || param.in === "query") {
+        // A querystring parameter is bound, or skipped with its own warning,
+        // by resolveQueryString.
+        if (param.in === "path" || param.in === "query" || param.in === "querystring") {
             continue;
         }
         if (param.in === "header" || param.in === "cookie") {

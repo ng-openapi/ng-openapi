@@ -190,8 +190,10 @@
   "188": "Plugin Authoring",
   "189": "engines",
   "190": "request-body-methods.test.ts",
+  "191": "`useSingleRequestParameter`",
   "192": "`ZodPlugin`",
   "193": "publishConfig",
   "194": "scripts",
+  "195": "`HttpResourcePlugin`",
   "200": "`validateInput`"
 }

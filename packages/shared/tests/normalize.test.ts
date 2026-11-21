@@ -298,6 +298,178 @@ describe("normalizeSpec: request bodies by method (#138)", () => {
     });
 });
 
+describe("normalizeSpec: in: querystring parameters (OpenAPI 3.2)", () => {
+    const form = (schema: object) => ({ "application/x-www-form-urlencoded": { schema } });
+    const querystring = (name: string, content: object | undefined, required?: boolean) => ({
+        name,
+        in: "querystring",
+        ...(required === undefined ? {} : { required }),
+        ...(content === undefined ? {} : { content }),
+    });
+    const get = (operationId: string, parameters: object[]) => ({ get: { operationId, parameters, responses: {} } });
+    const filter = {
+        type: "object",
+        required: ["text"],
+        properties: { text: { type: "string" }, "max-price": { type: ["number", "null"] } },
+    };
+    const spec = {
+        openapi: "3.2.0",
+        paths: {
+            "/form": get("form", [querystring("filter", form(filter), true)]),
+            "/form-ref": get("formRef", [querystring("filter", form({ $ref: "#/components/schemas/Filter" }), true)]),
+            "/form-optional": get("formOptional", [querystring("filter", form(filter))]),
+            "/json": get("json", [querystring("criteria", { "application/json": { schema: filter } }, true)]),
+            "/json-family": get("jsonFamily", [querystring("criteria", { "application/vnd.api+json": {} })]),
+            "/text": get("text", [querystring("selector", { "application/jsonpath": { schema: { type: "string" } } })]),
+            // Path and header parameters are no obstacle to either kind.
+            "/beside/{id}": get("beside", [
+                { name: "id", in: "path", required: true, schema: { type: "string" } },
+                { name: "X-Trace", in: "header", schema: { type: "string" } },
+                querystring("selector", { "text/plain": {} }, true),
+            ]),
+            // OpenAPI forbids `in: query` next to it.
+            "/form-and-query": get("formAndQuery", [
+                { name: "text", in: "query", schema: { type: "integer" } },
+                { name: "page", in: "query", schema: { type: "integer" } },
+                querystring("filter", form(filter), true),
+            ]),
+            "/whole-and-query": get("wholeAndQuery", [
+                { name: "page", in: "query", schema: { type: "integer" } },
+                { name: "size", in: "query", schema: { type: "integer" } },
+                querystring("criteria", { "application/json": { schema: filter } }),
+            ]),
+            "/two": get("two", [
+                querystring("first", { "text/plain": {} }),
+                querystring("second", form(filter)),
+                querystring("third", form(filter)),
+            ]),
+            "/no-content": get("noContent", [{ ...querystring("filter", undefined), schema: filter }]),
+            "/fieldless": get("fieldless", [
+                querystring("filter", form({ allOf: [{ $ref: "#/components/schemas/Filter" }] })),
+            ]),
+            "/binary": get("binary", [querystring("image", { "image/png": {} })]),
+        },
+        components: { schemas: { Filter: filter } },
+    } as unknown as SwaggerSpec;
+    const warnings: string[] = [];
+    const normalized = normalizeSpec(spec, (message) => warnings.push(message));
+    const op = (operationId: string) => normalized.operations.find((o) => o.operationId === operationId)!;
+    const about = (operationId: string) => warnings.filter((warning) => warning.includes(`${operationId} (`));
+    const names = (operationId: string) => op(operationId).queryParams.map((p) => p.name);
+
+    it("lists the properties of a form-encoded one as query parameters", () => {
+        expect(op("form").queryParams).toEqual([
+            { name: "text", in: "query", required: true, schema: { type: "string" }, description: undefined },
+            // The property schema is normalized like any other: 3.1's type array is `nullable`.
+            {
+                name: "max-price",
+                in: "query",
+                required: false,
+                schema: { type: "number", nullable: true },
+                description: undefined,
+            },
+        ]);
+        expect(op("form").queryString).toBeUndefined();
+        expect(about("form")).toEqual([]);
+    });
+
+    it("reads the properties through a $ref", () => {
+        expect(names("formRef")).toEqual(["text", "max-price"]);
+        expect(op("formRef").queryParams[0].required).toBe(true);
+    });
+
+    it("requires a property only when the parameter itself is required", () => {
+        expect(op("formOptional").queryParams.map((p) => p.required)).toEqual([false, false]);
+    });
+
+    it("carries a JSON one as the whole query string, with its schema", () => {
+        expect(op("json").queryString).toEqual({
+            name: "criteria",
+            kind: "json",
+            required: true,
+            schema: {
+                ...filter,
+                properties: { text: { type: "string" }, "max-price": { type: "number", nullable: true } },
+            },
+            description: undefined,
+        });
+        expect(op("json").queryParams).toEqual([]);
+        expect(op("jsonFamily").queryString).toMatchObject({ kind: "json", required: false, schema: undefined });
+    });
+
+    it("carries a text one as the whole query string: a string, whatever its schema says", () => {
+        expect(op("text").queryString).toEqual({
+            name: "selector",
+            kind: "text",
+            required: false,
+            schema: undefined,
+            description: undefined,
+        });
+        expect(op("beside").queryString).toMatchObject({ name: "selector", kind: "text", required: true });
+        expect(op("beside").pathParams.map((p) => p.name)).toEqual(["id"]);
+        expect(warnings.filter((warning) => warning.includes("beside ("))).toEqual([]);
+    });
+
+    it("sends a form-encoded one next to query parameters, each key once and the declared one first", () => {
+        expect(names("formAndQuery")).toEqual(["text", "page", "max-price"]);
+        // `text` is the `in: query` parameter: the property of that name adds nothing.
+        expect(op("formAndQuery").queryParams[0].schema).toEqual({ type: "integer" });
+        expect(about("formAndQuery")).toEqual([]);
+    });
+
+    it("skips one sent in one piece when query parameters are declared too", () => {
+        expect(op("wholeAndQuery").queryString).toBeUndefined();
+        expect(names("wholeAndQuery")).toEqual(["page", "size"]);
+        expect(about("wholeAndQuery")).toEqual([
+            '`in: querystring` parameter "criteria" of wholeAndQuery ((GET) /whole-and-query) was skipped: the ' +
+                'operation also declares `in: query` parameters ("page", "size"), which OpenAPI does not allow next ' +
+                "to it: its value is the entire query string, so there is nowhere to put them. Generated methods " +
+                "take no argument for it.",
+        ]);
+    });
+
+    it("generates the first of several, and names the rest", () => {
+        expect(op("two").queryString).toMatchObject({ name: "first", kind: "text" });
+        expect(op("two").queryParams).toEqual([]);
+        expect(about("two")).toEqual([
+            'two ((GET) /two) declares 3 `in: querystring` parameters, and a request has one query string. "first" ' +
+                'is generated; "second", "third" are skipped.',
+        ]);
+    });
+
+    it.each([
+        [
+            "noContent",
+            "/no-content",
+            "filter",
+            "it declares no `content`. A querystring parameter is described by one media type under `content`, " +
+                "not by `schema`.",
+        ],
+        [
+            "fieldless",
+            "/fieldless",
+            "filter",
+            "its form schema lists no top-level `properties` to send as `key=value` pairs (`allOf`, " +
+                "`additionalProperties` and free-form objects are not expanded).",
+        ],
+        [
+            "binary",
+            "/binary",
+            "image",
+            "its content type image/png is not one a query string is generated from. " +
+                "application/x-www-form-urlencoded, JSON and text content types are.",
+        ],
+    ])("skips %s out loud, once", (operationId, path, name, reason) => {
+        expect(op(operationId).queryString).toBeUndefined();
+        expect(op(operationId).queryParams).toEqual([]);
+        // In particular not also the generic "`in: querystring` … is not supported and was dropped".
+        expect(about(operationId)).toEqual([
+            `\`in: querystring\` parameter "${name}" of ${operationId} ((GET) ${path}) was skipped: ${reason} ` +
+                "Generated methods take no argument for it.",
+        ]);
+    });
+});
+
 describe("normalizeSpec: the body a generated request carries", () => {
     const body = (...contentTypes: string[]) => ({
         content: Object.fromEntries(

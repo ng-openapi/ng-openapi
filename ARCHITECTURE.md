@@ -86,6 +86,12 @@ Every generation run flows through the same stages:
   CONNECT and TRACK, which no browser sends — is skipped there with a
   warning. From `additionalOperations` on, the method is spec text: it is
   written into generated code through `emit/literal.emit.ts` like any other.
+  OpenAPI 3.2's `in: querystring` parameter, one parameter that is the
+  whole query string, is resolved here as well. Form-encoded, its
+  properties are `key=value` pairs like any query parameter, so they are
+  added to `queryParams` and no generator learns about the location. As
+  JSON or text it is one value sent in one piece: the operation's
+  `queryString`, which `emit/url.emit.ts` appends to the URL.
   Enum member names are resolved here too (`enum-member-names.ts`): the
   sources the config enables — `enumNameExtensions` (`x-enum-varnames`,
   `x-enumNames`, …), then the JSON description of

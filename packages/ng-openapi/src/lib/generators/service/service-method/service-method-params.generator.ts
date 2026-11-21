@@ -3,6 +3,7 @@ import {
     ArgumentNames,
     MethodGenOptions,
     getBodyArgumentType,
+    getQueryStringArgumentType,
     getTypeScriptType,
     NormalizedOperation,
     resolveArgumentNames,
@@ -73,6 +74,15 @@ export class ServiceMethodParamsGenerator {
                 hasQuestionToken: !param.required,
             });
         });
+
+        // The one argument that is the whole query string (never next to the above)
+        if (operation.queryString && argumentNames.queryString) {
+            params.push({
+                name: argumentNames.queryString,
+                type: getQueryStringArgumentType(operation.queryString, this.config),
+                hasQuestionToken: !operation.queryString.required,
+            });
+        }
 
         return params.sort((a, b) => Number(a.hasQuestionToken) - Number(b.hasQuestionToken));
     }

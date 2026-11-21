@@ -11,7 +11,7 @@ import { HttpContext, HttpContextToken, HttpHeaders, HttpParams, httpResource, H
 import { inject, Injectable, Signal } from "@angular/core";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { ProductPage, ProductSearch, Product, RelatedFilter } from "../models";
+import { ProductPage, ProductSearch, ProductSort, Product, RelatedFilter } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class ProductsResource {
@@ -86,6 +86,101 @@ export class ProductsResource {
                 ...requestOptions,
                 body: typeof productSearch === 'function' ? productSearch() : productSearch,
                 params,
+                headers,
+                context: this.createContextWithClientId(requestOptions?.context)
+            }
+        }, resourceOptions);
+    }
+
+    filterProducts(text: Signal<string> | string, maxPrice: Signal<number | undefined> | number | undefined, categories: Signal<Array<string> | undefined> | Array<string> | undefined, sort: Signal<ProductSort | undefined> | ProductSort | undefined, resourceOptions: HttpResourceOptions<ProductPage, unknown> & { defaultValue: NoInfer<ProductPage> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<ProductPage>;
+    filterProducts(text: Signal<string> | string, maxPrice?: Signal<number | undefined> | number, categories?: Signal<Array<string> | undefined> | Array<string>, sort?: Signal<ProductSort | undefined> | ProductSort, resourceOptions?: HttpResourceOptions<ProductPage, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<ProductPage | undefined>;
+    /** A form-encoded `in: querystring` parameter: its properties are the query string, one key=value pair each. */
+    filterProducts(text: Signal<string> | string, maxPrice?: Signal<number | undefined> | number, categories?: Signal<Array<string> | undefined> | Array<string>, sort?: Signal<ProductSort | undefined> | ProductSort, resourceOptions?: HttpResourceOptions<ProductPage, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<ProductPage | undefined> {
+
+        // Add default headers if not already present
+        let headers = requestOptions?.headers;
+        if (headers instanceof HttpHeaders) {
+            if (!headers.has('Accept')) {
+                headers = headers.set('Accept', 'application/json');
+            }
+        } else {
+            headers = { 'Accept': 'application/json', ...headers };
+        }
+        return httpResource(() => {
+            let params = new HttpParams();
+            const textValue = typeof text === 'function' ? text() : text;
+            if (textValue != null) {
+                params = HttpParamsBuilder.addToHttpParams(params, textValue, 'text');
+            }
+            const maxPriceValue = typeof maxPrice === 'function' ? maxPrice() : maxPrice;
+            if (maxPriceValue != null) {
+                params = HttpParamsBuilder.addToHttpParams(params, maxPriceValue, 'max-price');
+            }
+            const categoriesValue = typeof categories === 'function' ? categories() : categories;
+            if (categoriesValue != null) {
+                params = HttpParamsBuilder.addToHttpParams(params, categoriesValue, 'categories');
+            }
+            const sortValue = typeof sort === 'function' ? sort() : sort;
+            if (sortValue != null) {
+                params = HttpParamsBuilder.addToHttpParams(params, sortValue, 'sort');
+            }
+            return {
+                url: `${this.basePath}/products/filter`,
+                method: "GET",
+                ...requestOptions,
+                params,
+                headers,
+                context: this.createContextWithClientId(requestOptions?.context)
+            }
+        }, resourceOptions);
+    }
+
+    matchProducts(criteria: Signal<ProductSearch | undefined> | ProductSearch | undefined, resourceOptions: HttpResourceOptions<Array<Product>, unknown> & { defaultValue: NoInfer<Array<Product>> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<Product>>;
+    matchProducts(criteria?: Signal<ProductSearch | undefined> | ProductSearch, resourceOptions?: HttpResourceOptions<Array<Product>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<Product> | undefined>;
+    /** A JSON `in: querystring` parameter: the whole query string is one percent-encoded JSON document. It is optional. */
+    matchProducts(criteria?: Signal<ProductSearch | undefined> | ProductSearch, resourceOptions?: HttpResourceOptions<Array<Product>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<Product> | undefined> {
+
+        // Add default headers if not already present
+        let headers = requestOptions?.headers;
+        if (headers instanceof HttpHeaders) {
+            if (!headers.has('Accept')) {
+                headers = headers.set('Accept', 'application/json');
+            }
+        } else {
+            headers = { 'Accept': 'application/json', ...headers };
+        }
+        return httpResource(() => {
+            const criteriaValue = typeof criteria === 'function' ? criteria() : criteria;
+            return {
+                url: `${this.basePath}/products/match${criteriaValue === undefined ? '' : '?' + encodeURIComponent(JSON.stringify(criteriaValue))}`,
+                method: "GET",
+                ...requestOptions,
+                headers,
+                context: this.createContextWithClientId(requestOptions?.context)
+            }
+        }, resourceOptions);
+    }
+
+    selectProducts(selector: Signal<string> | string, resourceOptions: HttpResourceOptions<Array<Product>, unknown> & { defaultValue: NoInfer<Array<Product>> }, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<Product>>;
+    selectProducts(selector: Signal<string> | string, resourceOptions?: HttpResourceOptions<Array<Product>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<Product> | undefined>;
+    /** A plain-string `in: querystring` parameter: a JSONPath expression is the whole query string. */
+    selectProducts(selector: Signal<string> | string, resourceOptions?: HttpResourceOptions<Array<Product>, unknown>, requestOptions?: Omit<HttpResourceRequest, "method" | "url" | "params">): HttpResourceRef<Array<Product> | undefined> {
+
+        // Add default headers if not already present
+        let headers = requestOptions?.headers;
+        if (headers instanceof HttpHeaders) {
+            if (!headers.has('Accept')) {
+                headers = headers.set('Accept', 'application/json');
+            }
+        } else {
+            headers = { 'Accept': 'application/json', ...headers };
+        }
+        return httpResource(() => {
+            const selectorValue = typeof selector === 'function' ? selector() : selector;
+            return {
+                url: `${this.basePath}/products/select?${encodeURIComponent(selectorValue)}`,
+                method: "GET",
+                ...requestOptions,
                 headers,
                 context: this.createContextWithClientId(requestOptions?.context)
             }

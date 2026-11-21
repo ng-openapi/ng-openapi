@@ -10,6 +10,7 @@ import {
     joinRequestOptionEntries,
     MethodGenOptions,
     NormalizedOperation,
+    QueryStringEmit,
     RESOURCE_ARGUMENT_PROFILE,
     resolveArgumentNames,
     signalAwareParamValue,
@@ -125,9 +126,36 @@ export class HttpResourceMethodBodyGenerator {
         }
     }
 
-    private generateRequestOptions(operation: NormalizedOperation, body: ResourceBody | undefined): string {
+    /**
+     * The value sent as the whole query string, read once into a local: the
+     * URL expression uses it twice when it is optional, and a signal is read
+     * as few times as it has to be.
+     */
+    private queryString(operation: NormalizedOperation): { setup: string; emit: QueryStringEmit } | undefined {
+        const argumentNames = this.argumentNames(operation);
+        if (!operation.queryString || !argumentNames.queryString) {
+            return undefined;
+        }
+        const local = deriveLocalName(`${argumentNames.queryString}Value`, argumentNames.all);
+        return {
+            setup: `\nconst ${local} = ${signalAwareParamValue(argumentNames.queryString)};`,
+            emit: { value: local, kind: operation.queryString.kind, required: operation.queryString.required },
+        };
+    }
+
+    private generateRequestOptions(
+        operation: NormalizedOperation,
+        body: ResourceBody | undefined,
+        queryString: QueryStringEmit | undefined,
+    ): string {
         const entries: string[] = [];
-        const url = emitUrlExpression(operation.path, operation.pathParams, this.argumentNames(operation), signalAwareParamValue);
+        const url = emitUrlExpression(
+            operation.path,
+            operation.pathParams,
+            this.argumentNames(operation),
+            signalAwareParamValue,
+            queryString,
+        );
 
         // Computed entries come after the spread so that caller-supplied
         // request options cannot clobber the body, the merged headers, the
@@ -161,7 +189,8 @@ export class HttpResourceMethodBodyGenerator {
 
     private generateHttpResource(operation: NormalizedOperation): string {
         const body = this.resourceBody(operation);
-        const resourceOptions = this.generateRequestOptions(operation, body);
+        const queryString = this.queryString(operation);
+        const resourceOptions = this.generateRequestOptions(operation, body, queryString?.emit);
         const queryParams = emitSignalAwareQueryParams(operation.queryParams, this.argumentNames(operation));
         let httpResource = "httpResource";
         switch (operation.responseType) {
@@ -177,7 +206,7 @@ export class HttpResourceMethodBodyGenerator {
         }
         // No hand-rolled indentation: the generator's final formatText() pass
         // is the single authority for generated-code layout.
-        return `return ${httpResource}(() => {${queryParams}${body?.setup ?? ""}
+        return `return ${httpResource}(() => {${queryParams}${queryString?.setup ?? ""}${body?.setup ?? ""}
 ${resourceOptions}
 }, resourceOptions);`;
     }
