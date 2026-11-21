@@ -29,6 +29,7 @@ jobs:
       OPENAPI_SPEC_V2_URL: ${{ vars.OPENAPI_SPEC_V2_URL || secrets.OPENAPI_SPEC_V2_URL || 'https://ng-openapi.github.io/openapi-spec/specs/v2-swagger.yaml' }}
       OPENAPI_SPEC_V3_URL: ${{ vars.OPENAPI_SPEC_V3_URL || secrets.OPENAPI_SPEC_V3_URL || 'https://ng-openapi.github.io/openapi-spec/specs/v3.0-openapi.yaml' }}
       OPENAPI_SPEC_V3_1_URL: ${{ vars.OPENAPI_SPEC_V3_1_URL || secrets.OPENAPI_SPEC_V3_1_URL || 'https://ng-openapi.github.io/openapi-spec/specs/v3.1-openapi.yaml' }}
+      OPENAPI_SPEC_V3_2_URL: ${{ vars.OPENAPI_SPEC_V3_2_URL || secrets.OPENAPI_SPEC_V3_2_URL || 'https://ng-openapi.github.io/openapi-spec/specs/v3.2-openapi.yaml' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,7 +49,7 @@ jobs:
       - name: Verify spec URLs are configured
         run: |
           missing=0
-          for var in OPENAPI_SPEC_V2_URL OPENAPI_SPEC_V3_URL OPENAPI_SPEC_V3_1_URL; do
+          for var in OPENAPI_SPEC_V2_URL OPENAPI_SPEC_V3_URL OPENAPI_SPEC_V3_1_URL OPENAPI_SPEC_V3_2_URL; do
             if [ -z "${!var}" ]; then
               echo "::error::Required variable $var is not set. Define it under repo Settings → Secrets and variables → Actions."
               missing=1

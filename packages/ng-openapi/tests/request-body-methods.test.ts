@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { createOutputDirs, expectGeneratedCodeCompiles } from "@ng-openapi/testing";
+import { createOutputDirs, expectGeneratedCodeCompiles, methodSource } from "@ng-openapi/testing";
 import { generateFromConfig, GeneratorConfig } from "ng-openapi";
 import { ZodPlugin } from "@ng-openapi/zod";
 
@@ -146,13 +146,6 @@ function writeSpec(dir: string, spec: unknown): string {
 
 function read(output: string, ...path: string[]): string {
     return readFileSync(join(output, ...path), "utf8");
-}
-
-/** The implementation of one generated method: from its last signature to its closing brace. */
-function methodSource(service: string, name: string): string {
-    const start = service.lastIndexOf(`    ${name}(`);
-    expect(start, `method ${name} was not generated`).toBeGreaterThan(-1);
-    return service.slice(start, service.indexOf("\n    }\n", start));
 }
 
 /** The expression a generated method passes as `body` to `request()`, if any. */

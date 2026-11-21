@@ -257,6 +257,7 @@ describe("normalizeSpec: request bodies by method (#138)", () => {
                 post: { operationId: "createItem", requestBody: jsonBody, responses: {} },
                 put: { operationId: "replaceItems", requestBody: jsonBody, responses: {} },
                 patch: { operationId: "patchItems", requestBody: jsonBody, responses: {} },
+                query: { operationId: "queryItems", requestBody: jsonBody, responses: {} },
             },
         },
     } as unknown as SwaggerSpec;
@@ -265,7 +266,7 @@ describe("normalizeSpec: request bodies by method (#138)", () => {
     const normalized = normalizeSpec(methodSpec, (message) => warnings.push(message));
     const op = (method: string) => normalized.operations.find((o) => o.method === method)!;
 
-    it.each(["DELETE", "OPTIONS", "POST", "PUT", "PATCH"])("keeps the body of a %s operation", (method) => {
+    it.each(["DELETE", "OPTIONS", "POST", "PUT", "PATCH", "QUERY"])("keeps the body of a %s operation", (method) => {
         expect(op(method).hasBody).toBe(true);
         expect(op(method).requestBody).toEqual(jsonBody);
     });
@@ -294,6 +295,68 @@ describe("normalizeSpec: request bodies by method (#138)", () => {
 
     it("never mutates the raw spec", () => {
         expect(methodSpec).toEqual(pristine);
+    });
+});
+
+describe("normalizeSpec: the body a generated request carries", () => {
+    const body = (...contentTypes: string[]) => ({
+        content: Object.fromEntries(
+            contentTypes.map((contentType) => [
+                contentType,
+                { schema: { type: "object", properties: { name: { type: "string" } } } },
+            ]),
+        ),
+    });
+    const kindSpec = {
+        openapi: "3.2.0",
+        paths: {
+            "/json": { query: { requestBody: body("application/json"), responses: {} } },
+            "/multipart": { query: { requestBody: body("multipart/form-data"), responses: {} } },
+            "/urlencoded": { query: { requestBody: body("application/x-www-form-urlencoded"), responses: {} } },
+            // A JSON alternative wins over urlencoded, and loses to multipart.
+            "/json-or-urlencoded": {
+                query: {
+                    requestBody: body("application/x-www-form-urlencoded", "application/json"),
+                    responses: {},
+                },
+            },
+            "/json-or-multipart": {
+                query: { requestBody: body("multipart/form-data", "application/json"), responses: {} },
+            },
+            // Both forms: one body is sent, so one form's fields are arguments.
+            "/multipart-or-urlencoded": {
+                query: {
+                    requestBody: body("application/x-www-form-urlencoded", "multipart/form-data"),
+                    responses: {},
+                },
+            },
+            // Declared, but not a content type any generated method binds.
+            "/text": { query: { requestBody: body("text/plain"), responses: {} } },
+            "/none": { query: { responses: {} } },
+            // Left out of the IR as a GET body before a kind is derived from it.
+            "/get": { get: { requestBody: body("application/json"), responses: {} } },
+        },
+    } as unknown as SwaggerSpec;
+    const normalized = normalizeSpec(kindSpec);
+    const kind = (path: string) => normalized.operations.find((o) => o.path === path)!.bodyKind;
+
+    it.each([
+        ["/json", "json"],
+        ["/multipart", "multipart"],
+        ["/urlencoded", "urlencoded"],
+        ["/json-or-urlencoded", "json"],
+        ["/json-or-multipart", "multipart"],
+        ["/multipart-or-urlencoded", "multipart"],
+    ])("%s carries a %s body", (path, expected) => {
+        expect(kind(path)).toBe(expected);
+    });
+
+    it.each(["/text", "/none", "/get"])("%s carries none", (path) => {
+        expect(kind(path)).toBeUndefined();
+    });
+
+    it("still reports a body the generators do not bind as declared", () => {
+        expect(normalized.operations.find((o) => o.path === "/text")!.hasBody).toBe(true);
     });
 });
 
@@ -350,6 +413,12 @@ describe("normalizeSpec: form bodies without listable fields", () => {
     it("keeps the body in the IR with an empty field list", () => {
         expect(op("/avatar", "POST")).toMatchObject({ hasBody: true, isMultipart: true, formDataFields: [] });
         expect(op("/settings", "PUT")).toMatchObject({ hasBody: true, isUrlEncoded: true, urlEncodedFields: [] });
+    });
+
+    it("binds no body for a form without fields, and the form for one that lists them", () => {
+        expect(op("/avatar", "POST").bodyKind).toBeUndefined();
+        expect(op("/settings", "PUT").bodyKind).toBeUndefined();
+        expect(op("/settings", "POST").bodyKind).toBe("multipart");
     });
 
     it("warns that a multipart body without top-level properties is not sent", () => {

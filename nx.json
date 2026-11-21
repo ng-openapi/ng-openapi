@@ -32,7 +32,8 @@
                 "{workspaceRoot}/vitest.config.ts",
                 { "env": "OPENAPI_SPEC_V2_URL" },
                 { "env": "OPENAPI_SPEC_V3_URL" },
-                { "env": "OPENAPI_SPEC_V3_1_URL" }
+                { "env": "OPENAPI_SPEC_V3_1_URL" },
+                { "env": "OPENAPI_SPEC_V3_2_URL" }
             ]
         }
     },

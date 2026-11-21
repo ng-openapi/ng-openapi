@@ -1,11 +1,14 @@
 import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
 import {
+    ArgumentNames,
     resolveArgumentNames,
     RESOURCE_ARGUMENT_PROFILE,
+    getRequestBodyType,
     getResponseType,
     getTypeScriptType,
     MethodGenOptions,
     NormalizedOperation,
+    SwaggerDefinition,
 } from "@ng-openapi/shared";
 
 export class HttpResourceMethodParamsGenerator {
@@ -18,7 +21,7 @@ export class HttpResourceMethodParamsGenerator {
     generateMethodParameters(operation: NormalizedOperation): OptionalKind<ParameterDeclarationStructure>[] {
         const params = this.generateApiParameters(operation);
         const responseType = this.getApiReturnType(operation);
-        const optionsParam = this.addOptionsParameter(responseType);
+        const optionsParam = this.addOptionsParameter(responseType, operation);
 
         // Combine all parameters
         const combined = [...params, ...optionsParam];
@@ -46,30 +49,47 @@ export class HttpResourceMethodParamsGenerator {
             // spread (vs passing param directly) is needed because Parameter
             // lacks TypeSchema's index signature — a fresh literal satisfies it.
             const paramType = getTypeScriptType(param.schema || { ...param }, this.config);
-            const signalParamType = param.required ? `Signal<${paramType}>` : `Signal<${paramType} | undefined>`;
-            params.push({
-                name: argumentNames.of(param.name),
-                type: `${signalParamType} | ${paramType}`,
-                hasQuestionToken: !param.required,
-            });
+            params.push(this.signalParameter(argumentNames.of(param.name), paramType, !!param.required));
         });
+
+        // Body arguments, in the order the core service declares them: form
+        // fields, then the JSON body, each ahead of the query parameters.
+        // Only a QUERY operation reaches here with a body — the normalizer
+        // keeps one off every GET.
+        if (operation.bodyKind === "multipart") {
+            params.push(...this.formFieldParameters(operation.formDataSchema, argumentNames));
+        }
+        if (operation.bodyKind === "urlencoded") {
+            params.push(...this.formFieldParameters(operation.urlEncodedSchema, argumentNames));
+        }
+        if (operation.bodyKind === "json" && operation.requestBody && argumentNames.body) {
+            params.push(
+                this.signalParameter(
+                    argumentNames.body,
+                    getRequestBodyType(operation.requestBody, this.config),
+                    !!operation.requestBody.required,
+                ),
+            );
+        }
 
         // Query parameters
         operation.queryParams.forEach((param) => {
             const paramType = getTypeScriptType(param.schema || { ...param }, this.config);
-            const signalParamType = param.required ? `Signal<${paramType}>` : `Signal<${paramType} | undefined>`;
-            params.push({
-                name: argumentNames.of(param.name),
-                type: `${signalParamType} | ${paramType}`,
-                hasQuestionToken: !param.required,
-            });
+            params.push(this.signalParameter(argumentNames.of(param.name), paramType, !!param.required));
         });
 
         return params.sort((a, b) => Number(a.hasQuestionToken) - Number(b.hasQuestionToken));
     }
 
-    addOptionsParameter(responseType: string): OptionalKind<ParameterDeclarationStructure>[] {
+    addOptionsParameter(
+        responseType: string,
+        operation: NormalizedOperation,
+    ): OptionalKind<ParameterDeclarationStructure>[] {
         const rawDataType = this.getResourceRawDataType(responseType);
+        // What the method computes itself is not the caller's to pass. `body`
+        // joins the list only where the method binds one, so a resource
+        // without a body keeps the signature it has always had.
+        const computed = ["method", "url", "params", ...(operation.bodyKind ? ["body"] : [])];
         return [
             {
                 name: "resourceOptions",
@@ -78,10 +98,38 @@ export class HttpResourceMethodParamsGenerator {
             },
             {
                 name: "requestOptions",
-                type: `Omit<HttpResourceRequest, "method" | "url" | "params">`,
+                type: `Omit<HttpResourceRequest, ${computed.map((key) => `"${key}"`).join(" | ")}>`,
                 hasQuestionToken: true,
             },
         ];
+    }
+
+    /** Every resource argument may be a signal, so the resource re-fetches when it changes. */
+    private signalParameter(
+        name: string,
+        type: string,
+        required: boolean,
+    ): OptionalKind<ParameterDeclarationStructure> {
+        const signalType = required ? `Signal<${type}>` : `Signal<${type} | undefined>`;
+        return { name, type: `${signalType} | ${type}`, hasQuestionToken: !required };
+    }
+
+    /**
+     * One argument per form field. A field name is a wire name, not an
+     * identifier, so it goes through the resolver (#125); `schema` arrives
+     * ref-resolved from the normalizer.
+     */
+    private formFieldParameters(
+        schema: SwaggerDefinition | undefined,
+        argumentNames: ArgumentNames,
+    ): OptionalKind<ParameterDeclarationStructure>[] {
+        return Object.entries(schema?.properties ?? {}).map(([field, fieldSchema]) =>
+            this.signalParameter(
+                argumentNames.of(field),
+                getTypeScriptType(fieldSchema, this.config, fieldSchema.nullable),
+                !!schema?.required?.includes(field),
+            ),
+        );
     }
 
     private getApiReturnType(operation: NormalizedOperation): string {

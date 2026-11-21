@@ -162,6 +162,27 @@ export class SearchComponent {
 }
 ```
 
+## QUERY Operations
+
+OpenAPI 3.2's `query` operations — the HTTP `QUERY` method — are reads that carry their input in the request body, so they become resources too. The body is an argument like any other: pass a value, or a signal to have the resource re-send the query whenever it changes.
+
+```typescript
+export class ProductSearchComponent {
+    private readonly productsResource = inject(ProductsResource);
+
+    readonly criteria = signal<ProductSearch>({ text: "" });
+
+    // QUERY /products/search, re-sent whenever `criteria` changes
+    readonly results = this.productsResource.searchProducts(this.criteria);
+}
+```
+
+A JSON body is one argument; a `multipart/form-data` or `application/x-www-form-urlencoded` body is one argument per field. The `Content-Type` header is set the way the generated services set it.
+
+::: warning QUERY requires Angular 22.3+
+Angular's `HttpClient` supports the `QUERY` method from 22.3 on. On older versions the request is still sent, but treated as a mutation: the XSRF token is attached to it, and server-side rendering does not reuse the response during hydration. See [Generated Output](./generated-code.md#services-service-ts).
+:::
+
 ## Resource vs Service Comparison
 
 | Feature                   | HTTP Resource             | Traditional Service        |
@@ -175,7 +196,7 @@ export class SearchComponent {
 
 ## Limitations
 
-- **GET Requests Only**: Currently optimized for "GET" requests (see [Angular Docs ↗️](https://angular.dev/guide/http/http-resource))
+- **Read Operations Only**: Resources are generated for `GET` and `QUERY` operations. An `httpResource` re-sends its request whenever a signal it read changes, so it is not meant for mutations — use the generated services for `POST`, `PUT`, `PATCH` and `DELETE` (see [Angular Docs ↗️](https://angular.dev/guide/http/http-resource))
 
 ## Resources
 

@@ -1,12 +1,12 @@
 import {
     ArgumentNames,
-    CONTENT_TYPES,
     emitHeaders,
+    emitMultipartFormData,
     emitQueryParams,
     emitResponseTypeOption,
     emitUrlConstruction,
+    emitUrlEncodedFormBody,
     joinRequestOptionEntries,
-    quoteLiteral,
     MethodGenOptions,
     NormalizedOperation,
     resolveArgumentNames,
@@ -19,6 +19,13 @@ import {
  * always emitted it, and dropping it would churn every generated client.
  */
 const METHODS_WITH_EXPLICIT_EMPTY_BODY = ["post", "put", "patch"];
+
+/**
+ * The locals a form body is built in. Both are reserved in
+ * SERVICE_ARGUMENT_PROFILE, so no argument can be named either.
+ */
+const FORM_DATA_LOCAL = "formData";
+const FORM_BODY_LOCAL = "formBody";
 
 export class ServiceMethodBodyGenerator {
     private config: MethodGenOptions;
@@ -41,109 +48,18 @@ export class ServiceMethodBodyGenerator {
                 accept: (this.config.options.emitAcceptHeader ?? true) ? operation.acceptHeader : undefined,
                 contentType: operation,
             }),
-            this.generateMultipartFormData(operation, argumentNames),
-            this.generateUrlEncodedFormData(operation, argumentNames),
+            emitMultipartFormData(operation, argumentNames, { container: FORM_DATA_LOCAL }),
+            emitUrlEncodedFormBody(operation, argumentNames, { container: FORM_BODY_LOCAL }),
             this.generateHttpRequest(operation, argumentNames),
         ];
 
         return bodyParts.filter(Boolean).join("\n");
     }
 
-    private generateMultipartFormData(operation: NormalizedOperation, argumentNames: ArgumentNames): string {
-        if (!operation.isMultipart || operation.formDataFields.length === 0) {
-            return "";
-        }
-
-        const properties = operation.formDataSchema?.properties || {};
-
-        const formDataAppends = operation.formDataFields
-            .map((field) => {
-                const fieldSchema = properties[field];
-                const isFile = fieldSchema?.type === "string" && fieldSchema?.format === "binary";
-                const isArray = fieldSchema?.type === "array";
-                // `field` is the wire name and stays inside the append literal;
-                // only `arg` may appear in expression position (#125).
-                const arg = argumentNames.of(field);
-
-                if (isArray) {
-                    const itemSchema = Array.isArray(fieldSchema.items) ? fieldSchema.items[0] : fieldSchema.items;
-                    const isFileArray = itemSchema?.type === "string" && itemSchema?.format === "binary";
-
-                    const valueExpression = isFileArray ? "item" : "String(item)";
-
-                    return `if (${arg} !== undefined && Array.isArray(${arg})) {
-                  ${arg}.forEach((item) => {
-                    if (item !== undefined && item !== null) {
-                      formData.append(${quoteLiteral(field)}, ${valueExpression});
-                    }
-                  });
-                }`;
-                } else {
-                    const valueExpression = isFile ? arg : `String(${arg})`;
-
-                    return `if (${arg} !== undefined) {
-                  formData.append(${quoteLiteral(field)}, ${valueExpression});
-                }`;
-                }
-            })
-            .join("\n");
-
-        return `
-const formData = new FormData();
-${formDataAppends}`;
-    }
-
-    private generateUrlEncodedFormData(operation: NormalizedOperation, argumentNames: ArgumentNames): string {
-        if (!operation.isUrlEncoded || operation.urlEncodedFields.length === 0) {
-            return "";
-        }
-
-        const properties = operation.urlEncodedSchema?.properties || {};
-
-        const formBodyAppends = operation.urlEncodedFields
-            .map((field) => {
-                const fieldSchema = properties[field];
-                const isArray = fieldSchema?.type === "array";
-                const arg = argumentNames.of(field);
-
-                if (isArray) {
-                    return `if (${arg} !== undefined && Array.isArray(${arg})) {
-                  ${arg}.forEach((item) => {
-                    if (item !== undefined && item !== null) {
-                      formBody.append(${quoteLiteral(field)}, String(item));
-                    }
-                  });
-                }`;
-                } else {
-                    return `if (${arg} !== undefined && ${arg} !== null) {
-                  formBody.append(${quoteLiteral(field)}, String(${arg}));
-                }`;
-                }
-            })
-            .join("\n");
-
-        return `
-const formBody = new URLSearchParams();
-${formBodyAppends}`;
-    }
-
     private generateHttpRequest(operation: NormalizedOperation, argumentNames: ArgumentNames): string {
         const httpMethod = operation.method.toLowerCase();
 
-        let bodyParam = "";
-        if (operation.hasBody) {
-            // `formData`/`formBody` are declared only when the form has fields
-            // (see the two generators above); a field-less form sends no body
-            // rather than an identifier nothing declares. The normalizer
-            // warns about such a form.
-            if (operation.isMultipart) {
-                bodyParam = operation.formDataFields.length > 0 ? "formData" : "";
-            } else if (operation.isUrlEncoded) {
-                bodyParam = operation.urlEncodedFields.length > 0 ? "formBody.toString()" : "";
-            } else if (operation.requestBody?.content?.[CONTENT_TYPES.JSON]) {
-                bodyParam = argumentNames.body ?? "requestBody";
-            }
-        }
+        const bodyParam = this.bodyExpression(operation, argumentNames);
 
         const parseResponse = this.config.options.validation?.response
             ? `.pipe(map(response => options?.parse?.(response) ?? response))`
@@ -176,5 +92,24 @@ ${formBodyAppends}`;
 return this.httpClient.request('${httpMethod}', url, {
   ${joinRequestOptionEntries(entries)}
 })${parseResponse};`;
+    }
+
+    /**
+     * The expression sent as the body, or "" when the request carries none.
+     * `bodyKind` is unset for a field-less form, whose local the form
+     * emitters then never declare: it sends no body rather than an
+     * identifier nothing declares. The normalizer warns about such a form.
+     */
+    private bodyExpression(operation: NormalizedOperation, argumentNames: ArgumentNames): string {
+        switch (operation.bodyKind) {
+            case "multipart":
+                return FORM_DATA_LOCAL;
+            case "urlencoded":
+                return `${FORM_BODY_LOCAL}.toString()`;
+            case "json":
+                return argumentNames.body ?? "requestBody";
+            default:
+                return "";
+        }
     }
 }

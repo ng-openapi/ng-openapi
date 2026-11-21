@@ -9,7 +9,7 @@ import type { ResponseTypeInfo } from "../utils/functions/extract-swagger-respon
 import { resolveEnumMemberNames } from "./enum-member-names";
 import type { EnumNamingOptions } from "../types/config.types";
 import type { PathInfo, RequestBody, SwaggerDefinition, SwaggerSpec } from "../types/swagger.types";
-import type { NormalizedOperation } from "../model/operation.model";
+import type { NormalizedOperation, RequestBodyKind } from "../model/operation.model";
 import type { NormalizedSpec } from "../model/spec.model";
 
 type ResolveRef = (ref: string) => SwaggerDefinition | undefined;
@@ -247,6 +247,7 @@ function normalizeOperation(
         pathParams,
         queryParams,
         hasBody: !!operation.requestBody,
+        bodyKind: boundBodyKind(content, isMultipart, isUrlEncoded, formDataFields, urlEncodedFields),
         isMultipart,
         isUrlEncoded,
         formDataSchema,
@@ -256,6 +257,27 @@ function normalizeOperation(
         responseType: responseInfo.responseType,
         acceptHeader: responseInfo.acceptHeader,
     };
+}
+
+/**
+ * Which body the generated request carries. A form is sent field by field, so
+ * one without fields sends nothing; multipart wins over a JSON alternative,
+ * and `isUrlEncoded` already means there is none.
+ */
+function boundBodyKind(
+    content: RequestBody["content"] | undefined,
+    isMultipart: boolean,
+    isUrlEncoded: boolean,
+    formDataFields: readonly string[],
+    urlEncodedFields: readonly string[],
+): RequestBodyKind | undefined {
+    if (isMultipart) {
+        return formDataFields.length > 0 ? "multipart" : undefined;
+    }
+    if (isUrlEncoded) {
+        return urlEncodedFields.length > 0 ? "urlencoded" : undefined;
+    }
+    return content?.[CONTENT_TYPES.JSON] ? "json" : undefined;
 }
 
 /**

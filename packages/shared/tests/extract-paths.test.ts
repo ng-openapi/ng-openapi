@@ -28,6 +28,21 @@ describe("extractPaths", () => {
         expect(paths[0].operationId).toBe("listPets");
     });
 
+    it("extracts the OpenAPI 3.2 `query` path-item field as a QUERY operation, body included", () => {
+        const requestBody = { content: { "application/json": { schema: { type: "object" } } } };
+        const paths = extractPaths({
+            "/pets/search": {
+                parameters: [{ name: "limit", in: "query", schema: { type: "integer" } }],
+                query: { operationId: "searchPets", requestBody, responses: {} },
+            },
+        } as never);
+
+        expect(paths).toHaveLength(1);
+        expect(paths[0]).toMatchObject({ path: "/pets/search", method: "QUERY", operationId: "searchPets" });
+        expect(paths[0].requestBody).toEqual(requestBody);
+        expect(paths[0].parameters?.map((p) => p.name)).toEqual(["limit"]);
+    });
+
     it("merges path-level parameters before operation parameters", () => {
         const paths = extractPaths({
             "/pets/{petId}": {

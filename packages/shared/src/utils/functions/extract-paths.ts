@@ -36,7 +36,9 @@ export type ResolveParameter = (ref: string) => ParameterResolution;
  * Flattens the spec's `paths` object into one PathInfo per (path, method)
  * pair, merging path-level parameters into each operation. Supports both
  * Swagger 2.0 and OpenAPI 3.x path items; methods outside the given list
- * (and vendor extensions) are ignored.
+ * (and vendor extensions) are ignored. `query` is the OpenAPI 3.2 path-item
+ * field for the HTTP QUERY method: a safe, idempotent request that carries
+ * its input in a body.
  *
  * A `$ref` parameter, request body or response is replaced by the component
  * its resolver returns; one the resolver cannot resolve is warned about and
@@ -47,7 +49,7 @@ export type ResolveParameter = (ref: string) => ParameterResolution;
  */
 export function extractPaths(
     swaggerPaths: { [p: string]: Path } = {},
-    methods = ["get", "post", "put", "patch", "delete", "options", "head"],
+    methods = ["get", "post", "put", "patch", "delete", "options", "head", "query"],
     onWarning?: (message: string) => void,
     resolvers: ComponentResolvers | ResolveParameter = {},
 ): PathInfo[] {

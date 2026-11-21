@@ -63,13 +63,14 @@ TypeScript compiler. They read the spec locations from environment variables and
 **skip automatically when the variables are unset**, so the rest of the suite still runs
 offline.
 
-Set these three variables to run them locally:
+Set these four variables to run them locally:
 
 | Variable                | Spec              | URL                                                            |
 | ----------------------- | ----------------- | -------------------------------------------------------------- |
 | `OPENAPI_SPEC_V2_URL`   | Swagger 2.0       | https://ng-openapi.github.io/openapi-spec/specs/v2-swagger.yaml   |
 | `OPENAPI_SPEC_V3_URL`   | OpenAPI 3.0       | https://ng-openapi.github.io/openapi-spec/specs/v3.0-openapi.yaml |
 | `OPENAPI_SPEC_V3_1_URL` | OpenAPI 3.1       | https://ng-openapi.github.io/openapi-spec/specs/v3.1-openapi.yaml |
+| `OPENAPI_SPEC_V3_2_URL` | OpenAPI 3.2       | https://ng-openapi.github.io/openapi-spec/specs/v3.2-openapi.yaml |
 
 **bash / zsh:**
 
@@ -77,6 +78,7 @@ Set these three variables to run them locally:
 export OPENAPI_SPEC_V2_URL=https://ng-openapi.github.io/openapi-spec/specs/v2-swagger.yaml
 export OPENAPI_SPEC_V3_URL=https://ng-openapi.github.io/openapi-spec/specs/v3.0-openapi.yaml
 export OPENAPI_SPEC_V3_1_URL=https://ng-openapi.github.io/openapi-spec/specs/v3.1-openapi.yaml
+export OPENAPI_SPEC_V3_2_URL=https://ng-openapi.github.io/openapi-spec/specs/v3.2-openapi.yaml
 npm test
 ```
 
@@ -86,6 +88,7 @@ npm test
 $env:OPENAPI_SPEC_V2_URL   = "https://ng-openapi.github.io/openapi-spec/specs/v2-swagger.yaml"
 $env:OPENAPI_SPEC_V3_URL   = "https://ng-openapi.github.io/openapi-spec/specs/v3.0-openapi.yaml"
 $env:OPENAPI_SPEC_V3_1_URL = "https://ng-openapi.github.io/openapi-spec/specs/v3.1-openapi.yaml"
+$env:OPENAPI_SPEC_V3_2_URL = "https://ng-openapi.github.io/openapi-spec/specs/v3.2-openapi.yaml"
 npm test
 ```
 

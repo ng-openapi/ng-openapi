@@ -26,6 +26,7 @@ export {
     getInterceptorsTokenName,
     getModelTypeName,
     assertDistinctMemberNames,
+    deriveLocalName,
     getOperationMethodName,
     RESERVED_MEMBER_NAMES,
     reservedMemberCollision,

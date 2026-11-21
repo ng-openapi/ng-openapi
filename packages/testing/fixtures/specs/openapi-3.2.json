@@ -1,0 +1,303 @@
+{
+    "openapi": "3.2.0",
+    "info": {
+        "title": "Catalog Search API",
+        "version": "1.0.0",
+        "description": "OpenAPI 3.2 fixture: the HTTP QUERY method (the `query` path-item field) next to an ordinary GET, with every request body a generated client binds."
+    },
+    "paths": {
+        "/products": {
+            "get": {
+                "operationId": "listProducts",
+                "tags": ["Products"],
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer", "format": "int32" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A page of products",
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/ProductPage" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/products/search": {
+            "query": {
+                "operationId": "searchProducts",
+                "tags": ["Products"],
+                "description": "Searches the catalog. The criteria travel in the request body, so they are not limited by URL length.",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": { "type": "integer", "format": "int32" }
+                    },
+                    {
+                        "name": "cursor",
+                        "in": "query",
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": { "$ref": "#/components/schemas/ProductSearch" }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The matching products",
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/ProductPage" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/products/featured": {
+            "query": {
+                "operationId": "queryFeaturedProducts",
+                "tags": ["Products"],
+                "description": "A QUERY operation that declares no request body.",
+                "responses": {
+                    "200": {
+                        "description": "The featured products",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": { "$ref": "#/components/schemas/Product" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/products/{productId}/related": {
+            "parameters": [
+                {
+                    "name": "productId",
+                    "in": "path",
+                    "required": true,
+                    "schema": { "type": "string", "format": "uuid" }
+                }
+            ],
+            "query": {
+                "tags": ["Products"],
+                "description": "No operationId: the method name falls back to the path and the method. The body is optional.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": { "$ref": "#/components/schemas/RelatedFilter" }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Products related to the given one",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": { "$ref": "#/components/schemas/Product" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/search": {
+            "query": {
+                "operationId": "searchOrders",
+                "tags": ["Orders"],
+                "description": "A form-encoded query, the shape the QUERY method's own specification uses as its example.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["status"],
+                                "properties": {
+                                    "status": { "$ref": "#/components/schemas/OrderStatus" },
+                                    "customer-id": { "type": "string" },
+                                    "tags": {
+                                        "type": "array",
+                                        "items": { "type": "string" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The matching orders",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": { "$ref": "#/components/schemas/Order" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/export": {
+            "query": {
+                "operationId": "exportOrders",
+                "tags": ["Orders"],
+                "description": "A QUERY whose response is a file, not JSON.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": { "$ref": "#/components/schemas/OrderExportRequest" }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The orders as a CSV file",
+                        "content": {
+                            "text/csv": {
+                                "schema": { "type": "string", "format": "binary" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/images/match": {
+            "query": {
+                "operationId": "matchImages",
+                "tags": ["Images"],
+                "description": "A multipart query: find the products that look like an uploaded picture.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["image"],
+                                "properties": {
+                                    "image": { "type": "string", "format": "binary" },
+                                    "threshold": { "type": "number", "format": "double" },
+                                    "labels": {
+                                        "type": "array",
+                                        "items": { "type": "string" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The products that match the image",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": { "$ref": "#/components/schemas/Product" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Product": {
+                "type": "object",
+                "required": ["id", "name", "price"],
+                "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "name": { "type": "string" },
+                    "price": { "type": "number", "format": "double" },
+                    "createdAt": { "type": "string", "format": "date-time" }
+                }
+            },
+            "ProductPage": {
+                "type": "object",
+                "required": ["items"],
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/Product" }
+                    },
+                    "nextCursor": { "type": "string" }
+                }
+            },
+            "ProductSort": {
+                "type": "string",
+                "enum": ["relevance", "price", "newest"]
+            },
+            "ProductSearch": {
+                "type": "object",
+                "required": ["text"],
+                "properties": {
+                    "text": { "type": "string" },
+                    "minPrice": { "type": "number", "format": "double" },
+                    "maxPrice": { "type": "number", "format": "double" },
+                    "categories": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                    },
+                    "createdAfter": { "type": "string", "format": "date-time" },
+                    "sort": { "$ref": "#/components/schemas/ProductSort" }
+                }
+            },
+            "RelatedFilter": {
+                "type": "object",
+                "properties": {
+                    "maxResults": { "type": "integer", "format": "int32" },
+                    "sameCategoryOnly": { "type": "boolean" }
+                }
+            },
+            "OrderStatus": {
+                "type": "string",
+                "enum": ["open", "shipped", "cancelled"]
+            },
+            "Order": {
+                "type": "object",
+                "required": ["id", "status"],
+                "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "status": { "$ref": "#/components/schemas/OrderStatus" },
+                    "placedAt": { "type": "string", "format": "date-time" }
+                }
+            },
+            "OrderExportRequest": {
+                "type": "object",
+                "required": ["from", "to"],
+                "properties": {
+                    "from": { "type": "string", "format": "date" },
+                    "to": { "type": "string", "format": "date" },
+                    "statuses": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/OrderStatus" }
+                    }
+                }
+            }
+        }
+    }
+}

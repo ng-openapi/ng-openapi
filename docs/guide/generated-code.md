@@ -78,6 +78,26 @@ The fields of a form are the top-level `properties` of its schema. A form schema
 ⚠️ The request body of searchItems ((GET) /items/search) was skipped: browsers do not send a body with GET requests. Generated methods take no body and no validator is generated for it. Describe the input as query parameters, or use a method that carries a body.
 ```
 
+OpenAPI 3.2's `query` operations — the HTTP `QUERY` method, a safe and idempotent read like `GET` whose input travels in the request body — are generated like every other operation, body included:
+
+```typescript
+// QUERY /products/search with a JSON requestBody
+searchProducts(productSearch: ProductSearch, /* observe, options */): Observable<any> {
+    // …
+    return this.httpClient.request('query', url, { body: productSearch, /* … */ });
+}
+```
+
+::: warning QUERY requires Angular 22.3+
+Angular's `HttpClient` supports the `QUERY` method from 22.3 on. The generated code compiles and sends the request on older versions too, but `HttpClient` then treats it as a mutation: it attaches the XSRF token to the request, and server-side rendering does not reuse the response during hydration.
+:::
+
+When the spec declares `QUERY` operations and an `@angular/core` older than 22.3 is detected in the workspace the generator runs in, a warning is printed; generation still proceeds, since the workspace running the CLI is not always the workspace that compiles the output (monorepos, CI):
+
+```
+⚠️ Operation searchProducts ((QUERY) /products/search) uses the HTTP QUERY method, which Angular's HttpClient supports from 22.3 — found @angular/core 21.2.13 in this workspace. The generated code still compiles and sends the request there, but HttpClient treats it as a mutation: it attaches the XSRF token to it, and server-side rendering does not reuse its response during hydration.
+```
+
 ### `tokens/index.ts`
 
 Injection tokens namespaced per client so multiple clients can coexist (see [Multiple Clients](./multiple-clients.md)):

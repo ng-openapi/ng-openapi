@@ -8,8 +8,10 @@ export {
     escapeTemplateLiteral,
     quoteLiteral,
 } from "./literal.emit";
-export { emitDefaultHeadersMerge, emitHeaders } from "./headers.emit";
-export type { HeadersEmitOptions } from "./headers.emit";
+export { defaultContentType, emitDefaultHeadersMerge, emitHeaders } from "./headers.emit";
+export type { DefaultHeadersMergeOptions, HeadersEmitOptions } from "./headers.emit";
+export { emitMultipartFormData, emitUrlEncodedFormBody } from "./form-body.emit";
+export type { FormBodyEmitOptions } from "./form-body.emit";
 export { emitQueryParams, emitSignalAwareQueryParams } from "./query-params.emit";
 export { emitServiceDecorator } from "./service-decorator.emit";
 export type { ServiceDecoratorEmit, ServiceDecoratorEmitOptions } from "./service-decorator.emit";
