@@ -66,13 +66,13 @@ deleteOrders(deleteOrdersRequest: DeleteOrdersRequest, /* observe, options */): 
 
 How the body is taken and sent depends on the content type it is declared under:
 
-| Declared as                                                                                           | Argument                     | `Content-Type` sent                                                               |
-| ----------------------------------------------------------------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------- |
-| `application/json`, and JSON under another name: `application/json; charset=utf-8`, any `+json` type  | One, typed from the schema   | The declared one                                                                  |
-| `multipart/form-data`                                                                                 | One per top-level field      | Left to the browser, which writes the boundary                                    |
-| `application/x-www-form-urlencoded`                                                                   | One per top-level field      | `application/x-www-form-urlencoded`                                               |
-| Text: `text/*`, XML, YAML                                                                             | One `string`                 | The declared one                                                                  |
-| Anything else — `application/octet-stream`, `application/pdf`, `image/png`, a range such as `image/*` | One `Blob` (a `File` is one) | The declared one; the `Blob`'s own type for a range or for several declared types |
+| Declared as                                                                                           | Argument                     | `Content-Type` sent                                                                    |
+| ----------------------------------------------------------------------------------------------------- | ---------------------------- | -------------------------------------------------------------------------------------- |
+| `application/json`, and JSON under another name: `application/json; charset=utf-8`, any `+json` type  | One, typed from the schema   | The declared one                                                                       |
+| `multipart/form-data`                                                                                 | One per top-level field      | Left to the browser, which writes the boundary                                         |
+| `application/x-www-form-urlencoded`                                                                   | One per top-level field      | `application/x-www-form-urlencoded`                                                    |
+| Text: `text/*`, XML, YAML                                                                             | One `string`                 | The declared one; left to `HttpClient`, which sends `text/plain`, for a `text/*` range |
+| Anything else — `application/octet-stream`, `application/pdf`, `image/png`, a range such as `image/*` | One `Blob` (a `File` is one) | The declared one; the `Blob`'s own type for a range or for several declared types      |
 
 A JSON body is serialized by `HttpClient`; a `string` or a `Blob` is sent as it is, so for XML or YAML the caller passes the serialized text. The header is only a default: one passed in the trailing options argument is kept.
 
