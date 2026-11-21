@@ -127,6 +127,17 @@ export class DateTransformerGenerator {
         })
     );`,
                 },
+                {
+                    name: "transform",
+                    docs: [
+                        "Converts the date strings in a value this interceptor did not see as a JSON body, with the " +
+                            "same pattern: an item of a streamed response, parsed from text after it passed through here.",
+                    ],
+                    typeParameters: ["T"],
+                    parameters: [{ name: "value", type: "T" }],
+                    returnType: "T",
+                    statements: "return transformDates(value, this.dateRegex);",
+                },
             ],
         });
 

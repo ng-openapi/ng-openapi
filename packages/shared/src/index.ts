@@ -38,6 +38,7 @@ export type {
 export type {
     NormalizedOperation,
     NormalizedQueryString,
+    NormalizedResponseSequence,
     NormalizedSpec,
     RequestBodyKind,
     ResponseKind,
@@ -73,7 +74,10 @@ export {
     emitHeaders,
     emitMultipartFormData,
     emitQueryParams,
+    emitDateReviver,
     emitResponseTypeOption,
+    emitSequenceParser,
+    emitSequenceStreamOperator,
     emitServiceDecorator,
     emitSignalAwareQueryParams,
     emitUrlConstruction,
@@ -92,8 +96,11 @@ export {
     joinRequestOptionEntries,
     plainParamValue,
     signalAwareParamValue,
+    getStreamItemType,
+    revivesDates,
 } from "./emit";
 export type {
+    DateReviverEmit,
     DefaultHeadersMergeOptions,
     FormBodyEmitOptions,
     HeadersEmitOptions,

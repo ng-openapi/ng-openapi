@@ -4,15 +4,18 @@ import {
     describeOperation,
     quoteLiteral,
     effectiveClientName,
+    emitDateReviver,
     emitServiceDecorator,
     GeneratorConfig,
     getBasePathTokenName,
     getClientContextTokenName,
+    getInterceptorsTokenName,
     getServiceClassName,
     assertDistinctMemberNames,
     groupOperationsByController,
     reservedMemberCollision,
     resolveArgumentNames,
+    revivesDates,
     SERVICE_ARGUMENT_PROFILE,
     NormalizedOperation,
     SERVICE_GENERATOR_HEADER_COMMENT,
@@ -112,6 +115,10 @@ export class ServiceGenerator {
         const basePathTokenName = getBasePathTokenName(this.config.clientName);
         const clientContextTokenName = getClientContextTokenName(this.config.clientName);
         const serviceDecorator = emitServiceDecorator(this.config.options);
+        // Only a class that reads a sequential JSON response with dates to convert.
+        const dateReviver = operations.some((operation) => revivesDates(operation, this.config))
+            ? emitDateReviver(getInterceptorsTokenName(this.config.clientName))
+            : undefined;
 
         sourceFile.addImportDeclarations([
             {
@@ -135,13 +142,20 @@ export class ServiceGenerator {
                 moduleSpecifier: "rxjs",
             },
             {
-                namedImports: [basePathTokenName, clientContextTokenName],
+                namedImports: [
+                    basePathTokenName,
+                    clientContextTokenName,
+                    ...(dateReviver ? [getInterceptorsTokenName(this.config.clientName)] : []),
+                ],
                 moduleSpecifier: "../tokens",
             },
             {
                 namedImports: ["HttpParamsBuilder"],
                 moduleSpecifier: "../utils/http-params-builder",
             },
+            ...(dateReviver
+                ? [{ namedImports: ["DateInterceptor"], moduleSpecifier: "../utils/date-transformer" }]
+                : []),
         ]);
 
         const serviceClass = sourceFile.addClass({
@@ -173,6 +187,24 @@ export class ServiceGenerator {
             isReadonly: true,
             initializer: clientContextTokenName,
         });
+
+        if (dateReviver) {
+            serviceClass.addProperty({
+                name: dateReviver.propertyName,
+                scope: Scope.Private,
+                isReadonly: true,
+                initializer: dateReviver.propertyInitializer,
+            });
+            serviceClass.addMethod({
+                name: dateReviver.methodName,
+                scope: Scope.Private,
+                docs: [dateReviver.methodDocs],
+                typeParameters: ["T"],
+                parameters: [{ name: "value", type: "T" }],
+                returnType: "T",
+                statements: dateReviver.methodStatements,
+            });
+        }
 
         // Add the helper method for creating context with client ID
         serviceClass.addMethod({

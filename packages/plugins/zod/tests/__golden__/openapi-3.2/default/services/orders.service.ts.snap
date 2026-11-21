@@ -10,15 +10,23 @@
 import { HttpClient, HttpContext, HttpContextToken, HttpEvent, HttpHeaders, HttpParams, HttpResponse } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { map, Observable } from "rxjs";
-import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
+import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT, HTTP_INTERCEPTORS_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { OrderStatus, RequestOptions, Order, OrderExportRequest } from "../models";
+import { DateInterceptor } from "../utils/date-transformer";
+import { OrderStatus, RequestOptions, Order, OrderExportRequest, OrderEvent } from "../models";
+import { streamJsonLines, streamServerSentEvents, streamJsonSequence, parseSequenceBody, parseJsonLines } from "../utils/http-stream";
 
 @Injectable({ providedIn: "root" })
 export class OrdersService {
     private readonly httpClient: HttpClient = inject(HttpClient);
     private readonly basePath: string = inject(BASE_PATH_DEFAULT);
     private readonly clientContextToken: HttpContextToken<string> = CLIENT_CONTEXT_TOKEN_DEFAULT;
+    private readonly dateInterceptor = inject(HTTP_INTERCEPTORS_DEFAULT, { optional: true })?.find((interceptor): interceptor is DateInterceptor => interceptor instanceof DateInterceptor);
+
+    /** Applies this client's date conversion to the items of a sequential response: they are parsed from text, after the date interceptor has seen the response. */
+    private reviveDates<T>(value: T): T {
+        return this.dateInterceptor ? this.dateInterceptor.transform(value) : value;
+    }
 
     private createContextWithClientId(existingContext?: HttpContext): HttpContext {
         const context = existingContext || new HttpContext();
@@ -103,5 +111,119 @@ export class OrdersService {
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)
         }).pipe(map(response => options?.parse?.(response) ?? response));
+    }
+
+    /** A JSON Lines stream: `itemSchema` describes each line, and the method emits each one as it arrives. */
+    streamOrders(status?: OrderStatus, options?: RequestOptions<'text', Order>): Observable<Order> {
+        const url = `${this.basePath}/orders/feed`;
+
+        let params = new HttpParams();
+        if (status != null) {
+            params = HttpParamsBuilder.addToHttpParams(params, status, 'status');
+        }
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/jsonl');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe: 'events',
+            headers,
+            params,
+            responseType: 'text',
+            reportProgress: true,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        }).pipe(streamJsonLines<Order>(), map(item => this.reviveDates(item)), map(item => options?.parse?.(item) ?? item));
+    }
+
+    /** Server-Sent Events: a stream that does not end. */
+    watchOrderEvents(options?: RequestOptions<'text', OrderEvent>): Observable<OrderEvent> {
+        const url = `${this.basePath}/orders/events`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'text/event-stream');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe: 'events',
+            headers,
+            responseType: 'text',
+            reportProgress: true,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        }).pipe(streamServerSentEvents<OrderEvent>(), map(item => options?.parse?.(item) ?? item));
+    }
+
+    /** A stream in answer to a request body, as a JSON text sequence. */
+    replayOrders(orderExportRequest: OrderExportRequest, options?: RequestOptions<'text', Order>): Observable<Order> {
+        const url = `${this.basePath}/orders/replay`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json-seq');
+        }
+        // Set Content-Type for JSON requests if not already set
+        if (!headers.has('Content-Type')) {
+            headers = headers.set('Content-Type', 'application/json');
+        }
+
+        return this.httpClient.request('post', url, {
+            body: orderExportRequest,
+            observe: 'events',
+            headers,
+            responseType: 'text',
+            reportProgress: true,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        }).pipe(streamJsonSequence<Order>(), map(item => this.reviveDates(item)), map(item => options?.parse?.(item) ?? item));
+    }
+
+    listArchivedOrders(observe?: 'body', options?: RequestOptions<'text', Array<Order>>): Observable<Array<Order>>;
+    listArchivedOrders(observe?: 'response', options?: RequestOptions<'text', Array<Order>>): Observable<HttpResponse<Array<Order>>>;
+    listArchivedOrders(observe?: 'events', options?: RequestOptions<'text', Array<Order>>): Observable<HttpEvent<Array<Order>>>;
+    /** A sequential media type declared complete, with an array `schema`: read once it has ended. */
+    listArchivedOrders(observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text', any>): Observable<any> {
+        const url = `${this.basePath}/orders/archive`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/x-ndjson');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe,
+            headers,
+            responseType: 'text',
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        }).pipe(parseSequenceBody(text => this.reviveDates(parseJsonLines(text))), map(response => options?.parse?.(response) ?? response));
     }
 }

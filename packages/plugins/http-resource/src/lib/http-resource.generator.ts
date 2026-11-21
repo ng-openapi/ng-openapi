@@ -4,15 +4,18 @@ import {
     describeOperation,
     quoteLiteral,
     effectiveClientName,
+    emitDateReviver,
     emitServiceDecorator,
     GeneratorConfig,
     getBasePathTokenName,
     getClientContextTokenName,
+    getInterceptorsTokenName,
     getResourceClassName,
     groupOperationsByController,
     assertDistinctMemberNames,
     reservedMemberCollision,
     resolveArgumentNames,
+    revivesDates,
     RESOURCE_ARGUMENT_PROFILE,
     HTTP_RESOURCE_GENERATOR_HEADER_COMMENT,
     IPluginGenerator,
@@ -53,7 +56,21 @@ export class HttpResourceGenerator implements IPluginGenerator {
 
     async generate(outputRoot: string) {
         const outputDir = path.join(outputRoot, "resources");
-        const paths = this.spec.operations.filter((operation) => RESOURCE_METHODS.has(operation.method));
+        const readable = this.spec.operations.filter((operation) => RESOURCE_METHODS.has(operation.method));
+        // A resource holds one value at a time; a streamed response is a
+        // series of them. It has a service method instead.
+        const paths = readable.filter((operation) => !operation.responseSequence?.itemSchema);
+        for (const operation of readable) {
+            if (operation.responseSequence?.itemSchema) {
+                this.onWarning?.(
+                    `No resource is generated for ${describeOperation(operation)}: its response is a stream of ` +
+                        "items (`itemSchema`), and an httpResource holds one value, not a series. " +
+                        (this.config.options.generateServices === false
+                            ? "Enable `generateServices` to get it as a service method that emits each item."
+                            : "Use the generated service method, which emits each item as it arrives."),
+                );
+            }
+        }
 
         if (paths.length === 0) {
             this.onWarning?.("No API paths found in the specification");
@@ -94,6 +111,10 @@ export class HttpResourceGenerator implements IPluginGenerator {
         const basePathTokenName = getBasePathTokenName(this.config.clientName);
         const clientContextTokenName = getClientContextTokenName(this.config.clientName);
         const serviceDecorator = emitServiceDecorator(this.config.options);
+        // Only a class that parses a sequential JSON response with dates to convert.
+        const dateReviver = operations.some((operation) => revivesDates(operation, this.config))
+            ? emitDateReviver(getInterceptorsTokenName(this.config.clientName))
+            : undefined;
 
         sourceFile.addImportDeclarations([
             {
@@ -114,13 +135,20 @@ export class HttpResourceGenerator implements IPluginGenerator {
                 moduleSpecifier: "@angular/core",
             },
             {
-                namedImports: [basePathTokenName, clientContextTokenName],
+                namedImports: [
+                    basePathTokenName,
+                    clientContextTokenName,
+                    ...(dateReviver ? [getInterceptorsTokenName(this.config.clientName)] : []),
+                ],
                 moduleSpecifier: "../tokens",
             },
             {
                 namedImports: ["HttpParamsBuilder"],
                 moduleSpecifier: "../utils/http-params-builder",
             },
+            ...(dateReviver
+                ? [{ namedImports: ["DateInterceptor"], moduleSpecifier: "../utils/date-transformer" }]
+                : []),
         ]);
 
         const serviceClass = sourceFile.addClass({
@@ -144,6 +172,24 @@ export class HttpResourceGenerator implements IPluginGenerator {
             isReadonly: true,
             initializer: clientContextTokenName,
         });
+
+        if (dateReviver) {
+            serviceClass.addProperty({
+                name: dateReviver.propertyName,
+                scope: Scope.Private,
+                isReadonly: true,
+                initializer: dateReviver.propertyInitializer,
+            });
+            serviceClass.addMethod({
+                name: dateReviver.methodName,
+                scope: Scope.Private,
+                docs: [dateReviver.methodDocs],
+                typeParameters: ["T"],
+                parameters: [{ name: "value", type: "T" }],
+                returnType: "T",
+                statements: dateReviver.methodStatements,
+            });
+        }
 
         // Add the helper method for creating context with client ID
         serviceClass.addMethod({

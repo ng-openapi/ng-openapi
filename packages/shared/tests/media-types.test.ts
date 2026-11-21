@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
     bodyMediaFamily,
+    inferResponseTypeFromContentType,
     isJsonMediaType,
     isMediaTypeRange,
     isSequentialMediaType,
     mediaTypeEssence,
+    sequenceFormat,
 } from "../src/utils/functions/media-types";
 
 describe("media types", () => {
@@ -52,6 +54,41 @@ describe("media types", () => {
         expect(isMediaTypeRange("image/*")).toBe(true);
         expect(isMediaTypeRange("*/*")).toBe(true);
         expect(isMediaTypeRange("image/png")).toBe(false);
+    });
+});
+
+describe("sequential media types", () => {
+    it.each([
+        ["application/jsonl", "json-lines"],
+        ["application/x-ndjson", "json-lines"],
+        ["application/ndjson", "json-lines"],
+        ["application/x-jsonlines", "json-lines"],
+        ["Application/JSONL; charset=utf-8", "json-lines"],
+        ["application/json-seq", "json-seq"],
+        ["application/geo+json-seq", "json-seq"],
+        ["text/event-stream", "event-stream"],
+    ])("%s is read as %s", (contentType, format) => {
+        expect(sequenceFormat(contentType)).toBe(format);
+    });
+
+    // Sequential by the specification, but with no generated reader.
+    it.each(["multipart/mixed", "application/json", "text/plain", "application/geo+json"])(
+        "%s is not read item by item",
+        (contentType) => {
+            expect(sequenceFormat(contentType)).toBeUndefined();
+        },
+    );
+
+    it.each(["application/jsonl", "application/x-ndjson", "application/json-seq", "text/event-stream"])(
+        "%s is fetched as text: JSON.parse fails on the second item of one",
+        (contentType) => {
+            expect(inferResponseTypeFromContentType(contentType)).toBe("text");
+        },
+    );
+
+    it("still fetches a JSON document as JSON", () => {
+        expect(inferResponseTypeFromContentType("application/json")).toBe("json");
+        expect(inferResponseTypeFromContentType("application/geo+json")).toBe("json");
     });
 });
 

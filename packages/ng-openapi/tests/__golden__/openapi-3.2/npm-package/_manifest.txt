@@ -14,3 +14,4 @@ tsconfig.json
 utils/base-interceptor.ts
 utils/file-download.ts
 utils/http-params-builder.ts
+utils/http-stream.ts

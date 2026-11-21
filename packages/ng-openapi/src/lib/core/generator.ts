@@ -5,6 +5,7 @@ import {
     DateTransformerGenerator,
     FileDownloadGenerator,
     HttpParamsBuilderGenerator,
+    HttpStreamGenerator,
     MainIndexGenerator,
     PackageScaffoldGenerator,
     ProviderGenerator,
@@ -178,6 +179,13 @@ export async function generateFromConfig(config: GeneratorConfig, reporter: Repo
         // Generate HttpParamsBuilder
         const httpParamsBuilderGenerator = new HttpParamsBuilderGenerator(project);
         httpParamsBuilderGenerator.generate(outputPath);
+
+        // The readers for sequential responses (JSON Lines, Server-Sent
+        // Events, …) — only for a spec that has one. Before the services and
+        // the plugins, whose files import from it.
+        if (normalizedSpec.operations.some((operation) => operation.responseSequence)) {
+            new HttpStreamGenerator(project).generate(outputPath);
+        }
 
         // Generate provider functions (always generate, even if services are disabled)
         const providerGenerator = new ProviderGenerator(project, config);
