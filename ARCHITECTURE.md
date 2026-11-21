@@ -64,7 +64,10 @@ Every generation run flows through the same stages:
   `multipart/form-data` or `application/x-www-form-urlencoded` gets
   arguments, and a form contributes only the top-level `properties` of its
   schema. A form that lists none stays in the IR with an empty field list
-  and is warned about here, because the method then sends no body. Which of
+  and is warned about here, because the method then sends no body. So is a
+  body declared only under a content type nothing binds, and a field that
+  only the urlencoded form lists when an operation declares both forms
+  (multipart is the one sent): each is input the caller has no argument for. Which of
   the three a request actually carries is the operation's `bodyKind` — unset
   when it carries none — and every client reads that one field rather than
   re-deriving it from `hasBody`, `isMultipart` and `isUrlEncoded`, which

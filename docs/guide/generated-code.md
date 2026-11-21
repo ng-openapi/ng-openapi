@@ -64,7 +64,17 @@ deleteOrders(deleteOrdersRequest: DeleteOrdersRequest, /* observe, options */): 
 }
 ```
 
-The content type must match one of those three keys exactly. A body declared only under another one — `text/plain`, `application/octet-stream`, `application/merge-patch+json`, or `application/json; charset=utf-8` — gets no argument and is not sent.
+The content type must match one of those three keys exactly. A body declared only under another one — `text/plain`, `application/octet-stream`, `application/merge-patch+json`, or `application/json; charset=utf-8` — gets no argument and is not sent, and is warned about:
+
+```
+⚠️ The request body of patchPet ((PATCH) /pets/{petId}) is declared only as application/merge-patch+json, which generated methods do not bind: a body gets arguments only under a content type that is exactly application/json, multipart/form-data or application/x-www-form-urlencoded. Generated methods take no argument for it and send the request without a body, still with the `Content-Type: application/json` header. Declare the body under one of those content types to have it generated.
+```
+
+An operation that declares both `multipart/form-data` and `application/x-www-form-urlencoded` sends the multipart body, so only its fields become arguments. A field that only the urlencoded form lists is warned about:
+
+```
+⚠️ The request body of upload ((POST) /upload) is declared as both multipart/form-data and application/x-www-form-urlencoded. Generated methods send the multipart/form-data one, so the field "note", which only the application/x-www-form-urlencoded form lists, gets no argument and is not sent. List it in the multipart/form-data schema too, or declare one form.
+```
 
 The fields of a form are the top-level `properties` of its schema. A form schema that lists none — fields inherited through `allOf`, `additionalProperties`, a bare `type: object` — leaves the method with no argument for the body and nothing to send, and is warned about:
 
@@ -78,7 +88,7 @@ The fields of a form are the top-level `properties` of its schema. A form schema
 ⚠️ The request body of searchItems ((GET) /items/search) was skipped: browsers do not send a body with GET requests. Generated methods take no body and no validator is generated for it. Describe the input as query parameters, or use a method that carries a body.
 ```
 
-OpenAPI 3.2's `query` operations — the HTTP `QUERY` method, a safe and idempotent read like `GET` whose input travels in the request body — are generated like every other operation, body included:
+OpenAPI 3.2's `query` operations — the HTTP `QUERY` method, a safe and idempotent read like `GET` whose input travels in the request body — are generated like every other operation. A body declared as `application/json`, `multipart/form-data` or `application/x-www-form-urlencoded` is bound and sent as described above:
 
 ```typescript
 // QUERY /products/search with a JSON requestBody
@@ -87,6 +97,8 @@ searchProducts(productSearch: ProductSearch, /* observe, options */): Observable
     return this.httpClient.request('query', url, { body: productSearch, /* … */ });
 }
 ```
+
+A `QUERY` body under any other content type gets the warning above like on every other method, and it matters more here: the body is the operation's whole input, so the generated method sends a query with nothing in it.
 
 ::: warning QUERY requires Angular 22.3+
 Angular's `HttpClient` supports the `QUERY` method from 22.3 on. The generated code compiles and sends the request on older versions too, but `HttpClient` then treats it as a mutation: it attaches the XSRF token to the request, and server-side rendering does not reuse the response during hydration.

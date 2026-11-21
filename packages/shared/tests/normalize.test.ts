@@ -360,6 +360,133 @@ describe("normalizeSpec: the body a generated request carries", () => {
     });
 });
 
+describe("normalizeSpec: request bodies no generated method binds", () => {
+    const body = (...contentTypes: string[]) => ({
+        content: Object.fromEntries(contentTypes.map((contentType) => [contentType, { schema: { type: "string" } }])),
+    });
+    const unboundSpec = {
+        openapi: "3.2.0",
+        paths: {
+            "/notes": {
+                // The whole input of a QUERY is its body.
+                query: { operationId: "queryNotes", requestBody: body("text/plain"), responses: {} },
+                post: {
+                    requestBody: body("application/json; charset=utf-8", "application/vnd.api+json"),
+                    responses: {},
+                },
+                patch: { operationId: "patchNotes", requestBody: body("application/merge-patch+json"), responses: {} },
+                put: { operationId: "replaceNotes", requestBody: {}, responses: {} },
+            },
+            "/bound": {
+                post: { operationId: "createNote", requestBody: body("application/json"), responses: {} },
+                // One bindable content type among others is enough.
+                put: { operationId: "putNote", requestBody: body("text/plain", "application/json"), responses: {} },
+                patch: { operationId: "formNote", requestBody: body("multipart/form-data"), responses: {} },
+                // Left out as a GET body: that is the one thing said about it.
+                get: { operationId: "readNote", requestBody: body("text/plain"), responses: {} },
+            },
+        },
+    } as unknown as SwaggerSpec;
+    const warnings: string[] = [];
+    const normalized = normalizeSpec(unboundSpec, (message) => warnings.push(message));
+    const about = (operation: string) => warnings.filter((warning) => warning.includes(operation));
+
+    it("says that the body gets no argument and is not sent, and what is still sent", () => {
+        expect(about("queryNotes")).toEqual([
+            "The request body of queryNotes ((QUERY) /notes) is declared only as text/plain, which generated " +
+                "methods do not bind: a body gets arguments only under a content type that is exactly " +
+                "application/json, multipart/form-data or application/x-www-form-urlencoded. Generated methods " +
+                "take no argument for it and send the request without a body, still with the `Content-Type: " +
+                "application/json` header. Declare the body under one of those content types to have it generated.",
+        ]);
+    });
+
+    it("names every content type the body is declared under, a parameterised JSON one included", () => {
+        expect(about("(POST) /notes")).toHaveLength(1);
+        expect(about("(POST) /notes")[0]).toContain(
+            "is declared only as application/json; charset=utf-8, application/vnd.api+json, which generated",
+        );
+        expect(about("patchNotes")).toHaveLength(1);
+        expect(about("patchNotes")[0]).toContain("is declared only as application/merge-patch+json,");
+    });
+
+    it("warns about a request body that declares no content at all", () => {
+        expect(about("replaceNotes")).toHaveLength(1);
+        expect(about("replaceNotes")[0]).toContain(
+            "The request body of replaceNotes ((PUT) /notes) declares no content type, so generated methods have " +
+                "nothing to bind: a body gets arguments only under",
+        );
+    });
+
+    it("keeps such a body in the IR as declared, with nothing bound", () => {
+        const queryNotes = normalized.operations.find((o) => o.operationId === "queryNotes")!;
+        expect(queryNotes).toMatchObject({ hasBody: true, isMultipart: false, isUrlEncoded: false });
+        expect(queryNotes.bodyKind).toBeUndefined();
+    });
+
+    it("says nothing about a body it binds, or beyond the skip of a GET body", () => {
+        expect(about("createNote")).toEqual([]);
+        expect(about("putNote")).toEqual([]);
+        // A form without fields has its own warning, pinned below.
+        expect(about("formNote").join("\n")).not.toContain("do not bind");
+        expect(about("readNote")).toHaveLength(1);
+        expect(about("readNote")[0]).toContain("was skipped: browsers do not send a body with GET requests");
+    });
+});
+
+describe("normalizeSpec: an operation that declares both forms", () => {
+    const fields = (...names: string[]) => ({
+        schema: { type: "object", properties: Object.fromEntries(names.map((name) => [name, { type: "string" }])) },
+    });
+    const forms = (multipart: string[], urlEncoded: string[]) => ({
+        content: {
+            "multipart/form-data": fields(...multipart),
+            "application/x-www-form-urlencoded": fields(...urlEncoded),
+        },
+    });
+    const bothFormsSpec = {
+        openapi: "3.0.3",
+        paths: {
+            "/upload": {
+                post: { operationId: "upload", requestBody: forms(["file"], ["file", "note"]), responses: {} },
+            },
+            "/many": { post: { operationId: "uploadMany", requestBody: forms(["file"], ["a", "b"]), responses: {} } },
+            // What ASP.NET publishes for [FromForm]: the same fields twice.
+            "/same": {
+                post: { operationId: "submit", requestBody: forms(["name", "note"], ["name", "note"]), responses: {} },
+            },
+        },
+    } as unknown as SwaggerSpec;
+    const warnings: string[] = [];
+    const normalized = normalizeSpec(bothFormsSpec, (message) => warnings.push(message));
+    const about = (operation: string) => warnings.filter((warning) => warning.includes(`${operation} (`));
+
+    it("sends the multipart one", () => {
+        expect(normalized.operations.map((o) => o.bodyKind)).toEqual(["multipart", "multipart", "multipart"]);
+    });
+
+    it("warns about a field only the urlencoded form lists: it has no argument and is not sent", () => {
+        expect(about("upload")).toEqual([
+            "The request body of upload ((POST) /upload) is declared as both multipart/form-data and " +
+                "application/x-www-form-urlencoded. Generated methods send the multipart/form-data one, so the " +
+                'field "note", which only the application/x-www-form-urlencoded form lists, gets no argument and ' +
+                "is not sent. List it in the multipart/form-data schema too, or declare one form.",
+        ]);
+    });
+
+    it("names every such field", () => {
+        expect(about("uploadMany")).toHaveLength(1);
+        expect(about("uploadMany")[0]).toContain(
+            'so the fields "a", "b", which only the application/x-www-form-urlencoded form lists, get no argument ' +
+                "and are not sent. List them in the multipart/form-data schema too, or declare one form.",
+        );
+    });
+
+    it("says nothing when both forms list the same fields", () => {
+        expect(about("submit")).toEqual([]);
+    });
+});
+
 describe("normalizeSpec: form bodies without listable fields", () => {
     const form = (contentType: string, schema: object) => ({ content: { [contentType]: { schema } } });
     const formSpec = {

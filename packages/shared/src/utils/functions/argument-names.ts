@@ -185,10 +185,20 @@ function computeArgumentNames(
     config: MethodGenOptions,
     profile: ArgumentNameProfile,
 ): ArgumentNames {
+    // Only the fields of the form that is sent are arguments. An operation may
+    // declare both forms, and the IR carries both field lists; registering the
+    // one no method binds would take names from real arguments (a query `note`
+    // renamed `note2` for a form field that is not there) and report a field
+    // both forms list as declared twice.
+    const formFields =
+        operation.bodyKind === "multipart"
+            ? operation.formDataFields
+            : operation.bodyKind === "urlencoded"
+              ? operation.urlEncodedFields
+              : [];
     const entries: { key: ArgumentKey; base: string }[] = [
         ...operation.pathParams.map((param) => ({ key: param.name, base: camelCase(param.name) })),
-        ...operation.formDataFields.map((field) => ({ key: field, base: camelCase(field) })),
-        ...operation.urlEncodedFields.map((field) => ({ key: field, base: camelCase(field) })),
+        ...formFields.map((field) => ({ key: field, base: camelCase(field) })),
     ];
 
     const bodyBase = profile.bindsRequestBody ? jsonBodyIdentifier(operation, config) : undefined;

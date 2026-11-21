@@ -143,6 +143,40 @@ describe("resolveArgumentNames", () => {
     });
 });
 
+describe("resolveArgumentNames: form fields", () => {
+    // The IR carries the field lists of both forms when an operation declares
+    // both; only the form that is sent has arguments.
+    const bothForms = (bodyKind: NormalizedOperation["bodyKind"]) =>
+        operation({
+            method: "POST",
+            bodyKind,
+            formDataFields: ["file", "shared"],
+            urlEncodedFields: ["note", "shared"],
+            queryParams: [param("note"), param("file")],
+        });
+
+    it("registers the multipart fields when that is the body sent", () => {
+        const names = service(bothForms("multipart"));
+        // `note` is the query parameter: no form field takes its name.
+        expect(names.all).toEqual(["file", "shared", "note"]);
+        expect(names.renamed).toEqual([]);
+        // `file` really is declared twice, `shared` only looked like it.
+        expect(names.merged).toEqual(["file"]);
+    });
+
+    it("registers the urlencoded fields when that is the body sent", () => {
+        const names = service(bothForms("urlencoded"));
+        expect(names.all).toEqual(["note", "shared", "file"]);
+        expect(names.renamed).toEqual([]);
+        expect(names.merged).toEqual(["note"]);
+    });
+
+    it("registers no form field for an operation that sends no form", () => {
+        expect(service(bothForms(undefined)).all).toEqual(["note", "file"]);
+        expect(service(bothForms("json")).all).toEqual(["note", "file"]);
+    });
+});
+
 describe("resolveArgumentNames memoization", () => {
     it("is keyed by config as well as operation, not just operation", () => {
         // The JSON body name comes from the body type, which config decides.

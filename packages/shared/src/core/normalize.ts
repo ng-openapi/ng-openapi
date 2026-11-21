@@ -241,6 +241,12 @@ function normalizeOperation(
     if (isUrlEncoded && urlEncodedFields.length === 0) {
         warnAboutFieldlessFormBody(operation, CONTENT_TYPES.FORM_URLENCODED, onWarning);
     }
+    if (isMultipart && isUrlEncoded) {
+        warnAboutUnsentFormFields(operation, formDataFields, urlEncodedFields, onWarning);
+    }
+    if (operation.requestBody && !isMultipart && !isUrlEncoded && !content?.[CONTENT_TYPES.JSON]) {
+        warnAboutUnboundBody(operation, onWarning);
+    }
 
     return {
         ...operation,
@@ -326,6 +332,58 @@ function warnAboutFieldlessFormBody(
                 ? `, still with the \`Content-Type: ${contentType}\` header`
                 : "") +
             ". List the fields as `properties` of the body schema to have them generated.",
+    );
+}
+
+/**
+ * One body is sent per request, and multipart is the form that is: when an
+ * operation declares both forms, the urlencoded one contributes nothing. That
+ * is the ordinary shape where both list the same fields (ASP.NET's
+ * `[FromForm]` is published this way) and worth no words; a field only the
+ * urlencoded form lists, though, is input the generated method has no
+ * argument for.
+ */
+function warnAboutUnsentFormFields(
+    operation: PathInfo,
+    formDataFields: readonly string[],
+    urlEncodedFields: readonly string[],
+    onWarning?: (message: string) => void,
+): void {
+    const sent = new Set(formDataFields);
+    const unsent = urlEncodedFields.filter((field) => !sent.has(field));
+    if (unsent.length === 0) {
+        return;
+    }
+    onWarning?.(
+        `The request body of ${describeOperation(operation)} is declared as both ${CONTENT_TYPES.MULTIPART} and ` +
+            `${CONTENT_TYPES.FORM_URLENCODED}. Generated methods send the ${CONTENT_TYPES.MULTIPART} one, so ` +
+            `${unsent.length === 1 ? "the field" : "the fields"} ${unsent.map((field) => `"${field}"`).join(", ")}, ` +
+            `which only the ${CONTENT_TYPES.FORM_URLENCODED} form lists, ` +
+            `${unsent.length === 1 ? "gets no argument and is" : "get no argument and are"} not sent. ` +
+            `List ${unsent.length === 1 ? "it" : "them"} in the ${CONTENT_TYPES.MULTIPART} schema too, or declare one form.`,
+    );
+}
+
+/**
+ * A body is bound only under a content key that is exactly one of the three
+ * the generators special-case. Declared under any other — `text/plain`,
+ * `application/json; charset=utf-8`, `application/merge-patch+json`,
+ * `application/vnd.api+json` — it leaves the method with no argument for it
+ * and nothing to send, and for an operation whose body is its whole input (a
+ * QUERY) that is a request the caller cannot make meaningful at all.
+ */
+function warnAboutUnboundBody(operation: PathInfo, onWarning?: (message: string) => void): void {
+    const declared = Object.keys(operation.requestBody?.content ?? {});
+    const subject =
+        declared.length > 0
+            ? `is declared only as ${declared.join(", ")}, which generated methods do not bind`
+            : "declares no content type, so generated methods have nothing to bind";
+    onWarning?.(
+        `The request body of ${describeOperation(operation)} ${subject}: a body gets arguments only under a ` +
+            `content type that is exactly ${CONTENT_TYPES.JSON}, ${CONTENT_TYPES.MULTIPART} or ` +
+            `${CONTENT_TYPES.FORM_URLENCODED}. Generated methods take no argument for it and send the request ` +
+            `without a body, still with the \`Content-Type: ${CONTENT_TYPES.JSON}\` header. Declare the body ` +
+            "under one of those content types to have it generated.",
     );
 }
 

@@ -222,13 +222,22 @@ describe("httpResource QUERY bodies: names and headers that collide", () => {
         },
     };
 
-    it("takes no argument and sends no body for a content type it cannot bind", async () => {
-        const { resource } = await generate("hr-query-unbound-", { spec });
+    it("takes no argument and sends no body for a content type it cannot bind, out loud", async () => {
+        const { resource, result } = await generate("hr-query-unbound-", { spec });
         const queryNotes = methodSource(resource("search"), "queryNotes");
 
+        // With no argument left, the resource sends this empty QUERY the
+        // moment it is created — the caller has to hear about it here.
         expect(queryNotes).toMatch(/^ {4}queryNotes\(resourceOptions\?:/);
         expect(queryNotes).toContain(OMIT_WITHOUT_BODY);
         expect(queryNotes).not.toContain("body:");
+        // Wording is pinned in shared/tests/normalize.test.ts.
+        expect(result.warnings.filter((warning) => warning.includes("queryNotes"))).toEqual([
+            expect.stringContaining(
+                "The request body of queryNotes ((QUERY) /notes) is declared only as text/plain, which generated " +
+                    "methods do not bind",
+            ),
+        ]);
     });
 
     it("derives the form locals around the arguments, and still compiles", async () => {
