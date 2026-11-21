@@ -9,14 +9,14 @@ ng-openapi generates from Swagger 2.0 and from OpenAPI 3.0, 3.1 and 3.2 document
 
 ## Specification Versions
 
-| Version     | Status                   | Notes                                                                                                                      |
-| ----------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| OpenAPI 3.2 | ✅ Supported             | See [OpenAPI 3.2 Features](#openapi-3-2-features) for the features added in this version                                   |
-| OpenAPI 3.1 | ✅ Supported             |                                                                                                                            |
-| OpenAPI 3.0 | ✅ Supported             |                                                                                                                            |
-| Swagger 2.0 | ⚠️ Supported with limits | `in: body` and `in: formData` parameters are not generated, and responses are typed `any`. Generation warns about each one |
+| Version     | Status                   | Notes                                                                                                           |
+| ----------- | ------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| OpenAPI 3.2 | ✅ Supported             | See [OpenAPI 3.2 Features](#openapi-3-2-features) for the features added in this version                        |
+| OpenAPI 3.1 | ✅ Supported             |                                                                                                                 |
+| OpenAPI 3.0 | ✅ Supported             |                                                                                                                 |
+| Swagger 2.0 | ⚠️ Supported with limits | `in: body` and `in: formData` parameters are not generated, and each is warned about. Responses are typed `any` |
 
-Anything a version declares that cannot be generated is reported as a warning during generation, never dropped silently. The warning names the operation and says what the generated code does instead.
+A parameter, request body or operation that cannot be generated is reported as a warning during generation. The warning names the operation and says what the generated code does instead.
 
 ## OpenAPI 3.2 Features
 
