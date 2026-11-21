@@ -150,6 +150,17 @@ describe("extractPaths", () => {
             ]);
         });
 
+        it.each(["JSONP", "jsonp"])("skips %s: Angular does not send it as a method", (method) => {
+            const { paths, warnings } = extract({ [method]: { operationId: "callback" } });
+
+            expect(paths).toEqual([]);
+            expect(warnings).toEqual([
+                `Operation "${method}" under \`additionalOperations\` of path "/pets/{id}" was skipped: Angular's ` +
+                    "HttpClient reserves the name JSONP for script-tag requests and never sends it as an HTTP " +
+                    "method, so no method is generated for it.",
+            ]);
+        });
+
         it("keeps the key written as it is sent, wherever it stands", () => {
             // Declared first, `copy` is still not the method that is sent.
             const { paths, warnings } = extract({
