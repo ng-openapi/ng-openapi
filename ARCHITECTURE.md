@@ -82,10 +82,12 @@ Every generation run flows through the same stages:
   OpenAPI 3.2's `query` (the HTTP QUERY method) among them, plus whatever
   a path item declares under 3.2's `additionalOperations`. None needs a
   rule of its own: each is a method that carries a body, so it keeps one.
-  A method that is declared and cannot be generated — `trace`, or
-  CONNECT and TRACK, which no browser sends — is skipped there with a
-  warning. From `additionalOperations` on, the method is spec text: it is
-  written into generated code through `emit/literal.emit.ts` like any other.
+  A method that is declared and cannot be sent — TRACE, CONNECT and
+  TRACK, which no browser sends, and JSONP, which Angular takes for a
+  script-tag request — is skipped there with a warning. A method declared
+  under `additionalOperations` is spec text, not one of a fixed set of
+  words: a generator that emits it writes it through
+  `emit/literal.emit.ts`, like any other text from the spec.
   Enum member names are resolved here too (`enum-member-names.ts`): the
   sources the config enables — `enumNameExtensions` (`x-enum-varnames`,
   `x-enumNames`, …), then the JSON description of

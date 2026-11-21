@@ -62,7 +62,7 @@ re-derive them.
   output. The example above deliberately has no `save` call.
 - **Never `camelCase` a wire name to get an identifier.** Call
   `resolveArgumentNames(operation, config, profile)` with a profile describing
-  what *your* emitted method binds, and read `names.of(wireName)`. Wire names
+  what _your_ emitted method binds, and read `names.of(wireName)`. Wire names
   are free-form: `filter[name]` and `filter.name` both camelCase to
   `filterName`, and a parameter can land on a name your own method already
   uses. Resolving one name at a time cannot see either collision.
@@ -75,6 +75,11 @@ re-derive them.
   changes which value goes on the wire; and a description containing the
   comment terminator ends the JSDoc block, so whatever follows is emitted as
   code.
+  `operation.method` is spec text too: an operation declared under OpenAPI
+  3.2's `additionalOperations` carries whatever HTTP token the spec wrote,
+  upper-cased, and a token may contain `'`, `` ` `` or `$`. Only a plugin that
+  first narrows to methods it knows (as the httpResource plugin does, to
+  `GET` and `QUERY`) may write it out as it is.
 - **Throw typed errors** from `@ng-openapi/shared` rather than bare `Error`s, so
   hosts can branch on the class. They carry a brand that survives bundling, so
   `instanceof` works across your published bundle and the host's copy.
@@ -82,17 +87,17 @@ re-derive them.
 
 ## What the context provides
 
-| Field | Type | Notes |
-|---|---|---|
-| `spec` | `NormalizedSpec` | The version-free spec model. `$ref`s are resolved and per-operation fields (`pathParams`, `queryParams`, `hasBody`, `isMultipart`, `responseType`, …) are precomputed. Plugins never see Swagger 2.0 vs OpenAPI 3.x differences. |
-| `project` | `Project` (ts-morph) | The shared project every generator emits through. Create files via `project.createSourceFile(...)` so the orchestrator can report them in `GenerationResult.filesWritten`. |
-| `config` | `GeneratorConfig` | The full user-facing config. Read only the slice you need (e.g. `config.clientName`, `config.options.dateType`). |
-| `onWarning` | `(message: string) => void` (optional) | Sink for non-fatal diagnostics. Never `console.*` from a plugin — warnings surface on `GenerationResult.warnings` and through the CLI's reporter. |
+| Field       | Type                                   | Notes                                                                                                                                                                                                                            |
+| ----------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `spec`      | `NormalizedSpec`                       | The version-free spec model. `$ref`s are resolved and per-operation fields (`pathParams`, `queryParams`, `hasBody`, `isMultipart`, `responseType`, …) are precomputed. Plugins never see Swagger 2.0 vs OpenAPI 3.x differences. |
+| `project`   | `Project` (ts-morph)                   | The shared project every generator emits through. Create files via `project.createSourceFile(...)` so the orchestrator can report them in `GenerationResult.filesWritten`.                                                       |
+| `config`    | `GeneratorConfig`                      | The full user-facing config. Read only the slice you need (e.g. `config.clientName`, `config.options.dateType`).                                                                                                                 |
+| `onWarning` | `(message: string) => void` (optional) | Sink for non-fatal diagnostics. Never `console.*` from a plugin — warnings surface on `GenerationResult.warnings` and through the CLI's reporter.                                                                                |
 
 ## Rules of engagement
 
 - **Consume `NormalizedSpec`, not the raw spec.** All version quirks are resolved at parse time; if something you need is missing from the model, that is a gap to raise upstream, not a reason to re-parse the input.
 - **Never log.** The core is silent by design; the CLI owns presentation. Report problems through `onWarning` or by throwing an `Error` (which aborts generation with a clean CLI message).
 - **Emit through the shared `project`.** Files written behind its back won't be tracked, formatted consistently, or visible to `fixMissingImports()`. That includes files that are not TypeScript: `emitJsonFile(project, path, value)` and `emitTextFile(project, path, text)` register a JSON or plain-text file (a config file, a Markdown page) so it is written with everything else — never call `formatText()` on one of those.
-- **Barrels are re-exported for you.** If your plugin writes an `index.ts` into its own directory directly under the output root (as in the example above), the generated root `index.ts` automatically re-exports that directory — users can import your symbols from the client entrypoint. Three constraints: the directory must be a *direct* child of the output root (nested barrels are ignored), it must contain an `index.ts`, and it must not be named `models`, `providers`, `services`, `tokens`, or `utils` — those are reserved for the core generators and are skipped silently. This applies only to files emitted through the shared `project`; anything written straight to disk is invisible to the scan. Prefix your exported symbols distinctively, too: the root barrel re-exports plugin directories with `export *` alongside `./models`, and a name exported by both is silently dropped rather than reported.
+- **Barrels are re-exported for you.** If your plugin writes an `index.ts` into its own directory directly under the output root (as in the example above), the generated root `index.ts` automatically re-exports that directory — users can import your symbols from the client entrypoint. Three constraints: the directory must be a _direct_ child of the output root (nested barrels are ignored), it must contain an `index.ts`, and it must not be named `models`, `providers`, `services`, `tokens`, or `utils` — those are reserved for the core generators and are skipped silently. This applies only to files emitted through the shared `project`; anything written straight to disk is invisible to the scan. Prefix your exported symbols distinctively, too: the root barrel re-exports plugin directories with `export *` alongside `./models`, and a name exported by both is silently dropped rather than reported.
 - **Validation is done for you.** By the time a plugin is constructed, the spec has been parsed, validated, and normalized — no need for your own guards.

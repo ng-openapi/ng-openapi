@@ -9,14 +9,14 @@ ng-openapi generates from Swagger 2.0 and from OpenAPI 3.0, 3.1 and 3.2 document
 
 ## Specification Versions
 
-| Version     | Status                   | Notes                                                                                                           |
-| ----------- | ------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| OpenAPI 3.2 | ✅ Supported             | See [OpenAPI 3.2 Features](#openapi-3-2-features) for the features added in this version                        |
-| OpenAPI 3.1 | ✅ Supported             |                                                                                                                 |
-| OpenAPI 3.0 | ✅ Supported             |                                                                                                                 |
-| Swagger 2.0 | ⚠️ Supported with limits | `in: body` and `in: formData` parameters are not generated, and each is warned about. Responses are typed `any` |
+| Version     | Status                   | Notes                                                                                                                              |
+| ----------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| OpenAPI 3.2 | ✅ Supported             | See [OpenAPI 3.2 Features](#openapi-3-2-features) for the features added in this version                                           |
+| OpenAPI 3.1 | ✅ Supported             |                                                                                                                                    |
+| OpenAPI 3.0 | ✅ Supported             |                                                                                                                                    |
+| Swagger 2.0 | ⚠️ Supported with limits | `in: body` and `in: formData` parameters are not generated, and each is warned about. Responses are typed `any`, without a warning |
 
-The limits on this page are reported as warnings during generation, except where the page says otherwise. A warning names the operation and says what the generated code does instead. Two things are neither followed nor reported: a path item that is a `$ref` (to `components.pathItems` or to another file), whose operations are left out, and a media type that is a `$ref` (to `components.mediaTypes`), whose content is typed `any`.
+The limits on this page are reported as warnings during generation, except where the page says otherwise. A warning names the operation and says what the generated code does instead. Two things are neither followed nor reported: a path item that is a `$ref` (to `components.pathItems` or to another file), whose operations are left out, and a JSON request body or response whose media type is a `$ref` (to `components.mediaTypes`), which is typed `any`.
 
 ## OpenAPI 3.2 Features
 
@@ -91,10 +91,11 @@ copyProduct(productId: string, productCopy: ProductCopy, /* observe, options */)
 A few entries cannot be generated, and each is skipped with a warning:
 
 - `TRACE`, `CONNECT` and `TRACK`, including the `trace` field of a path item: browsers refuse to send them.
+- `JSONP`: Angular's `HttpClient` uses that name for script-tag requests and does not send it as an HTTP method.
 - A method that has its own field (`POST` under `additionalOperations` instead of `post`), which OpenAPI does not allow.
 - A key that is not a valid HTTP method name.
 
-Method names are sent upper-cased, because Angular's `HttpClient` upper-cases them. A key written as `Copy` is sent as `COPY`, and generation says so. Two keys that differ only by case are one method: the one written in upper case is generated, and the other is skipped with a warning.
+Method names are sent upper-cased, because Angular's `HttpClient` upper-cases them. A key written as `Copy` is sent as `COPY`, and generation says so. Two keys that differ only by case are one method: the one written in upper case is generated, and the other is skipped with a warning. When neither is in upper case, the first is generated, with the same notice that it is sent upper-cased.
 
 ## Angular Versions
 
