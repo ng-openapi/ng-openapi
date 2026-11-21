@@ -91,7 +91,7 @@ copyProduct(productId: string, productCopy: ProductCopy, /* observe, options */)
 A few entries cannot be generated, and each is skipped with a warning:
 
 - `TRACE`, `CONNECT` and `TRACK`, including the `trace` field of a path item: browsers refuse to send them.
-- `JSONP`: Angular's `HttpClient` uses that name for script-tag requests and does not send it as an HTTP method.
+- `JSONP`: Angular's `HttpClient` treats that name specially. Its XHR backend refuses it and `withJsonpSupport()` turns it into a script-tag request, so whether it would be sent depends on how the app sets up `HttpClient`.
 - A method that has its own field (`POST` under `additionalOperations` instead of `post`), which OpenAPI does not allow.
 - A key that is not a valid HTTP method name.
 

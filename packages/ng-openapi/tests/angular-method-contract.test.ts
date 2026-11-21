@@ -2,7 +2,8 @@
 // need the JIT compiler loaded before anything of theirs is imported.
 import "@angular/compiler";
 import { describe, expect, it } from "vitest";
-import { HttpClient, HttpHandler, HttpRequest, HttpResponse } from "@angular/common/http";
+import { HttpClient, HttpHandler, HttpRequest, HttpResponse, HttpXhrBackend } from "@angular/common/http";
+import { Injector, runInInjectionContext } from "@angular/core";
 import { of } from "rxjs";
 
 /**
@@ -12,6 +13,8 @@ import { of } from "rxjs";
  * request keeps its body although Angular has never heard of the method.
  * The first is why `extractPaths` upper-cases the key and says so; the second
  * is why such an operation is generated like any other that carries a body.
+ * Every request goes through `HttpClient.request()`, as the generated code
+ * sends it.
  */
 
 /** The request `HttpClient.request(method, url, { body })` hands to its backend. */
@@ -49,9 +52,35 @@ describe("Angular's handling of a method it has no name for", () => {
         expect(direct.method).toBe(expected);
         expect(direct.body).toBe(body);
     });
+});
 
-    it("does not treat JSONP as a method that carries a body, which is why it is not generated", () => {
-        // The third argument is read as options, not as a body.
-        expect(new HttpRequest("JSONP", "/files/1", { note: "dropped" } as never).body).toBeNull();
+/**
+ * JSONP is the one name that is skipped for what Angular does with it. What
+ * that is depends on the backend the app configured, which the generator
+ * cannot see: these are the two ends of it.
+ */
+describe("Angular's handling of JSONP", () => {
+    it("lets the request through HttpClient like any other method, body included", () => {
+        const body = { note: "kept" };
+
+        // Nothing here stops it: with the fetch backend and no JSONP support,
+        // this is what goes on the wire.
+        const request = sent("jsonp", body);
+        expect(request.method).toBe("JSONP");
+        expect(request.body).toBe(body);
+    });
+
+    it("is refused by the XHR backend", () => {
+        const backend = runInInjectionContext(
+            Injector.create({ providers: [] }),
+            () =>
+                new HttpXhrBackend({
+                    build: () => {
+                        throw new Error("the backend must refuse the request before it builds an XMLHttpRequest");
+                    },
+                }),
+        );
+
+        expect(() => backend.handle(sent("jsonp", { note: "kept" }))).toThrow(/JSONP/);
     });
 });
