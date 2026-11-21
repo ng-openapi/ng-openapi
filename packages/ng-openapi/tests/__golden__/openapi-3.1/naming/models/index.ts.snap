@@ -26,6 +26,12 @@ export interface NewWidgetDto {
     kind?: WidgetKindDto;
 }
 
+export interface WidgetPatchDto {
+    name?: string;
+    nickname?: string | null;
+    kind?: WidgetKindDto;
+}
+
 export type WidgetKindDto = 'gadget' | 'gizmo';
 export const WidgetKindDto = {
     Gadget: 'gadget' as WidgetKindDto,

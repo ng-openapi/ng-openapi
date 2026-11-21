@@ -5,6 +5,7 @@ import {
     Parameter,
     pascalCase,
     emitObjectKey,
+    NormalizedOperation,
     PathInfo,
     SwaggerDefinition,
     NormalizedSpec,
@@ -47,18 +48,27 @@ export class ZodSchemaGenerator {
         }
         return this.generateObjectValidator(operationName + suffix, properties);
     }
-    async generateBodyValidator(operation: PathInfo, operationName: string): Promise<string[]> {
+    async generateBodyValidator(operation: NormalizedOperation, operationName: string): Promise<string[]> {
         const statements: string[] = [];
         if (!operation.requestBody) {
             return statements;
         }
-        // `$ref` request bodies and responses arrive resolved (see extractPaths).
-        const { content: bodyContent } = operation.requestBody;
-        const content = bodyContent?.[CONTENT_TYPES.JSON] || bodyContent?.["multipart/form-data"];
-        if (!content?.schema) {
+        // The schema of the body the generated request carries — not of
+        // another one the operation also declares. A JSON body is described
+        // under its content key, whatever that is
+        // (`application/merge-patch+json`); a multipart form by the schema the
+        // normalizer already resolved. A urlencoded, text or binary body has
+        // no validator, and neither has an operation that sends none.
+        const declared =
+            operation.bodyKind === "json"
+                ? operation.requestBody.content?.[operation.bodyContentType ?? CONTENT_TYPES.JSON]?.schema
+                : operation.bodyKind === "multipart"
+                  ? operation.formDataSchema
+                  : undefined;
+        if (!declared) {
             return statements;
         }
-        const schema = this.resolveSchema(content.schema);
+        const schema = this.resolveSchema(declared);
         const bodyName = `${operationName}Body`;
         // Check if it's an array
         if (schema.type === "array" && schema.items) {

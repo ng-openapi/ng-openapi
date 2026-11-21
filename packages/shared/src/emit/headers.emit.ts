@@ -1,5 +1,9 @@
+import type { NormalizedOperation } from "../model/operation.model";
 import { CONTENT_TYPES } from "../utils/content-types.constants";
 import { emitObjectKey, quoteLiteral } from "./literal.emit";
+
+/** The facts of an operation's body that decide the request's `Content-Type`. */
+export type BodyContentTypeFacts = Pick<NormalizedOperation, "isMultipart" | "isUrlEncoded" | "bodyContentType">;
 
 export interface HeadersEmitOptions {
     /** Identifier of the per-request options parameter in the generated method ("options", "requestOptions", …). */
@@ -9,11 +13,7 @@ export interface HeadersEmitOptions {
     /** Accept value derived from the operation's response content types; omit to skip. */
     accept?: string;
     /** Content-Type rules derived from the operation's body; omit to skip. */
-    contentType?: {
-        isMultipart: boolean;
-        isUrlEncoded: boolean;
-        hasBody: boolean;
-    };
+    contentType?: BodyContentTypeFacts;
 }
 
 /**
@@ -56,7 +56,9 @@ headers = headers.delete('Content-Type');`;
     } else if (defaultType) {
         const comment = contentType?.isUrlEncoded
             ? "// Set Content-Type for URL-encoded form data"
-            : "// Set Content-Type for JSON requests if not already set";
+            : defaultType === CONTENT_TYPES.JSON
+              ? "// Set Content-Type for JSON requests if not already set"
+              : "// Set the Content-Type the request body is declared with, if not already set";
         headerCode += `
 ${comment}
 if (!headers.has('Content-Type')) {
@@ -69,21 +71,29 @@ if (!headers.has('Content-Type')) {
 
 /**
  * The Content-Type a generated request declares when the caller set none, or
- * undefined when it declares none: no body, or a multipart one, whose header
- * only the browser can write (the boundary belongs in it) and which every
- * client therefore removes instead.
+ * undefined when it declares none: no body is sent, or a multipart one, whose
+ * header only the browser can write (the boundary belongs in it) and which
+ * every client therefore removes instead.
+ *
+ * A body that is sent declares the content type it is written under in the
+ * spec, parameters and all (`application/merge-patch+json`,
+ * `text/plain; charset=utf-8`) — unless the normalizer left that to the
+ * value itself (`bodyContentType`), where HttpClient sends a Blob's own type.
+ * The one exception the other way is a urlencoded form without fields: it
+ * sends no body and keeps its header, which is what the normalizer's warning
+ * about such a form tells the user.
  *
  * The one place this is decided. The core service applies it through
  * `emitHeaders`, the http-resource plugin through its default-headers merge.
  */
-export function defaultContentType(body: NonNullable<HeadersEmitOptions["contentType"]>): string | undefined {
+export function defaultContentType(body: BodyContentTypeFacts): string | undefined {
     if (body.isMultipart) {
         return undefined;
     }
     if (body.isUrlEncoded) {
-        return CONTENT_TYPES.FORM_URLENCODED;
+        return body.bodyContentType ?? CONTENT_TYPES.FORM_URLENCODED;
     }
-    return body.hasBody ? CONTENT_TYPES.JSON : undefined;
+    return body.bodyContentType;
 }
 
 export interface DefaultHeadersMergeOptions {

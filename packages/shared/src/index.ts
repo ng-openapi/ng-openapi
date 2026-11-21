@@ -120,6 +120,7 @@ export {
     getOperationMethodName,
     RESERVED_MEMBER_NAMES,
     reservedMemberCollision,
+    getBodyArgumentType,
     getRequestBodyType,
     getResourceClassName,
     getResponseInfoFromResponse,

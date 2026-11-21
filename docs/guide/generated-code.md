@@ -54,7 +54,7 @@ Only generated with [`useSingleRequestParameter`](../api/configuration/options/u
 
 One injectable service per controller (OpenAPI tag), using `inject(HttpClient)` and this client's base-path token. Class names default to `<Tag>Service` and can be decorated via [`naming.services`](../api/configuration/options/naming.md) (file names are unaffected). Classes are decorated with `@Injectable({ providedIn: "root" })`, or Angular 22+'s `@Service()` when [`serviceDecorator`](../api/configuration/options/service-decorator.md) is set to `'service'`. Method names come from `operationId`, optionally transformed by [`customizeMethodName`](../api/configuration/options/customize-method-name.md). Tags and `operationId`s are free-form text in a valid spec, so characters that cannot appear in a TypeScript identifier are treated as word separators: the tag `Groups (yes)` yields `GroupsYesService` in `groupsYes.service.ts`, and the `operationId` `groups_{group_id}_delete` yields the method `groupsGroupIdDelete`. When [`validation.response`](../api/configuration/options/validation.md) is enabled, each method accepts a `parse` hook in its trailing options parameter.
 
-A request body declared as `application/json`, `multipart/form-data` or `application/x-www-form-urlencoded` becomes method arguments — one for a JSON body, one per field for a form — and is sent with the request, whatever the HTTP method. That includes `DELETE`, which Angular's `HttpClient` sends a body with just like `POST`, `PUT` and `PATCH`:
+A request body becomes method arguments and is sent with the request, whatever the HTTP method. That includes `DELETE`, which Angular's `HttpClient` sends a body with just like `POST`, `PUT` and `PATCH`:
 
 ```typescript
 // DELETE /orders/batch with a JSON requestBody
@@ -64,10 +64,35 @@ deleteOrders(deleteOrdersRequest: DeleteOrdersRequest, /* observe, options */): 
 }
 ```
 
-The content type must match one of those three keys exactly. A body declared only under another one — `text/plain`, `application/octet-stream`, `application/merge-patch+json`, or `application/json; charset=utf-8` — gets no argument and is not sent, and is warned about:
+How the body is taken and sent depends on the content type it is declared under:
+
+| Declared as                                                                                           | Argument                     | `Content-Type` sent                                                                    |
+| ----------------------------------------------------------------------------------------------------- | ---------------------------- | -------------------------------------------------------------------------------------- |
+| `application/json`, and JSON under another name: `application/json; charset=utf-8`, any `+json` type  | One, typed from the schema   | The declared one                                                                       |
+| `multipart/form-data`                                                                                 | One per top-level field      | Left to the browser, which writes the boundary                                         |
+| `application/x-www-form-urlencoded`                                                                   | One per top-level field      | `application/x-www-form-urlencoded`                                                    |
+| Text: `text/*`, XML, YAML                                                                             | One `string`                 | The declared one; left to `HttpClient`, which sends `text/plain`, for a `text/*` range |
+| Anything else — `application/octet-stream`, `application/pdf`, `image/png`, a range such as `image/*` | One `Blob` (a `File` is one) | The declared one; the `Blob`'s own type for a range or for several declared types      |
+
+A JSON body is serialized by `HttpClient`; a `string` or a `Blob` is sent as it is, so for XML or YAML the caller passes the serialized text. The header is only a default: one passed in the trailing options argument is kept.
+
+```typescript
+// PATCH /widgets/{widgetId} with an application/merge-patch+json requestBody
+patchWidget(widgetId: string, widgetPatch: WidgetPatch, /* observe, options */): Observable<any> {
+    // …
+    if (!headers.has('Content-Type')) {
+        headers = headers.set('Content-Type', 'application/merge-patch+json');
+    }
+    return this.httpClient.request('patch', url, { body: widgetPatch, /* … */ });
+}
+```
+
+When a body is declared under several content types, one is sent: `multipart/form-data` first, then `application/x-www-form-urlencoded` unless `application/json` is declared too, then `application/json`, then another JSON type, a text type, a binary type.
+
+Two kinds of body cannot be passed as one value and are not generated: a sequential type (`application/jsonl`, `application/x-ndjson`, `text/event-stream`), which is a stream of items, and a `multipart` type other than `multipart/form-data`. The method then takes no argument for the body and sends the request without one, and generation warns about it:
 
 ```
-⚠️ The request body of patchPet ((PATCH) /pets/{petId}) is declared only as application/merge-patch+json, which generated methods do not bind: a body gets arguments only under a content type that is exactly application/json, multipart/form-data or application/x-www-form-urlencoded. Generated methods take no argument for it and send the request without a body, still with the `Content-Type: application/json` header. Declare the body under one of those content types to have it generated.
+⚠️ The request body of appendEvents ((POST) /events) is declared only as application/x-ndjson, which generated methods cannot send: a body gets an argument under a JSON, text or binary content type, and one argument per field under multipart/form-data or application/x-www-form-urlencoded. Sequential types (JSON Lines, event streams) and other multipart types are not generated as request bodies. Generated methods take no argument for it and send the request without a body. Declare the body under a content type that is generated to have it sent.
 ```
 
 An operation that declares both `multipart/form-data` and `application/x-www-form-urlencoded` sends the multipart body, so only its fields become arguments. A field that only the urlencoded form lists is warned about:
@@ -88,7 +113,7 @@ The fields of a form are the top-level `properties` of its schema. A form schema
 ⚠️ The request body of searchItems ((GET) /items/search) was skipped: browsers do not send a body with GET requests. Generated methods take no body and no validator is generated for it. Describe the input as query parameters, or use a method that carries a body.
 ```
 
-OpenAPI 3.2's `query` operations — the HTTP `QUERY` method, a safe and idempotent read like `GET` whose input travels in the request body — are generated like every other operation. A body declared as `application/json`, `multipart/form-data` or `application/x-www-form-urlencoded` is bound and sent as described above:
+OpenAPI 3.2's `query` operations — the HTTP `QUERY` method, a safe and idempotent read like `GET` whose input travels in the request body — are generated like every other operation, with the body bound and sent as described above:
 
 ```typescript
 // QUERY /products/search with a JSON requestBody
@@ -98,7 +123,7 @@ searchProducts(productSearch: ProductSearch, /* observe, options */): Observable
 }
 ```
 
-A `QUERY` body under any other content type gets the warning above like on every other method, and it matters more here: the body is the operation's whole input, so the generated method sends a query with nothing in it.
+A `QUERY` body that cannot be sent gets the warning above like on every other method, and it matters more here: the body is the operation's whole input, so the generated method sends a query with nothing in it.
 
 ::: warning QUERY requires Angular 22.3+
 Angular's `HttpClient` supports the `QUERY` method from 22.3 on. The generated code compiles and sends the request on older versions too, but `HttpClient` then treats it as a mutation: it attaches the XSRF token to the request, and server-side rendering does not reuse the response during hydration.

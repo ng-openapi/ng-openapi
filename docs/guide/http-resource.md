@@ -164,7 +164,7 @@ export class SearchComponent {
 
 ## QUERY Operations
 
-OpenAPI 3.2's `query` operations — the HTTP `QUERY` method — are reads that carry their input in the request body, so they become resources too. A body declared as `application/json`, `multipart/form-data` or `application/x-www-form-urlencoded` is an argument like any other: pass a value, or a signal to have the resource re-send the query whenever it changes.
+OpenAPI 3.2's `query` operations — the HTTP `QUERY` method — are reads that carry their input in the request body, so they become resources too. The body is an argument like any other: pass a value, or a signal to have the resource re-send the query whenever it changes.
 
 ```typescript
 export class ProductSearchComponent {
@@ -177,9 +177,9 @@ export class ProductSearchComponent {
 }
 ```
 
-A JSON body is one argument; a `multipart/form-data` or `application/x-www-form-urlencoded` body is one argument per field. The `Content-Type` header is set the way the generated services set it.
+The body is bound exactly as in the generated services: a JSON body is one argument, a text body one `string`, a binary body one `Blob`, and a `multipart/form-data` or `application/x-www-form-urlencoded` body one argument per field, with the same `Content-Type`. See [Generated Output](./generated-code.md#services-service-ts) for the full table.
 
-A body under any other content type (`text/plain`, `application/json; charset=utf-8`, `application/vnd.api+json`, …) is not bound: the resource method takes no argument for it and sends the query without a body — as soon as the resource is created, if it has no other required argument. Generation [warns about such a body](./generated-code.md#services-service-ts).
+A body that cannot be passed as one value — a sequential type such as `application/jsonl`, or a `multipart` type other than `multipart/form-data` — is not bound: the resource method takes no argument for it and sends the query without a body, as soon as the resource is created if it has no other required argument. Generation [warns about such a body](./generated-code.md#services-service-ts).
 
 ::: warning QUERY requires Angular 22.3+
 Angular's `HttpClient` supports the `QUERY` method from 22.3 on. On older versions the request is still sent, but treated as a mutation: the XSRF token is attached to it, and server-side rendering does not reuse the response during hydration. See [Generated Output](./generated-code.md#services-service-ts).

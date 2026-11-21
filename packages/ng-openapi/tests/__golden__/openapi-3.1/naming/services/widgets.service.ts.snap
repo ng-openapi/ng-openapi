@@ -12,7 +12,7 @@ import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { WidgetKindDto, RequestOptions, WidgetDto, NewWidgetDto } from "../models";
+import { WidgetKindDto, RequestOptions, WidgetDto, NewWidgetDto, WidgetPatchDto } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class ApiWidgetsService {
@@ -106,6 +106,146 @@ export class ApiWidgetsService {
         }
 
         return this.httpClient.request('get', url, {
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    patchWidget(widgetId: string, widgetPatchDto: WidgetPatchDto, observe?: 'body', options?: RequestOptions<'json'>): Observable<WidgetDto>;
+    patchWidget(widgetId: string, widgetPatchDto: WidgetPatchDto, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<WidgetDto>>;
+    patchWidget(widgetId: string, widgetPatchDto: WidgetPatchDto, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<WidgetDto>>;
+    /** A JSON body under a structured-syntax content type. */
+    patchWidget(widgetId: string, widgetPatchDto: WidgetPatchDto, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/widgets/${widgetId}`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+        // Set the Content-Type the request body is declared with, if not already set
+        if (!headers.has('Content-Type')) {
+            headers = headers.set('Content-Type', 'application/merge-patch+json');
+        }
+
+        return this.httpClient.request('patch', url, {
+            body: widgetPatchDto,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    importWidgets(requestBody: Array<NewWidgetDto>, observe?: 'body', options?: RequestOptions<'json'>): Observable<any>;
+    importWidgets(requestBody: Array<NewWidgetDto>, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<any>>;
+    importWidgets(requestBody: Array<NewWidgetDto>, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<any>>;
+    /** A JSON body whose content type carries a parameter. */
+    importWidgets(requestBody: Array<NewWidgetDto>, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/widgets/import`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Set the Content-Type the request body is declared with, if not already set
+        if (!headers.has('Content-Type')) {
+            headers = headers.set('Content-Type', 'application/json; charset=utf-8');
+        }
+
+        return this.httpClient.request('post', url, {
+            body: requestBody,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    replaceWidgetNotes(widgetId: string, requestBody: string, observe?: 'body', options?: RequestOptions<'json'>): Observable<any>;
+    replaceWidgetNotes(widgetId: string, requestBody: string, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<any>>;
+    replaceWidgetNotes(widgetId: string, requestBody: string, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<any>>;
+    /** A text body. */
+    replaceWidgetNotes(widgetId: string, requestBody: string, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/widgets/${widgetId}/notes`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Set the Content-Type the request body is declared with, if not already set
+        if (!headers.has('Content-Type')) {
+            headers = headers.set('Content-Type', 'text/plain; charset=utf-8');
+        }
+
+        return this.httpClient.request('put', url, {
+            body: requestBody,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    uploadWidgetManual(widgetId: string, requestBody?: Blob, observe?: 'body', options?: RequestOptions<'json'>): Observable<any>;
+    uploadWidgetManual(widgetId: string, requestBody?: Blob, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<any>>;
+    uploadWidgetManual(widgetId: string, requestBody?: Blob, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<any>>;
+    /** A binary body of one type, which the request declares. */
+    uploadWidgetManual(widgetId: string, requestBody?: Blob, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/widgets/${widgetId}/manual`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Set the Content-Type the request body is declared with, if not already set
+        if (!headers.has('Content-Type')) {
+            headers = headers.set('Content-Type', 'application/pdf');
+        }
+
+        return this.httpClient.request('put', url, {
+            body: requestBody,
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    uploadWidgetImage(widgetId: string, requestBody: Blob, observe?: 'body', options?: RequestOptions<'json'>): Observable<any>;
+    uploadWidgetImage(widgetId: string, requestBody: Blob, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<any>>;
+    uploadWidgetImage(widgetId: string, requestBody: Blob, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<any>>;
+    /** A binary body of several types: the uploaded file says which one it is. */
+    uploadWidgetImage(widgetId: string, requestBody: Blob, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const url = `${this.basePath}/widgets/${widgetId}/image`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+
+        return this.httpClient.request('put', url, {
+            body: requestBody,
             observe,
             headers,
             reportProgress: options?.reportProgress,

@@ -60,10 +60,16 @@ Every generation run flows through the same stages:
   A request body on a method no browser sends one with (`GET`, `HEAD`) is
   warned about and left out the same way, so generators never look at the
   method before sending a body. What they bind is narrower than what the IR
-  carries: only a content key that is exactly `application/json`,
-  `multipart/form-data` or `application/x-www-form-urlencoded` gets
-  arguments, and a form contributes only the top-level `properties` of its
-  schema. A form that lists none stays in the IR with an empty field list
+  carries. A form — `multipart/form-data`, `application/x-www-form-urlencoded`
+  — is bound field by field, and contributes only the top-level `properties`
+  of its schema. Any other body is one argument, by how `HttpClient` sends
+  it (`utils/functions/media-types.ts`): a JSON document, also under a
+  `+json` or parameterised content key; text, as a `string`; anything else,
+  as a `Blob`. A sequential type or another `multipart` type is not one
+  value to pass and is not bound. The normalizer also records the
+  `Content-Type` the request declares (`bodyContentType`): the content key
+  as written, unless the value sent states its own type.
+  A form that lists no fields stays in the IR with an empty field list
   and is warned about here, because the method then sends no body. So is a
   body declared only under a content type nothing binds, and a field that
   only the urlencoded form lists when an operation declares both forms

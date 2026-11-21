@@ -3,6 +3,7 @@ models/index.ts
 models/new-widget.ts
 models/request-options.ts
 models/widget-kind.ts
+models/widget-patch.ts
 models/widget.ts
 providers.ts
 services/index.ts

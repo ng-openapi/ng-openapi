@@ -97,39 +97,66 @@ describe("headers emission", () => {
     it("applies content-type rules in priority order", () => {
         const multipart = emitHeaders({
             optionsExpression: "options",
-            contentType: { isMultipart: true, isUrlEncoded: false, hasBody: true },
+            contentType: { isMultipart: true, isUrlEncoded: false },
         });
         expect(multipart).toContain("headers.delete('Content-Type')");
 
         const urlEncoded = emitHeaders({
             optionsExpression: "options",
-            contentType: { isMultipart: false, isUrlEncoded: true, hasBody: true },
+            contentType: {
+                isMultipart: false,
+                isUrlEncoded: true,
+                bodyContentType: "application/x-www-form-urlencoded",
+            },
         });
+        expect(urlEncoded).toContain("// Set Content-Type for URL-encoded form data");
         expect(urlEncoded).toContain("'application/x-www-form-urlencoded'");
 
         const json = emitHeaders({
             optionsExpression: "options",
-            contentType: { isMultipart: false, isUrlEncoded: false, hasBody: true },
+            contentType: { isMultipart: false, isUrlEncoded: false, bodyContentType: "application/json" },
         });
-        expect(json).toContain("'application/json'");
+        expect(json).toContain("// Set Content-Type for JSON requests if not already set");
+        expect(json).toContain("headers = headers.set('Content-Type', 'application/json');");
 
         const bodyless = emitHeaders({
             optionsExpression: "options",
-            contentType: { isMultipart: false, isUrlEncoded: false, hasBody: false },
+            contentType: { isMultipart: false, isUrlEncoded: false },
         });
         expect(bodyless).not.toContain("Content-Type");
     });
 
-    it("decides the Content-Type a request declares in one place, for every client", () => {
-        const body = (isMultipart: boolean, isUrlEncoded: boolean, hasBody: boolean) =>
-            defaultContentType({ isMultipart, isUrlEncoded, hasBody });
+    it("declares the content type the body is written under in the spec, as spec text", () => {
+        const mergePatch = emitHeaders({
+            optionsExpression: "options",
+            contentType: { isMultipart: false, isUrlEncoded: false, bodyContentType: "application/merge-patch+json" },
+        });
+        expect(mergePatch).toContain("// Set the Content-Type the request body is declared with, if not already set");
+        expect(mergePatch).toContain("if (!headers.has('Content-Type')) {");
+        expect(mergePatch).toContain("headers = headers.set('Content-Type', 'application/merge-patch+json');");
 
-        expect(body(false, false, true)).toBe("application/json");
-        expect(body(false, true, true)).toBe("application/x-www-form-urlencoded");
-        // Only the browser can write a multipart header, and no body needs none.
-        expect(body(true, false, true)).toBeUndefined();
-        expect(body(true, true, true)).toBeUndefined();
-        expect(body(false, false, false)).toBeUndefined();
+        // A media type parameter may be a quoted string: it cannot end the literal.
+        const quoted = emitHeaders({
+            optionsExpression: "options",
+            contentType: { isMultipart: false, isUrlEncoded: false, bodyContentType: "text/plain; note='x'" },
+        });
+        expect(quoted).toContain("headers.set('Content-Type', 'text/plain; note=\\'x\\'');");
+    });
+
+    it("decides the Content-Type a request declares in one place, for every client", () => {
+        const body = (isMultipart: boolean, isUrlEncoded: boolean, bodyContentType?: string) =>
+            defaultContentType({ isMultipart, isUrlEncoded, bodyContentType });
+
+        expect(body(false, false, "application/json")).toBe("application/json");
+        expect(body(false, false, "text/plain; charset=utf-8")).toBe("text/plain; charset=utf-8");
+        // A urlencoded form keeps its header even when it has no field to send.
+        expect(body(false, true, "application/x-www-form-urlencoded")).toBe("application/x-www-form-urlencoded");
+        expect(body(false, true)).toBe("application/x-www-form-urlencoded");
+        // Only the browser can write a multipart header.
+        expect(body(true, false)).toBeUndefined();
+        expect(body(true, true)).toBeUndefined();
+        // No body is sent, or its type is the Blob's to state.
+        expect(body(false, false)).toBeUndefined();
     });
 });
 

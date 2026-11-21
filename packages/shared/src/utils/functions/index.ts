@@ -30,7 +30,15 @@ export {
     isPrimitiveType,
 } from "./extract-swagger-response-type";
 export type { ResponseTypeInfo } from "./extract-swagger-response-type";
-export { getRequestBodyType } from "./get-request-body-type";
+export { getBodyArgumentType, getRequestBodyType } from "./get-request-body-type";
+export {
+    bodyMediaFamily,
+    isJsonMediaType,
+    isMediaTypeRange,
+    isSequentialMediaType,
+    mediaTypeEssence,
+} from "./media-types";
+export type { BodyMediaFamily } from "./media-types";
 export { isDataTypeInterface } from "./is-data-type-interface";
 export { generateParseRequestTypeParams } from "./generate-parse-request-type-params";
 export { isUrl } from "./is-url";
