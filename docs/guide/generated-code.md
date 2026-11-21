@@ -110,6 +110,8 @@ When the spec declares `QUERY` operations and an `@angular/core` older than 22.3
 ⚠️ Operation searchProducts ((QUERY) /products/search) uses the HTTP QUERY method, which Angular's HttpClient supports from 22.3 — found @angular/core 21.2.13 in this workspace. The generated code still compiles and sends the request there, but HttpClient treats it as a mutation: it attaches the XSRF token to it, and server-side rendering does not reuse its response during hydration.
 ```
 
+A method the path item has no field for — `COPY`, `PURGE`, a custom one — is declared under OpenAPI 3.2's `additionalOperations` and generated the same way, as `this.httpClient.request('copy', url, { … })`. `TRACE`, `CONNECT` and `TRACK` are skipped with a warning, because browsers refuse to send them. See [OpenAPI Support](./openapi-support.md#additional-operations).
+
 ### `tokens/index.ts`
 
 Injection tokens namespaced per client so multiple clients can coexist (see [Multiple Clients](./multiple-clients.md)):

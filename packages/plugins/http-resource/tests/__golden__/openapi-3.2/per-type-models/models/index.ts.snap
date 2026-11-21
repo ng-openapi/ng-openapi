@@ -11,6 +11,7 @@ export * from "./order";
 export * from "./order-export-request";
 export * from "./order-status";
 export * from "./product";
+export * from "./product-copy";
 export * from "./product-page";
 export * from "./product-search";
 export * from "./product-sort";

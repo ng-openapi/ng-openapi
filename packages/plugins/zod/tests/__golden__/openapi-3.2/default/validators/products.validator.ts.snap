@@ -54,6 +54,26 @@ export const queryFeaturedProducts200ResponseItem = z.object({
 });
 export const queryFeaturedProducts200Response = z.array(queryFeaturedProducts200ResponseItem);
 export type QueryFeaturedProducts200Response = z.infer<typeof queryFeaturedProducts200Response>;
+export const copyProductParams = z.object({
+    "productId": z.string().uuid()
+});
+export type CopyProductParams = z.infer<typeof copyProductParams>;
+export const copyProductBody = z.object({
+    "targetCatalog": z.string(),
+    "name": z.string().optional()
+});
+export type CopyProductBody = z.infer<typeof copyProductBody>;
+export const copyProduct201Response = z.object({
+    "id": z.string().uuid(),
+    "name": z.string(),
+    "price": z.number(),
+    "createdAt": z.date().optional()
+});
+export type CopyProduct201Response = z.infer<typeof copyProduct201Response>;
+export const productsPurgeParams = z.object({
+    "productId": z.string().uuid()
+});
+export type ProductsPurgeParams = z.infer<typeof productsPurgeParams>;
 export const productsRelatedQueryParams = z.object({
     "productId": z.string().uuid()
 });

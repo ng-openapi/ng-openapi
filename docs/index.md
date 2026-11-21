@@ -51,11 +51,21 @@ features:
     details: httpResource and Zod ship as official plugins; write your own against a small documented contract.
     link: /guide/plugin-authoring
     linkText: Plugin authoring
+  - icon: 📜
+    title: OpenAPI 3.2 Ready
+    details: Generates from Swagger 2.0 and OpenAPI 3.0, 3.1 and 3.2 — including 3.2's QUERY operations and additionalOperations.
+    link: /guide/openapi-support
+    linkText: OpenAPI support
+  - icon: 🔎
+    title: HTTP QUERY Method
+    details: Angular 22.3's HttpClient speaks QUERY, the safe read with a request body. Get it as service methods and as httpResource.
+    link: /guide/openapi-support#the-query-method
+    linkText: The QUERY method
 ---
 
 ## Introduction
 
-ng-openapi is a modern Angular-first OpenAPI client generator that creates type-safe services and interfaces from your OpenAPI specifications. Unlike generic TypeScript generators, ng-openapi is built specifically for Angular developers who want clean, maintainable code that leverages Angular's latest features.
+ng-openapi is a modern Angular-first OpenAPI client generator that creates type-safe services and interfaces from your OpenAPI specifications — Swagger 2.0 through [OpenAPI 3.2](/guide/openapi-support). Unlike generic TypeScript generators, ng-openapi is built specifically for Angular developers who want clean, maintainable code that leverages Angular's latest features.
 
 ## Quick Example
 

@@ -33,12 +33,36 @@ export type ParameterResolution = { parameter: Parameter } | { problem: string }
 export type ResolveParameter = (ref: string) => ParameterResolution;
 
 /**
+ * The Path Item fields that hold an operation and are generated. `query` is
+ * the OpenAPI 3.2 field for the HTTP QUERY method: a safe, idempotent request
+ * that carries its input in a body.
+ */
+const PATH_ITEM_METHODS = ["get", "post", "put", "patch", "delete", "options", "head", "query"];
+
+/**
+ * Every method the Path Item Object has a fixed field for. OpenAPI 3.2 forbids
+ * repeating one of them under `additionalOperations`; `trace` is on this list
+ * and not on the one above because no browser sends it.
+ */
+const FIXED_FIELD_METHODS: ReadonlySet<string> = new Set([...PATH_ITEM_METHODS, "trace"]);
+
+/**
+ * Methods `fetch` and XMLHttpRequest refuse to send, whatever the server
+ * allows: a generated method for one could only ever throw.
+ */
+const FORBIDDEN_METHODS: ReadonlySet<string> = new Set(["CONNECT", "TRACE", "TRACK"]);
+
+/** An HTTP method is a `token` (RFC 9110, section 5.6.2). */
+const HTTP_TOKEN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+
+/**
  * Flattens the spec's `paths` object into one PathInfo per (path, method)
  * pair, merging path-level parameters into each operation. Supports both
- * Swagger 2.0 and OpenAPI 3.x path items; methods outside the given list
- * (and vendor extensions) are ignored. `query` is the OpenAPI 3.2 path-item
- * field for the HTTP QUERY method: a safe, idempotent request that carries
- * its input in a body.
+ * Swagger 2.0 and OpenAPI 3.x path items: the fixed method fields on the
+ * given list, plus the methods OpenAPI 3.2 declares under
+ * `additionalOperations` (COPY, PURGE, a custom one). Anything else on a path
+ * item, vendor extensions included, is not an operation and is ignored; a
+ * method that is declared and cannot be generated is skipped out loud.
  *
  * A `$ref` parameter, request body or response is replaced by the component
  * its resolver returns; one the resolver cannot resolve is warned about and
@@ -49,47 +73,125 @@ export type ResolveParameter = (ref: string) => ParameterResolution;
  */
 export function extractPaths(
     swaggerPaths: { [p: string]: Path } = {},
-    methods = ["get", "post", "put", "patch", "delete", "options", "head", "query"],
+    methods = PATH_ITEM_METHODS,
     onWarning?: (message: string) => void,
     resolvers: ComponentResolvers | ResolveParameter = {},
 ): PathInfo[] {
     const { parameter, requestBody, response } = typeof resolvers === "function" ? fromLegacy(resolvers) : resolvers;
     const paths: PathInfo[] = [];
+
+    /** `method` is what the IR carries and what is sent: upper-cased. */
+    const extract = (path: string, pathItem: RawPathItem, method: string, operation: RawOperation): PathInfo => {
+        const operationRef = { path, method, operationId: asName(operation.operationId) };
+        const described = describeOperation(operationRef);
+        return {
+            ...operationRef,
+            summary: operation.summary,
+            description: operation.description,
+            tags: Array.isArray(operation.tags) ? operation.tags.flatMap(nameOrNothing) : [],
+            parameters: parseParameters(
+                operation.parameters || [],
+                pathItem.parameters || [],
+                `(${operationRef.method}) ${path}`,
+                onWarning,
+                parameter ?? (() => ({ problem: "cannot be resolved here: no reusable parameters were provided" })),
+            ),
+            requestBody:
+                operation.requestBody &&
+                dereference(
+                    operation.requestBody,
+                    requestBody,
+                    `The request body of ${described}`,
+                    "The request body was skipped: generated methods take no body and no validator is generated for it.",
+                    onWarning,
+                ),
+            responses: resolveResponses(operation.responses || {}, described, onWarning, response),
+        };
+    };
+
     Object.entries(swaggerPaths as Record<string, RawPathItem>).forEach(([path, pathItem]) => {
         methods.forEach((method) => {
             const operation = pathItem[method] as RawOperation | undefined;
             if (operation) {
-                const operationRef = { path, method: method.toUpperCase(), operationId: asName(operation.operationId) };
-                const described = describeOperation(operationRef);
-                paths.push({
-                    ...operationRef,
-                    summary: operation.summary,
-                    description: operation.description,
-                    tags: Array.isArray(operation.tags) ? operation.tags.flatMap(nameOrNothing) : [],
-                    parameters: parseParameters(
-                        operation.parameters || [],
-                        pathItem.parameters || [],
-                        `(${operationRef.method}) ${path}`,
-                        onWarning,
-                        parameter ??
-                            (() => ({ problem: "cannot be resolved here: no reusable parameters were provided" })),
-                    ),
-                    requestBody:
-                        operation.requestBody &&
-                        dereference(
-                            operation.requestBody,
-                            requestBody,
-                            `The request body of ${described}`,
-                            "The request body was skipped: generated methods take no body and no validator is generated for it.",
-                            onWarning,
-                        ),
-                    responses: resolveResponses(operation.responses || {}, described, onWarning, response),
-                });
+                paths.push(extract(path, pathItem, method.toUpperCase(), operation));
             }
         });
+        if (pathItem["trace"]) {
+            onWarning?.(
+                `Operation ${describeOperation({ path, method: "TRACE", operationId: asName((pathItem["trace"] as RawOperation).operationId) })} ` +
+                    "was skipped: browsers refuse to send TRACE requests, so no method is generated for it.",
+            );
+        }
+        for (const [method, operation] of additionalOperations(path, pathItem, onWarning)) {
+            paths.push(extract(path, pathItem, method, operation));
+        }
     });
 
     return paths;
+}
+
+/**
+ * The operations a path item declares under OpenAPI 3.2's
+ * `additionalOperations`, keyed by the method that is sent.
+ *
+ * The map key is the method "with the same capitalization that is to be sent",
+ * but that is not ours to honor: Angular's `HttpRequest` upper-cases every
+ * method name. So the key is upper-cased here, said when that changes it, and
+ * two keys that only differ by case are one method.
+ */
+function additionalOperations(
+    path: string,
+    pathItem: RawPathItem,
+    onWarning?: (message: string) => void,
+): Array<[method: string, operation: RawOperation]> {
+    const declared = pathItem["additionalOperations"];
+    if (declared === undefined) {
+        return [];
+    }
+    if (!isPlainObject(declared)) {
+        onWarning?.(
+            `\`additionalOperations\` of path "${path}" is not a map of HTTP methods to operations and was skipped.`,
+        );
+        return [];
+    }
+
+    const operations = new Map<string, RawOperation>();
+    for (const [key, operation] of Object.entries(declared)) {
+        const skipped = (reason: string) =>
+            onWarning?.(`Operation "${key}" under \`additionalOperations\` of path "${path}" was skipped: ${reason}`);
+        if (!HTTP_TOKEN.test(key)) {
+            skipped("its key is not a valid HTTP method name.");
+            continue;
+        }
+        const method = key.toUpperCase();
+        if (FIXED_FIELD_METHODS.has(method.toLowerCase())) {
+            skipped(
+                `${method} has its own field on the path item, and OpenAPI does not allow it here. ` +
+                    `Declare the operation under \`${method.toLowerCase()}\`.`,
+            );
+            continue;
+        }
+        if (FORBIDDEN_METHODS.has(method)) {
+            skipped(`browsers refuse to send ${method} requests, so no method is generated for it.`);
+            continue;
+        }
+        if (!isPlainObject(operation)) {
+            skipped("it is not an operation object.");
+            continue;
+        }
+        if (operations.has(method)) {
+            skipped(`the path already declares a ${method} operation, and method names are sent upper-cased.`);
+            continue;
+        }
+        if (key !== method) {
+            onWarning?.(
+                `Operation "${key}" under \`additionalOperations\` of path "${path}" is sent as ${method}: ` +
+                    "Angular's HttpClient upper-cases method names.",
+            );
+        }
+        operations.set(method, operation as RawOperation);
+    }
+    return [...operations];
 }
 
 /** Adapts the parameter-only resolver of the old signature. */

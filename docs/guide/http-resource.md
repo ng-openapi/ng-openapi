@@ -198,7 +198,7 @@ Angular's `HttpClient` supports the `QUERY` method from 22.3 on. On older versio
 
 ## Limitations
 
-- **Read Operations Only**: Resources are generated for `GET` and `QUERY` operations. An `httpResource` re-sends its request whenever a signal it read changes, so it is not meant for mutations — use the generated services for `POST`, `PUT`, `PATCH` and `DELETE` (see [Angular Docs ↗️](https://angular.dev/guide/http/http-resource))
+- **Read Operations Only**: Resources are generated for `GET` and `QUERY` operations. An `httpResource` re-sends its request whenever a signal it read changes, so it is not meant for mutations — use the generated services for `POST`, `PUT`, `PATCH` and `DELETE` (see [Angular Docs ↗️](https://angular.dev/guide/http/http-resource)). The same goes for a method declared under OpenAPI 3.2's `additionalOperations`: nothing in the specification says it is safe to repeat
 
 ## Resources
 

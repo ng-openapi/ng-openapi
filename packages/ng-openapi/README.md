@@ -30,6 +30,10 @@ npm install ng-openapi --save-dev
 yarn add ng-openapi --dev
 ```
 
+## Supported Specifications
+
+Swagger 2.0 and OpenAPI 3.0, 3.1 and 3.2, as JSON or YAML, from a file or a URL. That includes OpenAPI 3.2's `query` operations — the HTTP `QUERY` method, which Angular's `HttpClient` supports from 22.3 — and `additionalOperations`. See [OpenAPI Support](https://ng-openapi.dev/guide/openapi-support) for the feature table and the Angular version each feature needs.
+
 ## CLI Usage
 
 ### Using a Configuration File (Recommended)

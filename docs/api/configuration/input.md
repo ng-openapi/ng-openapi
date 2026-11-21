@@ -40,8 +40,8 @@ const config: GeneratorConfig = {
 
 ## Notes
 
-- The specification must be a valid Swagger 2.x or OpenAPI 3.x document
-- From OpenAPI 3.2, `query` operations (the HTTP `QUERY` method) are generated — they require Angular 22.3+, see [Generated Output](../../guide/generated-code.md#services-service-ts). `in: querystring` parameters and `itemSchema` are not supported yet
+- The specification must be a valid Swagger 2.0 or OpenAPI 3.0, 3.1 or 3.2 document — see [OpenAPI Support](../../guide/openapi-support.md) for what each version generates
+- From OpenAPI 3.2, `query` operations (the HTTP `QUERY` method, which requires Angular 22.3+) and `additionalOperations` are generated. `in: querystring` parameters and `itemSchema` are not supported yet
 - Remote URLs must be accessible and return valid JSON/YAML content
 - A `$ref` into a property of a schema (`#/components/schemas/X/properties/y`) is inlined; deep pointers into other parts of the document are passed through with a warning — see [Schema References](../../guide/generated-code.md#schema-references)
 - Consider [`validateInput`](./validate-input.md) to guard against unexpected spec changes when generating from a URL

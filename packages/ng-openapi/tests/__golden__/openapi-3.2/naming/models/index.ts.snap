@@ -36,6 +36,11 @@ export interface ProductSearchDto {
     sort?: ProductSortDto;
 }
 
+export interface ProductCopyDto {
+    targetCatalog: string;
+    name?: string;
+}
+
 export interface RelatedFilterDto {
     maxResults?: number;
     sameCategoryOnly?: boolean;
