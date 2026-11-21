@@ -4,6 +4,7 @@ models/order-export-request.ts
 models/order-status.ts
 models/order.ts
 models/product-copy.ts
+models/product-filter.ts
 models/product-page.ts
 models/product-search.ts
 models/product-sort.ts

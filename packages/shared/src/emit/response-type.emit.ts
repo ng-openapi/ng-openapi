@@ -14,9 +14,15 @@ export function emitResponseTypeOption(responseType: ResponseKind): string {
 }
 
 /**
- * Joins requestOptions entries, dropping empties and entries referencing
- * undefined values, with the indentation both method bodies use.
+ * Joins requestOptions entries, dropping empties and entries whose value is
+ * the literal `undefined` (`reportProgress: undefined`), with the indentation
+ * both method bodies use.
+ *
+ * Only that exact shape. Matching the word anywhere dropped an entry that
+ * merely mentions it — the `url` of a path like `/undefined-items`, or one
+ * whose expression tests a value against `undefined` — and a request without
+ * a `url` is not a request.
  */
 export function joinRequestOptionEntries(entries: string[]): string {
-    return entries.filter((entry) => entry && !entry.includes("undefined")).join(",\n  ");
+    return entries.filter((entry) => entry && !/^[\w$]+:\s*undefined$/.test(entry.trim())).join(",\n  ");
 }

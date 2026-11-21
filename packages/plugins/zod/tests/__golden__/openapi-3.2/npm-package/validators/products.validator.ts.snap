@@ -46,6 +46,39 @@ export const searchProducts200Response = z.object({
     "nextCursor": z.string().optional()
 });
 export type SearchProducts200Response = z.infer<typeof searchProducts200Response>;
+export const filterProductsQueryParams = z.object({
+    "text": z.string(),
+    "max-price": z.number().optional(),
+    "categories": z.array(z.string()).optional(),
+    "sort": z.enum(['relevance', 'price', 'newest']).optional()
+});
+export type FilterProductsQueryParams = z.infer<typeof filterProductsQueryParams>;
+export const filterProducts200Response = z.object({
+    "items": z.array(z.object({
+        "id": z.string().uuid(),
+        "name": z.string(),
+        "price": z.number(),
+        "createdAt": z.string().datetime().optional()
+    })),
+    "nextCursor": z.string().optional()
+});
+export type FilterProducts200Response = z.infer<typeof filterProducts200Response>;
+export const matchProducts200ResponseItem = z.object({
+    "id": z.string().uuid(),
+    "name": z.string(),
+    "price": z.number(),
+    "createdAt": z.string().datetime().optional()
+});
+export const matchProducts200Response = z.array(matchProducts200ResponseItem);
+export type MatchProducts200Response = z.infer<typeof matchProducts200Response>;
+export const selectProducts200ResponseItem = z.object({
+    "id": z.string().uuid(),
+    "name": z.string(),
+    "price": z.number(),
+    "createdAt": z.string().datetime().optional()
+});
+export const selectProducts200Response = z.array(selectProducts200ResponseItem);
+export type SelectProducts200Response = z.infer<typeof selectProducts200Response>;
 export const queryFeaturedProducts200ResponseItem = z.object({
     "id": z.string().uuid(),
     "name": z.string(),

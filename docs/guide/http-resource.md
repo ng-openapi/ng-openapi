@@ -162,6 +162,8 @@ export class SearchComponent {
 }
 ```
 
+OpenAPI 3.2's `in: querystring` parameters work the same way: the properties of a form-encoded one are query parameters like those above, and a JSON or text one is a single argument that is sent as the whole query string. Either can be a signal. See [OpenAPI Support](./openapi-support.md#querystring-parameters).
+
 ## QUERY Operations
 
 OpenAPI 3.2's `query` operations — the HTTP `QUERY` method — are reads that carry their input in the request body, so they become resources too. The body is an argument like any other: pass a value, or a signal to have the resource re-send the query whenever it changes.

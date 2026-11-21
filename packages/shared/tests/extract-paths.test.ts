@@ -197,6 +197,26 @@ describe("extractPaths", () => {
         expect(paths[0].parameters?.map((p) => p.name)).toEqual(["petId", "verbose"]);
     });
 
+    it("keeps the `content` of a parameter that is described by one, and adds the key to no other", () => {
+        const content = { "application/json": { schema: { type: "object" } } };
+        const paths = extractPaths({
+            "/pets": {
+                get: {
+                    parameters: [
+                        { name: "filter", in: "querystring", content },
+                        { name: "limit", in: "query", schema: { type: "integer" } },
+                        { name: "broken", in: "querystring", content: "application/json" },
+                    ],
+                },
+            },
+        } as never);
+
+        const [filter, limit, broken] = paths[0].parameters ?? [];
+        expect(filter).toMatchObject({ name: "filter", in: "querystring", content });
+        expect(limit).not.toHaveProperty("content");
+        expect(broken).not.toHaveProperty("content");
+    });
+
     it("forces required=true for path parameters", () => {
         const paths = extractPaths({
             "/pets/{petId}": {
