@@ -1,16 +1,16 @@
 # Graph Report - ng-openapi  (2026-11-21)
 
 ## Corpus Check
-- 309 files · ~183,102 words
+- 309 files · ~183,354 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2169 nodes · 4009 edges · 201 communities (156 shown, 45 thin omitted)
+- 2169 nodes · 4009 edges · 200 communities (155 shown, 45 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 55 edges (avg confidence: 0.72)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `110a8008`
+- Built from commit: `7e06e812`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -177,7 +177,6 @@
 - [[_COMMUNITY_component-refs.test.ts|component-refs.test.ts]]
 - [[_COMMUNITY_namedInputs|namedInputs]]
 - [[_COMMUNITY_swagger.types.ts|swagger.types.ts]]
-- [[_COMMUNITY_namedInputs|namedInputs]]
 - [[_COMMUNITY_peerDependenciesMeta|peerDependenciesMeta]]
 - [[_COMMUNITY_ZodGenerator|ZodGenerator]]
 - [[_COMMUNITY_method-names.test.ts|method-names.test.ts]]
@@ -236,7 +235,7 @@
 - **NPM Release Pipeline** — _github_workflows_release_please_release_please_workflow, _github_workflows_publish_publish_workflow, _github_workflows_release_pr_prerelease_workflow [EXTRACTED 0.90]
 - **Monorepo Published Packages** — pkg_ng_openapi, pkg_http_resource, pkg_zod, pkg_shared [EXTRACTED 0.85]
 
-## Communities (201 total, 45 thin omitted)
+## Communities (200 total, 45 thin omitted)
 
 ### Community 0 - "Core Generation Pipeline"
 Cohesion: 0.23
@@ -275,8 +274,8 @@ Cohesion: 0.07
 Nodes (26): Angular version requirements are warnings, Key design decisions, ng-openapi — Architecture, One normalized model (IR), One write per run, Package layout and boundaries, Plugin contract, Project as the manifest (+18 more)
 
 ### Community 9 - "Dev Dependencies"
-Cohesion: 0.07
-Nodes (30): devDependencies, @angular/common, @angular/compiler, @angular/compiler-cli, @angular/core, eslint, eslint-config-prettier, @eslint/js (+22 more)
+Cohesion: 0.06
+Nodes (31): devDependencies, @angular/common, @angular/compiler, @angular/compiler-cli, @angular/core, eslint, eslint-config-prettier, @eslint/js (+23 more)
 
 ### Community 10 - "Nx Project Targets"
 Cohesion: 0.08
@@ -419,8 +418,8 @@ Cohesion: 0.50
 Nodes (4): repository, directory, type, url
 
 ### Community 46 - "HttpResourceGenerator"
-Cohesion: 0.18
-Nodes (10): analytics, defaultBase, extends, neverConnectToCloud, plugins, release, version, $schema (+2 more)
+Cohesion: 0.14
+Nodes (13): analytics, defaultBase, extends, namedInputs, default, sharedGlobals, neverConnectToCloud, plugins (+5 more)
 
 ### Community 47 - "Author Metadata"
 Cohesion: 0.17
@@ -435,8 +434,8 @@ Cohesion: 0.10
 Nodes (19): Advanced Provider Options, Angular Integration, CLI Usage, Command Line Options, Configuration Options, Contributing, 🚀 Easy Setup (Recommended), File Download Example (+11 more)
 
 ### Community 50 - "Enum Generation Options"
-Cohesion: 0.06
-Nodes (26): `customHeaders`, Usage, `customizeMethodName`, Notes, Return a valid identifier, Usage, `emitAcceptHeader`, Usage (+18 more)
+Cohesion: 0.07
+Nodes (21): `customHeaders`, Usage, `customizeMethodName`, Notes, Return a valid identifier, Usage, `emitAcceptHeader`, Usage (+13 more)
 
 ### Community 51 - "generator.ts"
 Cohesion: 0.10
@@ -599,8 +598,8 @@ Cohesion: 0.20
 Nodes (9): Audio, Creative Direction, Hyperframes Composition Brief: ng-openapi, Hyperframes Instructions, Objective, Output, Source Material, Storyboard (+1 more)
 
 ### Community 101 - "peerDependencies"
-Cohesion: 0.20
-Nodes (9): `ng-openapi`, peerDependencies, @angular/common, @angular/core, ng-openapi, ts-morph, peerDependencies, ng-openapi (+1 more)
+Cohesion: 0.18
+Nodes (10): `ng-openapi`, peerDependencies, @angular/common, @angular/core, ng-openapi, ts-morph, peerDependencies, ng-openapi (+2 more)
 
 ### Community 102 - "Changelog"
 Cohesion: 0.11
@@ -623,8 +622,8 @@ Cohesion: 0.20
 Nodes (9): media, autoProxy, paths, assets, blocks, components, registry, registryItems (+1 more)
 
 ### Community 107 - "index.md"
-Cohesion: 0.25
-Nodes (5): `@ng-openapi/http-resource`, Changelog, `@ng-openapi/zod`, zod, zod
+Cohesion: 0.33
+Nodes (3): `@ng-openapi/http-resource`, Changelog, `@ng-openapi/zod`
 
 ### Community 108 - "peerDependenciesMeta"
 Cohesion: 0.08
@@ -671,8 +670,8 @@ Cohesion: 0.25
 Nodes (7): Commands, Documentation, HyperFrames Composition Project, Key Rules, Linting — ALWAYS RUN AFTER CHANGES, Project Structure, Skills — USE THESE FIRST
 
 ### Community 163 - "HttpParamsBuilderGenerator"
-Cohesion: 0.50
-Nodes (3): Notes, `output`, Usage
+Cohesion: 0.40
+Nodes (5): `enumNameExtensions`, Example, How Names Are Resolved, Notes, Usage
 
 ### Community 164 - "Plugin Authoring"
 Cohesion: 0.12
@@ -709,10 +708,6 @@ Nodes (4): Example, Notes, Usage, `useSingleRequestParameter`
 ### Community 172 - "swagger.types.ts"
 Cohesion: 0.67
 Nodes (3): `HttpResourcePlugin`, Notes, Usage
-
-### Community 173 - "namedInputs"
-Cohesion: 0.67
-Nodes (3): namedInputs, default, sharedGlobals
 
 ### Community 174 - "peerDependenciesMeta"
 Cohesion: 0.40
@@ -787,8 +782,8 @@ Cohesion: 0.67
 Nodes (3): Resources, Usage, `validation`
 
 ### Community 200 - "`validateInput`"
-Cohesion: 0.40
-Nodes (4): `compilerOptions`, Notes, Schema, Usage
+Cohesion: 0.19
+Nodes (7): `compilerOptions`, Notes, Schema, Usage, Notes, `output`, Usage
 
 ### Community 202 - "Schema Validation"
 Cohesion: 0.67
