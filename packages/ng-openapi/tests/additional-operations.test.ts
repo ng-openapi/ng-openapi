@@ -112,12 +112,45 @@ describe("methods a generated client cannot or must not send", () => {
         // Wording is pinned in shared/tests/extract-paths.test.ts.
         expect(aboutMethods(result.warnings)).toEqual([
             expect.stringContaining("Operation traceFile ((TRACE) /files/{fileId}) was skipped: browsers refuse"),
-            expect.stringContaining(
-                'Operation "move" under `additionalOperations` of path "/files/{fileId}" is sent as MOVE',
-            ),
             expect.stringContaining('Operation "POST" under `additionalOperations`'),
             expect.stringContaining('Operation "CONNECT" under `additionalOperations`'),
             expect.stringContaining('Operation "NOT A METHOD" under `additionalOperations`'),
+            // What is kept and sent differently comes after what is skipped.
+            expect.stringContaining(
+                'Operation "move" under `additionalOperations` of path "/files/{fileId}" is sent as MOVE',
+            ),
         ]);
+    });
+});
+
+describe("a method name built from the path and method that the class already binds", () => {
+    const ok = { "204": { description: "done" } };
+    // No operationId, so the names are `httpClient` and `basePath`: members of
+    // the generated class. A valid spec, and nothing in it to rename.
+    const spec = {
+        openapi: "3.2.0",
+        info: { title: "Names", version: "1.0.0" },
+        paths: {
+            "/http": { additionalOperations: { CLIENT: { tags: ["Names"], responses: ok } } },
+            "/base": { additionalOperations: { PATH: { tags: ["Names"], responses: ok } } },
+        },
+    };
+
+    it("renames the method and says so, instead of failing the run", async () => {
+        const { output, result, service } = await generate("additional-ops-reserved-", { spec });
+        const names = service("names");
+
+        expect(methodSource(names, "_httpClient")).toContain("request('client', url, {");
+        expect(methodSource(names, "_basePath")).toContain("request('path', url, {");
+        expect(result.warnings).toEqual(
+            expect.arrayContaining([
+                'Operation (CLIENT) /http would be named "httpClient", which the generated class already binds — ' +
+                    'it is emitted as "_httpClient". Give the operation an operationId to choose the name.',
+                'Operation (PATH) /base would be named "basePath", which the generated class already binds — ' +
+                    'it is emitted as "_basePath". Give the operation an operationId to choose the name.',
+            ]),
+        );
+
+        expectGeneratedCodeCompiles(output);
     });
 });

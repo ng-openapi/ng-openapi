@@ -64,6 +64,10 @@ const HTTP_TOKEN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
  * item, vendor extensions included, is not an operation and is ignored; a
  * method that is declared and cannot be generated is skipped out loud.
  *
+ * `methods` chooses among the fixed fields only. The entries of
+ * `additionalOperations` are returned whatever it lists: they are not fields
+ * of the path item, and a list of field names has no way to name them.
+ *
  * A `$ref` parameter, request body or response is replaced by the component
  * its resolver returns; one the resolver cannot resolve is warned about and
  * left out. With no resolver for its kind, a `$ref` request body or response
@@ -116,7 +120,8 @@ export function extractPaths(
                 paths.push(extract(path, pathItem, method.toUpperCase(), operation));
             }
         });
-        if (pathItem["trace"]) {
+        // Not when the caller asked for `trace`: it was extracted just above.
+        if (pathItem["trace"] && !methods.includes("trace")) {
             onWarning?.(
                 `Operation ${describeOperation({ path, method: "TRACE", operationId: asName((pathItem["trace"] as RawOperation).operationId) })} ` +
                     "was skipped: browsers refuse to send TRACE requests, so no method is generated for it.",
@@ -137,7 +142,9 @@ export function extractPaths(
  * The map key is the method "with the same capitalization that is to be sent",
  * but that is not ours to honor: Angular's `HttpRequest` upper-cases every
  * method name. So the key is upper-cased here, said when that changes it, and
- * two keys that only differ by case are one method.
+ * two keys that only differ by case are one method. Of those, the one written
+ * as it is sent is the operation that was meant for the method, so it is the
+ * one kept, wherever it stands; without one, the first is.
  */
 function additionalOperations(
     path: string,
@@ -155,15 +162,22 @@ function additionalOperations(
         return [];
     }
 
-    const operations = new Map<string, RawOperation>();
+    const subject = (key: string) => `Operation "${key}" under \`additionalOperations\` of path "${path}"`;
+    const operations = new Map<string, { key: string; operation: RawOperation }>();
     for (const [key, operation] of Object.entries(declared)) {
-        const skipped = (reason: string) =>
-            onWarning?.(`Operation "${key}" under \`additionalOperations\` of path "${path}" was skipped: ${reason}`);
+        const skipped = (reason: string, skippedKey = key) =>
+            onWarning?.(`${subject(skippedKey)} was skipped: ${reason}`);
         if (!HTTP_TOKEN.test(key)) {
             skipped("its key is not a valid HTTP method name.");
             continue;
         }
         const method = key.toUpperCase();
+        // Before the fixed-field check, which would send a TRACE to the
+        // `trace` field: it is skipped there too, for this reason.
+        if (FORBIDDEN_METHODS.has(method)) {
+            skipped(`browsers refuse to send ${method} requests, so no method is generated for it.`);
+            continue;
+        }
         if (FIXED_FIELD_METHODS.has(method.toLowerCase())) {
             skipped(
                 `${method} has its own field on the path item, and OpenAPI does not allow it here. ` +
@@ -171,27 +185,28 @@ function additionalOperations(
             );
             continue;
         }
-        if (FORBIDDEN_METHODS.has(method)) {
-            skipped(`browsers refuse to send ${method} requests, so no method is generated for it.`);
-            continue;
-        }
         if (!isPlainObject(operation)) {
             skipped("it is not an operation object.");
             continue;
         }
-        if (operations.has(method)) {
-            skipped(`the path already declares a ${method} operation, and method names are sent upper-cased.`);
-            continue;
+        const sameMethod = `the path also declares a ${method} operation, and method names are sent upper-cased.`;
+        const kept = operations.get(method);
+        if (kept === undefined) {
+            operations.set(method, { key, operation: operation as RawOperation });
+        } else if (key === method) {
+            // Only one key can be the method as it is sent, so `kept` is not.
+            skipped(sameMethod, kept.key);
+            operations.set(method, { key, operation: operation as RawOperation });
+        } else {
+            skipped(sameMethod);
         }
-        if (key !== method) {
-            onWarning?.(
-                `Operation "${key}" under \`additionalOperations\` of path "${path}" is sent as ${method}: ` +
-                    "Angular's HttpClient upper-cases method names.",
-            );
-        }
-        operations.set(method, operation as RawOperation);
     }
-    return [...operations];
+    for (const [method, { key }] of operations) {
+        if (key !== method) {
+            onWarning?.(`${subject(key)} is sent as ${method}: Angular's HttpClient upper-cases method names.`);
+        }
+    }
+    return [...operations].map(([method, { operation }]) => [method, operation]);
 }
 
 /** Adapts the parameter-only resolver of the old signature. */
