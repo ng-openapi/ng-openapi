@@ -455,14 +455,35 @@ describe("normalizeSpec: an operation that declares both forms", () => {
             "/same": {
                 post: { operationId: "submit", requestBody: forms(["name", "note"], ["name", "note"]), responses: {} },
             },
+            // A JSON alternative as well, and the urlencoded schema behind a
+            // $ref: `isUrlEncoded` is false here, the field is unsent all the same.
+            "/with-json": {
+                post: {
+                    operationId: "uploadOrPost",
+                    requestBody: {
+                        content: {
+                            "multipart/form-data": fields("file"),
+                            "application/x-www-form-urlencoded": { schema: { $ref: "#/components/schemas/NoteForm" } },
+                            "application/json": fields("file", "note"),
+                        },
+                    },
+                    responses: {},
+                },
+            },
         },
+        components: { schemas: { NoteForm: fields("file", "note").schema } },
     } as unknown as SwaggerSpec;
     const warnings: string[] = [];
     const normalized = normalizeSpec(bothFormsSpec, (message) => warnings.push(message));
     const about = (operation: string) => warnings.filter((warning) => warning.includes(`${operation} (`));
 
     it("sends the multipart one", () => {
-        expect(normalized.operations.map((o) => o.bodyKind)).toEqual(["multipart", "multipart", "multipart"]);
+        expect(normalized.operations.map((o) => o.bodyKind)).toEqual([
+            "multipart",
+            "multipart",
+            "multipart",
+            "multipart",
+        ]);
     });
 
     it("warns about a field only the urlencoded form lists: it has no argument and is not sent", () => {
@@ -480,6 +501,18 @@ describe("normalizeSpec: an operation that declares both forms", () => {
             'so the fields "a", "b", which only the application/x-www-form-urlencoded form lists, get no argument ' +
                 "and are not sent. List them in the multipart/form-data schema too, or declare one form.",
         );
+    });
+
+    it("warns the same way when the operation declares a JSON alternative too", () => {
+        const uploadOrPost = normalized.operations.find((o) => o.operationId === "uploadOrPost")!;
+        // The flag the generators read says "not urlencoded": JSON would win over it.
+        expect(uploadOrPost).toMatchObject({ isMultipart: true, isUrlEncoded: false, urlEncodedFields: [] });
+        expect(about("uploadOrPost")).toEqual([
+            "The request body of uploadOrPost ((POST) /with-json) is declared as both multipart/form-data and " +
+                "application/x-www-form-urlencoded. Generated methods send the multipart/form-data one, so the " +
+                'field "note", which only the application/x-www-form-urlencoded form lists, gets no argument and ' +
+                "is not sent. List it in the multipart/form-data schema too, or declare one form.",
+        ]);
     });
 
     it("says nothing when both forms list the same fields", () => {

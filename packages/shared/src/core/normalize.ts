@@ -241,8 +241,12 @@ function normalizeOperation(
     if (isUrlEncoded && urlEncodedFields.length === 0) {
         warnAboutFieldlessFormBody(operation, CONTENT_TYPES.FORM_URLENCODED, onWarning);
     }
-    if (isMultipart && isUrlEncoded) {
-        warnAboutUnsentFormFields(operation, formDataFields, urlEncodedFields, onWarning);
+    // The content key, not `isUrlEncoded`: that flag, and `urlEncodedFields`
+    // with it, is off whenever a JSON alternative is declared too, and the
+    // fields of the urlencoded form are just as unsent then.
+    if (isMultipart && content?.[CONTENT_TYPES.FORM_URLENCODED]) {
+        const declared = resolveBodySchema(operation.requestBody, CONTENT_TYPES.FORM_URLENCODED, resolveRef);
+        warnAboutUnsentFormFields(operation, formDataFields, Object.keys(declared?.properties || {}), onWarning);
     }
     if (operation.requestBody && !isMultipart && !isUrlEncoded && !content?.[CONTENT_TYPES.JSON]) {
         warnAboutUnboundBody(operation, onWarning);
