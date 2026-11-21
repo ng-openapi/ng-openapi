@@ -130,8 +130,8 @@ export class HttpResourceMethodBodyGenerator {
         // request options cannot clobber the body, the merged headers, the
         // accumulated params, or the client-id context.
         entries.push(`url: ${url}`);
-        // Not free-form spec text: extractPaths only yields the methods on
-        // its own list, upper-cased.
+        // One of two known words, not spec text: only the RESOURCE_METHODS of
+        // http-resource.generator.ts (GET, QUERY) get a resource method.
         entries.push(`method: "${operation.method}"`);
         entries.push("...requestOptions");
 

@@ -205,6 +205,7 @@ export default defineConfig({
                         { text: "CLI Usage", link: "/guide/cli-usage" },
                         { text: "Angular Integration", link: "/guide/angular-integration" },
                         { text: "Generated Output", link: "/guide/generated-code" },
+                        { text: "OpenAPI Support", link: "/guide/openapi-support" },
                     ],
                 },
                 {

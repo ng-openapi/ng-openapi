@@ -21,6 +21,10 @@ Configure ng-openapi providers and services in your Angular application.
 
 A file-by-file tour of everything ng-openapi writes into your output directory.
 
+### [OpenAPI Support](./openapi-support.md)
+
+Supported Swagger and OpenAPI versions, OpenAPI 3.2 features such as the HTTP `QUERY` method, and the Angular version each one needs.
+
 ## Features
 
 ### [Multiple Clients](./multiple-clients.md)
