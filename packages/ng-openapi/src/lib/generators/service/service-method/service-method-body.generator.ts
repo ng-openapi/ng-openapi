@@ -10,6 +10,7 @@ import {
     quoteLiteral,
     MethodGenOptions,
     NormalizedOperation,
+    QueryStringEmit,
     resolveArgumentNames,
     SERVICE_ARGUMENT_PROFILE,
 } from "@ng-openapi/shared";
@@ -41,7 +42,12 @@ export class ServiceMethodBodyGenerator {
         // generator resolves the same pure function to the same answer.
         const argumentNames = resolveArgumentNames(operation, this.config, SERVICE_ARGUMENT_PROFILE);
         const bodyParts = [
-            emitUrlConstruction(operation.path, operation.pathParams, argumentNames),
+            emitUrlConstruction(
+                operation.path,
+                operation.pathParams,
+                argumentNames,
+                this.queryString(operation, argumentNames),
+            ),
             emitQueryParams(operation.queryParams, argumentNames),
             emitHeaders({
                 optionsExpression: "options",
@@ -55,6 +61,15 @@ export class ServiceMethodBodyGenerator {
         ];
 
         return bodyParts.filter(Boolean).join("\n");
+    }
+
+    /** The argument sent as the whole query string, for an operation that has one. */
+    private queryString(operation: NormalizedOperation, argumentNames: ArgumentNames): QueryStringEmit | undefined {
+        if (!operation.queryString || !argumentNames.queryString) {
+            return undefined;
+        }
+        const { kind, required } = operation.queryString;
+        return { value: argumentNames.queryString, kind, required };
     }
 
     private generateHttpRequest(operation: NormalizedOperation, argumentNames: ArgumentNames): string {

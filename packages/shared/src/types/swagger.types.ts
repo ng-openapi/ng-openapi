@@ -17,9 +17,15 @@ import {
  */
 export interface Parameter {
     name: string;
-    in: "query" | "path" | "header" | "cookie";
+    /**
+     * `querystring` is OpenAPI 3.2's location for one parameter that is the
+     * whole query string. It is described by `content`, never by `schema`.
+     */
+    in: "query" | "path" | "header" | "cookie" | "querystring";
     required?: boolean;
     schema?: SwaggerDefinition;
+    /** The parameter as one media type (a single entry), instead of `schema`. */
+    content?: Record<string, { schema?: SwaggerDefinition }>;
     type?: string;
     format?: string;
     description?: string;

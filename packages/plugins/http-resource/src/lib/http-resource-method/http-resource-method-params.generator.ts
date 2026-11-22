@@ -4,6 +4,7 @@ import {
     resolveArgumentNames,
     RESOURCE_ARGUMENT_PROFILE,
     getBodyArgumentType,
+    getQueryStringArgumentType,
     getResponseType,
     getTypeScriptType,
     MethodGenOptions,
@@ -72,6 +73,17 @@ export class HttpResourceMethodParamsGenerator {
             const paramType = getTypeScriptType(param.schema || { ...param }, this.config);
             params.push(this.signalParameter(argumentNames.of(param.name), paramType, !!param.required));
         });
+
+        // The one argument that is the whole query string (never next to the above)
+        if (operation.queryString && argumentNames.queryString) {
+            params.push(
+                this.signalParameter(
+                    argumentNames.queryString,
+                    getQueryStringArgumentType(operation.queryString, this.config),
+                    operation.queryString.required,
+                ),
+            );
+        }
 
         return params.sort((a, b) => Number(a.hasQuestionToken) - Number(b.hasQuestionToken));
     }

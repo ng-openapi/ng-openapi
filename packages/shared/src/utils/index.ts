@@ -31,6 +31,7 @@ export {
     RESERVED_MEMBER_NAMES,
     reservedMemberCollision,
     getBodyArgumentType,
+    getQueryStringArgumentType,
     getRequestBodyType,
     getResourceClassName,
     getServiceClassName,

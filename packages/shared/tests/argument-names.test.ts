@@ -220,6 +220,36 @@ describe("resolveArgumentNames: a body passed as one argument", () => {
     });
 });
 
+describe("resolveArgumentNames: the argument that is the whole query string", () => {
+    const withQueryString = (name: string, overrides: Partial<NormalizedOperation> = {}) =>
+        operation({ queryString: { name, kind: "text", required: true }, ...overrides });
+
+    it("names it after the parameter", () => {
+        const names = service(withQueryString("json-path"));
+        expect(names.queryString).toBe("jsonPath");
+        expect(names.all).toEqual(["jsonPath"]);
+        expect(names.renamed).toEqual([]);
+    });
+
+    it("keeps it clear of the path parameters and of what the method binds, and says what was renamed", () => {
+        const names = service(withQueryString("id", { pathParams: [param("id", "path")] }));
+        expect(names.of("id")).toBe("id");
+        expect(names.queryString).toBe("id2");
+        // The parameter's name is never sent, so it is not "declared twice" with the path parameter.
+        expect(names.merged).toEqual([]);
+        expect(names.renamed).toEqual([{ source: "id", identifier: "id2" }]);
+
+        expect(service(withQueryString("options")).queryString).toBe("options2");
+        expect(resolveArgumentNames(withQueryString("options"), config, RESOURCE_ARGUMENT_PROFILE).queryString).toBe(
+            "options",
+        );
+    });
+
+    it("binds none for an operation without one", () => {
+        expect(service(operation({ queryParams: [param("q")] })).queryString).toBeUndefined();
+    });
+});
+
 describe("resolveArgumentNames memoization", () => {
     it("is keyed by config as well as operation, not just operation", () => {
         // The JSON body name comes from the body type, which config decides.

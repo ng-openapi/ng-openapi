@@ -20,12 +20,12 @@ The limits on this page are reported as warnings during generation, except where
 
 ## OpenAPI 3.2 Features
 
-| Feature                                            | Status           | What is generated                                                                                                             |
-| -------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `query` operations (the HTTP `QUERY` method)       | ✅ Supported     | A service method, and a resource with the [HTTP Resource plugin](./http-resource.md#query-operations). Requires Angular 22.3+ |
-| `additionalOperations` (`COPY`, `PURGE`, custom …) | ✅ Supported     | A service method that sends the declared method. No resource: nothing says such a method is safe to repeat                    |
-| `in: querystring` parameters                       | ❌ Not supported | The parameter is left out, with a warning                                                                                     |
-| `itemSchema` (JSON Lines, Server-Sent Events, …)   | ❌ Not supported | The item schema is not read, without a warning                                                                                |
+| Feature                                            | Status           | What is generated                                                                                                              |
+| -------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `query` operations (the HTTP `QUERY` method)       | ✅ Supported     | A service method, and a resource with the [HTTP Resource plugin](./http-resource.md#query-operations). Requires Angular 22.3+  |
+| `additionalOperations` (`COPY`, `PURGE`, custom …) | ✅ Supported     | A service method that sends the declared method. No resource: nothing says such a method is safe to repeat                     |
+| `in: querystring` parameters                       | ✅ Supported     | Form-encoded: one argument per property. JSON or text: one argument, sent as the whole query string. In services and resources |
+| `itemSchema` (JSON Lines, Server-Sent Events, …)   | ❌ Not supported | The item schema is not read, without a warning                                                                                 |
 
 ### The `QUERY` Method
 
@@ -96,6 +96,50 @@ A few entries cannot be generated, and each is skipped with a warning:
 - A key that is not a valid HTTP method name.
 
 Method names are sent upper-cased, because Angular's `HttpClient` upper-cases them. A key written as `Copy` is sent as `COPY`, and generation says so. Two keys that differ only by case are one method: the one written in upper case is generated, and the other is skipped with a warning. When neither is in upper case, the first is generated, with the same notice that it is sent upper-cased.
+
+### Querystring Parameters
+
+An `in: querystring` parameter is the entire query string, described by one media type under `content`. What is generated depends on that media type.
+
+**Form-encoded** (`application/x-www-form-urlencoded`): the properties of the schema are the `key=value` pairs of the query string, so each becomes an argument, exactly like an ordinary query parameter:
+
+```yaml
+parameters:
+    - name: filter
+      in: querystring
+      required: true
+      content:
+          application/x-www-form-urlencoded:
+              schema:
+                  type: object
+                  required: [text]
+                  properties:
+                      text: { type: string }
+                      max-price: { type: number }
+```
+
+```typescript
+filterProducts(text: string, maxPrice?: number, /* observe, options */): Observable<ProductPage>
+// GET /products/filter?text=lamp&max-price=20
+```
+
+A property is required only when the parameter itself is `required` and its schema lists the property: a querystring parameter that is not required may be left out entirely.
+
+**JSON or text** (`application/json`, any `+json` type, `text/plain`, `application/jsonpath`, …): the value is one argument, and its serialization is the whole query string, percent-encoded. Its name is taken from the parameter and is never sent:
+
+```typescript
+// in: querystring, application/json
+matchProducts(criteria?: ProductSearch, /* observe, options */): Observable<Product[]>
+// GET /products/match?%7B%22text%22%3A%22lamp%22%7D
+
+// in: querystring, application/jsonpath
+selectProducts(selector: string, /* observe, options */): Observable<Product[]>
+// GET /products/select?%24.items%5B0%5D
+```
+
+With [`useSingleRequestParameter`](../api/configuration/options/use-single-request-parameter.md), these arguments are properties of the request object like every other. The [HTTP Resource plugin](./http-resource.md) takes each of them as a value or a signal.
+
+A querystring parameter that cannot be generated is skipped with a warning: one without `content`, a form whose schema lists no top-level `properties`, a media type that is neither form-encoded, JSON nor text, and a JSON or text one declared next to `in: query` parameters, which OpenAPI does not allow.
 
 ## Angular Versions
 

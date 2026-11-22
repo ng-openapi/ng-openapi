@@ -66,6 +66,98 @@
                 }
             }
         },
+        "/products/filter": {
+            "get": {
+                "operationId": "filterProducts",
+                "tags": ["Products"],
+                "description": "A form-encoded `in: querystring` parameter: its properties are the query string, one key=value pair each.",
+                "parameters": [
+                    {
+                        "name": "filter",
+                        "in": "querystring",
+                        "required": true,
+                        "content": {
+                            "application/x-www-form-urlencoded": {
+                                "schema": { "$ref": "#/components/schemas/ProductFilter" }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The matching products",
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/ProductPage" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/products/match": {
+            "get": {
+                "operationId": "matchProducts",
+                "tags": ["Products"],
+                "description": "A JSON `in: querystring` parameter: the whole query string is one percent-encoded JSON document. It is optional.",
+                "parameters": [
+                    {
+                        "name": "criteria",
+                        "in": "querystring",
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/ProductSearch" }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The matching products",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": { "$ref": "#/components/schemas/Product" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/products/select": {
+            "get": {
+                "operationId": "selectProducts",
+                "tags": ["Products"],
+                "description": "A plain-string `in: querystring` parameter: a JSONPath expression is the whole query string.",
+                "parameters": [
+                    {
+                        "name": "selector",
+                        "in": "querystring",
+                        "required": true,
+                        "content": {
+                            "application/jsonpath": {
+                                "schema": { "type": "string" }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The selected products",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": { "$ref": "#/components/schemas/Product" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/products/featured": {
             "query": {
                 "operationId": "queryFeaturedProducts",
@@ -305,6 +397,19 @@
                         "items": { "type": "string" }
                     },
                     "createdAfter": { "type": "string", "format": "date-time" },
+                    "sort": { "$ref": "#/components/schemas/ProductSort" }
+                }
+            },
+            "ProductFilter": {
+                "type": "object",
+                "required": ["text"],
+                "properties": {
+                    "text": { "type": "string" },
+                    "max-price": { "type": "number", "format": "double" },
+                    "categories": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                    },
                     "sort": { "$ref": "#/components/schemas/ProductSort" }
                 }
             },

@@ -12,7 +12,7 @@ import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { BASE_PATH_DEFAULT, CLIENT_CONTEXT_TOKEN_DEFAULT } from "../tokens";
 import { HttpParamsBuilder } from "../utils/http-params-builder";
-import { ListProductsParams, RequestOptions, ProductPage, SearchProductsParams, Product, CopyProductParams, ProductsProductIdPurgeParams, ProductsProductIdRelatedQueryParams } from "../models";
+import { ListProductsParams, RequestOptions, ProductPage, SearchProductsParams, FilterProductsParams, MatchProductsParams, Product, SelectProductsParams, CopyProductParams, ProductsProductIdPurgeParams, ProductsProductIdRelatedQueryParams } from "../models";
 
 @Injectable({ providedIn: "root" })
 export class ProductsService {
@@ -94,6 +94,105 @@ export class ProductsService {
             observe,
             headers,
             params,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    filterProducts(request: FilterProductsParams, observe?: 'body', options?: RequestOptions<'json'>): Observable<ProductPage>;
+    filterProducts(request: FilterProductsParams, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<ProductPage>>;
+    filterProducts(request: FilterProductsParams, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<ProductPage>>;
+    /** A form-encoded `in: querystring` parameter: its properties are the query string, one key=value pair each. */
+    filterProducts(request: FilterProductsParams, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const { text, maxPrice, categories, sort } = request;
+        const url = `${this.basePath}/products/filter`;
+
+        let params = new HttpParams();
+        if (text != null) {
+            params = HttpParamsBuilder.addToHttpParams(params, text, 'text');
+        }
+        if (maxPrice != null) {
+            params = HttpParamsBuilder.addToHttpParams(params, maxPrice, 'max-price');
+        }
+        if (categories != null) {
+            params = HttpParamsBuilder.addToHttpParams(params, categories, 'categories');
+        }
+        if (sort != null) {
+            params = HttpParamsBuilder.addToHttpParams(params, sort, 'sort');
+        }
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe,
+            headers,
+            params,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    matchProducts(request?: MatchProductsParams, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<Product>>;
+    matchProducts(request?: MatchProductsParams, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<Product>>>;
+    matchProducts(request?: MatchProductsParams, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<Product>>>;
+    /** A JSON `in: querystring` parameter: the whole query string is one percent-encoded JSON document. It is optional. */
+    matchProducts(request?: MatchProductsParams, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const { criteria } = request ?? {};
+        const url = `${this.basePath}/products/match${criteria == null ? '' : '?' + encodeURIComponent(JSON.stringify(criteria))}`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe,
+            headers,
+            reportProgress: options?.reportProgress,
+            withCredentials: options?.withCredentials,
+            context: this.createContextWithClientId(options?.context)
+        });
+    }
+
+    selectProducts(request: SelectProductsParams, observe?: 'body', options?: RequestOptions<'json'>): Observable<Array<Product>>;
+    selectProducts(request: SelectProductsParams, observe?: 'response', options?: RequestOptions<'json'>): Observable<HttpResponse<Array<Product>>>;
+    selectProducts(request: SelectProductsParams, observe?: 'events', options?: RequestOptions<'json'>): Observable<HttpEvent<Array<Product>>>;
+    /** A plain-string `in: querystring` parameter: a JSONPath expression is the whole query string. */
+    selectProducts(request: SelectProductsParams, observe?: 'body' | 'events' | 'response', options?: RequestOptions<'arraybuffer' | 'blob' | 'json' | 'text'>): Observable<any> {
+        const { selector } = request;
+        const url = `${this.basePath}/products/select?${encodeURIComponent(selector)}`;
+
+        let headers: HttpHeaders;
+        if (options?.headers instanceof HttpHeaders) {
+            headers = options.headers;
+        } else {
+            headers = new HttpHeaders(options?.headers);
+        }
+        // Advertise the response content type declared in the spec
+        if (!headers.has('Accept')) {
+            headers = headers.set('Accept', 'application/json');
+        }
+
+        return this.httpClient.request('get', url, {
+            observe,
+            headers,
             reportProgress: options?.reportProgress,
             withCredentials: options?.withCredentials,
             context: this.createContextWithClientId(options?.context)

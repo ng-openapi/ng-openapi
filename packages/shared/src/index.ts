@@ -37,6 +37,7 @@ export type {
 // Normalized spec model (version-free view consumed by generators)
 export type {
     NormalizedOperation,
+    NormalizedQueryString,
     NormalizedSpec,
     RequestBodyKind,
     ResponseKind,
@@ -96,6 +97,7 @@ export type {
     DefaultHeadersMergeOptions,
     FormBodyEmitOptions,
     HeadersEmitOptions,
+    QueryStringEmit,
     ServiceDecoratorEmit,
     ServiceDecoratorEmitOptions,
 } from "./emit";
@@ -121,6 +123,7 @@ export {
     RESERVED_MEMBER_NAMES,
     reservedMemberCollision,
     getBodyArgumentType,
+    getQueryStringArgumentType,
     getRequestBodyType,
     getResourceClassName,
     getResponseInfoFromResponse,

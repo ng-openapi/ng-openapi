@@ -105,6 +105,12 @@ Every generation run flows through the same stages:
   under `additionalOperations` is spec text, not one of a fixed set of
   words: a generator that emits it writes it through
   `emit/literal.emit.ts`, like any other text from the spec.
+  OpenAPI 3.2's `in: querystring` parameter, one parameter that is the
+  whole query string, is resolved here as well. Form-encoded, its
+  properties are `key=value` pairs like any query parameter, so they are
+  added to `queryParams` and no generator learns about the location. As
+  JSON or text it is one value sent in one piece: the operation's
+  `queryString`, which `emit/url.emit.ts` appends to the URL.
   Enum member names are resolved here too (`enum-member-names.ts`): the
   sources the config enables — `enumNameExtensions` (`x-enum-varnames`,
   `x-enumNames`, …), then the JSON description of

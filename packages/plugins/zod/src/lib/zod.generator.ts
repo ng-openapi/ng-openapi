@@ -169,7 +169,9 @@ export class ZodGenerator implements IPluginGenerator {
 
         // Group parameters by type
         const pathParams = operation.parameters?.filter((p) => p.in === "path") || [];
-        const queryParams = operation.parameters?.filter((p) => p.in === "query") || [];
+        // From the IR, not the raw list: it also holds the properties of a
+        // form-encoded `in: querystring` parameter, which are sent the same way.
+        const queryParams = operation.queryParams;
         const headerParams = operation.parameters?.filter((p) => p.in === "header") || [];
 
         // Generate path params validator

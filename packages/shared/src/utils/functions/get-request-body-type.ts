@@ -1,5 +1,5 @@
 import { RequestBody, TypeMappingConfig } from "../../types";
-import type { NormalizedOperation } from "../../model/operation.model";
+import type { NormalizedOperation, NormalizedQueryString } from "../../model/operation.model";
 import { getTypeScriptType } from "../type.utils";
 import { CONTENT_TYPES } from "../content-types.constants";
 import { isJsonMediaType, isMediaTypeRange } from "./media-types";
@@ -26,6 +26,17 @@ export function getBodyArgumentType(
         default:
             return undefined;
     }
+}
+
+/**
+ * TS type of the argument that is sent as the whole query string: the
+ * schema's type for a JSON one, `string` for a text one.
+ */
+export function getQueryStringArgumentType(queryString: NormalizedQueryString, config: TypeMappingConfig): string {
+    if (queryString.kind === "text") {
+        return "string";
+    }
+    return queryString.schema ? getTypeScriptType(queryString.schema, config, queryString.schema.nullable) : "any";
 }
 
 /**

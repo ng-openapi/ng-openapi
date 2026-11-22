@@ -359,5 +359,8 @@ function parseParameters(
         type: param.type,
         format: param.format,
         description: param.description,
+        // Only where it is declared: every other parameter keeps the shape it
+        // has always had.
+        ...(isPlainObject(param.content) ? { content: param.content } : {}),
     }));
 }

@@ -47,6 +47,45 @@ describe("url emission", () => {
     });
 });
 
+describe("url emission: a value that is the whole query string", () => {
+    const url = (
+        queryString: Parameters<typeof emitUrlExpression>[4],
+        paramValue = (identifier: string) => identifier,
+    ) => emitUrlExpression("/items/{id}", [pathParam("id")], names("id"), paramValue, queryString);
+
+    it("appends a required text value, percent-encoded", () => {
+        expect(url({ value: "selector", kind: "text", required: true })).toBe(
+            "`${this.basePath}/items/${id}?${encodeURIComponent(selector)}`",
+        );
+    });
+
+    it("appends a JSON value as its JSON text", () => {
+        expect(url({ value: "criteria", kind: "json", required: true })).toBe(
+            "`${this.basePath}/items/${id}?${encodeURIComponent(JSON.stringify(criteria))}`",
+        );
+    });
+
+    it("appends nothing, not even the question mark, for an optional value that is left out", () => {
+        expect(url({ value: "criteria", kind: "json", required: false })).toBe(
+            "`${this.basePath}/items/${id}${criteria == null ? '' : '?' + " +
+                "encodeURIComponent(JSON.stringify(criteria))}`",
+        );
+    });
+
+    it("leaves the path-parameter read to the caller's strategy and takes the value as given", () => {
+        expect(url({ value: "selectorValue", kind: "text", required: true }, signalAwareParamValue)).toBe(
+            "`${this.basePath}/items/${typeof id === 'function' ? id() : id}?${encodeURIComponent(selectorValue)}`",
+        );
+    });
+
+    it("adds it to the statement the service emits", () => {
+        expect(emitUrlConstruction("/items", [], names(), { value: "q", kind: "text", required: true })).toBe(
+            "const url = `${this.basePath}/items?${encodeURIComponent(q)}`;",
+        );
+        expect(emitUrlConstruction("/items", [], names())).toBe("const url = `${this.basePath}/items`;");
+    });
+});
+
 describe("query-params emission", () => {
     it("returns empty string for no query params", () => {
         expect(emitQueryParams([], names())).toBe("");
@@ -279,9 +318,16 @@ describe("request-option entries", () => {
         expect(emitResponseTypeOption("blob")).toBe("responseType: 'blob'");
     });
 
-    it("drops empty entries and entries referencing undefined", () => {
+    it("drops empty entries and entries whose value is undefined", () => {
         expect(joinRequestOptionEntries(["headers", "", "reportProgress: undefined", "params"])).toBe(
             "headers,\n  params",
+        );
+    });
+
+    it("keeps an entry that only mentions undefined", () => {
+        const url = "url: `${this.basePath}/undefined-items${q == null ? '' : '?' + encodeURIComponent(q)}`";
+        expect(joinRequestOptionEntries([url, "body: undefinedValue", "context: undefined"])).toBe(
+            `${url},\n  body: undefinedValue`,
         );
     });
 });

@@ -104,6 +104,8 @@ export const RESOURCE_ARGUMENT_PROFILE: ArgumentNameProfile = Object.freeze({
 
 /** Key of the JSON request-body argument, which has no wire name of its own. */
 const REQUEST_BODY_KEY = Symbol("requestBody");
+/** Key of the argument that is the whole query string: its name is never sent. */
+const QUERY_STRING_KEY = Symbol("queryString");
 
 type ArgumentKey = string | symbol;
 
@@ -119,6 +121,8 @@ export interface ArgumentNames {
     of(wireName: string): string;
     /** The identifier of the JSON request body, when the operation has one. */
     readonly body?: string;
+    /** The identifier of the argument sent as the whole query string, when the operation has one. */
+    readonly queryString?: string;
     /** Every identifier assigned, for emitters that derive locals from them. */
     readonly all: readonly string[];
     readonly renamed: readonly RenamedArgument[];
@@ -207,6 +211,9 @@ function computeArgumentNames(
     }
 
     entries.push(...operation.queryParams.map((param) => ({ key: param.name, base: camelCase(param.name) })));
+    if (operation.queryString) {
+        entries.push({ key: QUERY_STRING_KEY, base: camelCase(operation.queryString.name) });
+    }
 
     // A Map, not an object literal: wire names are untrusted spec text, and an
     // object literal would resolve "constructor" or "toString" to a value off
@@ -235,7 +242,7 @@ function computeArgumentNames(
         }
 
         if (identifier !== base) {
-            renamed.push(Object.freeze({ source: typeof key === "string" ? key : base, identifier }));
+            renamed.push(Object.freeze({ source: sourceOf(key, base, operation), identifier }));
         }
         used.add(identifier);
         identifiers.set(key, identifier);
@@ -252,10 +259,19 @@ function computeArgumentNames(
         // outside the normalizer, but the resolver is public API.
         of: (wireName) => identifiers.get(wireName) ?? deriveLocalName(camelCase(wireName), [...used]),
         body: identifiers.get(REQUEST_BODY_KEY),
+        queryString: identifiers.get(QUERY_STRING_KEY),
         all: Object.freeze([...identifiers.values()]),
         renamed: Object.freeze(renamed),
         merged: Object.freeze([...merged]),
     };
+}
+
+/** What a renamed argument is called in the spec: its wire name, or the name it has there. */
+function sourceOf(key: ArgumentKey, base: string, operation: NormalizedOperation): string {
+    if (typeof key === "string") {
+        return key;
+    }
+    return key === QUERY_STRING_KEY && operation.queryString ? operation.queryString.name : base;
 }
 
 /**
