@@ -75,6 +75,138 @@
                         }
                     }
                 }
+            },
+            "patch": {
+                "tags": ["widgets"],
+                "operationId": "patchWidget",
+                "description": "A JSON body under a structured-syntax content type.",
+                "parameters": [
+                    {
+                        "name": "widgetId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/merge-patch+json": {
+                            "schema": { "$ref": "#/components/schemas/WidgetPatch" }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "widget",
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/Widget" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/widgets/import": {
+            "post": {
+                "tags": ["widgets"],
+                "operationId": "importWidgets",
+                "description": "A JSON body whose content type carries a parameter.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json; charset=utf-8": {
+                            "schema": {
+                                "type": "array",
+                                "items": { "$ref": "#/components/schemas/NewWidget" }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": { "description": "accepted" }
+                }
+            }
+        },
+        "/widgets/{widgetId}/notes": {
+            "put": {
+                "tags": ["widgets"],
+                "operationId": "replaceWidgetNotes",
+                "description": "A text body.",
+                "parameters": [
+                    {
+                        "name": "widgetId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "text/plain; charset=utf-8": {
+                            "schema": { "type": "string" }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": { "description": "replaced" }
+                }
+            }
+        },
+        "/widgets/{widgetId}/manual": {
+            "put": {
+                "tags": ["widgets"],
+                "operationId": "uploadWidgetManual",
+                "description": "A binary body of one type, which the request declares.",
+                "parameters": [
+                    {
+                        "name": "widgetId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/pdf": {
+                            "schema": { "type": "string", "format": "binary" }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": { "description": "stored" }
+                }
+            }
+        },
+        "/widgets/{widgetId}/image": {
+            "put": {
+                "tags": ["widgets"],
+                "operationId": "uploadWidgetImage",
+                "description": "A binary body of several types: the uploaded file says which one it is.",
+                "parameters": [
+                    {
+                        "name": "widgetId",
+                        "in": "path",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "image/png": {
+                            "schema": { "type": "string", "format": "binary" }
+                        },
+                        "image/jpeg": {
+                            "schema": { "type": "string", "format": "binary" }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": { "description": "stored" }
+                }
             }
         }
     },
@@ -98,6 +230,14 @@
             "NewWidget": {
                 "type": "object",
                 "required": ["name"],
+                "properties": {
+                    "name": { "type": "string" },
+                    "nickname": { "type": ["string", "null"] },
+                    "kind": { "$ref": "#/components/schemas/WidgetKind" }
+                }
+            },
+            "WidgetPatch": {
+                "type": "object",
                 "properties": {
                     "name": { "type": "string" },
                     "nickname": { "type": ["string", "null"] },

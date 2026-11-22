@@ -3,7 +3,7 @@ import {
     ArgumentNames,
     resolveArgumentNames,
     RESOURCE_ARGUMENT_PROFILE,
-    getRequestBodyType,
+    getBodyArgumentType,
     getResponseType,
     getTypeScriptType,
     MethodGenOptions,
@@ -62,14 +62,9 @@ export class HttpResourceMethodParamsGenerator {
         if (operation.bodyKind === "urlencoded") {
             params.push(...this.formFieldParameters(operation.urlEncodedSchema, argumentNames));
         }
-        if (operation.bodyKind === "json" && operation.requestBody && argumentNames.body) {
-            params.push(
-                this.signalParameter(
-                    argumentNames.body,
-                    getRequestBodyType(operation.requestBody, this.config),
-                    !!operation.requestBody.required,
-                ),
-            );
+        const bodyType = getBodyArgumentType(operation, this.config);
+        if (bodyType !== undefined && argumentNames.body) {
+            params.push(this.signalParameter(argumentNames.body, bodyType, !!operation.requestBody?.required));
         }
 
         // Query parameters

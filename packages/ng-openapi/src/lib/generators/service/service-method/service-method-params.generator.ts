@@ -2,7 +2,7 @@ import { OptionalKind, ParameterDeclarationStructure } from "ts-morph";
 import {
     ArgumentNames,
     MethodGenOptions,
-    getRequestBodyType,
+    getBodyArgumentType,
     getTypeScriptType,
     NormalizedOperation,
     resolveArgumentNames,
@@ -42,8 +42,6 @@ export class ServiceMethodParamsGenerator {
             });
         });
 
-        const requestBody = operation.requestBody;
-
         // form parameters
         if (operation.bodyKind === "multipart") {
             params.push(...this.convertObjectToSingleParams(operation.formDataSchema, argumentNames));
@@ -54,14 +52,16 @@ export class ServiceMethodParamsGenerator {
             params.push(...this.convertObjectToSingleParams(operation.urlEncodedSchema, argumentNames));
         }
 
-        // body parameters. The name comes from the resolver, not from the
-        // body type directly: it shares the method scope with the query
-        // params, so a `request_body` query param must not land on it.
-        if (operation.bodyKind === "json" && requestBody && argumentNames.body) {
+        // A body passed as one argument (JSON, text, binary). The name comes
+        // from the resolver, not from the body type directly: it shares the
+        // method scope with the query params, so a `request_body` query param
+        // must not land on it.
+        const bodyType = getBodyArgumentType(operation, this.config);
+        if (bodyType !== undefined && argumentNames.body) {
             params.push({
                 name: argumentNames.body,
-                type: getRequestBodyType(requestBody, this.config),
-                hasQuestionToken: !requestBody.required,
+                type: bodyType,
+                hasQuestionToken: !operation.requestBody?.required,
             });
         }
 

@@ -113,7 +113,10 @@ export class HttpResourceMethodBodyGenerator {
                     expression: `${container}.toString()`,
                 };
             }
+            // One argument, passed through as it is.
             case "json":
+            case "text":
+            case "binary":
                 return argumentNames.body
                     ? { setup: "", expression: signalAwareParamValue(argumentNames.body) }
                     : undefined;

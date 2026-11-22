@@ -110,7 +110,11 @@ return this.httpClient.request(${quoteLiteral(httpMethod)}, url, {
                 return FORM_DATA_LOCAL;
             case "urlencoded":
                 return `${FORM_BODY_LOCAL}.toString()`;
+            // One argument, passed through: HttpClient serializes a value
+            // as JSON and sends a string or a Blob as it is.
             case "json":
+            case "text":
+            case "binary":
                 return argumentNames.body ?? "requestBody";
             default:
                 return "";

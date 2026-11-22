@@ -210,12 +210,12 @@ describe("httpResource QUERY bodies: names and headers that collide", () => {
                     responses: ok,
                 },
             },
-            // A body under a content type no generated method binds.
+            // A body no generated method can send: a sequence of items.
             "/notes": {
                 query: {
                     operationId: "queryNotes",
                     tags: ["Search"],
-                    requestBody: { required: true, content: { "text/plain": { schema: { type: "string" } } } },
+                    requestBody: { required: true, content: { "application/jsonl": { schema: { type: "string" } } } },
                     responses: ok,
                 },
             },
@@ -231,11 +231,13 @@ describe("httpResource QUERY bodies: names and headers that collide", () => {
         expect(queryNotes).toMatch(/^ {4}queryNotes\(resourceOptions\?:/);
         expect(queryNotes).toContain(OMIT_WITHOUT_BODY);
         expect(queryNotes).not.toContain("body:");
+        // And with no body, it declares no Content-Type for one.
+        expect(queryNotes).not.toContain("Content-Type");
         // Wording is pinned in shared/tests/normalize.test.ts.
         expect(result.warnings.filter((warning) => warning.includes("queryNotes"))).toEqual([
             expect.stringContaining(
-                "The request body of queryNotes ((QUERY) /notes) is declared only as text/plain, which generated " +
-                    "methods do not bind",
+                "The request body of queryNotes ((QUERY) /notes) is declared only as application/jsonl, which " +
+                    "generated methods cannot send",
             ),
         ]);
     });

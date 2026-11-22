@@ -60,18 +60,40 @@ Every generation run flows through the same stages:
   A request body on a method no browser sends one with (`GET`, `HEAD`) is
   warned about and left out the same way, so generators never look at the
   method before sending a body. What they bind is narrower than what the IR
-  carries: only a content key that is exactly `application/json`,
-  `multipart/form-data` or `application/x-www-form-urlencoded` gets
-  arguments, and a form contributes only the top-level `properties` of its
-  schema. A form that lists none stays in the IR with an empty field list
+  carries. A form — `multipart/form-data`, `application/x-www-form-urlencoded`
+  — is bound field by field, and contributes only the top-level `properties`
+  of its schema. Any other body is one argument, by how `HttpClient` sends
+  it (`utils/functions/media-types.ts`): a JSON document, also under a
+  `+json` or parameterised content key; text, as a `string`; anything else,
+  as a `Blob`. That is read off the parts of the media type's name, never
+  off a substring of it, and it is the request side's own answer: the
+  response side's `inferResponseTypeFromContentType` asks how to read what
+  came back, and settles some types the other way. `*/*` and
+  `application/*` name no type, so there the body's schema decides. A
+  sequential type or another `multipart` type is not one value to pass and
+  is not bound. The normalizer records the content key the body is bound
+  under (`bodyContentKey`, where its schema is) and the `Content-Type` the
+  request declares (`bodyContentType`): that key as written, or none where
+  the value sent states its own type — under a range, or several binary
+  types. The three keys a body was always bound under keep their
+  precedence: `multipart/form-data`, `application/x-www-form-urlencoded`
+  and `application/json`, written exactly so, come first, and a form under
+  a key with parameters is read only where an operation declares none of
+  them. Among other JSON types, or among text types, the first declared is
+  bound, and that is warned about, because the method is then typed from
+  one of several documents.
+  A form that lists no fields stays in the IR with an empty field list
   and is warned about here, because the method then sends no body. So is a
   body declared only under a content type nothing binds, and a field that
   only the urlencoded form lists when an operation declares both forms
-  (multipart is the one sent): each is input the caller has no argument for. Which of
-  the three a request actually carries is the operation's `bodyKind` — unset
+  (multipart is the one sent): each is input the caller has no argument for. Which
+  body a request actually carries is the operation's `bodyKind` — unset
   when it carries none — and every client reads that one field rather than
   re-deriving it from `hasBody`, `isMultipart` and `isUrlEncoded`, which
-  describe what the spec declared and still decide the `Content-Type`.
+  describe what the spec declared. The `Content-Type` has one place too,
+  `defaultContentType` in `emit/headers.emit.ts`, which reads `isMultipart`,
+  `isUrlEncoded` and `bodyContentType`. `hasBody` has no part in it: a
+  request that sends no body declares none.
   The methods themselves are the path-item fields `extractPaths` lists,
   OpenAPI 3.2's `query` (the HTTP QUERY method) among them, plus whatever
   a path item declares under 3.2's `additionalOperations`. None needs a

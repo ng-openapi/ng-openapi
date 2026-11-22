@@ -173,7 +173,50 @@ describe("resolveArgumentNames: form fields", () => {
 
     it("registers no form field for an operation that sends no form", () => {
         expect(service(bothForms(undefined)).all).toEqual(["note", "file"]);
-        expect(service(bothForms("json")).all).toEqual(["note", "file"]);
+    });
+});
+
+describe("resolveArgumentNames: a body passed as one argument", () => {
+    const withBody = (bodyKind: NormalizedOperation["bodyKind"], bodyContentType: string, schema: object) =>
+        operation({
+            method: "PUT",
+            bodyKind,
+            bodyContentKey: bodyContentType,
+            bodyContentType,
+            requestBody: { content: { [bodyContentType]: { schema } } },
+            queryParams: [param("request_body")],
+        } as Partial<NormalizedOperation>);
+
+    it("names a JSON body after its model, whatever content key it is declared under", () => {
+        const names = service(
+            withBody("json", "application/merge-patch+json", { $ref: "#/components/schemas/WidgetPatch" }),
+        );
+        expect(names.body).toBe("widgetPatch");
+    });
+
+    it("reads the schema under the content key, not under the Content-Type the request declares", () => {
+        // A body under a range: the normalizer leaves the header to HttpClient.
+        const underRange = operation({
+            method: "PUT",
+            bodyKind: "json",
+            bodyContentKey: "*/*",
+            requestBody: { content: { "*/*": { schema: { $ref: "#/components/schemas/Item" } } } },
+        } as Partial<NormalizedOperation>);
+        expect(service(underRange).body).toBe("item");
+    });
+
+    it.each([
+        ["text", "text/plain"],
+        ["binary", "application/octet-stream"],
+    ] as const)("names a %s body requestBody, and keeps a query parameter off that name", (bodyKind, contentType) => {
+        const names = service(withBody(bodyKind, contentType, { type: "string" }));
+        expect(names.body).toBe("requestBody");
+        expect(names.of("request_body")).toBe("requestBody2");
+    });
+
+    it("binds no body argument for a form or for no bound body", () => {
+        expect(service(withBody("multipart", "multipart/form-data", { type: "object" })).body).toBeUndefined();
+        expect(service(withBody(undefined, "application/jsonl", { type: "string" })).body).toBeUndefined();
     });
 });
 

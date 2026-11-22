@@ -17,6 +17,37 @@ describe("getRequestBodyType", () => {
         ).toBe("CreateOrderRequest");
     });
 
+    it.each(["application/merge-patch+json", "application/json; charset=utf-8", "application/vnd.api+json"])(
+        "resolves a JSON body declared as %s",
+        (contentType) => {
+            expect(
+                getRequestBodyType(
+                    {
+                        content: {
+                            "text/plain": { schema: { type: "string" } },
+                            [contentType]: { schema: { $ref: "#/components/schemas/WidgetPatch" } },
+                        },
+                    },
+                    config,
+                ),
+            ).toBe("WidgetPatch");
+        },
+    );
+
+    it("reads exactly application/json first, wherever it is declared", () => {
+        expect(
+            getRequestBodyType(
+                {
+                    content: {
+                        "application/json-patch+json": { schema: { $ref: "#/components/schemas/JsonPatch" } },
+                        "application/json": { schema: { $ref: "#/components/schemas/Widget" } },
+                    },
+                },
+                config,
+            ),
+        ).toBe("Widget");
+    });
+
     it("returns any when there is no content", () => {
         expect(getRequestBodyType({}, config)).toBe("any");
     });
