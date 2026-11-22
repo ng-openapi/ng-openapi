@@ -20,12 +20,24 @@ export interface NormalizedResponseSequence {
     /** The content key it is declared under: the one type the request accepts. */
     contentType: string;
     /**
-     * Schema of one item, from OpenAPI 3.2's `itemSchema`. Set, the response
-     * is a stream: the method emits each item as it arrives. Unset, the
-     * response is declared complete, with an array `schema`, and the method
-     * emits that array once the response has ended.
+     * Schema of one item: OpenAPI 3.2's `itemSchema`, or a `schema` that
+     * describes one value rather than an array of them, which is how a stream
+     * was written before 3.2. Set, the response is a stream: the method emits
+     * each item as it arrives. Unset, the response is declared complete, with
+     * an array `schema`, and the method emits that array once the response
+     * has ended.
+     *
+     * For Server-Sent Events it is the schema of the event. One the spec
+     * wrote for something else — the payload — is replaced by the shape of an
+     * event, because that is what the stream emits (see `itemsArePlainEvents`).
      */
     itemSchema?: SwaggerDefinition;
+    /**
+     * Set on an event stream whose schema did not describe the event. Its
+     * items are typed as the `ServerSentEvent` that the generated
+     * `utils/http-stream.ts` exports, which `itemSchema` then restates.
+     */
+    itemsArePlainEvents?: boolean;
 }
 
 /**

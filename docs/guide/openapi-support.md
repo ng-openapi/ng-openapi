@@ -179,15 +179,20 @@ There is no `observe` argument and there are no overloads: the method reads the 
 | `application/json-seq`, any `+json-seq` type | One record, parsed as JSON                                               |
 | `text/event-stream`                          | One event: `{ event?, data, id?, retry? }`, with `data` as the text sent |
 
-For Server-Sent Events the item schema describes that event object. `data` is delivered as a string even when the server puts JSON in it; parse it where you consume it. As in the browser's `EventSource`, a block without a `data` field (a comment, a bare `retry`) is not an event and is not emitted, and neither is an event the connection closed in the middle of.
+For Server-Sent Events the item schema describes that event object. `data` is delivered as a string even when the server puts JSON in it; parse it where you consume it. A schema without a `data` property describes something else, usually the payload: generation warns about it, and the method emits `ServerSentEvent` (`{ event?, data, id?, retry? }`) instead of a type the events do not have. As in the browser's `EventSource`, a block without a `data` field (a comment, a bare `retry`) is not an event and is not emitted, and neither is an event the connection closed in the middle of.
 
 ::: tip Complete responses
 The same media types with an array `schema` instead of `itemSchema` are a response that is read once it has ended. The method then keeps the standard signature, and returns the array: `listArchivedOrders(): Observable<Order[]>`.
 :::
 
+::: tip Before OpenAPI 3.2
+A stream of items used to be written as the schema of one of them: `application/x-ndjson` with `schema: { $ref: '#/components/schemas/Order' }`. That is read as `itemSchema` would be, and generates the same streaming method. A `schema` that is a string, or no schema at all, leaves the response as the text it is.
+:::
+
 Things to know:
 
 - `HttpClient` keeps the whole text of a response in memory until it ends, so a stream that never ends grows for as long as it is subscribed to. Unsubscribe when you no longer need it.
+- Only a successful response is read. A 4xx or 5xx response fails the stream with its `HttpErrorResponse`, like any other request, and nothing of its body is emitted as an item. When an interceptor sends the request again, the new response is read from its start.
 - With [`validation.response`](../api/configuration/options/validation.md), the `parse` hook is called with each item.
 - With [`dateType: "Date"`](../api/configuration/options/date-type.md), the date strings in each item of a JSON Lines or JSON text sequence response are converted to `Date` objects, as they are in any other response. The service does it with your client's [date interceptor](../api/utilities/date-transformer.md#streamed-responses), so it follows `dateTransformRegex` and `enableDateTransform`. The fields of a Server-Sent Event are text and are left as sent.
 - The [HTTP Resource plugin](./http-resource.md) generates no resource for a streamed response, since a resource holds one value at a time. A response declared complete does get one.

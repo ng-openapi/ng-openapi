@@ -202,7 +202,7 @@ Angular's `HttpClient` supports the `QUERY` method from 22.3 on. On older versio
 
 - **Read Operations Only**: Resources are generated for `GET` and `QUERY` operations. An `httpResource` re-sends its request whenever a signal it read changes, so it is not meant for mutations — use the generated services for `POST`, `PUT`, `PATCH` and `DELETE` (see [Angular Docs ↗️](https://angular.dev/guide/http/http-resource)). The same goes for a method declared under OpenAPI 3.2's `additionalOperations`: nothing in the specification says it is safe to repeat
 
-- **No Streamed Responses**: A `GET` or `QUERY` operation whose response is a stream of items (OpenAPI 3.2's `itemSchema`: JSON Lines, Server-Sent Events) gets no resource, because a resource holds one value at a time. Use its [service method](./openapi-support.md#streamed-responses), which emits each item
+- **No Streamed Responses**: A `GET` or `QUERY` operation whose response is a stream of items (OpenAPI 3.2's `itemSchema`, or a schema of one item, under JSON Lines or Server-Sent Events) gets no resource, because a resource holds one value at a time. Use its [service method](./openapi-support.md#streamed-responses), which emits each item
 
 ## Resources
 

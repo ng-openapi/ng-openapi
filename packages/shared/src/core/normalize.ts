@@ -694,7 +694,7 @@ function determineResponseInfo(
         if (!response) continue;
 
         const info = getResponseInfoFromResponse(response);
-        const sequence = resolveResponseSequence(response, info, resolveRef);
+        const sequence = resolveResponseSequence(operation, statusCode, response, info, resolveRef, onWarning);
         warnAboutUnusedItemSchemas(operation, statusCode, response, info, sequence, onWarning);
         // One format is read, so one content type is asked for: advertising
         // the other sequential types the response lists would invite a body
@@ -713,16 +713,26 @@ function determineResponseInfo(
  *
  * - with OpenAPI 3.2's `itemSchema`, each item — the response is a stream;
  * - with an array `schema`, all of them — the response is complete, and is
- *   parsed into that array when it has ended.
+ *   parsed into that array when it has ended;
+ * - with any other `schema` that describes a value (`$ref: Order` under
+ *   `application/x-ndjson`), each item again. That is how a stream of items
+ *   was written before 3.2 gave it a keyword, and the one reading under
+ *   which the type holds: the body is many of them, not one.
  *
- * A sequential media type described any other way (`text/event-stream` with
- * `schema: { type: string }`, the usual pre-3.2 spelling) stays what it is
- * typed as: the text of the response.
+ * A sequential media type whose `schema` is a string, or which has none
+ * (`text/event-stream` with `schema: { type: string }`, the other pre-3.2
+ * spelling), stays what it is typed as: the text of the response.
+ *
+ * The items of an event stream are events, whatever the schema says: see
+ * `serverSentEventSchema`.
  */
 function resolveResponseSequence(
+    operation: PathInfo,
+    statusCode: string,
     response: SwaggerResponse,
     info: ResponseTypeInfo,
     resolveRef: ResolveRef,
+    onWarning?: (message: string) => void,
 ): NormalizedResponseSequence | undefined {
     const contentType = info.contentType;
     const format = contentType !== undefined && info.responseType === "text" ? sequenceFormat(contentType) : undefined;
@@ -730,11 +740,64 @@ function resolveResponseSequence(
         return undefined;
     }
     const mediaType = response.content?.[contentType];
-    if (mediaType?.itemSchema) {
-        return { format, contentType, itemSchema: mediaType.itemSchema };
-    }
     const schema = mediaType?.schema?.$ref ? resolveRef(mediaType.schema.$ref) : mediaType?.schema;
-    return schema?.type === "array" ? { format, contentType } : undefined;
+    if (!mediaType?.itemSchema && schema?.type === "array") {
+        return { format, contentType };
+    }
+    const describesItem = schema !== undefined && schema.type !== "string" && Object.keys(schema).length > 0;
+    const declared = mediaType?.itemSchema ?? (describesItem ? mediaType?.schema : undefined);
+    if (!declared) {
+        return undefined;
+    }
+    if (format !== "event-stream" || describesServerSentEvent(declared, resolveRef)) {
+        return { format, contentType, itemSchema: declared };
+    }
+    onWarning?.(
+        `The "${statusCode}" response of ${describeOperation(operation)} describes the items of ${contentType} ` +
+            "with a schema that has no `data` property. An item of that format is an event — its `data`, `event`, " +
+            "`id` and `retry` fields — and `data` is the text the server sent, so the schema cannot describe what " +
+            "the stream emits. Generated methods emit the events as `ServerSentEvent` (`{ data: string; event?: " +
+            "string; id?: string; retry?: number }`), and the schema is not used. Describe the event, with the " +
+            "payload as its `data`, to have it typed.",
+    );
+    return { format, contentType, itemSchema: serverSentEventSchema(), itemsArePlainEvents: true };
+}
+
+/**
+ * Whether a schema describes a Server-Sent Event rather than something else:
+ * it has a `data` property, itself or in a branch of a composition, behind
+ * any `$ref`. `data` is the one field an event cannot be without, and the
+ * one a schema of the payload — an order, a string — does not have.
+ */
+function describesServerSentEvent(schema: SwaggerDefinition, resolveRef: ResolveRef, depth = 0): boolean {
+    const resolved = schema.$ref ? resolveRef(schema.$ref) : schema;
+    if (!resolved || depth > 8) {
+        return false;
+    }
+    if (resolved.properties && Object.prototype.hasOwnProperty.call(resolved.properties, "data")) {
+        return true;
+    }
+    return [...(resolved.allOf ?? []), ...(resolved.oneOf ?? []), ...(resolved.anyOf ?? [])].some((branch) =>
+        describesServerSentEvent(branch, resolveRef, depth + 1),
+    );
+}
+
+/**
+ * What the reader of an event stream emits, as a schema: the type of the
+ * items where the spec's own schema describes something else. The same shape
+ * as the `ServerSentEvent` interface of the generated `utils/http-stream.ts`.
+ */
+function serverSentEventSchema(): SwaggerDefinition {
+    return {
+        type: "object",
+        required: ["data"],
+        properties: {
+            data: { type: "string" },
+            event: { type: "string" },
+            id: { type: "string" },
+            retry: { type: "integer" },
+        },
+    };
 }
 
 /**

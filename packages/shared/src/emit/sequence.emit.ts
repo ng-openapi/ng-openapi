@@ -14,6 +14,9 @@ const SEQUENCE_READERS: Record<SequenceFormat, { stream: string; parse: string }
     "event-stream": { stream: "streamServerSentEvents", parse: "parseServerSentEvents" },
 };
 
+/** The type of one Server-Sent Event, as the generated `utils/http-stream.ts` exports it. */
+const SERVER_SENT_EVENT_TYPE = "ServerSentEvent";
+
 /** The RxJS operator that emits the items of a streamed response as they arrive. */
 export function emitSequenceStreamOperator(format: SequenceFormat, itemType: string): string {
     return `${SEQUENCE_READERS[format].stream}<${itemType}>()`;
@@ -32,6 +35,9 @@ export function getStreamItemType(
     sequence: NormalizedResponseSequence | undefined,
     config: TypeMappingConfig,
 ): string | undefined {
+    if (sequence?.itemsArePlainEvents) {
+        return SERVER_SENT_EVENT_TYPE;
+    }
     const itemSchema = sequence?.itemSchema;
     return itemSchema ? getTypeScriptType(itemSchema, config, itemSchema.nullable) : undefined;
 }

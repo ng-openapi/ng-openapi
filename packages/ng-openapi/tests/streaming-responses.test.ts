@@ -285,6 +285,10 @@ describe("sequential media types that are described another way", () => {
             "/parts": get("mixedParts", content("multipart/mixed", { itemSchema: item })),
             // An inline item schema.
             "/inline": get("inlineItems", content("application/x-ndjson", { itemSchema: { type: "integer" } })),
+            // How a stream of items was written before `itemSchema`: the schema of one of them.
+            "/legacy-items": get("legacyItems", content("application/x-ndjson", { schema: item })),
+            // The schema of the payload, where the items are the events that carry it.
+            "/entry-events": get("entryEvents", content("text/event-stream", { itemSchema: item })),
         },
         components: { schemas: { Entry: { type: "object", properties: { id: { type: "string" } } } } },
     };
@@ -323,6 +327,40 @@ describe("sequential media types that are described another way", () => {
             expect.stringContaining(
                 'The "200" response of mixedParts ((GET) /parts) declares `itemSchema` for multipart/mixed, which ' +
                     "no stream is generated for",
+            ),
+        ]);
+    });
+
+    it("streams the items of a response whose schema describes one of them", async () => {
+        const { output, result, service } = await generate("sequence-legacy-items-", { spec });
+        const legacyItems = methodSource(service("feed"), "legacyItems");
+
+        // Typed as before, and now true: each emission is an Entry, not the text of them all.
+        expect(signatures(service("feed"), "legacyItems")).toEqual([
+            "    legacyItems(options?: RequestOptions<'text'>): Observable<Entry> {",
+        ]);
+        expect(legacyItems).toContain(".pipe(streamJsonLines<Entry>())");
+        expect(result.warnings.filter((warning) => warning.includes("legacyItems"))).toEqual([]);
+
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("types the items of an event stream as events when the schema describes the payload", async () => {
+        const { output, result, service } = await generate("sequence-payload-schema-", { spec });
+
+        // What the reader emits, by the name the generated helper gives it. Not Entry.
+        expect(signatures(service("feed"), "entryEvents")).toEqual([
+            "    entryEvents(options?: RequestOptions<'text'>): Observable<ServerSentEvent> {",
+        ]);
+        expect(methodSource(service("feed"), "entryEvents")).toContain(
+            ".pipe(streamServerSentEvents<ServerSentEvent>())",
+        );
+        expectGeneratedCodeCompiles(output);
+        // Wording is pinned in shared/tests/normalize.test.ts.
+        expect(result.warnings.filter((warning) => warning.includes("entryEvents"))).toEqual([
+            expect.stringContaining(
+                'The "200" response of entryEvents ((GET) /entry-events) describes the items of text/event-stream ' +
+                    "with a schema that has no `data` property.",
             ),
         ]);
     });

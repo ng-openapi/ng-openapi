@@ -64,7 +64,7 @@ export class HttpResourceGenerator implements IPluginGenerator {
             if (operation.responseSequence?.itemSchema) {
                 this.onWarning?.(
                     `No resource is generated for ${describeOperation(operation)}: its response is a stream of ` +
-                        "items (`itemSchema`), and an httpResource holds one value, not a series. " +
+                        "items, and an httpResource holds one value, not a series. " +
                         (this.config.options.generateServices === false
                             ? "Enable `generateServices` to get it as a service method that emits each item."
                             : "Use the generated service method, which emits each item as it arrives."),

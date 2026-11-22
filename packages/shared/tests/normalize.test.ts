@@ -308,7 +308,15 @@ describe("normalizeSpec: responses in a sequential media type", () => {
         openapi: "3.2.0",
         paths: {
             "/stream": get("stream", { "application/jsonl": { itemSchema: entry } }),
-            "/events": get("events", { "text/event-stream": { itemSchema: { type: ["object", "null"] } } }, "201"),
+            "/events": get(
+                "events",
+                {
+                    "text/event-stream": {
+                        itemSchema: { type: ["object", "null"], properties: { data: { type: "string" } } },
+                    },
+                },
+                "201",
+            ),
             // Several sequential types, as in the specification's own example: the first is read.
             "/any-format": get("anyFormat", {
                 "application/json-seq": { itemSchema: entry },
@@ -324,6 +332,13 @@ describe("normalizeSpec: responses in a sequential media type", () => {
             // The usual pre-3.2 spelling of a stream: text, and it stays text.
             "/legacy": get("legacy", { "text/event-stream": { schema: { type: "string" } } }),
             "/untyped": get("untyped", { "application/jsonl": {} }),
+            "/empty-schema": get("emptySchema", { "application/jsonl": { schema: {} } }),
+            // The other pre-3.2 spelling: the schema of one item, where there are many.
+            "/legacy-items": get("legacyItems", { "application/x-ndjson": { schema: entry } }),
+            "/legacy-records": get("legacyRecords", {
+                "application/json-seq": { schema: { type: "object", properties: { n: { type: "integer" } } } },
+            }),
+            "/legacy-numbers": get("legacyNumbers", { "application/jsonl": { schema: { type: "integer" } } }),
             // A JSON or binary representation is read first, as it always was.
             "/json-first": get("jsonFirst", {
                 "application/jsonl": { itemSchema: entry },
@@ -357,7 +372,7 @@ describe("normalizeSpec: responses in a sequential media type", () => {
         expect(op("events").responseSequence).toEqual({
             format: "event-stream",
             contentType: "text/event-stream",
-            itemSchema: { type: "object", nullable: true },
+            itemSchema: { type: "object", nullable: true, properties: { data: { type: "string" } } },
         });
     });
 
@@ -379,7 +394,22 @@ describe("normalizeSpec: responses in a sequential media type", () => {
         expect(op("both").responseSequence?.itemSchema).toEqual(entry);
     });
 
-    it.each(["legacy", "untyped"])("leaves %s as the text it is typed as", (operationId) => {
+    it("reads a schema that describes one item as the schema of each: a stream", () => {
+        expect(op("legacyItems")).toMatchObject({
+            responseType: "text",
+            acceptHeader: "application/x-ndjson",
+            responseSequence: { format: "json-lines", contentType: "application/x-ndjson", itemSchema: entry },
+        });
+        expect(op("legacyRecords").responseSequence).toEqual({
+            format: "json-seq",
+            contentType: "application/json-seq",
+            itemSchema: { type: "object", properties: { n: { type: "integer" } } },
+        });
+        expect(op("legacyNumbers").responseSequence?.itemSchema).toEqual({ type: "integer" });
+        expect([...about("legacyItems"), ...about("legacyRecords"), ...about("legacyNumbers")]).toEqual([]);
+    });
+
+    it.each(["legacy", "untyped", "emptySchema"])("leaves %s as the text it is typed as", (operationId) => {
         expect(op(operationId).responseSequence).toBeUndefined();
         expect(op(operationId).responseType).toBe("text");
         expect(about(operationId)).toEqual([]);
@@ -410,6 +440,90 @@ describe("normalizeSpec: responses in a sequential media type", () => {
     it("leaves an ordinary response alone", () => {
         expect(op("plain").responseSequence).toBeUndefined();
         expect(op("plain").responseType).toBe("json");
+    });
+});
+
+describe("normalizeSpec: what the items of an event stream are", () => {
+    const order = { $ref: "#/components/schemas/Order" };
+    const event = { $ref: "#/components/schemas/OrderEvent" };
+    const get = (operationId: string, mediaType: object) => ({
+        get: { operationId, responses: { "200": { description: "ok", content: { "text/event-stream": mediaType } } } },
+    });
+    const spec = {
+        openapi: "3.2.0",
+        paths: {
+            "/events": get("events", { itemSchema: event }),
+            // As the specification's own example is written: one branch per kind of event.
+            "/kinds": get("kinds", { itemSchema: { oneOf: [event, { $ref: "#/components/schemas/Heartbeat" }] } }),
+            "/inherited": get("inherited", { itemSchema: { allOf: [event] } }),
+            // Written with `schema`, before `itemSchema` existed.
+            "/legacy-events": get("legacyEvents", { schema: event }),
+            // The payload, not the event that carries it.
+            "/orders": get("orders", { itemSchema: order }),
+            "/legacy-orders": get("legacyOrders", { schema: order }),
+            "/strings": get("strings", { itemSchema: { type: "string" } }),
+        },
+        components: {
+            schemas: {
+                Order: { type: "object", properties: { id: { type: "string" }, total: { type: "number" } } },
+                OrderEvent: {
+                    type: "object",
+                    required: ["data"],
+                    properties: { event: { type: "string" }, data: { type: "string" } },
+                },
+                Heartbeat: { type: "object", properties: { event: { type: "string" } } },
+            },
+        },
+    } as unknown as SwaggerSpec;
+    const warnings: string[] = [];
+    const normalized = normalizeSpec(spec, (message) => warnings.push(message));
+    const op = (operationId: string) => normalized.operations.find((o) => o.operationId === operationId)!;
+    const about = (operationId: string) => warnings.filter((warning) => warning.includes(`${operationId} (`));
+    const serverSentEvent = {
+        type: "object",
+        required: ["data"],
+        properties: {
+            data: { type: "string" },
+            event: { type: "string" },
+            id: { type: "string" },
+            retry: { type: "integer" },
+        },
+    };
+
+    it.each(["events", "kinds", "inherited", "legacyEvents"])(
+        "types %s from a schema that describes the event",
+        (operationId) => {
+            const sequence = op(operationId).responseSequence;
+            expect(sequence?.format).toBe("event-stream");
+            expect(sequence?.itemSchema).not.toEqual(serverSentEvent);
+            expect(sequence?.itemSchema).toBeDefined();
+            expect(sequence?.itemsArePlainEvents).toBeUndefined();
+            expect(about(operationId)).toEqual([]);
+        },
+    );
+
+    it.each(["orders", "legacyOrders", "strings"])(
+        "types %s as the events they are, not as a schema without `data`",
+        (operationId) => {
+            expect(op(operationId).responseSequence).toEqual({
+                format: "event-stream",
+                contentType: "text/event-stream",
+                itemSchema: serverSentEvent,
+                itemsArePlainEvents: true,
+            });
+            expect(about(operationId)).toHaveLength(1);
+        },
+    );
+
+    it("says that the schema is not used, and what is emitted instead", () => {
+        expect(about("orders")).toEqual([
+            'The "200" response of orders ((GET) /orders) describes the items of text/event-stream with a schema ' +
+                "that has no `data` property. An item of that format is an event — its `data`, `event`, `id` and " +
+                "`retry` fields — and `data` is the text the server sent, so the schema cannot describe what the " +
+                "stream emits. Generated methods emit the events as `ServerSentEvent` (`{ data: string; event?: " +
+                "string; id?: string; retry?: number }`), and the schema is not used. Describe the event, with " +
+                "the payload as its `data`, to have it typed.",
+        ]);
     });
 });
 

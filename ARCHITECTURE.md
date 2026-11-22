@@ -114,7 +114,12 @@ Every generation run flows through the same stages:
   A success response in a sequential media type (JSON Lines, JSON text
   sequences, Server-Sent Events) is recorded as `responseSequence`: with
   OpenAPI 3.2's `itemSchema` it is a stream, with an array `schema` it is
-  complete. Either way it is fetched as text — `JSON.parse` fails on the
+  complete. A `schema` that describes one value rather than an array of
+  them is read as the item schema too: that is how a stream was written
+  before 3.2, and the one reading under which the type is true. The items
+  of an event stream are events, so a schema there that has no `data`
+  property is warned about and replaced by the event's own shape. Either
+  way the response is fetched as text — `JSON.parse` fails on the
   second item — and split by the readers of the generated
   `utils/http-stream.ts`, whose names both clients take from
   `emit/sequence.emit.ts`. The date interceptor converts JSON bodies and

@@ -4,7 +4,7 @@ import "@angular/compiler";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { HttpEvent, HttpEventType, HttpResponse } from "@angular/common/http";
+import { HttpErrorResponse, HttpEvent, HttpEventType, HttpHeaderResponse, HttpResponse } from "@angular/common/http";
 import { Observable, of, OperatorFunction, Subject } from "rxjs";
 import { createOutputDirs, fixturePath } from "@ng-openapi/testing";
 import { generateFromConfig } from "ng-openapi";
@@ -45,6 +45,8 @@ const progress = (partialText: string): HttpEvent<string> =>
     ({ type: HttpEventType.DownloadProgress, loaded: partialText.length, partialText }) as HttpEvent<string>;
 const response = (body: string): HttpEvent<string> => new HttpResponse({ body, status: 200 });
 const sent: HttpEvent<string> = { type: HttpEventType.Sent };
+/** The status line and headers, which both backends emit before any progress. */
+const header = (status: number): HttpEvent<string> => new HttpHeaderResponse({ status });
 
 /** Subscribes, and records what was emitted after each event that is pushed. */
 function collect<T>(operator: OperatorFunction<HttpEvent<string>, T>) {
@@ -131,6 +133,88 @@ describe("generated http-stream helper: JSON Lines", () => {
         expect(cancelled.observed).toBe(true);
         cancelled.subscription.unsubscribe();
         expect(cancelled.observed).toBe(false);
+    });
+});
+
+/**
+ * The backends report the body of a 4xx or 5xx response as progress as well,
+ * and only then fail the request. Those events are what these tests push.
+ */
+describe("generated http-stream helper: a response that is not the stream", () => {
+    it("does not read the body of an error response as items", () => {
+        const stream = collect(httpStream.streamJsonLines<{ n: number }>());
+        const failure = new HttpErrorResponse({ status: 500, error: '{"message":"boom"}\n' });
+
+        stream.push(sent);
+        stream.push(header(500));
+        // A JSON line, as far as the format goes: it is an error message all the same.
+        expect(stream.push(progress('{"message":"boom"}\n'))).toEqual([]);
+        stream.fail(failure);
+
+        expect(stream.items).toEqual([]);
+        expect(stream.error).toBe(failure);
+    });
+
+    it("passes the error on when its body is nothing the format could read", () => {
+        const stream = collect(httpStream.streamJsonLines());
+        const failure = new HttpErrorResponse({ status: 502 });
+
+        stream.push(sent);
+        stream.push(header(502));
+        stream.push(progress("<html><body>502 Bad Gateway</body></html>\n"));
+
+        // No SyntaxError, and the request is still subscribed to: whatever
+        // sits between the backend and the caller sees the error it sends.
+        expect(stream.error).toBeUndefined();
+        expect(stream.observed).toBe(true);
+        stream.fail(failure);
+        expect(stream.error).toBe(failure);
+    });
+
+    it("reads a request that is sent again from the start of the new response", () => {
+        const stream = collect(httpStream.streamJsonLines<{ n: number }>());
+
+        // What an interceptor that retries produces: the events of both attempts.
+        stream.push(sent);
+        stream.push(header(503));
+        stream.push(progress('{"message":"try again in a moment"}\n'));
+        stream.push(sent);
+        stream.push(header(200));
+        expect(stream.push(progress('{"n":1}\n'))).toEqual([{ n: 1 }]);
+        expect(stream.push(response('{"n":1}\n{"n":2}\n'))).toEqual([{ n: 1 }, { n: 2 }]);
+        stream.end();
+
+        expect(stream.error).toBeUndefined();
+        expect(stream.completed).toBe(true);
+    });
+
+    it("reads a second attempt from its start even when the first was being read", () => {
+        const stream = collect(httpStream.streamJsonLines<{ n: number }>());
+
+        stream.push(sent);
+        stream.push(header(200));
+        stream.push(progress('{"n":1}\n{"n":2}\n{"n"'));
+        // The connection dropped and the request was sent again.
+        stream.push(sent);
+        stream.push(header(200));
+        expect(stream.push(progress('{"n":7}\n'))).toEqual([{ n: 1 }, { n: 2 }, { n: 7 }]);
+
+        expect(stream.error).toBeUndefined();
+    });
+
+    it("holds for every format", () => {
+        const events = collect(httpStream.streamServerSentEvents());
+        events.push(header(500));
+        expect(events.push(progress("data: internal error\n\n"))).toEqual([]);
+
+        const records = collect(httpStream.streamJsonSequence());
+        records.push(header(404));
+        expect(records.push(progress('\u001e{"message":"not found"}\n'))).toEqual([]);
+    });
+
+    it("reads progress that comes without a status, as a custom backend may send it", () => {
+        const stream = collect(httpStream.streamJsonLines<{ n: number }>());
+        expect(stream.push(progress('{"n":1}\n'))).toEqual([{ n: 1 }]);
     });
 });
 

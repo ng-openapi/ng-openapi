@@ -179,6 +179,12 @@ function parseServerSentEvent(block: string): ServerSentEvent | undefined {
  * have become complete since the last one are emitted, one at a time. An item
  * that is not what its format says fails the stream, after the items before it.
  *
+ * Only a successful response is read. The backends report the body of a 4xx
+ * or 5xx response as progress too, before they fail the request with it: that
+ * text is an error message, not items, and the stream passes the error on as
+ * it is. Each attempt is read from its start, so a request an interceptor
+ * sends again is not read from where the attempt before it stopped.
+ *
  * HttpClient keeps the whole text of a response in memory until it ends, so a
  * stream that never ends grows for as long as it is subscribed to.
  */
@@ -186,6 +192,8 @@ function streamItems<T>(reader: SequenceReader<T>): OperatorFunction<HttpEvent<s
     return (source) =>
         new Observable<T>((subscriber) => {
             let consumed = 0;
+            // Whether the response the progress events belong to is one to read.
+            let readable = true;
             const read = (text: string, final: boolean): void => {
                 const chunk = reader.split(text.slice(consumed), final);
                 consumed += chunk.consumed;
@@ -199,7 +207,15 @@ function streamItems<T>(reader: SequenceReader<T>): OperatorFunction<HttpEvent<s
             return source.subscribe({
                 next: (event) => {
                     try {
-                        if (event.type === HttpEventType.DownloadProgress) {
+                        if (event.type === HttpEventType.Sent) {
+                            // A new attempt: nothing of it has been read yet.
+                            consumed = 0;
+                            readable = true;
+                        } else if (event.type === HttpEventType.ResponseHeader) {
+                            // Both backends send the status before any progress.
+                            consumed = 0;
+                            readable = event.ok;
+                        } else if (event.type === HttpEventType.DownloadProgress && readable) {
                             const partialText = (event as HttpDownloadProgressEvent).partialText;
                             if (partialText !== undefined) {
                                 read(partialText, false);

@@ -35,9 +35,9 @@ describe("httpResource and sequential responses (#136)", () => {
         expect(orders).not.toContain("streamOrders(");
         expect(orders).not.toContain("watchOrderEvents(");
         expect(aboutStreams).toEqual([
-            "No resource is generated for streamOrders ((GET) /orders/feed): its response is a stream of items " +
-                "(`itemSchema`), and an httpResource holds one value, not a series. Use the generated service " +
-                "method, which emits each item as it arrives.",
+            "No resource is generated for streamOrders ((GET) /orders/feed): its response is a stream of items, " +
+                "and an httpResource holds one value, not a series. Use the generated service method, which emits " +
+                "each item as it arrives.",
             expect.stringContaining("No resource is generated for watchOrderEvents ((GET) /orders/events)"),
         ]);
         // The service has them.
