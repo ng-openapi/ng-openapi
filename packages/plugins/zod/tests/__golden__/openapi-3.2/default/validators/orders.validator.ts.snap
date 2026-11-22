@@ -21,3 +21,13 @@ export const exportOrdersBody = z.object({
     "statuses": z.array(z.enum(['open', 'shipped', 'cancelled'])).optional()
 });
 export type ExportOrdersBody = z.infer<typeof exportOrdersBody>;
+export const streamOrdersQueryParams = z.object({
+    "status": z.enum(['open', 'shipped', 'cancelled']).optional()
+});
+export type StreamOrdersQueryParams = z.infer<typeof streamOrdersQueryParams>;
+export const replayOrdersBody = z.object({
+    "from": z.date(),
+    "to": z.date(),
+    "statuses": z.array(z.enum(['open', 'shipped', 'cancelled'])).optional()
+});
+export type ReplayOrdersBody = z.infer<typeof replayOrdersBody>;

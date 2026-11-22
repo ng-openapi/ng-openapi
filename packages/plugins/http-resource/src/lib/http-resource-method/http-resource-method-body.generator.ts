@@ -4,15 +4,18 @@ import {
     deriveLocalName,
     emitDefaultHeadersMerge,
     emitMultipartFormData,
+    emitSequenceParser,
     emitSignalAwareQueryParams,
     emitUrlEncodedFormBody,
     emitUrlExpression,
+    getResponseType,
     joinRequestOptionEntries,
     MethodGenOptions,
     NormalizedOperation,
     QueryStringEmit,
     RESOURCE_ARGUMENT_PROFILE,
     resolveArgumentNames,
+    revivesDates,
     signalAwareParamValue,
 } from "@ng-openapi/shared";
 
@@ -187,6 +190,37 @@ export class HttpResourceMethodBodyGenerator {
 }`;
     }
 
+    /**
+     * The options handed to httpResource. A response in a sequential media
+     * type that is declared complete is fetched as text and split into its
+     * items by a default `parse`; the caller's own options come after it, so
+     * a `parse` of theirs replaces it.
+     */
+    private resourceOptionsArgument(operation: NormalizedOperation): string {
+        const sequence = operation.responseSequence;
+        if (!sequence || sequence.itemSchema) {
+            return "resourceOptions";
+        }
+        // The return type is spelled out: left to inference, the parser's own
+        // type parameter would make the resource one of `unknown[]`.
+        const itemsType = this.sequenceItemsType(operation);
+        const items = `${emitSequenceParser(sequence.format)}(text)`;
+        // Parsed from text, so the date interceptor has not converted them.
+        const parsed = revivesDates(operation, this.config) ? `this.reviveDates(${items})` : items;
+        return `{ parse: (text: string): ${itemsType} => ${parsed}, ...resourceOptions }`;
+    }
+
+    /** The array a complete sequential response is declared as: the type of the response it was found on. */
+    private sequenceItemsType(operation: NormalizedOperation): string {
+        for (const statusCode of ["200", "201", "202", "204", "206"]) {
+            const response = operation.responses?.[statusCode];
+            if (response) {
+                return getResponseType(response, this.config);
+            }
+        }
+        return "unknown[]";
+    }
+
     private generateHttpResource(operation: NormalizedOperation): string {
         const body = this.resourceBody(operation);
         const queryString = this.queryString(operation);
@@ -208,6 +242,6 @@ export class HttpResourceMethodBodyGenerator {
         // is the single authority for generated-code layout.
         return `return ${httpResource}(() => {${queryParams}${queryString?.setup ?? ""}${body?.setup ?? ""}
 ${resourceOptions}
-}, resourceOptions);`;
+}, ${this.resourceOptionsArgument(operation)});`;
     }
 }

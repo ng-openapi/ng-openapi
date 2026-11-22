@@ -5,4 +5,5 @@ export * from "./main-index.generator";
 export * from "./provider.generator";
 export * from "./base-interceptor.generator";
 export * from "./http-params-builder.generator";
+export * from "./http-stream.generator";
 export * from "./package-scaffold.generator";

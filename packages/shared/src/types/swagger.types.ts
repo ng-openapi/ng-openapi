@@ -11,6 +11,17 @@ import {
 } from "swagger-schema-official";
 
 /**
+ * One entry of a `content` map: how a body, response or parameter looks in
+ * one media type. `itemSchema` is OpenAPI 3.2's schema for each item of a
+ * sequential media type (JSON Lines, Server-Sent Events), where `schema`
+ * describes the content as a whole.
+ */
+export interface MediaTypeObject {
+    schema?: SwaggerDefinition;
+    itemSchema?: SwaggerDefinition;
+}
+
+/**
  * An operation parameter. OpenAPI 3.x carries the type in `schema`;
  * Swagger 2.0 puts `type`/`format` directly on the parameter — consumers
  * must handle both (or use the normalized model, which precomputes them).
@@ -25,7 +36,7 @@ export interface Parameter {
     required?: boolean;
     schema?: SwaggerDefinition;
     /** The parameter as one media type (a single entry), instead of `schema`. */
-    content?: Record<string, { schema?: SwaggerDefinition }>;
+    content?: Record<string, MediaTypeObject>;
     type?: string;
     format?: string;
     description?: string;
@@ -54,7 +65,7 @@ export interface PathInfo {
  */
 export interface RequestBody {
     required?: boolean;
-    content?: Record<string, { schema?: SwaggerDefinition }>;
+    content?: Record<string, MediaTypeObject>;
 }
 
 /**
@@ -64,7 +75,7 @@ export interface RequestBody {
  */
 export interface SwaggerResponse {
     description?: string;
-    content?: Record<string, { schema?: SwaggerDefinition }>;
+    content?: Record<string, MediaTypeObject>;
 }
 
 /** OpenAPI 3.x security scheme (subset of the spec's fields). */

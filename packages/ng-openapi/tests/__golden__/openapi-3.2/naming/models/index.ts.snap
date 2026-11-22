@@ -66,6 +66,13 @@ export interface OrderDto {
     placedAt?: string;
 }
 
+export interface OrderEventDto {
+    event?: 'created' | 'shipped' | 'cancelled';
+    data: string;
+    id?: string;
+    retry?: number;
+}
+
 export interface OrderExportRequestDto {
     from: string;
     to: string;

@@ -146,7 +146,11 @@ describe("getResponseInfoFromResponse", () => {
             getResponseInfoFromResponse({
                 content: { "application/vnd.users+json;version=1.0": { schema: { type: "object" } } },
             }),
-        ).toEqual({ responseType: "json", acceptHeader: "application/vnd.users+json;version=1.0" });
+        ).toEqual({
+            responseType: "json",
+            acceptHeader: "application/vnd.users+json;version=1.0",
+            contentType: "application/vnd.users+json;version=1.0",
+        });
     });
 
     it("joins every content type that agrees with the chosen responseType, winner first", () => {
@@ -158,7 +162,11 @@ describe("getResponseInfoFromResponse", () => {
                     "application/hal+json": { schema: { type: "object" } },
                 },
             }),
-        ).toEqual({ responseType: "json", acceptHeader: "application/json, application/hal+json" });
+        ).toEqual({
+            responseType: "json",
+            acceptHeader: "application/json, application/hal+json",
+            contentType: "application/json",
+        });
     });
 
     it("excludes content types the generated method could not parse", () => {
@@ -169,13 +177,13 @@ describe("getResponseInfoFromResponse", () => {
                     "application/octet-stream": {},
                 },
             }),
-        ).toEqual({ responseType: "json", acceptHeader: "application/json" });
+        ).toEqual({ responseType: "json", acceptHeader: "application/json", contentType: "application/json" });
     });
 
     it("keeps the json content type when a primitive schema downgrades parsing to text", () => {
         expect(
             getResponseInfoFromResponse({ content: { "application/json": { schema: { type: "string" } } } }),
-        ).toEqual({ responseType: "text", acceptHeader: "application/json" });
+        ).toEqual({ responseType: "text", acceptHeader: "application/json", contentType: "application/json" });
     });
 
     it("leaves acceptHeader unset for missing or empty content", () => {

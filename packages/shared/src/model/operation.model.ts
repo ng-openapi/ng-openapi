@@ -1,4 +1,5 @@
 import type { Parameter, PathInfo, SwaggerDefinition } from "../types/swagger.types";
+import type { SequenceFormat } from "../utils/functions/media-types";
 
 export type ResponseKind = "json" | "blob" | "arraybuffer" | "text";
 
@@ -7,6 +8,37 @@ export type ResponseKind = "json" | "blob" | "arraybuffer" | "text";
  * value serialized as JSON, a form sent field by field, a string, or a Blob.
  */
 export type RequestBodyKind = "json" | "multipart" | "urlencoded" | "text" | "binary";
+
+/**
+ * A success response in a sequential media type: a series of items — one JSON
+ * document per line, JSON text sequences, Server-Sent Events — rather than
+ * one document. `HttpClient` has no parser for any of them, so it is fetched
+ * as text and split by the generated client.
+ */
+export interface NormalizedResponseSequence {
+    format: SequenceFormat;
+    /** The content key it is declared under: the one type the request accepts. */
+    contentType: string;
+    /**
+     * Schema of one item: OpenAPI 3.2's `itemSchema`, or a `schema` that
+     * describes one value rather than an array of them, which is how a stream
+     * was written before 3.2. Set, the response is a stream: the method emits
+     * each item as it arrives. Unset, the response is declared complete, with
+     * an array `schema`, and the method emits that array once the response
+     * has ended.
+     *
+     * For Server-Sent Events it is the schema of the event. One the spec
+     * wrote for something else — the payload — is replaced by the shape of an
+     * event, because that is what the stream emits (see `itemsArePlainEvents`).
+     */
+    itemSchema?: SwaggerDefinition;
+    /**
+     * Set on an event stream whose schema did not describe the event. Its
+     * items are typed as the `ServerSentEvent` that the generated
+     * `utils/http-stream.ts` exports, which `itemSchema` then restates.
+     */
+    itemsArePlainEvents?: boolean;
+}
 
 /**
  * An OpenAPI 3.2 `in: querystring` parameter that is sent in one piece: its
@@ -88,4 +120,6 @@ export interface NormalizedOperation extends PathInfo {
      * types that agree with responseType (unset when none are declared).
      */
     acceptHeader?: string;
+    /** Set when that response is a sequence of items; `responseType` is then "text". */
+    responseSequence?: NormalizedResponseSequence;
 }

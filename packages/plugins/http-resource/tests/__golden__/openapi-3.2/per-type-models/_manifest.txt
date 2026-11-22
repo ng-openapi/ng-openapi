@@ -1,5 +1,6 @@
 index.ts
 models/index.ts
+models/order-event.ts
 models/order-export-request.ts
 models/order-status.ts
 models/order.ts
@@ -25,3 +26,4 @@ utils/base-interceptor.ts
 utils/date-transformer.ts
 utils/file-download.ts
 utils/http-params-builder.ts
+utils/http-stream.ts

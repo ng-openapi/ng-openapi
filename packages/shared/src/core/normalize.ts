@@ -5,12 +5,25 @@ import { describeOperation } from "../errors";
 import { createComponentResolvers } from "../utils/functions/component-resolver";
 import { extractPaths } from "../utils/functions/extract-paths";
 import { getResponseInfoFromResponse } from "../utils/functions/extract-swagger-response-type";
-import { bodyMediaFamily, isMediaTypeRange, mediaTypeEssence } from "../utils/functions/media-types";
+import { bodyMediaFamily, isMediaTypeRange, mediaTypeEssence, sequenceFormat } from "../utils/functions/media-types";
 import type { ResponseTypeInfo } from "../utils/functions/extract-swagger-response-type";
 import { resolveEnumMemberNames } from "./enum-member-names";
 import type { EnumNamingOptions } from "../types/config.types";
-import type { Parameter, PathInfo, RequestBody, SwaggerDefinition, SwaggerSpec } from "../types/swagger.types";
-import type { NormalizedOperation, NormalizedQueryString, RequestBodyKind } from "../model/operation.model";
+import type {
+    MediaTypeObject,
+    Parameter,
+    PathInfo,
+    RequestBody,
+    SwaggerDefinition,
+    SwaggerResponse,
+    SwaggerSpec,
+} from "../types/swagger.types";
+import type {
+    NormalizedOperation,
+    NormalizedQueryString,
+    NormalizedResponseSequence,
+    RequestBodyKind,
+} from "../model/operation.model";
 import type { NormalizedSpec } from "../model/spec.model";
 
 type ResolveRef = (ref: string) => SwaggerDefinition | undefined;
@@ -203,13 +216,19 @@ function normalizeOperationSchemas(operation: PathInfo): PathInfo {
 }
 
 function normalizeContentSchemas(
-    content: Record<string, { schema?: SwaggerDefinition }> | undefined,
-): Record<string, { schema?: SwaggerDefinition }> | undefined {
+    content: Record<string, MediaTypeObject> | undefined,
+): Record<string, MediaTypeObject> | undefined {
     if (!content) return content;
     return Object.fromEntries(
         Object.entries(content).map(([contentType, mediaType]) => [
             contentType,
-            mediaType?.schema ? { ...mediaType, schema: normalizeSchema(mediaType.schema) } : mediaType,
+            mediaType?.schema || mediaType?.itemSchema
+                ? {
+                      ...mediaType,
+                      ...(mediaType.schema ? { schema: normalizeSchema(mediaType.schema) } : {}),
+                      ...(mediaType.itemSchema ? { itemSchema: normalizeSchema(mediaType.itemSchema) } : {}),
+                  }
+                : mediaType,
         ]),
     );
 }
@@ -234,7 +253,7 @@ function normalizeOperation(
             ? resolveBodySchema(operation.requestBody, urlEncodedKey, resolveRef)
             : undefined;
 
-    const responseInfo = determineResponseInfo(operation);
+    const responseInfo = determineResponseInfo(operation, resolveRef, onWarning);
 
     const pathParams = operation.parameters?.filter((p) => p.in === "path") || [];
     const declaredQueryParams = operation.parameters?.filter((p) => p.in === "query") || [];
@@ -287,6 +306,7 @@ function normalizeOperation(
         urlEncodedFields,
         responseType: responseInfo.responseType,
         acceptHeader: responseInfo.acceptHeader,
+        responseSequence: responseInfo.sequence,
     };
 }
 
@@ -662,17 +682,157 @@ function resolveBodySchema(
     return schema?.$ref ? resolveRef(schema.$ref) : schema;
 }
 
-function determineResponseInfo(operation: PathInfo): ResponseTypeInfo {
+function determineResponseInfo(
+    operation: PathInfo,
+    resolveRef: ResolveRef,
+    onWarning?: (message: string) => void,
+): ResponseTypeInfo & { sequence?: NormalizedResponseSequence } {
     const successResponses = ["200", "201", "202", "204", "206"];
 
     for (const statusCode of successResponses) {
         const response = operation.responses?.[statusCode];
         if (!response) continue;
 
-        return getResponseInfoFromResponse(response);
+        const info = getResponseInfoFromResponse(response);
+        const sequence = resolveResponseSequence(operation, statusCode, response, info, resolveRef, onWarning);
+        warnAboutUnusedItemSchemas(operation, statusCode, response, info, sequence, onWarning);
+        // One format is read, so one content type is asked for: advertising
+        // the other sequential types the response lists would invite a body
+        // the generated reader cannot split.
+        return sequence ? { ...info, acceptHeader: sequence.contentType, sequence } : info;
     }
 
     return { responseType: "json" };
+}
+
+/**
+ * Whether the success response is read as a sequence of items, and how. It is
+ * when the content type the response is read as (the priority winner: a JSON
+ * or binary alternative still comes first) is a sequential media type, and
+ * the spec says what the items are:
+ *
+ * - with OpenAPI 3.2's `itemSchema`, each item — the response is a stream;
+ * - with an array `schema`, all of them — the response is complete, and is
+ *   parsed into that array when it has ended;
+ * - with any other `schema` that describes a value (`$ref: Order` under
+ *   `application/x-ndjson`), each item again. That is how a stream of items
+ *   was written before 3.2 gave it a keyword, and the one reading under
+ *   which the type holds: the body is many of them, not one.
+ *
+ * A sequential media type whose `schema` is a string, or which has none
+ * (`text/event-stream` with `schema: { type: string }`, the other pre-3.2
+ * spelling), stays what it is typed as: the text of the response.
+ *
+ * The items of an event stream are events, whatever the schema says: see
+ * `serverSentEventSchema`.
+ */
+function resolveResponseSequence(
+    operation: PathInfo,
+    statusCode: string,
+    response: SwaggerResponse,
+    info: ResponseTypeInfo,
+    resolveRef: ResolveRef,
+    onWarning?: (message: string) => void,
+): NormalizedResponseSequence | undefined {
+    const contentType = info.contentType;
+    const format = contentType !== undefined && info.responseType === "text" ? sequenceFormat(contentType) : undefined;
+    if (contentType === undefined || format === undefined) {
+        return undefined;
+    }
+    const mediaType = response.content?.[contentType];
+    const schema = mediaType?.schema?.$ref ? resolveRef(mediaType.schema.$ref) : mediaType?.schema;
+    if (!mediaType?.itemSchema && schema?.type === "array") {
+        return { format, contentType };
+    }
+    const describesItem = schema !== undefined && schema.type !== "string" && Object.keys(schema).length > 0;
+    const declared = mediaType?.itemSchema ?? (describesItem ? mediaType?.schema : undefined);
+    if (!declared) {
+        return undefined;
+    }
+    if (format !== "event-stream" || describesServerSentEvent(declared, resolveRef)) {
+        return { format, contentType, itemSchema: declared };
+    }
+    onWarning?.(
+        `The "${statusCode}" response of ${describeOperation(operation)} describes the items of ${contentType} ` +
+            "with a schema that has no `data` property. An item of that format is an event — its `data`, `event`, " +
+            "`id` and `retry` fields — and `data` is the text the server sent, so the schema cannot describe what " +
+            "the stream emits. Generated methods emit the events as `ServerSentEvent` (`{ data: string; event?: " +
+            "string; id?: string; retry?: number }`), and the schema is not used. Describe the event, with the " +
+            "payload as its `data`, to have it typed.",
+    );
+    return { format, contentType, itemSchema: serverSentEventSchema(), itemsArePlainEvents: true };
+}
+
+/**
+ * Whether a schema describes a Server-Sent Event rather than something else:
+ * it has a `data` property, itself or in a branch of a composition, behind
+ * any `$ref`. `data` is the one field an event cannot be without, and the
+ * one a schema of the payload — an order, a string — does not have.
+ */
+function describesServerSentEvent(schema: SwaggerDefinition, resolveRef: ResolveRef, depth = 0): boolean {
+    const resolved = schema.$ref ? resolveRef(schema.$ref) : schema;
+    if (!resolved || depth > 8) {
+        return false;
+    }
+    if (resolved.properties && Object.prototype.hasOwnProperty.call(resolved.properties, "data")) {
+        return true;
+    }
+    return [...(resolved.allOf ?? []), ...(resolved.oneOf ?? []), ...(resolved.anyOf ?? [])].some((branch) =>
+        describesServerSentEvent(branch, resolveRef, depth + 1),
+    );
+}
+
+/**
+ * What the reader of an event stream emits, as a schema: the type of the
+ * items where the spec's own schema describes something else. The same shape
+ * as the `ServerSentEvent` interface of the generated `utils/http-stream.ts`.
+ */
+function serverSentEventSchema(): SwaggerDefinition {
+    return {
+        type: "object",
+        required: ["data"],
+        properties: {
+            data: { type: "string" },
+            event: { type: "string" },
+            id: { type: "string" },
+            retry: { type: "integer" },
+        },
+    };
+}
+
+/**
+ * An `itemSchema` says "this is a stream of these". Where no stream is
+ * generated from it — the media type has no generated reader — the method
+ * returns the response whole and the item schema types nothing, which the
+ * caller should not have to find out from the signature.
+ *
+ * One that merely lost to another representation of the same response (a
+ * JSON alternative, an earlier sequential type) is not reported: the method
+ * returns the response in the representation it asks for.
+ */
+function warnAboutUnusedItemSchemas(
+    operation: PathInfo,
+    statusCode: string,
+    response: SwaggerResponse,
+    info: ResponseTypeInfo,
+    sequence: NormalizedResponseSequence | undefined,
+    onWarning?: (message: string) => void,
+): void {
+    if (sequence?.itemSchema) {
+        return;
+    }
+    const unread = Object.entries(response.content ?? {})
+        .filter(([contentType, mediaType]) => mediaType?.itemSchema && sequenceFormat(contentType) === undefined)
+        .map(([contentType]) => contentType);
+    if (unread.length === 0 || (info.contentType !== undefined && !unread.includes(info.contentType))) {
+        return;
+    }
+    onWarning?.(
+        `The "${statusCode}" response of ${describeOperation(operation)} declares \`itemSchema\` for ` +
+            `${unread.join(", ")}, which no stream is generated for: JSON Lines, NDJSON, JSON text sequences and ` +
+            "Server-Sent Events are read item by item. The generated method returns the response whole, as " +
+            `${info.responseType === "json" ? "JSON" : info.responseType}, and the item schema is not used.`,
+    );
 }
 
 /**

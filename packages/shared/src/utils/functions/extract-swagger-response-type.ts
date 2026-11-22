@@ -1,6 +1,11 @@
 import type { SwaggerDefinition, SwaggerResponse } from "../../types/swagger.types";
 import type { TypeMappingConfig } from "../../types/config.types";
 import { getTypeScriptType } from "../type.utils";
+import { inferResponseTypeFromContentType } from "./media-types";
+
+// Defined next to the other "what is this media type" rules; still exported
+// from here, where it has always been imported from.
+export { inferResponseTypeFromContentType };
 
 /** Result of analyzing a response's content types once for both concerns. */
 export interface ResponseTypeInfo {
@@ -12,6 +17,11 @@ export interface ResponseTypeInfo {
      * parameters preserved). Unset when the response declares no content.
      */
     acceptHeader?: string;
+    /**
+     * The priority winner itself: the content key the response is read as.
+     * Unset when the response declares no content.
+     */
+    contentType?: string;
 }
 
 /**
@@ -121,6 +131,7 @@ export function getResponseInfoFromResponse(
     return {
         responseType,
         acceptHeader: acceptedContentTypes.length > 0 ? acceptedContentTypes.join(", ") : undefined,
+        contentType: acceptedContentTypes[0],
     };
 }
 
@@ -158,79 +169,6 @@ export function isPrimitiveType(schema: SwaggerDefinition | undefined): boolean 
     }
 
     return false;
-}
-
-/**
- * Maps a MIME type (parameters like charset stripped) to the Angular
- * `responseType` used when fetching it; unknown types are assumed binary.
- */
-export function inferResponseTypeFromContentType(contentType: string): "json" | "blob" | "arraybuffer" | "text" {
-    // Normalize content type (remove parameters like charset)
-    const normalizedType = contentType.split(";")[0].trim().toLowerCase();
-
-    // JSON types (highest priority for structured data)
-    if (
-        normalizedType.includes("json") ||
-        normalizedType === "application/ld+json" ||
-        normalizedType === "application/hal+json" ||
-        normalizedType === "application/vnd.api+json"
-    ) {
-        return "json";
-    }
-
-    // XML can be treated as text for parsing
-    if (
-        normalizedType.includes("xml") ||
-        normalizedType === "application/soap+xml" ||
-        normalizedType === "application/atom+xml" ||
-        normalizedType === "application/rss+xml"
-    ) {
-        return "text";
-    }
-
-    // Text types (but exclude certain binary-like text types)
-    if (normalizedType.startsWith("text/")) {
-        // These text types are better handled as blobs
-        const binaryTextTypes = ["text/rtf", "text/cache-manifest", "text/vcard", "text/calendar"];
-
-        if (binaryTextTypes.includes(normalizedType)) {
-            return "blob";
-        }
-
-        return "text";
-    }
-
-    // Form data should be handled as text for parsing
-    if (normalizedType === "CONTENT_TYPES.FORM_URLENCODED" || normalizedType === "multipart/form-data") {
-        return "text";
-    }
-
-    // Specific text-like application types
-    if (
-        normalizedType === "application/javascript" ||
-        normalizedType === "application/typescript" ||
-        normalizedType === "application/css" ||
-        normalizedType === "application/yaml" ||
-        normalizedType === "application/x-yaml" ||
-        normalizedType === "application/toml"
-    ) {
-        return "text";
-    }
-
-    // Binary types that should use arraybuffer for better performance
-    if (
-        normalizedType.startsWith("image/") ||
-        normalizedType.startsWith("audio/") ||
-        normalizedType.startsWith("video/") ||
-        normalizedType === "application/pdf" ||
-        normalizedType === "application/zip" ||
-        normalizedType.includes("octet-stream")
-    ) {
-        return "arraybuffer";
-    }
-
-    // Everything else is likely binary and should be blob
-    return "blob";
 }
 
 /**

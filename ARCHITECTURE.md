@@ -111,6 +111,21 @@ Every generation run flows through the same stages:
   added to `queryParams` and no generator learns about the location. As
   JSON or text it is one value sent in one piece: the operation's
   `queryString`, which `emit/url.emit.ts` appends to the URL.
+  A success response in a sequential media type (JSON Lines, JSON text
+  sequences, Server-Sent Events) is recorded as `responseSequence`: with
+  OpenAPI 3.2's `itemSchema` it is a stream, with an array `schema` it is
+  complete. A `schema` that describes one value rather than an array of
+  them is read as the item schema too: that is how a stream was written
+  before 3.2, and the one reading under which the type is true. The items
+  of an event stream are events, so a schema there that has no `data`
+  property is warned about and replaced by the event's own shape. Either
+  way the response is fetched as text — `JSON.parse` fails on the
+  second item — and split by the readers of the generated
+  `utils/http-stream.ts`, whose names both clients take from
+  `emit/sequence.emit.ts`. The date interceptor converts JSON bodies and
+  sees these as text, so with `dateType: "Date"` the class that parses the
+  items passes them through it (`revivesDates`, `emitDateReviver` in the
+  same file).
   Enum member names are resolved here too (`enum-member-names.ts`): the
   sources the config enables — `enumNameExtensions` (`x-enum-varnames`,
   `x-enumNames`, …), then the JSON description of

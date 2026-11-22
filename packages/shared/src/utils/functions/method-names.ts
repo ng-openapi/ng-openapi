@@ -21,6 +21,10 @@ export const RESERVED_MEMBER_NAMES: readonly string[] = Object.freeze([
     "basePath",
     "clientContextToken",
     "createContextWithClientId",
+    // Bound by a class that reads a sequential response with `dateType: "Date"`
+    // (see `emit/sequence.emit.ts`).
+    "dateInterceptor",
+    "reviveDates",
 ]);
 // A Set is what the lookups want, but Object.freeze does not stop Set.add, so
 // the exported value is the frozen array and the Set stays module-private.

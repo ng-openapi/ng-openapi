@@ -64,6 +64,13 @@ export interface Order {
     placedAt?: Date;
 }
 
+export interface OrderEvent {
+    event?: 'created' | 'shipped' | 'cancelled';
+    data: string;
+    id?: string;
+    retry?: number;
+}
+
 export interface OrderExportRequest {
     from: Date;
     to: Date;

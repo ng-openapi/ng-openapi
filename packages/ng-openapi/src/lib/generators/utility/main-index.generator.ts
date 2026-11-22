@@ -65,6 +65,13 @@ export class MainIndexGenerator {
                 moduleSpecifier: "./utils/http-params-builder",
             });
 
+            // Only generated for a spec with a sequential response
+            if (this.project.getSourceFile(path.join(outputRoot, "utils", "http-stream.ts"))) {
+                sourceFile.addExportDeclaration({
+                    moduleSpecifier: "./utils/http-stream",
+                });
+            }
+
             // Export utilities conditionally
             if (this.config.options.dateType === "Date") {
                 sourceFile.addExportDeclaration({
