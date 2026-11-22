@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.7.0](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.6.0...ng-openapi-v0.7.0) (2026-11-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* **generator:** a response declared under application/jsonl, application/x-ndjson, application/json-seq or text/event-stream with a schema that describes one item (not an array, not a string) is generated as a streaming method: one signature without the observe overloads, returning `Observable<Item>` with one emission per item. A call that passed observe to such a method must drop the argument, and the httpResource plugin no longer generates a resource for such an operation. These methods used to parse the response as one JSON document, which worked only for a response of a single line.
+* **generator:** a request body declared under a content type other than exactly application/json, multipart/form-data or application/x-www-form-urlencoded is now generated. JSON under another content type (application/merge-patch+json, application/json; charset=utf-8, any +json type) becomes a typed argument, a text body (any `text/*` type, XML, YAML) a string argument, and any other body a Blob argument; under `*/*` or `application/*` the body's schema decides which of the three. A form declared with media-type parameters (application/x-www-form-urlencoded; charset=UTF-8) is bound field by field where the operation declares none of application/json, multipart/form-data and application/x-www-form-urlencoded exactly. Affected methods gain that argument, placed like any body argument, so parameters after it move and positional calls must be updated; with useSingleRequestParameter the `<Operation>Params` interface gains the property. These requests now declare the content type the spec names instead of application/json, and a request that sends no body no longer sets Content-Type: application/json. The zod plugin generates an `<operation>Body` validator for JSON bodies under another content type, and for an operation that declares multipart/form-data next to application/json the validator describes the multipart form that is sent. Plugin API, re-exported from ng-openapi: the contentType option of emitHeaders and defaultContentType no longer read hasBody and take isMultipart, isUrlEncoded and bodyContentType, so a plugin passing only the old facts gets no Content-Type for a JSON body and should pass the normalized operation; getRequestBodyType also reads a JSON body under another JSON content key, where it returned any.
+
+### Features
+
+* **generator:** bind JSON, text and binary request bodies under any content type ([#144](https://github.com/ng-openapi/ng-openapi/issues/144)) ([9cedeed](https://github.com/ng-openapi/ng-openapi/commit/9cedeed3a69eb9eeaa94c5c8a47d846b8f93a25b))
+* **generator:** generate in: querystring parameters ([#145](https://github.com/ng-openapi/ng-openapi/issues/145)) ([db043ee](https://github.com/ng-openapi/ng-openapi/commit/db043eefd42b94d2c49f34f538647faacf268b56))
+* **generator:** generate methods declared under additionalOperations ([#142](https://github.com/ng-openapi/ng-openapi/issues/142)) ([754de3d](https://github.com/ng-openapi/ng-openapi/commit/754de3d142455758bc732d664e0eec5dd6562f39))
+* **generator:** generate streaming methods for itemSchema responses ([#146](https://github.com/ng-openapi/ng-openapi/issues/146)) ([212033a](https://github.com/ng-openapi/ng-openapi/commit/212033a1fb1e72a5ef5944843545fafe9ac443aa))
+
 ## [0.6.0](https://github.com/ng-openapi/ng-openapi/compare/ng-openapi-v0.5.0...ng-openapi-v0.6.0) (2026-11-21)
 
 
