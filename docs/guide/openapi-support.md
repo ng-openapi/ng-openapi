@@ -158,7 +158,9 @@ A request body becomes method arguments on every method that can carry one. It i
 
 - **JSON** — `application/json`, also with parameters, and any `+json` type such as `application/merge-patch+json` — is one typed argument.
 - **Forms** — `multipart/form-data` and `application/x-www-form-urlencoded` — are one argument per field.
-- **Text** — `text/*`, XML, YAML — is one `string`.
+- **Text** — every `text/*` type, XML (`application/xml`, `application/…+xml`), YAML — is one `string`.
 - **Binary** — everything else, including ranges such as `image/*` — is one `Blob`.
+
+`*/*` and `application/*` name no type, so there the schema decides which of the three the body is.
 
 Sequential types (`application/jsonl`, `text/event-stream`) and other `multipart` types are not generated as request bodies, and are warned about. See [Generated Output](./generated-code.md#services-service-ts) for the `Content-Type` each one is sent with and for what happens when a body is declared several ways.

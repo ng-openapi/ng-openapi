@@ -2,6 +2,7 @@ import { RequestBody, TypeMappingConfig } from "../../types";
 import type { NormalizedOperation, NormalizedQueryString } from "../../model/operation.model";
 import { getTypeScriptType } from "../type.utils";
 import { CONTENT_TYPES } from "../content-types.constants";
+import { isJsonMediaType, isMediaTypeRange } from "./media-types";
 
 /**
  * TS type of the single argument an operation's body is passed as: the
@@ -10,12 +11,12 @@ import { CONTENT_TYPES } from "../content-types.constants";
  * not one argument: a form, bound field by field, or no bound body at all.
  */
 export function getBodyArgumentType(
-    operation: Pick<NormalizedOperation, "requestBody" | "bodyKind" | "bodyContentType">,
+    operation: Pick<NormalizedOperation, "requestBody" | "bodyKind" | "bodyContentKey">,
     config: TypeMappingConfig,
 ): string | undefined {
     switch (operation.bodyKind) {
         case "json": {
-            const schema = operation.requestBody?.content?.[operation.bodyContentType ?? CONTENT_TYPES.JSON]?.schema;
+            const schema = operation.requestBody?.content?.[operation.bodyContentKey ?? CONTENT_TYPES.JSON]?.schema;
             return schema ? getTypeScriptType(schema, config, schema.nullable) : "any";
         }
         case "text":
@@ -39,13 +40,26 @@ export function getQueryStringArgumentType(queryString: NormalizedQueryString, c
 }
 
 /**
- * TS type of an operation's JSON request body; `"any"` when the body has no
- * JSON content or no schema. Multipart/urlencoded bodies are handled
- * separately by the method-body emission.
+ * TS type of the JSON document a request body declares: the one under
+ * `application/json` when it is declared exactly so, otherwise under the
+ * first JSON content key (`application/merge-patch+json`,
+ * `application/json; charset=utf-8`). `"any"` when it declares none, or one
+ * without a schema.
+ *
+ * This reads a declaration, not an operation. Which body a generated method
+ * sends — a form declared next to the JSON, a body under `*`/`*` typed by
+ * its schema — is the operation's `bodyKind`, and `getBodyArgumentType`
+ * answers for that body. Prefer it wherever there is an operation to ask.
  */
 export function getRequestBodyType(requestBody: RequestBody, config: TypeMappingConfig): string {
     const content = requestBody.content || {};
-    const jsonContent = content[CONTENT_TYPES.JSON];
+    const jsonContent =
+        content[CONTENT_TYPES.JSON] ??
+        content[
+            Object.keys(content).find(
+                (contentType) => isJsonMediaType(contentType) && !isMediaTypeRange(contentType),
+            ) ?? CONTENT_TYPES.JSON
+        ];
 
     if (jsonContent?.schema) {
         return getTypeScriptType(jsonContent.schema, config, jsonContent.schema.nullable);

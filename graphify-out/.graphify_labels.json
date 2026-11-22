@@ -181,12 +181,21 @@
   "179": "audio-data.js",
   "180": "ZodGenerator",
   "181": "inline-nested-refs.test.ts",
+  "182": "`enumNameExtensions`",
   "183": "operation.model.ts",
   "184": "perf-benchmark.test.ts",
   "185": "Date Transformer",
+  "186": "HttpParamsBuilderGenerator",
   "187": "`responseTypeMapping`",
   "188": "Plugin Authoring",
   "189": "exports",
   "190": "request-body-methods.test.ts",
-  "191": "repository"
+  "191": "repository",
+  "192": "author",
+  "193": "exports",
+  "194": "repository",
+  "196": "engines",
+  "197": "funding",
+  "198": "publishConfig",
+  "199": "scripts"
 }

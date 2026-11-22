@@ -53,15 +53,21 @@ export interface NormalizedOperation extends PathInfo {
      */
     bodyKind?: RequestBodyKind;
     /**
+     * The content key the bound body is declared under, as written in the
+     * spec (`application/merge-patch+json`, `*`/`*`): where its schema is.
+     * Set whenever `bodyKind` is.
+     */
+    bodyContentKey?: string;
+    /**
      * The `Content-Type` a request with the bound body declares: the content
-     * key it is declared under, as written in the spec
-     * (`application/merge-patch+json`, `text/plain; charset=utf-8`). For a
-     * JSON body that key is also where its schema is.
+     * key it is declared under (`application/merge-patch+json`,
+     * `text/plain; charset=utf-8`).
      *
      * Unset when no body is bound, and when the type is not the spec's to
      * state: a multipart body, whose header the browser writes; and a body
-     * declared as a range (`image/*`) or as several binary types, where the
-     * value sent says what it is.
+     * declared as a range (`image/*`, `*`/`*`) or as several binary types,
+     * where `HttpClient` declares what the value sent is. So it is not where
+     * to look for the schema: that is `bodyContentKey`.
      */
     bodyContentType?: string;
     isMultipart: boolean;

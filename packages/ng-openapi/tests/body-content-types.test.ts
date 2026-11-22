@@ -274,3 +274,115 @@ describe("forms under a parameterised content key, and the body a validator desc
         expect(validators).not.toContain("jsonOnly");
     });
 });
+
+describe("a content type that says little about the body, or says it misleadingly", () => {
+    const noContent = { "204": { description: "done" } };
+    const binary = { schema: { type: "string", format: "binary" } };
+    const post = (operationId: string, content: object) => ({
+        post: { operationId, tags: ["Uploads"], requestBody: { required: true, content }, responses: noContent },
+    });
+    const spec = {
+        openapi: "3.0.3",
+        info: { title: "Uploads", version: "1.0.0" },
+        paths: {
+            // swagger-core writes a JAX-RS body without @Consumes this way.
+            "/items": post("createItem", { "*/*": { schema: { $ref: "#/components/schemas/Item" } } }),
+            "/items/name": post("renameItem", { "*/*": { schema: { type: "string" } } }),
+            "/items/file": post("attachFile", { "*/*": binary }),
+            // "xml" is in the name of both. One is a zip archive, the other a file.
+            "/sheets": post("importSheet", {
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": binary,
+            }),
+            "/logos": post("uploadLogo", { "image/svg+xml": binary }),
+            "/events": post("importCalendar", { "text/calendar": { schema: { type: "string" } } }),
+            // The form's key carries a parameter, so it was never read: JSON is what was sent.
+            "/documents": post("createDocument", {
+                "application/json": { schema: { $ref: "#/components/schemas/Item" } },
+                "multipart/form-data; charset=utf-8": {
+                    schema: { type: "object", properties: { file: { type: "string", format: "binary" } } },
+                },
+            }),
+            // Two different documents; the method takes the first.
+            "/patches": post("patchItem", {
+                "application/merge-patch+json": { schema: { $ref: "#/components/schemas/Item" } },
+                "application/json-patch+json": { schema: { type: "array", items: { type: "object" } } },
+            }),
+            // A form whose fields are inherited: nothing to send field by field.
+            "/inherited": post("uploadInherited", {
+                "multipart/form-data": { schema: { allOf: [{ $ref: "#/components/schemas/Item" }] } },
+            }),
+        },
+        components: { schemas: { Item: { type: "object", properties: { name: { type: "string" } } } } },
+    };
+
+    it("types a body under */* from its schema, and lets HttpClient say what it is", async () => {
+        const { output, service } = await generate("body-types-any-", { spec, plugins: [ZodPlugin] });
+        const uploads = service("uploads");
+
+        const createItem = methodSource(uploads, "createItem");
+        expect(createItem).toMatch(/^ {4}createItem\(item: Item, observe\?:/);
+        expect(sentBody(createItem)).toBe("item");
+        // Nothing to declare under a range: HttpClient sends application/json for a value.
+        expect(createItem).not.toContain("Content-Type");
+        expect(readFileSync(join(output, "validators", "uploads.validator.ts"), "utf8")).toContain(
+            "export const createItemBody =",
+        );
+
+        expect(methodSource(uploads, "renameItem")).toMatch(/^ {4}renameItem\(requestBody: string, observe\?:/);
+        expect(methodSource(uploads, "attachFile")).toMatch(/^ {4}attachFile\(requestBody: Blob, observe\?:/);
+
+        expectGeneratedCodeCompiles(output);
+    });
+
+    it("takes a file where the content type is one, and a string where it is text", async () => {
+        const { service } = await generate("body-types-names-", { spec });
+        const uploads = service("uploads");
+
+        const importSheet = methodSource(uploads, "importSheet");
+        expect(importSheet).toMatch(/^ {4}importSheet\(requestBody: Blob, observe\?:/);
+        expect(declaredContentType(importSheet)).toBe(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        );
+        expect(methodSource(uploads, "uploadLogo")).toMatch(/^ {4}uploadLogo\(requestBody: Blob, observe\?:/);
+
+        const importCalendar = methodSource(uploads, "importCalendar");
+        expect(importCalendar).toMatch(/^ {4}importCalendar\(requestBody: string, observe\?:/);
+        expect(declaredContentType(importCalendar)).toBe("text/calendar");
+    });
+
+    it("keeps sending JSON next to a form whose key carries a parameter", async () => {
+        const { service } = await generate("body-types-precedence-", { spec });
+        const createDocument = methodSource(service("uploads"), "createDocument");
+
+        expect(createDocument).toMatch(/^ {4}createDocument\(item: Item, observe\?:/);
+        expect(sentBody(createDocument)).toBe("item");
+        expect(declaredContentType(createDocument)).toBe("application/json");
+        expect(createDocument).not.toContain("FormData");
+    });
+
+    it("says which of several JSON types it bound", async () => {
+        const { result, service } = await generate("body-types-several-", { spec });
+        const patchItem = methodSource(service("uploads"), "patchItem");
+
+        expect(patchItem).toMatch(/^ {4}patchItem\(item: Item, observe\?:/);
+        expect(declaredContentType(patchItem)).toBe("application/merge-patch+json");
+        // Wording is pinned in shared/tests/normalize.test.ts.
+        expect(result.warnings.filter((warning) => warning.includes("patchItem"))).toEqual([
+            expect.stringContaining(
+                "is declared under several JSON content types: application/merge-patch+json, " +
+                    "application/json-patch+json. Generated methods bind the first",
+            ),
+        ]);
+    });
+
+    it("still describes a form without fields to the zod plugin", async () => {
+        const { output, service } = await generate("body-types-fieldless-", { spec, plugins: [ZodPlugin] });
+
+        // No argument and no body: the form lists no field to send.
+        expect(methodSource(service("uploads"), "uploadInherited")).toMatch(/^ {4}uploadInherited\(observe\?:/);
+        // The schema is still the form's, as it was before bodies had kinds.
+        expect(readFileSync(join(output, "validators", "uploads.validator.ts"), "utf8")).toContain(
+            "export const uploadInheritedBody =",
+        );
+    });
+});

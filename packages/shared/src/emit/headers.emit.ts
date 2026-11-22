@@ -78,7 +78,9 @@ if (!headers.has('Content-Type')) {
  * A body that is sent declares the content type it is written under in the
  * spec, parameters and all (`application/merge-patch+json`,
  * `text/plain; charset=utf-8`) — unless the normalizer left that to the
- * value itself (`bodyContentType`), where HttpClient sends a Blob's own type.
+ * value itself (`bodyContentType` unset: a range, several binary types),
+ * where HttpClient declares what it was given: `application/json` for a
+ * value, `text/plain` for a string, a Blob's own type.
  * The one exception the other way is a urlencoded form without fields: it
  * sends no body and keeps its header, which is what the normalizer's warning
  * about such a form tells the user.
