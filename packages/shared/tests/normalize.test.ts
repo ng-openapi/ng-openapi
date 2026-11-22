@@ -786,12 +786,9 @@ describe("normalizeSpec: the Content-Type of a body whose type the value states"
             "/type-or-range": {
                 put: { requestBody: { content: { "application/pdf": binary, "image/*": binary } }, responses: {} },
             },
-            // A string has no type of its own: the first concrete one is declared.
+            // A string has no type of its own: the concrete one is declared.
             "/texts": {
-                put: {
-                    requestBody: { content: { "text/*": {}, "text/csv": {}, "application/xml": {} } },
-                    responses: {},
-                },
+                put: { requestBody: { content: { "text/*": {}, "text/csv": {} } }, responses: {} },
             },
             "/text-range": { put: { requestBody: { content: { "text/*": {} } }, responses: {} } },
         },
@@ -821,9 +818,222 @@ describe("normalizeSpec: the Content-Type of a body whose type the value states"
         expect(operation(path).bodyContentType).toBeUndefined();
     });
 
-    it("declares the first concrete type of a text body, and none for a range alone", () => {
+    it("declares the concrete type of a text body, and none for a range alone", () => {
         expect(operation("/texts").bodyContentType).toBe("text/csv");
         expect(operation("/text-range").bodyContentType).toBeUndefined();
+    });
+
+    it("records the content key the body is bound under, whatever the request declares", () => {
+        expect(operation("/one").bodyContentKey).toBe("image/png");
+        expect(operation("/range").bodyContentKey).toBe("image/*");
+        // A concrete type before a range.
+        expect(operation("/texts").bodyContentKey).toBe("text/csv");
+        expect(operation("/text-range").bodyContentKey).toBe("text/*");
+    });
+});
+
+describe("normalizeSpec: a body under a range that names no type", () => {
+    const item = { $ref: "#/components/schemas/Item" };
+    const put = (content: object) => ({ put: { requestBody: { content }, responses: {} } });
+    const spec = {
+        openapi: "3.0.3",
+        paths: {
+            // What swagger-core writes for a JAX-RS body without @Consumes.
+            "/item": put({ "*/*": { schema: item } }),
+            "/items": put({ "application/*": { schema: { type: "array", items: item } } }),
+            "/name": put({ "*/*": { schema: { type: "string" } } }),
+            "/file": put({ "*/*": { schema: { $ref: "#/components/schemas/Upload" } } }),
+            "/anything": put({ "*/*": {} }),
+            // Swashbuckle's range of JSON types.
+            "/json-range": put({ "application/*+json": { schema: item } }),
+            // A concrete JSON type is what the request declares, the range or not.
+            "/patch-or-anything": put({
+                "*/*": { schema: item },
+                "application/merge-patch+json": { schema: { type: "object" } },
+            }),
+        },
+        components: {
+            schemas: {
+                Item: { type: "object", properties: { name: { type: "string" } } },
+                Upload: { type: "string", format: "binary" },
+            },
+        },
+    } as unknown as SwaggerSpec;
+    const warnings: string[] = [];
+    const normalized = normalizeSpec(spec, (message) => warnings.push(message));
+    const operation = (path: string) => normalized.operations.find((o) => o.path === path)!;
+
+    it.each([
+        ["/item", "json"],
+        ["/items", "json"],
+        ["/name", "text"],
+        // The schema behind the $ref is what is read.
+        ["/file", "binary"],
+        ["/anything", "binary"],
+        ["/json-range", "json"],
+    ])("%s is bound by what its schema describes: %s", (path, kind) => {
+        expect(operation(path).bodyKind).toBe(kind);
+        // No type to declare: HttpClient says what the value is.
+        expect(operation(path).bodyContentType).toBeUndefined();
+    });
+
+    it("keeps the range as the key the schema is read under", () => {
+        expect(operation("/item").bodyContentKey).toBe("*/*");
+        expect(operation("/items").bodyContentKey).toBe("application/*");
+        expect(operation("/json-range").bodyContentKey).toBe("application/*+json");
+    });
+
+    it("binds a concrete type before a range of the same kind", () => {
+        expect(operation("/patch-or-anything")).toMatchObject({
+            bodyKind: "json",
+            bodyContentKey: "application/merge-patch+json",
+            bodyContentType: "application/merge-patch+json",
+        });
+    });
+
+    it("has nothing to warn about", () => {
+        expect(warnings).toEqual([]);
+    });
+});
+
+describe("normalizeSpec: a form under a key with parameters next to a body that was always bound", () => {
+    const fields = (...names: string[]) => ({
+        schema: { type: "object", properties: Object.fromEntries(names.map((name) => [name, { type: "string" }])) },
+    });
+    const post = (content: object) => ({ post: { requestBody: { content }, responses: {} } });
+    const spec = {
+        openapi: "3.1.0",
+        paths: {
+            "/json-or-multipart": post({
+                "application/json": fields("name"),
+                "multipart/form-data; charset=utf-8": fields("file"),
+            }),
+            "/urlencoded-or-multipart": post({
+                "application/x-www-form-urlencoded": fields("name"),
+                "multipart/form-data; charset=utf-8": fields("file"),
+            }),
+            "/json-or-urlencoded": post({
+                "application/x-www-form-urlencoded; charset=UTF-8": fields("user"),
+                "application/json": fields("name"),
+            }),
+            "/multipart-or-urlencoded": post({
+                "application/x-www-form-urlencoded; charset=UTF-8": fields("onlyHere"),
+                "multipart/form-data": fields("file"),
+            }),
+            // Nothing here was ever bound, so the form is read as the form it is.
+            "/new": post({
+                "application/json; charset=utf-8": fields("name"),
+                "multipart/form-data; boundary=x": fields("file"),
+            }),
+        },
+    } as unknown as SwaggerSpec;
+    const warnings: string[] = [];
+    const normalized = normalizeSpec(spec, (message) => warnings.push(message));
+    const operation = (path: string) => normalized.operations.find((o) => o.path === path)!;
+
+    it("keeps sending the JSON body", () => {
+        expect(operation("/json-or-multipart")).toMatchObject({
+            bodyKind: "json",
+            bodyContentType: "application/json",
+            isMultipart: false,
+            formDataFields: [],
+        });
+        expect(operation("/json-or-urlencoded")).toMatchObject({ bodyKind: "json", isUrlEncoded: false });
+    });
+
+    it("keeps sending the form that was always read", () => {
+        expect(operation("/urlencoded-or-multipart")).toMatchObject({
+            bodyKind: "urlencoded",
+            isMultipart: false,
+            urlEncodedFields: ["name"],
+        });
+        expect(operation("/multipart-or-urlencoded")).toMatchObject({
+            bodyKind: "multipart",
+            isUrlEncoded: false,
+            formDataFields: ["file"],
+        });
+    });
+
+    it("reads the form where the operation declares none of the three", () => {
+        expect(operation("/new")).toMatchObject({
+            bodyKind: "multipart",
+            bodyContentKey: "multipart/form-data; boundary=x",
+            formDataFields: ["file"],
+        });
+    });
+
+    it("says nothing: each is the body that was generated before", () => {
+        expect(warnings).toEqual([]);
+    });
+});
+
+describe("normalizeSpec: a body declared under several JSON or text content types", () => {
+    const schema = (type: string) => ({ schema: { type } });
+    const patch = (operationId: string, content: object) => ({
+        patch: { operationId, requestBody: { content }, responses: {} },
+    });
+    const spec = {
+        openapi: "3.1.0",
+        paths: {
+            "/widgets": patch("patchWidget", {
+                "application/merge-patch+json": schema("object"),
+                "application/json-patch+json": schema("array"),
+            }),
+            "/feeds": patch("patchFeed", {
+                "text/plain": schema("string"),
+                "application/xml": schema("object"),
+                "text/csv": schema("string"),
+            }),
+            // application/json always wins, as it did: nothing new to say.
+            "/legacy": patch("patchLegacy", {
+                "application/json-patch+json": schema("array"),
+                "application/json": schema("object"),
+                "text/json": schema("object"),
+            }),
+            // Whichever it is, the method takes a Blob.
+            "/images": patch("patchImage", { "image/png": {}, "image/jpeg": {} }),
+            // A range adds no type to choose between.
+            "/notes": patch("patchNote", { "text/*": schema("string"), "text/markdown": schema("string") }),
+            // Different kinds follow the documented order.
+            "/mixed": patch("patchMixed", {
+                "text/plain": schema("string"),
+                "application/vnd.api+json": schema("object"),
+            }),
+        },
+    } as unknown as SwaggerSpec;
+    const warnings: string[] = [];
+    const normalized = normalizeSpec(spec, (message) => warnings.push(message));
+    const operation = (operationId: string) => normalized.operations.find((o) => o.operationId === operationId)!;
+    const about = (operationId: string) => warnings.filter((warning) => warning.includes(operationId));
+
+    it("binds the first and says which, for JSON", () => {
+        expect(operation("patchWidget")).toMatchObject({
+            bodyKind: "json",
+            bodyContentKey: "application/merge-patch+json",
+            bodyContentType: "application/merge-patch+json",
+        });
+        expect(about("patchWidget")).toEqual([
+            "The request body of patchWidget ((PATCH) /widgets) is declared under several JSON content types: " +
+                "application/merge-patch+json, application/json-patch+json. Generated methods bind the first, " +
+                "application/merge-patch+json: the body argument is typed from its schema, and the request " +
+                "declares it as its Content-Type unless the caller passes another. Nothing is generated for the " +
+                "other. Declare the body under one of them to choose which.",
+        ]);
+    });
+
+    it("binds the first and says which, for text", () => {
+        expect(operation("patchFeed")).toMatchObject({ bodyKind: "text", bodyContentType: "text/plain" });
+        expect(about("patchFeed")).toEqual([
+            "The request body of patchFeed ((PATCH) /feeds) is declared under several text content types: " +
+                "text/plain, application/xml, text/csv. Generated methods bind the first, text/plain: the request " +
+                "declares it as its Content-Type unless the caller passes another. Nothing is generated for the " +
+                "others. Declare the body under one of them to choose which.",
+        ]);
+    });
+
+    it.each(["patchLegacy", "patchImage", "patchNote", "patchMixed"])("says nothing about %s", (operationId) => {
+        expect(operation(operationId).bodyKind).toBeDefined();
+        expect(about(operationId)).toEqual([]);
     });
 });
 

@@ -72,10 +72,17 @@ How the body is taken and sent depends on the content type it is declared under:
 | `application/json`, and JSON under another name: `application/json; charset=utf-8`, any `+json` type  | One, typed from the schema   | The declared one                                                                       |
 | `multipart/form-data`                                                                                 | One per top-level field      | Left to the browser, which writes the boundary                                         |
 | `application/x-www-form-urlencoded`                                                                   | One per top-level field      | `application/x-www-form-urlencoded`                                                    |
-| Text: `text/*`, XML, YAML                                                                             | One `string`                 | The declared one; left to `HttpClient`, which sends `text/plain`, for a `text/*` range |
+| Text: every `text/*` type, XML (`application/xml`, `application/…+xml`), YAML                         | One `string`                 | The declared one; left to `HttpClient`, which sends `text/plain`, for a `text/*` range |
 | Anything else — `application/octet-stream`, `application/pdf`, `image/png`, a range such as `image/*` | One `Blob` (a `File` is one) | The declared one; the `Blob`'s own type for a range or for several declared types      |
+| `*/*` or `application/*`, which name no type                                                          | One, by what the schema says | Left to `HttpClient`, which declares the type of the value it is given                 |
 
-A JSON body is serialized by `HttpClient`; a `string` or a `Blob` is sent as it is, so for XML or YAML the caller passes the serialized text. The header is only a default: one passed in the trailing options argument is kept.
+"Anything else" is decided by the parts of the name, so an Office document (`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`) and `image/svg+xml` are files to upload, not text.
+
+Under `*/*` or `application/*` the schema decides: a body with `format: binary`, or with no schema, is a `Blob`; a string is a `string`; anything else is one argument typed from the schema and sent as JSON. `HttpClient` then declares `application/json` for a value, `text/plain` for a string and a `Blob`'s own type.
+
+`HttpClient` serializes a JSON body, with one exception: a value that is already a `string` is sent as written, without quotes. Where the schema of a JSON body is a string and the server expects a JSON document, pass `JSON.stringify(value)`. Under a text or binary content type the `string` or `Blob` is sent as it is, so for XML or YAML the caller passes the serialized text.
+
+The `Content-Type` is a default: one passed in the trailing options argument is kept. The exception is `multipart/form-data`, where every `Content-Type` is removed, the caller's too, because only the browser can write the one that carries the boundary.
 
 ```typescript
 // PATCH /widgets/{widgetId} with an application/merge-patch+json requestBody
@@ -89,6 +96,16 @@ patchWidget(widgetId: string, widgetPatch: WidgetPatch, /* observe, options */):
 ```
 
 When a body is declared under several content types, one is sent: `multipart/form-data` first, then `application/x-www-form-urlencoded` unless `application/json` is declared too, then `application/json`, then another JSON type, a text type, a binary type.
+
+Those first three are matched as written. A form whose content key carries parameters (`multipart/form-data; charset=utf-8`) is read as a form only when the operation declares none of the three.
+
+Among the other JSON types, and among the text types, the first one declared is bound. `application/merge-patch+json` next to `application/json-patch+json` are two different documents, so the method is typed from one of them, and generation says which:
+
+```
+⚠️ The request body of patchWidget ((PATCH) /widgets/{widgetId}) is declared under several JSON content types: application/merge-patch+json, application/json-patch+json. Generated methods bind the first, application/merge-patch+json: the body argument is typed from its schema, and the request declares it as its Content-Type unless the caller passes another. Nothing is generated for the other. Declare the body under one of them to choose which.
+```
+
+Several binary types need no such choice: the method takes a `Blob` whichever it is.
 
 Two kinds of body cannot be passed as one value and are not generated: a sequential type (`application/jsonl`, `application/x-ndjson`, `text/event-stream`), which is a stream of items, and a `multipart` type other than `multipart/form-data`. The method then takes no argument for the body and sends the request without one, and generation warns about it:
 
