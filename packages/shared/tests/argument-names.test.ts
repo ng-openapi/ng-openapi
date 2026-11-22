@@ -181,6 +181,7 @@ describe("resolveArgumentNames: a body passed as one argument", () => {
         operation({
             method: "PUT",
             bodyKind,
+            bodyContentKey: bodyContentType,
             bodyContentType,
             requestBody: { content: { [bodyContentType]: { schema } } },
             queryParams: [param("request_body")],
@@ -191,6 +192,17 @@ describe("resolveArgumentNames: a body passed as one argument", () => {
             withBody("json", "application/merge-patch+json", { $ref: "#/components/schemas/WidgetPatch" }),
         );
         expect(names.body).toBe("widgetPatch");
+    });
+
+    it("reads the schema under the content key, not under the Content-Type the request declares", () => {
+        // A body under a range: the normalizer leaves the header to HttpClient.
+        const underRange = operation({
+            method: "PUT",
+            bodyKind: "json",
+            bodyContentKey: "*/*",
+            requestBody: { content: { "*/*": { schema: { $ref: "#/components/schemas/Item" } } } },
+        } as Partial<NormalizedOperation>);
+        expect(service(underRange).body).toBe("item");
     });
 
     it.each([

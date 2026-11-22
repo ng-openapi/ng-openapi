@@ -53,16 +53,17 @@ export class ZodSchemaGenerator {
         if (!operation.requestBody) {
             return statements;
         }
-        // The schema of the body the generated request carries — not of
-        // another one the operation also declares. A JSON body is described
-        // under its content key, whatever that is
-        // (`application/merge-patch+json`); a multipart form by the schema the
-        // normalizer already resolved. A urlencoded, text or binary body has
-        // no validator, and neither has an operation that sends none.
+        // The schema of the body the operation sends — not of another one it
+        // also declares. A JSON body is described under its content key,
+        // whatever that is (`application/merge-patch+json`); a multipart form
+        // by the schema the normalizer already resolved, also when it lists
+        // no fields to send (`isMultipart`, not `bodyKind`): the schema still
+        // describes the form. A urlencoded, text or binary body has no
+        // validator.
         const declared =
             operation.bodyKind === "json"
-                ? operation.requestBody.content?.[operation.bodyContentType ?? CONTENT_TYPES.JSON]?.schema
-                : operation.bodyKind === "multipart"
+                ? operation.requestBody.content?.[operation.bodyContentKey ?? CONTENT_TYPES.JSON]?.schema
+                : operation.isMultipart
                   ? operation.formDataSchema
                   : undefined;
         if (!declared) {

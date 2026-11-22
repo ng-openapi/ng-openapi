@@ -220,11 +220,8 @@ function normalizeOperation(
     warnAboutUnboundParameters(rawOperation, onWarning);
     const operation = dropUnsendableRequestBody(rawOperation, onWarning);
     const content = operation.requestBody?.content;
-    // A form is a form whatever parameters its content key carries
-    // (`application/x-www-form-urlencoded; charset=UTF-8`): it is found by
-    // what the media type is, and its schema read under the key as written.
-    const multipartKey = contentKeyOf(content, CONTENT_TYPES.MULTIPART);
-    const urlEncodedKey = contentKeyOf(content, CONTENT_TYPES.FORM_URLENCODED);
+    const multipartKey = formContentKey(content, CONTENT_TYPES.MULTIPART);
+    const urlEncodedKey = formContentKey(content, CONTENT_TYPES.FORM_URLENCODED);
     const isMultipart = multipartKey !== undefined;
     const isUrlEncoded = urlEncodedKey !== undefined && !content?.[CONTENT_TYPES.JSON];
 
@@ -256,13 +253,17 @@ function normalizeOperation(
     }
     const body = boundBody(
         content,
-        isMultipart,
+        multipartKey,
         isUrlEncoded ? urlEncodedKey : undefined,
         formDataFields,
         urlEncodedFields,
+        (contentType) => resolveBodySchema(operation.requestBody, contentType, resolveRef),
     );
     if (operation.requestBody && !isMultipart && !isUrlEncoded && !body) {
         warnAboutUnboundBody(operation, onWarning);
+    }
+    if (body && body.alternatives.length > 0) {
+        warnAboutBodyAlternatives(operation, body, onWarning);
     }
 
     return {
@@ -271,6 +272,7 @@ function normalizeOperation(
         queryParams,
         hasBody: !!operation.requestBody,
         bodyKind: body?.kind,
+        bodyContentKey: body?.contentKey,
         bodyContentType: body?.contentType,
         isMultipart,
         isUrlEncoded,
@@ -284,19 +286,51 @@ function normalizeOperation(
 }
 
 /**
- * The key `content` declares a media type under: `essence` itself when it is
- * a key, otherwise the first key that is that media type with parameters.
- * The exact key comes first so that a spec declaring both keeps the one that
- * was always read.
+ * The three content keys a body has always been bound under. An operation
+ * that declares one of them is generated as it always was, whatever else it
+ * declares next to it.
  */
-function contentKeyOf(content: RequestBody["content"] | undefined, essence: string): string | undefined {
+const ALWAYS_BOUND: readonly string[] = [CONTENT_TYPES.MULTIPART, CONTENT_TYPES.FORM_URLENCODED, CONTENT_TYPES.JSON];
+
+/**
+ * The key `content` declares the form `essence` under: `essence` itself when
+ * it is a key, otherwise the first key that is that form with parameters
+ * (`application/x-www-form-urlencoded; charset=UTF-8`), whose schema is then
+ * read under the key as written.
+ *
+ * The second only where the operation declares none of the keys in
+ * `ALWAYS_BOUND`. Next to one of them a form with parameters was never read,
+ * and reading it now would change the body an existing method sends:
+ * `multipart/form-data; charset=utf-8` beside `application/json` would turn
+ * a JSON request into a form.
+ */
+function formContentKey(content: RequestBody["content"] | undefined, essence: string): string | undefined {
     if (!content) {
         return undefined;
     }
-    if (Object.prototype.hasOwnProperty.call(content, essence)) {
+    const declares = (key: string) => Object.prototype.hasOwnProperty.call(content, key);
+    if (declares(essence)) {
         return essence;
     }
+    if (ALWAYS_BOUND.some(declares)) {
+        return undefined;
+    }
     return Object.keys(content).find((contentType) => mediaTypeEssence(contentType) === essence);
+}
+
+/** The body a generated request carries: see `boundBody`. */
+interface BoundBody {
+    kind: RequestBodyKind;
+    /** The content key the body is declared under, as written: where its schema is. */
+    contentKey: string;
+    /** The `Content-Type` the request declares, when that is the spec's to state. */
+    contentType?: string;
+    /**
+     * Content types of the same kind the body is declared under too, where
+     * binding `contentKey` instead of one of them is a choice the declaration
+     * order made and the caller is held to.
+     */
+    alternatives: readonly string[];
 }
 
 /**
@@ -310,42 +344,65 @@ function contentKeyOf(content: RequestBody["content"] | undefined, essence: stri
  *    nothing — and nothing else is tried in its place.
  * 2. `application/json`, exactly.
  * 3. Any other content type a method can send, a JSON one before a text one
- *    before a binary one, in declaration order within each.
+ *    before a binary one, in declaration order within each, a concrete type
+ *    before a range.
  *
  * The first two are the bindings there have always been; the third only
- * applies where nothing was bound before.
+ * applies where nothing was bound before (and so does a form under a key
+ * with parameters: see `formContentKey`).
  *
- * `contentType` is what the request declares. A string has no type of its
- * own, so a text body declares the first concrete one the spec lists. A Blob
- * does: a binary body declares the spec's type only when the spec leaves no
- * choice — one concrete type — and otherwise the Blob's.
+ * `contentType` is what the request declares. A JSON or text body declares
+ * the content key it is bound under; a range names no type, so under one
+ * `HttpClient` states what the value is (`application/json`, `text/plain`).
+ * A Blob has a type of its own: a binary body declares the spec's type only
+ * when the spec leaves no choice — one concrete type — and otherwise the
+ * Blob's.
+ *
+ * Several binary types are no choice to make: the method takes a Blob
+ * whichever it is. Several JSON types, or several text types, are one — the
+ * schema the argument is typed from, the `Content-Type` sent by default — so
+ * the ones not bound come back as `alternatives`.
  */
 function boundBody(
     content: RequestBody["content"] | undefined,
-    isMultipart: boolean,
+    /** The content key of the multipart form, when the operation declares one. */
+    multipartKey: string | undefined,
     /** The content key of the urlencoded form, when that is the form the operation sends. */
     urlEncodedKey: string | undefined,
     formDataFields: readonly string[],
     urlEncodedFields: readonly string[],
-): { kind: RequestBodyKind; contentType?: string } | undefined {
-    if (isMultipart) {
-        return formDataFields.length > 0 ? { kind: "multipart" } : undefined;
+    /** The schema declared under a content key, any `$ref` followed. */
+    schemaOf: (contentType: string) => SwaggerDefinition | undefined,
+): BoundBody | undefined {
+    if (multipartKey !== undefined) {
+        return formDataFields.length > 0
+            ? { kind: "multipart", contentKey: multipartKey, alternatives: [] }
+            : undefined;
     }
     if (urlEncodedKey !== undefined) {
-        return urlEncodedFields.length > 0 ? { kind: "urlencoded", contentType: urlEncodedKey } : undefined;
+        return urlEncodedFields.length > 0
+            ? { kind: "urlencoded", contentKey: urlEncodedKey, contentType: urlEncodedKey, alternatives: [] }
+            : undefined;
     }
     if (content?.[CONTENT_TYPES.JSON]) {
-        return { kind: "json", contentType: CONTENT_TYPES.JSON };
+        return { kind: "json", contentKey: CONTENT_TYPES.JSON, contentType: CONTENT_TYPES.JSON, alternatives: [] };
     }
     const declared = Object.keys(content ?? {});
+    // Only a range is ever read by its schema, so only a range has one looked up.
+    const familyOf = (contentType: string) =>
+        bodyMediaFamily(contentType, isMediaTypeRange(contentType) ? schemaOf(contentType) : undefined);
     for (const family of ["json", "text", "binary"] as const) {
-        const candidates = declared.filter((candidate) => bodyMediaFamily(candidate) === family);
+        const candidates = declared.filter((candidate) => familyOf(candidate) === family);
         if (candidates.length === 0) {
             continue;
         }
         const concrete = candidates.filter((candidate) => !isMediaTypeRange(candidate));
-        const unambiguous = family !== "binary" || candidates.length === 1;
-        return { kind: family, contentType: unambiguous ? concrete[0] : undefined };
+        const contentKey = concrete[0] ?? candidates[0];
+        if (family === "binary") {
+            const contentType = candidates.length === 1 ? concrete[0] : undefined;
+            return { kind: family, contentKey, contentType, alternatives: [] };
+        }
+        return { kind: family, contentKey, contentType: concrete[0], alternatives: concrete.slice(1) };
     }
     return undefined;
 }
@@ -425,6 +482,27 @@ function warnAboutUnsentFormFields(
             `which only the ${CONTENT_TYPES.FORM_URLENCODED} form lists, ` +
             `${unsent.length === 1 ? "gets no argument and is" : "get no argument and are"} not sent. ` +
             `List ${unsent.length === 1 ? "it" : "them"} in the ${CONTENT_TYPES.MULTIPART} schema too, or declare one form.`,
+    );
+}
+
+/**
+ * A body declared under several JSON content types, or several text ones,
+ * where none of them is the `application/json` that always wins. The first
+ * is bound, and that is not a neutral pick: `application/merge-patch+json`
+ * next to `application/json-patch+json` are two different documents, and the
+ * method takes one of them.
+ */
+function warnAboutBodyAlternatives(operation: PathInfo, body: BoundBody, onWarning?: (message: string) => void): void {
+    const isJson = body.kind === "json";
+    const declared = [body.contentKey, ...body.alternatives];
+    onWarning?.(
+        `The request body of ${describeOperation(operation)} is declared under several ` +
+            `${isJson ? "JSON" : "text"} content types: ${declared.join(", ")}. Generated methods bind the first, ` +
+            `${body.contentKey}: ` +
+            (isJson ? "the body argument is typed from its schema, and " : "") +
+            "the request declares it as its Content-Type unless the caller passes another. Nothing is generated " +
+            `for ${body.alternatives.length === 1 ? "the other" : "the others"}. Declare the body under one of them ` +
+            "to choose which.",
     );
 }
 

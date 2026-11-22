@@ -48,6 +48,18 @@ it("binds JSON-family, text and binary QUERY bodies as signal-aware arguments", 
                         responses: ok,
                     },
                 },
+                // No type named: the schema says it is a JSON value.
+                "/documents/match": {
+                    query: {
+                        operationId: "matchDocuments",
+                        tags: ["Search"],
+                        requestBody: {
+                            required: true,
+                            content: { "*/*": { schema: { $ref: "#/components/schemas/Filter" } } },
+                        },
+                        responses: ok,
+                    },
+                },
                 "/documents/similar": {
                     query: {
                         operationId: "findSimilarDocuments",
@@ -80,6 +92,11 @@ it("binds JSON-family, text and binary QUERY bodies as signal-aware arguments", 
     const filter = methodSource(search, "filterDocuments");
     expect(filter).toMatch(/^ {4}filterDocuments\(filter: Signal<Filter> \| Filter, resourceOptions\?:/);
     expect(filter).toContain("headers = { 'Content-Type': 'application/vnd.api+json', ...headers };");
+
+    // Typed from the schema; HttpClient declares application/json for the value.
+    const match = methodSource(search, "matchDocuments");
+    expect(match).toMatch(/^ {4}matchDocuments\(filter: Signal<Filter> \| Filter, resourceOptions\?:/);
+    expect(match).not.toContain("Content-Type");
 
     // A range of types: the Blob says which one it is, so the method sets no
     // header and has no headers to merge at all.
